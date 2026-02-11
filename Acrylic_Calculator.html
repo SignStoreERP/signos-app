@@ -3,32 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acrylic Sign Calculator v2.2</title>
+    <title>Acrylic Calculator v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* CORE STYLES */
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .toggle-checkbox:checked { right: 0; border-color: #68D391; }
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+        
+        /* VIEW MODE LOGIC */
+        .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
+        .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
+        .mode-prod .prod-hidden { display: none !important; } 
+        .mode-prod .prod-width { width: 100% !important; text-align: right; }
+
         .warn-pulse { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red {
-            0% { background-color: #FECACA; }
-            50% { background-color: #F87171; }
-            100% { background-color: #FECACA; }
-        }
+        @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
         .blur-section { filter: grayscale(100%) opacity(0.5); pointer-events: none; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <div class="max-w-md w-full bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+    <div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
         
-        <!-- HEADER -->
+        <!-- 1. AUTH HEADER -->
+        <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
+            <div class="flex gap-3">
+                <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
+                <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
+            </div>
+            <button onclick="logout()" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
+        </div>
+
+        <!-- 2. PRODUCT HEADER -->
         <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
-            <a href="index.html" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+            <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
             </a>
             <div class="text-center">
@@ -191,20 +203,43 @@
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Effective Unit Price</span>
                     <div class="text-right"><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
                 </div>
+
+                <!-- DYNAMIC DISCOUNT TABLE -->
+                <div class="mb-4 text-right">
+                    <button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:underline uppercase tracking-wide">Show Volume Discounts ▼</button>
+                    <div id="discount-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
+                        <table class="w-full text-right">
+                            <thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200">
+                                <tr>
+                                    <th class="pb-1 pr-4">Quantity</th>
+                                    <th class="pb-1 pr-4">Unit Price</th>
+                                    <th class="pb-1 text-green-600">Savings</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-bold text-gray-700" id="discount-rows">
+                                <!-- Populated by JS Loop -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="border-t border-gray-100 my-3"></div>
                 <div class="space-y-1 text-xs text-gray-600">
                     <div class="flex justify-between"><span>Base Print (<span id="lbl-sqft">0</span> sqft):</span><span id="ret-print" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between text-blue-700 hidden" id="row-ret-contour"><span>Contour Cut Fee:</span><span id="ret-contour" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between text-indigo-700 hidden" id="row-ret-paint"><span>Paint Service:</span><span id="ret-paint" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between text-gray-700 hidden" id="row-ret-standoff"><span>Standoffs (<span id="lbl-standoff-qty">0</span>):</span><span id="ret-standoff" class="font-bold">$0.00</span></div>
-                    
                     <div class="border-t border-dashed border-gray-200 my-1"></div>
                     <div class="flex justify-between text-gray-700"><span>Job Setup:</span><span id="ret-setup" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between text-purple-700 hidden" id="row-ret-design"><span>Design Fee:</span><span id="ret-design" class="font-bold">$0.00</span></div>
                 </div>
+                
                 <div class="border-t-2 border-gray-800 my-3"></div>
                 <div class="flex justify-between items-end">
-                    <span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span>
+                    <div>
+                        <span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span>
+                        <div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block ml-1">MINIMUM APPLIED</div>
+                    </div>
                     <span class="text-3xl font-black text-blue-600" id="total-price">---</span>
                 </div>
             </div>
@@ -212,6 +247,7 @@
             <!-- TAB 2: IN-HOUSE COST -->
             <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
                 <div class="space-y-2 text-xs text-gray-700">
+                    
                     <!-- MATERIALS -->
                     <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
                     <div class="flex justify-between"><span>Acrylic Sheet:</span> <span id="cost-mat-sub" class="font-bold">$0.00</span></div>
@@ -229,7 +265,6 @@
                     <div class="flex justify-between items-center"><span class="w-1/3">Print Run (<span id="lbl-print-mode">STD</span>):</span><span id="time-print" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-print" class="w-1/3 text-right font-bold">$0.00</span></div>
                     
                     <div class="flex justify-between items-center hidden" id="row-time-paint"><span class="w-1/3">Paint Labor:</span><span id="time-paint" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-paint-lab" class="w-1/3 text-right font-bold">$0.00</span></div>
-
                     <div class="flex justify-between items-center"><span class="w-1/3">CNC Routing:</span><span id="time-cnc" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-cnc" class="w-1/3 text-right font-bold">$0.00</span></div>
 
                     <div class="border-t border-yellow-200 my-2 pt-1"></div>
@@ -237,6 +272,7 @@
                     
                     <div class="border-t-2 border-yellow-300 my-2"></div>
                     <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Job Cost:</span> <span id="cost-total">$0.00</span></div>
+                    
                     <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
                         <div class="flex justify-between items-end">
                             <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
@@ -268,6 +304,13 @@
                 </div>
             </div>
         </div>
+        
+        <!-- COPY PASTE DESCRIPTION -->
+        <div class="bg-gray-50 p-4 border-t border-gray-200">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white text-gray-600 font-mono h-20 outline-none" readonly></textarea>
+        </div>
+
         <div id="error-msg" class="hidden text-[10px] text-red-500 p-4 text-center bg-red-50"></div>
     </div>
 
@@ -299,8 +342,53 @@
             {code:"SW6711", name:"Parakeet", hex:"#80BD4E"}
         ];
 
+        // --- AUTH & VIEW LOGIC ---
+        let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
+
+        function initSession() {
+            const params = new URLSearchParams(window.location.search);
+            const urlMode = params.get('mode');
+            const storeUser = sessionStorage.getItem('signos_user');
+            const storeRole = sessionStorage.getItem('signos_role');
+
+            if(storeUser) currentUser.name = storeUser;
+            if(storeRole) currentUser.role = storeRole;
+            
+            if(urlMode) currentUser.mode = urlMode;
+            else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
+            else if(currentUser.role === 'PROD') currentUser.mode = 'production';
+            else currentUser.mode = 'sales';
+
+            document.getElementById('auth-user').innerText = currentUser.name;
+            document.getElementById('auth-role').innerText = currentUser.role;
+
+            const body = document.body;
+            body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
+            
+            if(currentUser.mode === 'sales') {
+                body.classList.add('mode-sales');
+                switchTab('retail'); 
+            } else if (currentUser.mode === 'production') {
+                body.classList.add('mode-prod');
+                switchTab('cost');
+            } else {
+                body.classList.add('mode-admin');
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        function goBack() {
+            window.location.href = `menu.html?mode=${currentUser.mode}`;
+        }
+
         window.onload = async function() {
-            populateColors(); 
+            initSession();
+            populateColors();
+
             const statusText = document.getElementById("status-text");
             const statusDot = document.getElementById("status-dot");
             try {
@@ -308,10 +396,12 @@
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
                 backend = data;
+                
                 statusText.innerText = "ONLINE";
                 statusText.classList.replace("text-gray-400", "text-green-500");
                 statusDot.classList.replace("bg-red-500", "bg-green-500");
                 statusDot.classList.remove("animate-pulse");
+                
                 if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
                 calculate();
             } catch (e) {
@@ -336,8 +426,8 @@
             const code = document.getElementById('paint-code').value.toUpperCase();
             const swatch = document.getElementById('paint-swatch');
             const nameLabel = document.getElementById('paint-name');
-            
             const match = SW_COLORS.find(c => c.code === code);
+            
             if (match) {
                 swatch.style.backgroundColor = match.hex;
                 nameLabel.innerText = match.name;
@@ -352,6 +442,10 @@
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-'+id).classList.add('active');
             document.getElementById('btn-'+id).classList.add('active');
+        }
+
+        function toggleDiscounts() {
+            document.getElementById('discount-table').classList.toggle('hidden');
         }
 
         function toggleOpt(id) {
@@ -382,26 +476,22 @@
 
             const sqft = (w*h)/144;
             const totalSqFt = sqft * qty;
-
-            const maxMachine = 96; 
             
-            // SIZE VALIDATION (Sheet Constraint: 48x96)
             const dim1 = Math.min(w, h);
             const dim2 = Math.max(w, h);
+            
             const sizeWarn = document.getElementById('size-warn');
             const inHouseTab = document.getElementById('tab-cost');
             const costBtn = document.getElementById('btn-cost');
+            
             let isOversized = false;
-
-            if (dim1 > 48 || dim2 > 96) {
+            if (dim1 > 48 || dim2 > 96) { 
                 isOversized = true;
                 sizeWarn.classList.remove('hidden');
-                // Disable In-House
                 inHouseTab.classList.add('blur-section');
                 costBtn.classList.add('text-red-300', 'cursor-not-allowed');
-                // Force Vended Tab if In-House was active
                 if(inHouseTab.classList.contains('active')) switchTab('vend');
-            } else {
+            } else { 
                 isOversized = false;
                 sizeWarn.classList.add('hidden');
                 inHouseTab.classList.remove('blur-section');
@@ -411,13 +501,26 @@
             // --- 1. RETAIL ---
             let baseRate = mat === '187' ? parseFloat(backend.Retail_Price_187_SqFt || 45) : parseFloat(backend.Retail_Price_125_SqFt || 35);
             
-            // Mode Adders
             if (mode === '2nd_Std') baseRate += parseFloat(backend.Retail_Adder_2ndSurf || 5);
             if (mode === '2nd_Block') baseRate += parseFloat(backend.Retail_Adder_Blockout || 8);
 
-            let retailPrint = baseRate * totalSqFt;
+            // Dynamic Discounts
+            let discPct = 0;
+            let currentBestTier = 0;
+            let i = 1;
+            const tiers = []; 
+            while(backend[`Tier_${i}_Qty`]) {
+                const tQty = parseFloat(backend[`Tier_${i}_Qty`]);
+                const tDisc = parseFloat(backend[`Tier_${i}_Disc`] || 0);
+                tiers.push({ q: tQty, d: tDisc });
+                if (qty >= tQty) currentBestTier = tDisc;
+                i++;
+            }
+            discPct = currentBestTier;
             
-            // Paint Adder
+            const unitRate = baseRate * (1 - discPct);
+            let retailPrint = unitRate * totalSqFt;
+
             let retailPaint = 0;
             if (hasPaint) {
                 retailPaint = (totalSqFt * parseFloat(backend.Retail_Adder_Paint_SqFt || 20)) + parseFloat(backend.Retail_Fee_Paint_Setup || 65);
@@ -438,6 +541,41 @@
             if (setupPerFile) feeSetup = feeSetup * numFiles;
 
             const totalQuote = retailPrint + retailPaint + retailContour + retailStandoff + feeDesign + feeSetup;
+            
+            // MINIMUM ORDER LOGIC
+            const minOrder = parseFloat(backend.Retail_Min_Order || 75);
+            const minBadge = document.getElementById('min-badge');
+            let finalQuote = totalQuote;
+            if (finalQuote < minOrder) {
+                finalQuote = minOrder;
+                minBadge.classList.remove('hidden');
+            } else {
+                minBadge.classList.add('hidden');
+            }
+
+            // Discount Table Generation
+            let rowsHtml = "";
+            tiers.forEach(tier => {
+                const trRate = baseRate * (1 - tier.d);
+                const trPrint = trRate * (sqft * tier.q);
+                // Scale variable costs, fix setup
+                const trPaint = hasPaint ? ((sqft * tier.q * parseFloat(backend.Retail_Adder_Paint_SqFt||20)) + parseFloat(backend.Retail_Fee_Paint_Setup||65)) : 0;
+                const trContour = cutType === 'Contour' ? (trPrint * parseFloat(backend.Retail_Adder_Contour_Pct||0)) : 0;
+                const trStandoff = hasStandoffs ? (standoffQty * tier.q * parseFloat(backend.Retail_Price_Standoff||8)) : 0;
+                
+                const trTotalRaw = trPrint + trPaint + trContour + trStandoff + feeSetup + feeDesign;
+                const trFinal = Math.max(trTotalRaw, minOrder);
+                const trUnit = trFinal / tier.q;
+                
+                const discDisplay = tier.d > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.d*100).toFixed(0)}%</span>` : "";
+                
+                rowsHtml += `<tr>
+                    <td class="pr-4 py-1 text-gray-500">${tier.q}${discDisplay}</td>
+                    <td class="pr-4 py-1 text-blue-600 font-bold">$${trUnit.toFixed(2)}</td>
+                    <td class="py-1 text-green-600 font-bold">${(tier.d*100).toFixed(0)}% Off</td>
+                </tr>`;
+            });
+            document.getElementById('discount-rows').innerHTML = rowsHtml;
 
             // --- 2. IN-HOUSE COST ---
             const waste = parseFloat(backend.Waste_Factor || 1.20);
@@ -446,16 +584,14 @@
             
             const inkCMYK = parseFloat(backend.Cost_Ink_CMYK || 0.16);
             const inkWhite = parseFloat(backend.Cost_Ink_White || 0.10);
-            let totalInkRate = inkCMYK; 
-            if (mode === '2nd_Std') totalInkRate += inkWhite; 
-            if (mode === '2nd_Block') totalInkRate += (inkWhite + inkCMYK); 
-
+            let totalInkRate = inkCMYK;
+            if (mode === '2nd_Std') totalInkRate += inkWhite;
+            if (mode === '2nd_Block') totalInkRate += (inkWhite + inkCMYK);
             const costInk = totalSqFt * totalInkRate;
-            
+
             let costPaintMat = 0;
             let timePaint = 0;
             let costPaintLab = 0;
-
             if (hasPaint) {
                 costPaintMat = totalSqFt * parseFloat(backend.Cost_Paint_SqFt || 2.50) * waste;
                 const paintSetup = parseFloat(backend.Time_Paint_Setup || 20)/60;
@@ -465,36 +601,19 @@
             }
 
             const costHw = hasStandoffs ? (standoffQty * qty * parseFloat(backend.Cost_Standoff || 0)) : 0;
-
             const timeSetupPrint = parseFloat(backend.Time_Setup_Print || 20)/60;
-            
-            // --- LINEAR PRINT TIME CALCULATION ---
-            // HP R1000 has a 64" wide bed. 
-            // We want to feed the SHORTEST dimension linearly if it fits.
-            // If Max(w,h) <= 64, we rotate it to fit more items per row (transverse).
-            // If Max(w,h) > 64, we MUST feed the long dimension (if min < 64).
-            
-            const bedWidth = 64; 
+
+            // LINEAR PRINT LOGIC
+            const bedWidth = 64;
             let feedLen = 0;
             let itemsPerRow = 0;
-
-            if (dim2 <= bedWidth) {
-                // Fits transversely (Best Case)
-                // Orient dim2 (long side) across width. Feed = dim1 (short side).
-                feedLen = dim1;
-                itemsPerRow = Math.floor(bedWidth / dim2);
-            } else if (dim1 <= bedWidth) {
-                // Must feed long side (dim2) because dim2 > 64
-                feedLen = dim2;
-                itemsPerRow = Math.floor(bedWidth / dim1);
-            } else {
-                // Too wide for printer. Should technically be an error, but let's assume tiling/vended.
-                itemsPerRow = 0; 
-            }
+            if (dim2 <= bedWidth) { feedLen = dim1; itemsPerRow = Math.floor(bedWidth / dim2); } 
+            else if (dim1 <= bedWidth) { feedLen = dim2; itemsPerRow = Math.floor(bedWidth / dim1); } 
+            else { itemsPerRow = 0; }
 
             let runTimeHrs = 0;
             let speed = parseFloat(backend.Speed_Print_1st || 18);
-            if (mode === '2nd_Std') speed = parseFloat(backend.Speed_Print_2nd || 6); // 4.9 LF/hr
+            if (mode === '2nd_Std') speed = parseFloat(backend.Speed_Print_2nd || 6); 
             if (mode === '2nd_Block') speed = parseFloat(backend.Speed_Print_Block || 3);
 
             if (itemsPerRow > 0) {
@@ -504,15 +623,11 @@
                 runTimeHrs = (totalLinearFt / speed);
             }
 
-            // Load/Unload time per board (rigid media overhead)
-            // Approx 4 mins per 4x8 sheet used
             const boardsUsed = Math.ceil(totalSqFt / 32);
             const loadTimeHrs = (boardsUsed * 4) / 60;
-
             const timePrint = runTimeHrs + loadTimeHrs;
-            
-            // CNC
-            let minsPerUnit = 4;
+
+            let minsPerUnit = 4; 
             if (cutType === 'Contour') minsPerUnit = 12;
             if (hasStandoffs) minsPerUnit += (standoffQty * 1);
             const timeCNC = (minsPerUnit * qty) / 60;
@@ -521,26 +636,25 @@
             const rateOp = parseFloat(backend.Rate_Operator || 25);
             const rateMach = parseFloat(backend.Rate_Machine || 45);
             const rateCNC = parseFloat(backend.Rate_CNC || 35);
-            
+
             const costLabSetup = timeSetupPrint * rateOp;
-            const costRunPrint = timePrint * (rateMach + rateOp); 
+            const costRunPrint = timePrint * (rateMach + rateOp);
             const costRunCNC = timeCNC * (rateCNC + rateOp);
 
             const subtotal = costSubstrate + costInk + costPaintMat + costHw + costDesign + costLabSetup + costRunPrint + costRunCNC + costPaintLab;
             const riskCost = subtotal * (waste - 1);
-
             let totalInHouse = subtotal + riskCost;
-            if(isOversized) totalInHouse = 0; // Invalid
+            
+            if(isOversized) totalInHouse = 0; 
 
             // --- 3. VENDED (Signs365) ---
             const vendRate = parseFloat(backend.S365_SqFt_Rate || 14.40);
             const vendMin = parseFloat(backend.S365_Min_Price || 14.40);
-            
             let vendPrint = vendRate * totalSqFt;
             if (vendPrint < (vendMin * qty)) vendPrint = vendMin * qty;
-
-            if (cutType === 'Contour') vendPrint = vendPrint * (1 + parseFloat(backend.S365_Contour_Pct||0));
             
+            if (cutType === 'Contour') vendPrint = vendPrint * (1 + parseFloat(backend.S365_Contour_Pct||0));
+
             let vendAddons = 0;
             if (hasStandoffs) {
                 const priceSil = parseFloat(backend.S365_HW_Silver || 2.50);
@@ -568,38 +682,39 @@
             const pct = (n) => (n * 100).toFixed(1) + "%";
 
             // Retail
-            document.getElementById('unit-price').innerText = fmt(totalQuote/qty);
+            document.getElementById('unit-price').innerText = fmt(finalQuote/qty);
             document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(1);
             document.getElementById('ret-print').innerText = fmt(retailPrint);
             
             if(retailPaint > 0) {
-                 document.getElementById('row-ret-paint').classList.remove('hidden');
-                 document.getElementById('ret-paint').innerText = fmt(retailPaint);
+                document.getElementById('row-ret-paint').classList.remove('hidden');
+                document.getElementById('ret-paint').innerText = fmt(retailPaint);
             } else document.getElementById('row-ret-paint').classList.add('hidden');
 
             if(retailContour > 0) {
-                 document.getElementById('row-ret-contour').classList.remove('hidden');
-                 document.getElementById('ret-contour').innerText = fmt(retailContour);
+                document.getElementById('row-ret-contour').classList.remove('hidden');
+                document.getElementById('ret-contour').innerText = fmt(retailContour);
             } else document.getElementById('row-ret-contour').classList.add('hidden');
 
             if(retailStandoff > 0) {
-                 document.getElementById('row-ret-standoff').classList.remove('hidden');
-                 document.getElementById('ret-standoff').innerText = fmt(retailStandoff);
-                 document.getElementById('lbl-standoff-qty').innerText = standoffQty * qty;
+                document.getElementById('row-ret-standoff').classList.remove('hidden');
+                document.getElementById('ret-standoff').innerText = fmt(retailStandoff);
+                document.getElementById('lbl-standoff-qty').innerText = standoffQty * qty;
             } else document.getElementById('row-ret-standoff').classList.add('hidden');
 
             document.getElementById('ret-setup').innerText = fmt(feeSetup);
+            
             if (feeDesign > 0) {
                 document.getElementById('row-ret-design').classList.remove('hidden');
                 document.getElementById('ret-design').innerText = fmt(feeDesign);
             } else { document.getElementById('row-ret-design').classList.add('hidden'); }
-            document.getElementById('total-price').innerText = fmt(totalQuote);
+
+            document.getElementById('total-price').innerText = fmt(finalQuote);
 
             // In-House
             if (!isOversized) {
                 document.getElementById('cost-mat-sub').innerText = fmt(costSubstrate);
                 document.getElementById('cost-mat-ink').innerText = fmt(costInk);
-                
                 if(costPaintMat > 0) {
                     document.getElementById('row-cost-paint').classList.remove('hidden');
                     document.getElementById('cost-mat-paint').innerText = fmt(costPaintMat);
@@ -610,8 +725,6 @@
 
                 document.getElementById('time-setup-print').innerText = fmtTime(timeSetupPrint);
                 document.getElementById('cost-setup-print').innerText = fmt(costLabSetup);
-                
-                // Update Label to show mode
                 document.getElementById('lbl-print-mode').innerText = (mode === '2nd_Std') ? "2nd Surf" : (mode === '2nd_Block' ? "Blockout" : "Direct");
                 document.getElementById('time-print').innerText = fmtTime(timePrint);
                 document.getElementById('cost-print').innerText = fmt(costRunPrint);
@@ -624,15 +737,13 @@
 
                 document.getElementById('time-cnc').innerText = fmtTime(timeCNC);
                 document.getElementById('cost-cnc').innerText = fmt(costRunCNC);
-
                 document.getElementById('cost-waste').innerText = fmt(riskCost);
-
                 document.getElementById('cost-total').innerText = fmt(totalInHouse);
-                const profIn = totalQuote - totalInHouse;
+
+                const profIn = finalQuote - totalInHouse;
                 document.getElementById('profit-inhouse').innerText = fmt(profIn);
-                document.getElementById('margin-inhouse').innerText = pct(profIn/totalQuote);
+                document.getElementById('margin-inhouse').innerText = pct(profIn/finalQuote);
             } else {
-                // If oversized, zero out in-house
                 document.getElementById('cost-total').innerText = "---";
                 document.getElementById('profit-inhouse').innerText = "---";
                 document.getElementById('margin-inhouse').innerText = "---";
@@ -644,27 +755,37 @@
             document.getElementById('vend-ship').innerText = fmt(ship);
             document.getElementById('vend-total').innerText = fmt(totalVended);
 
-            const profVend = totalQuote - totalVended;
+            const profVend = finalQuote - totalVended;
             document.getElementById('profit-vend').innerText = fmt(profVend);
-            document.getElementById('margin-vend').innerText = pct(profVend/totalQuote);
+            document.getElementById('margin-vend').innerText = pct(profVend/finalQuote);
 
-            // Vendor Warnings
             const vendPaintWarn = document.getElementById('vend-paint-warn');
             if(hasPaint) vendPaintWarn.classList.remove('hidden');
             else vendPaintWarn.classList.add('hidden');
 
             // Profit Alert
             const profitWarn = document.getElementById('profit-warn');
-            if (!isOversized && (totalQuote - totalInHouse) < 0 && profVend < 0) {
+            if (!isOversized && (finalQuote - totalInHouse) < 0 && profVend < 0) {
                 profitWarn.classList.remove('hidden');
                 profitWarn.classList.add('warn-pulse');
             } else {
                 profitWarn.classList.add('hidden');
                 profitWarn.classList.remove('warn-pulse');
             }
+            
+            // Description Generation
+            const finishTxt = [];
+            if(mode === '2nd_Std') finishTxt.push("2nd Surface Print (Color+White)");
+            else if(mode === '2nd_Block') finishTxt.push("2nd Surface Blockout (Day/Night)");
+            else finishTxt.push("1st Surface Direct Print");
+            
+            if(hasPaint) finishTxt.push(`Painted Background (${document.getElementById('paint-code').value || 'Custom'})`);
+            if(cutType !== 'Square') finishTxt.push("Contour Cut Shape");
+            if(hasStandoffs) finishTxt.push(`${standoffQty} ${standoffCol} Standoffs`);
+            
+            const desc = `(x${qty}) ${w}" x ${h}" ${mat === '187' ? '3/16"' : '1/8"'} Acrylic Sign. ${finishTxt.join(". ")}.`;
+            document.getElementById('job-desc').value = desc;
         }
     </script>
 </body>
 </html>
-
-
