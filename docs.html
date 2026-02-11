@@ -9,22 +9,24 @@
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .code-block { font-family: monospace; background: #f3f4f6; padding: 2px 4px; rounded: 4px; color: #c026d3; font-weight: bold; font-size: 0.85em; }
+        .code-pill { font-family: monospace; background: #f3f4f6; padding: 2px 6px; rounded: 4px; color: #db2777; font-weight: bold; font-size: 0.75rem; }
         .sku-row:hover { background-color: #f9fafb; }
+        .sku-section-header { position: sticky; top: 0; z-index: 10; }
+        html { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans p-4 md:p-8">
 
-    <div class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
+    <div class="max-w-7xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
         
         <!-- HEADER -->
         <div class="bg-gray-900 px-8 py-6 text-white flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-black tracking-tight">SignOS Documentation</h1>
-                <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">System Architecture & SKU Index</p>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">System Architecture & Knowledge Base</p>
             </div>
             <div class="text-right">
-                <div class="text-xs font-bold text-gray-400">VERSION 3.4</div>
+                <div class="text-xs font-bold text-gray-400">VERSION 3.5</div>
                 <div class="flex items-center justify-end gap-2 mt-1">
                     <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                     <span class="text-xs font-bold text-white">ONLINE</span>
@@ -34,182 +36,251 @@
         </div>
 
         <!-- TABS -->
-        <div class="flex border-b border-gray-200 sticky top-0 bg-white z-10">
+        <div class="flex border-b border-gray-200 sticky top-0 bg-white z-20 shadow-sm">
             <button onclick="switchTab('index')" class="flex-1 py-4 text-sm font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-index">SYSTEM INDEX</button>
             <button onclick="switchTab('logic')" class="flex-1 py-4 text-sm font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-logic">CALCULATOR LOGIC</button>
             <button onclick="switchTab('skus')" class="flex-1 py-4 text-sm font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-skus">MASTER SKU DB</button>
         </div>
 
-        <!-- CONTENT: INDEX -->
+        <!-- TAB 1: SYSTEM INDEX -->
         <div id="tab-index" class="tab-content active p-8">
-            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Active File Registry (v3.4)</h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Active File Registry (v3.5)</h2>
             <div class="overflow-x-auto rounded border border-gray-200">
                 <table class="min-w-full text-sm text-left">
-                    <thead class="bg-gray-50 text-gray-500 font-bold uppercase text-xs">
+                    <thead class="bg-gray-100 text-gray-700 font-bold uppercase text-xs">
                         <tr>
                             <th class="px-4 py-3">File Name</th>
-                            <th class="px-4 py-3">Role</th>
+                            <th class="px-4 py-3">System Role</th>
                             <th class="px-4 py-3">Backend Connection</th>
-                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 font-medium text-gray-600">
                         <!-- Core -->
-                        <tr class="bg-blue-50"><td class="px-4 py-3 font-mono text-blue-700 font-bold">index.html</td><td>Gatekeeper (Login)</td><td>Master_Staff</td><td>ACTIVE</td></tr>
-                        <tr class="bg-blue-50"><td class="px-4 py-3 font-mono text-blue-700 font-bold">menu.html</td><td>Dashboard</td><td>(Navigation Hub)</td><td>ACTIVE</td></tr>
+                        <tr class="hover:bg-blue-50 transition">
+                            <td class="px-4 py-3 font-mono text-gray-900">index.html</td>
+                            <td><span class="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-1 rounded">GATEKEEPER</span></td>
+                            <td>Master_Staff</td>
+                            <td class="text-right"><a href="index.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td>
+                        </tr>
+                        <tr class="hover:bg-blue-50 transition">
+                            <td class="px-4 py-3 font-mono text-gray-900">menu.html</td>
+                            <td><span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-1 rounded">DASHBOARD</span></td>
+                            <td>(Navigation)</td>
+                            <td class="text-right"><a href="menu.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td>
+                        </tr>
                         
                         <!-- Rigid -->
-                        <tr><td class="px-4 py-3 font-mono">YardSign_Calculator.html</td><td>Module: Rigid</td><td>PROD_Yard_Signs</td><td>ACTIVE</td></tr>
-                        <tr><td class="px-4 py-3 font-mono">Coro_Calculator.html</td><td>Module: Rigid</td><td>PROD_Coroplast_Signs</td><td>ACTIVE</td></tr>
-                        <tr><td class="px-4 py-3 font-mono">ACM_Calculator.html</td><td>Module: Rigid</td><td>PROD_ACM_Signs</td><td>ACTIVE</td></tr>
-                        <tr><td class="px-4 py-3 font-mono">Acrylic_Calculator.html</td><td>Module: Rigid</td><td>PROD_Acrylic_Signs</td><td>ACTIVE</td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">YardSign_Calculator.html</td><td>Module: Rigid</td><td>PROD_Yard_Signs</td><td class="text-right"><a href="YardSign_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">Coro_Calculator.html</td><td>Module: Rigid</td><td>PROD_Coroplast_Signs</td><td class="text-right"><a href="Coro_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">ACM_Calculator.html</td><td>Module: Rigid</td><td>PROD_ACM_Signs</td><td class="text-right"><a href="ACM_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">Acrylic_Calculator.html</td><td>Module: Rigid</td><td>PROD_Acrylic_Signs</td><td class="text-right"><a href="Acrylic_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
                         
                         <!-- Roll -->
-                        <tr><td class="px-4 py-3 font-mono">Banner_Calculator.html</td><td>Module: Roll</td><td>PROD_Vinyl_Banners</td><td>ACTIVE</td></tr>
-                        <tr><td class="px-4 py-3 font-mono">Decal_Calculator.html</td><td>Module: Roll</td><td>PROD_Decals</td><td>ACTIVE</td></tr>
-                        <tr><td class="px-4 py-3 font-mono">Wrap_Calculator.html</td><td>Module: Roll</td><td>PROD_Vehicle_Wraps</td><td>ACTIVE</td></tr>
-                        <tr><td class="px-4 py-3 font-mono">CutVinyl_Calculator.html</td><td>Module: Roll</td><td>PROD_Cut_Vinyl</td><td>ACTIVE</td></tr>
-                        
-                        <!-- Docs -->
-                        <tr class="bg-gray-50"><td class="px-4 py-3 font-mono text-gray-400">docs.html</td><td>Documentation</td><td>(Static)</td><td>ACTIVE</td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">Banner_Calculator.html</td><td>Module: Roll</td><td>PROD_Vinyl_Banners</td><td class="text-right"><a href="Banner_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">Decal_Calculator.html</td><td>Module: Roll</td><td>PROD_Decals</td><td class="text-right"><a href="Decal_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">Wrap_Calculator.html</td><td>Module: Roll</td><td>PROD_Vehicle_Wraps</td><td class="text-right"><a href="Wrap_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
+                        <tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono">CutVinyl_Calculator.html</td><td>Module: Roll</td><td>PROD_Cut_Vinyl</td><td class="text-right"><a href="CutVinyl_Calculator.html" class="text-blue-600 hover:underline font-bold text-xs">Launch →</a></td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- CONTENT: LOGIC -->
-        <div id="tab-logic" class="tab-content p-8 space-y-10">
+        <!-- TAB 2: CALCULATOR LOGIC -->
+        <div id="tab-logic" class="tab-content p-8 space-y-8">
             
             <section>
                 <h3 class="text-xl font-black text-gray-900 mb-2">The Physics Engines</h3>
-                <p class="text-sm text-gray-600">SignOS calculates costs based on physical manufacturing constraints, not just square footage. Below is the logic breakdown for each module.</p>
+                <p class="text-sm text-gray-600">SignOS calculates costs based on physical manufacturing constraints. Each calculator uses a specific logic engine described below.</p>
             </section>
 
-            <!-- YARD SIGNS -->
-            <div class="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                <h4 class="font-bold text-lg text-blue-600 mb-2">Yard Signs (Coroplast)</h4>
-                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2">
-                    <li><strong>Bulk Trigger:</strong> If Qty > 1100, the system switches material cost to <code>Cost_Blank_Bulk</code>.</li>
-                    <li><strong>Risk Buffer:</strong> Adds 5% waste for single-sided, 10% for double-sided print runs.</li>
-                    <li><strong>Production:</strong> Assumes HP R1000 printing 3-up on the bed.</li>
-                    <li><strong>Vendor Logic:</strong> Pulls from 3 distinct tiers (1-9, 10-50, 51+) based on total sheet count.</li>
-                </ul>
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- YARD SIGNS -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-blue-600 mb-2">Yard Signs</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Bulk Trigger:</strong> Qty > 1100 switches to discounted material cost.</li>
+                        <li><strong>Risk Buffer:</strong> 5% (SS) / 10% (DS) added to total cost.</li>
+                        <li><strong>Vendor Logic:</strong> 3-Tier lookup (1-9, 10-50, 51+) based on sheet count.</li>
+                    </ul>
+                </div>
 
-            <!-- ACM -->
-            <div class="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                <h4 class="font-bold text-lg text-slate-600 mb-2">ACM / Metal Signs</h4>
-                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2">
-                    <li><strong>Smart Vendor Comparison:</strong> Simultaneously calculates "Price per SqFt" and "Price per Sheet" from Signs365 and automatically selects the cheaper option for the quote.</li>
-                    <li><strong>CNC Routing:</strong> Adds setup time (10 min) + run time (2 min/unit) if "Contour Cut" or "Holes" are selected.</li>
-                    <li><strong>Profit Guard:</strong> Triggers a "LOSS ALERT" if both In-House and Vendor margins are negative.</li>
-                </ul>
-            </div>
+                <!-- COROPLAST -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-purple-600 mb-2">Custom Coroplast</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Workflow Split:</strong> 4mm uses Direct Print (Flatbed). 10mm uses Vinyl Mount (Roll + Lam + Mount).</li>
+                        <li><strong>Sheet Optimization:</strong> Calculates cost based on 4x8 sheet yield.</li>
+                        <li><strong>Shipping:</strong> Applies S365 tiered shipping rates based on max dimension (24", 36", 48", Freight).</li>
+                    </ul>
+                </div>
 
-            <!-- ACRYLIC -->
-            <div class="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                <h4 class="font-bold text-lg text-teal-600 mb-2">Acrylic Flat Signs</h4>
-                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2">
-                    <li><strong>Paint Engine:</strong> If "Paint Background" is selected, adds material cost per sqft AND Paint Booth labor time (Mix + Spray).</li>
-                    <li><strong>Linear Nesting:</strong> Calculates print time by nesting parts onto a 48"x96" sheet virtual model.</li>
-                    <li><strong>Pass Count Physics:</strong>
-                        <ul class="ml-6 list-disc text-gray-500 mt-1">
-                            <li>1st Surface (CMYK) = Fast (18 LF/hr)</li>
-                            <li>2nd Surface (CMYK+W) = Slow (4.9 LF/hr)</li>
-                            <li>Blockout (CMYK+W+K+W+CMYK) = Very Slow (3.2 LF/hr)</li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
+                <!-- ACM -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-slate-600 mb-2">ACM / Metal</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Smart Vendor:</strong> Compares "Price per SqFt" vs "Price per Sheet" and selects the cheapest option automatically.</li>
+                        <li><strong>CNC Logic:</strong> Adds 10 min setup + run time per unit if Contour Cut is selected.</li>
+                    </ul>
+                </div>
 
-            <!-- BANNERS -->
-            <div class="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                <h4 class="font-bold text-lg text-indigo-600 mb-2">Vinyl Banners</h4>
-                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2">
-                    <li><strong>Width Constraint:</strong> If the shortest dimension exceeds 62", the system forces "Oversized" warnings and disables In-House costing.</li>
-                    <li><strong>Finishing Math:</strong> Calculates linear footage of Hem Tape and specific grommet counts (every 2ft) for accurate material costing.</li>
-                    <li><strong>Pole Pockets:</strong> Adds 4 inches of material to the height for calculation but charges a finishing fee per LF.</li>
-                </ul>
-            </div>
+                <!-- ACRYLIC -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-teal-600 mb-2">Acrylic Flat Signs</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Linear Nesting:</strong> Nests parts on 48x96 sheets to determine true material usage.</li>
+                        <li><strong>Paint Engine:</strong> Adds material cost + spray booth labor time.</li>
+                        <li><strong>Pass Counts:</strong> Adjusts print speed for 2nd Surface (White Ink) vs Standard.</li>
+                    </ul>
+                </div>
 
-            <!-- WRAPS -->
-            <div class="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                <h4 class="font-bold text-lg text-indigo-800 mb-2">Vehicle Wraps</h4>
-                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2">
-                    <li><strong>Billing vs. Production Area:</strong>
-                        <ul class="ml-6 list-disc text-gray-500 mt-1">
-                            <li><em>Billing SqFt:</em> Actual surface area of the vehicle.</li>
-                            <li><em>Production SqFt:</em> Includes panel overlaps (1") and waste. This is used for cost calculation.</li>
-                        </ul>
-                    </li>
-                    <li><strong>Fleet Discounts:</strong> Dynamic loop checks <code>Tier_X_Qty</code> to apply volume discounts for multi-vehicle projects.</li>
-                    <li><strong>Install Complexity:</strong> "Simple" (Box Truck) uses 25 sqft/hr install speed. "Complex" (Van) uses 10 sqft/hr.</li>
-                </ul>
-            </div>
+                <!-- BANNERS -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-indigo-600 mb-2">Vinyl Banners</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Width Constraint:</strong> >62" triggers "Oversized" warning and disables In-House.</li>
+                        <li><strong>Finishing:</strong> Calculates linear footage of Hem Tape and Grommet count (every 2ft).</li>
+                        <li><strong>Pocket Logic:</strong> Adds 4" material height allowance for pole pockets.</li>
+                    </ul>
+                </div>
 
+                <!-- DECALS -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-pink-600 mb-2">Decals & Stickers</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Cut Logic:</strong> "Kiss Cut" (Plotter) vs "Thru Cut" (Hand/Shear).</li>
+                        <li><strong>Weeding Physics:</strong> "Complex" toggle increases labor time by 400% (2m vs 8m / sqft).</li>
+                        <li><strong>Freight Trigger:</strong> Orders >1000 sqft automatically trigger freight shipping costs.</li>
+                    </ul>
+                </div>
+
+                <!-- WRAPS -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-blue-800 mb-2">Vehicle Wraps</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Billing vs Production:</strong> Charges for surface area, but costs for panel overlaps + waste.</li>
+                        <li><strong>Fleet Engine:</strong> Dynamic looping checks for volume discounts (3+, 5+, 10+ vehicles).</li>
+                        <li><strong>Install Rate:</strong> "Simple" (Box Truck) = 25 sqft/hr. "Complex" (Van) = 10 sqft/hr.</li>
+                    </ul>
+                </div>
+
+                <!-- CUT VINYL -->
+                <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-base text-yellow-600 mb-2">Cut Vinyl</h4>
+                    <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li><strong>Complexity Factor:</strong> Toggles Weeding time from 2m (Simple) to 10m (Complex) per sqft.</li>
+                        <li><strong>Masking:</strong> Adds specific labor time and Transfer Tape material cost.</li>
+                        <li><strong>Color Database:</strong> Includes full Oracal 651/751 library.</li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
-        <!-- CONTENT: SKU INDEX -->
+        <!-- TAB 3: MASTER SKU DB -->
         <div id="tab-skus" class="tab-content p-8">
-            <div class="flex justify-between items-end mb-6">
-                <div>
-                    <h2 class="text-lg font-bold text-gray-800">Master SKU Database</h2>
-                    <p class="text-sm text-gray-500">Searchable index of all Backend Variables.</p>
+            
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-gray-800">Master SKU Database</h2>
+                <p class="text-sm text-gray-500 mb-4">
+                    The SignOS database is structured in a <strong>Waterfall Hierarchy</strong>. Level 1 (Masters) defines the raw cost. Level 2 (Products) references these keys via VLOOKUP. Below is the complete index of all Level 1 Keys.
+                </p>
+                
+                <!-- Quick Nav -->
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <a href="#sec-rigid" class="text-[10px] uppercase font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">Rigid Materials</a>
+                    <a href="#sec-roll" class="text-[10px] uppercase font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200">Roll Media</a>
+                    <a href="#sec-hard" class="text-[10px] uppercase font-bold bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300">Hardware</a>
+                    <a href="#sec-labor" class="text-[10px] uppercase font-bold bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">Labor & Machines</a>
+                    <a href="#sec-vend" class="text-[10px] uppercase font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200">Vendor Keys</a>
                 </div>
-                <input type="text" id="sku-search" placeholder="Search SKU or Description..." onkeyup="filterSkus()" class="border p-2 rounded w-64 text-sm font-bold bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+
+                <!-- Search -->
+                <input type="text" id="sku-search" placeholder="Filter Database..." onkeyup="filterSkus()" class="w-full border p-2 rounded text-sm font-bold bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
-            <div class="overflow-x-auto rounded border border-gray-200 max-h-[600px] overflow-y-auto">
+            <div class="overflow-x-auto rounded border border-gray-200 max-h-[600px] overflow-y-auto bg-white" id="sku-container">
                 <table class="min-w-full text-sm text-left" id="sku-table">
-                    <thead class="bg-gray-100 text-gray-500 font-bold uppercase text-xs sticky top-0">
+                    <thead class="bg-gray-100 text-gray-500 font-bold uppercase text-xs sticky top-0 shadow-sm">
                         <tr>
-                            <th class="px-4 py-3">Category</th>
-                            <th class="px-4 py-3">Backend Key (The Variable)</th>
-                            <th class="px-4 py-3">Description / Context</th>
+                            <th class="px-4 py-3 w-1/4">Category</th>
+                            <th class="px-4 py-3 w-1/4">Backend Key (SKU)</th>
+                            <th class="px-4 py-3 w-1/2">Description / Context</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 font-mono text-xs">
                         
-                        <!-- RIGID MATERIALS -->
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-blue-600">Material (Rigid)</td><td>CUT_SUB_COR_04W</td><td>4mm Coroplast (White) 4x8 Sheet</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-blue-600">Material (Rigid)</td><td>CUT_SUB_COR_10W</td><td>10mm Coroplast (White) 4x8 Sheet</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-blue-600">Material (Rigid)</td><td>SUB_ACM_3MM_4X8</td><td>3mm ACM / Dibond (4x8)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-blue-600">Material (Rigid)</td><td>SUB_ACM_6MM_4X8</td><td>6mm ACM / MaxMetal (4x8)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-blue-600">Material (Rigid)</td><td>CNC_SUB_ACR_125C</td><td>1/8" Cast Acrylic (Clear)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-blue-600">Material (Rigid)</td><td>CNC_SUB_ACR_187W</td><td>3/16" Cast Acrylic (White)</td></tr>
+                        <!-- RIGID -->
+                        <tr class="bg-blue-50/50"><td colspan="3" class="px-4 py-2 font-sans font-bold text-blue-800 text-xs" id="sec-rigid">RIGID SUBSTRATES</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">CUT_SUB_COR_04W</td><td>4mm Coroplast (White) 4x8 Sheet</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">CUT_SUB_COR_10W</td><td>10mm Coroplast (White) 4x8 Sheet</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">SUB_COR_2418_W</td><td>4mm Coro Blank 24x18 (White)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">SUB_ACM_3MM_4X8</td><td>3mm ACM / Dibond (4x8)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">SUB_ACM_3MM_4X10</td><td>3mm ACM / Dibond (4x10)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">SUB_ACM_6MM_4X8</td><td>6mm ACM / MaxMetal (4x8)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">SUB_ACM_6MM_5X10</td><td>6mm ACM / MaxMetal (5x10)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">CUT_SUB_PVC_3MM</td><td>3mm PVC Sintra (4x8)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">CUT_SUB_PVC_6MM</td><td>6mm PVC Sintra (4x8)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">SUB_ALU_040</td><td>.040 Aluminum (4x8)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">SUB_ALU_080</td><td>.080 Aluminum (4x8)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">CNC_SUB_ACR_125C</td><td>1/8" Cast Acrylic (Clear)</td></tr>
+                        <tr class="sku-row"><td>Material (Rigid)</td><td class="text-blue-600 font-bold">CNC_SUB_ACR_187W</td><td>3/16" Cast Acrylic (White)</td></tr>
 
-                        <!-- ROLL MATERIALS -->
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_BAN_13</td><td>13oz Scrim Banner Media</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_BAN_15</td><td>15oz Smooth Blockout Banner</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_BAN_MESH</td><td>8oz Mesh Banner (w/ Liner)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_PRT_IJ35C</td><td>3M IJ35C (Intermediate Air Release)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_PRT_IJ180</td><td>3M IJ180mC (Cast Wrap Vinyl)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_LAM_8518</td><td>3M 8518 Gloss Cast Overlaminate</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_CAL_651</td><td>Oracal 651 (Standard Cut Vinyl)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-indigo-600">Material (Roll)</td><td>VIN_ROL_CST_751</td><td>Oracal 751 (High Performance Cast)</td></tr>
+                        <!-- ROLL -->
+                        <tr class="bg-indigo-50/50"><td colspan="3" class="px-4 py-2 font-sans font-bold text-indigo-800 text-xs" id="sec-roll">ROLL MEDIA & VINYL</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_BAN_13</td><td>13oz Scrim Banner (Gloss)</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_BAN_15</td><td>15oz Smooth Blockout Banner</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_BAN_18</td><td>18oz Heavy Duty Banner</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_BAN_MESH</td><td>8oz Mesh Banner w/ Liner</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_PRT_IJ35C</td><td>3M IJ35C (Intermediate Air Release)</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_PRT_IJ180</td><td>3M IJ180mC (Cast Wrap Vinyl)</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_LAM_210</td><td>Oraguard 210 Laminate</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_LAM_8518</td><td>3M 8518 Gloss Cast Laminate</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_CAL_651</td><td>Oracal 651 (Standard Cut)</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_CST_751</td><td>Oracal 751 (High Performance)</td></tr>
+                        <tr class="sku-row"><td>Material (Roll)</td><td class="text-indigo-600 font-bold">VIN_ROL_ETCH_8510</td><td>Oracal 8510 Etched Glass</td></tr>
 
                         <!-- HARDWARE -->
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-gray-600">Hardware</td><td>INS_HRD_STK_H</td><td>Standard Wire H-Stake (10x24)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-gray-600">Hardware</td><td>INS_HRD_STK_HD</td><td>Heavy Duty Step Stake</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-gray-600">Hardware</td><td>VIN_SUP_GRM_NI</td><td>#2 Nickel Grommet</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-gray-600">Hardware</td><td>VIN_SUP_HEM_TPE</td><td>1" Banner Hem Tape</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-gray-600">Hardware</td><td>MNT_STD_OFF_1</td><td>1" Aluminum Standoff (Barrel+Cap)</td></tr>
+                        <tr class="bg-gray-50/50"><td colspan="3" class="px-4 py-2 font-sans font-bold text-gray-800 text-xs" id="sec-hard">HARDWARE & ACCESSORIES</td></tr>
+                        <tr class="sku-row"><td>Hardware</td><td class="text-gray-600 font-bold">INS_HRD_STK_H</td><td>Standard Wire H-Stake (10x24)</td></tr>
+                        <tr class="sku-row"><td>Hardware</td><td class="text-gray-600 font-bold">INS_HRD_STK_HD</td><td>Heavy Duty Step Stake</td></tr>
+                        <tr class="sku-row"><td>Hardware</td><td class="text-gray-600 font-bold">VIN_SUP_GRM_NI</td><td>#2 Nickel Grommet</td></tr>
+                        <tr class="sku-row"><td>Hardware</td><td class="text-gray-600 font-bold">VIN_SUP_HEM_TPE</td><td>1" Banner Hem Tape</td></tr>
+                        <tr class="sku-row"><td>Hardware</td><td class="text-gray-600 font-bold">VIN_SUP_VHB_TPE</td><td>3M VHB Tape (Structural)</td></tr>
+                        <tr class="sku-row"><td>Hardware</td><td class="text-gray-600 font-bold">MNT_STD_OFF_1</td><td>1" Aluminum Standoff</td></tr>
+                        <tr class="sku-row"><td>Fabrication</td><td class="text-gray-600 font-bold">CLD-COM-TRIM-1</td><td>1" Trim Cap (Jewelite)</td></tr>
+                        <tr class="sku-row"><td>Fabrication</td><td class="text-gray-600 font-bold">CLD-SUP-LED-WHT</td><td>LED Module (White 6500K)</td></tr>
+                        <tr class="sku-row"><td>Fabrication</td><td class="text-gray-600 font-bold">CLD-SUP-PSU-60</td><td>60W Power Supply (12V)</td></tr>
 
-                        <!-- LABOR & MACHINES -->
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-green-600">Labor Rate</td><td>LAB_PRT_OP</td><td>Print Operator Hourly Cost</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-green-600">Labor Rate</td><td>LAB_SHOP</td><td>General Shop Labor Cost</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-green-600">Labor Rate</td><td>LAB_CNC</td><td>CNC Router Operator Cost</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-green-600">Labor Rate</td><td>LAB_INSTALL</td><td>Installer (Ground) Cost</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-purple-600">Machine</td><td>MACH_HP_R1000</td><td>HP Latex R1000 (Hybrid/Flatbed)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-purple-600">Machine</td><td>MACH_HP_300_1</td><td>HP Latex 365 (Roll-to-Roll)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-purple-600">Machine</td><td>MACH_GRAPHTEC</td><td>Graphtec FC9000 Plotter</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-purple-600">Machine</td><td>MACH_CNC_MC1</td><td>MultiCAM 3000 Series Router</td></tr>
+                        <!-- LABOR -->
+                        <tr class="bg-green-50/50"><td colspan="3" class="px-4 py-2 font-sans font-bold text-green-800 text-xs" id="sec-labor">LABOR, MACHINES & SERVICES</td></tr>
+                        <tr class="sku-row"><td>Labor Rate</td><td class="text-green-600 font-bold">LAB_DES</td><td>Graphic Designer</td></tr>
+                        <tr class="sku-row"><td>Labor Rate</td><td class="text-green-600 font-bold">LAB_PRT_OP</td><td>Print Operator</td></tr>
+                        <tr class="sku-row"><td>Labor Rate</td><td class="text-green-600 font-bold">LAB_SHOP</td><td>General Shop Labor</td></tr>
+                        <tr class="sku-row"><td>Labor Rate</td><td class="text-green-600 font-bold">LAB_CNC</td><td>CNC Operator</td></tr>
+                        <tr class="sku-row"><td>Labor Rate</td><td class="text-green-600 font-bold">LAB_INSTALL</td><td>Installer (Ground)</td></tr>
+                        <tr class="sku-row"><td>Labor Rate</td><td class="text-green-600 font-bold">LAB_INSTALL_LEAD</td><td>Lead Installer (Bucket)</td></tr>
+                        
+                        <tr class="sku-row"><td>Machine</td><td class="text-green-600 font-bold">MACH_HP_R1000</td><td>HP Latex R1000 (Hybrid)</td></tr>
+                        <tr class="sku-row"><td>Machine</td><td class="text-green-600 font-bold">MACH_HP_300_1</td><td>HP Latex 300 (Roll)</td></tr>
+                        <tr class="sku-row"><td>Machine</td><td class="text-green-600 font-bold">MACH_GRAPHTEC</td><td>Graphtec Plotter</td></tr>
+                        <tr class="sku-row"><td>Machine</td><td class="text-green-600 font-bold">MACH_CNC_MC1</td><td>MultiCAM Router</td></tr>
+                        
+                        <tr class="sku-row"><td>Service</td><td class="text-green-600 font-bold">SRV_CNC_SETUP_SMP</td><td>CNC Setup (Simple)</td></tr>
+                        <tr class="sku-row"><td>Service</td><td class="text-green-600 font-bold">SRV_PMT_ACQ</td><td>Permit Acquisition Service</td></tr>
+                        <tr class="sku-row"><td>Service</td><td class="text-green-600 font-bold">SRV_INS_TRUCK</td><td>Truck Roll / Site Survey</td></tr>
 
-                        <!-- LOGIC KEYS -->
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-red-500">Logic</td><td>Margin_Target</td><td>Global Profit Target (e.g., 0.70)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-red-500">Logic</td><td>Retail_Min_Order</td><td>Minimum transaction amount per calculator</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-red-500">Logic</td><td>Waste_Factor</td><td>Material multiplier (e.g., 1.20 = 20% waste)</td></tr>
-                        <tr class="sku-row"><td class="px-4 py-2 font-sans font-bold text-red-500">Logic</td><td>Tier_1_Qty</td><td>Discount Tier Breakpoint 1</td></tr>
+                        <!-- VENDOR -->
+                        <tr class="bg-purple-50/50"><td colspan="3" class="px-4 py-2 font-sans font-bold text-purple-800 text-xs" id="sec-vend">VENDOR KEYS (SIGNS365)</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_4mm_SS_1-9</td><td>4mm Coro 1-Sided (Low Qty)</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_10mm_DS_T1</td><td>10mm Coro 2-Sided (Low Qty)</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_Stake_Std</td><td>Vendor Stake Price</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_Ban_13oz_Tier1</td><td>Banner 13oz Cost</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_ACM_3mm_SS_SqFt</td><td>ACM 3mm SqFt Rate</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_ACM_3mm_SS_Sheet</td><td>ACM 3mm Sheet Rate</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_Decal_Cal_SqFt</td><td>Decal Calendered SqFt</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">S365_Wrap_SqFt</td><td>Vehicle Wrap Cast SqFt</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">Ship_T1_Rate</td><td>Shipping (Small)</td></tr>
+                        <tr class="sku-row"><td>Vendor</td><td class="text-purple-600 font-bold">Ship_Freight_Cost</td><td>Freight Flat Rate</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -232,6 +303,9 @@
             const tr = table.getElementsByTagName('tr');
 
             for (let i = 1; i < tr.length; i++) {
+                // Skip headers (rows with colspan)
+                if(tr[i].getElementsByTagName("td").length < 2) continue;
+
                 const tdKey = tr[i].getElementsByTagName("td")[1];
                 const tdDesc = tr[i].getElementsByTagName("td")[2];
                 if (tdKey || tdDesc) {
