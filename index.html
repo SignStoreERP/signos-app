@@ -5,11 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SignOS ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // *** SECURITY BOUNCER ***
+        // This must run before the page body loads to prevent "flashing" the content.
+        const user = sessionStorage.getItem('signos_user');
+        if (!user) {
+            window.location.href = 'Gateway.html';
+        }
+    </script>
     <style>
         .disabled-card { pointer-events: none; opacity: 0.5; filter: grayscale(100%); }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans">
+<body class="bg-gray-100 min-h-screen font-sans hidden" id="main-body"> 
+    <!-- Added 'hidden' class to body to prevent flash content, removed by JS below -->
 
     <!-- 1. AUTH HEADER (Visible to ALL users) -->
     <div class="bg-gray-800 text-white px-6 py-2 flex justify-between items-center text-xs shadow-md">
@@ -32,11 +41,12 @@
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <span class="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></span> v3.2 Online
                 </span>
+                <div class="mt-2 text-[10px]"><a href="docs.html" class="text-blue-400 hover:text-blue-600 underline">View Documentation</a></div>
             </div>
         </div>
 
         <div class="space-y-10">
-
+            
             <!-- SECTION 1: RIGID SIGNS -->
             <section>
                 <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">Rigid Signs</h2>
@@ -119,9 +129,7 @@
                     <a href="Decal_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-pink-500 hover:shadow-md transition group">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 bg-pink-50 text-pink-600 rounded-lg flex items-center justify-center group-hover:bg-pink-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                </svg>
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                             </div>
                             <div>
                                 <h3 class="font-bold text-gray-900 group-hover:text-pink-600 text-sm">Decals & Stickers</h3>
@@ -134,11 +142,7 @@
                     <a href="Wrap_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l2-2h10l2 2v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-1H8v1a1 1 0 01-1-1v-6z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 14a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                </svg>
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l2-2h10l2 2v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-1H8v1a1 1 0 01-1-1v-6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 14a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                             </div>
                             <div>
                                 <h3 class="font-bold text-gray-900 group-hover:text-indigo-600 text-sm">Vehicle Wraps</h3>
@@ -151,9 +155,7 @@
                     <a href="CutVinyl_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-yellow-500 hover:shadow-md transition group">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-lg flex items-center justify-center group-hover:bg-yellow-500 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                                </svg>
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
                             </div>
                             <div>
                                 <h3 class="font-bold text-gray-900 group-hover:text-yellow-600 text-sm">Cut Vinyl Lettering</h3>
@@ -175,18 +177,26 @@
             const mode = params.get('mode') || 'sales'; // Default to sales
             
             // Session Storage handles the Name
-            const user = sessionStorage.getItem('signos_user') || 'Guest';
+            const user = sessionStorage.getItem('signos_user');
+            
+            // SECONDARY SECURITY CHECK (In case they bypass the HEAD script)
+            if (!user) {
+                window.location.href = 'Gateway.html';
+                return;
+            }
+
+            // Reveal Page if Authenticated
+            document.getElementById('main-body').classList.remove('hidden');
+
             const role = sessionStorage.getItem('signos_role') || mode.toUpperCase();
 
             // 2. Update Header
             document.getElementById('auth-user').innerText = user;
             document.getElementById('auth-role').innerText = role;
 
-            // 3. Update Navigation Links (CRITICAL FIX)
-            // This loop finds every link with class 'nav-link' and appends ?mode=sales (or admin/prod)
+            // 3. Update Navigation Links
             document.querySelectorAll('.nav-link').forEach(link => {
                 const currentHref = link.getAttribute('href');
-                // Avoid double-appending if reloading
                 if (!currentHref.includes('?mode=')) {
                     link.setAttribute('href', `${currentHref}?mode=${mode}`);
                 }
@@ -195,7 +205,7 @@
 
         function logout() {
             sessionStorage.clear();
-            window.location.href = 'gateway.html';
+            window.location.href = 'Gateway.html';
         }
     </script>
 </body>
