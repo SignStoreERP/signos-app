@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coroplast Calculator v6.4</title>
+    <title>Coroplast Calculator v6.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -22,7 +22,7 @@
 <body class="bg-gray-100 min-h-screen font-sans">
     <div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
         
-        <!-- 1. AUTH HEADER (RESTORED) -->
+        <!-- 1. AUTH HEADER -->
         <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
             <div class="flex gap-3">
                 <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
@@ -98,36 +98,39 @@
                 <div class="flex justify-between items-end border-t pt-4"><div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
             </div>
             
-            <!-- Cost (UPDATED) -->
+            <!-- Cost (Detailed View) -->
             <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
                 <div class="space-y-2 text-xs text-gray-700">
                     
                     <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
-                    <div class="flex justify-between"><span>Material:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
-                    <div class="flex justify-between"><span>Ink:</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Substrate:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Ink / Vinyl:</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
                     
                     <div class="border-t border-yellow-200 my-1 pt-1"></div>
-                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Labor & Production</h4>
+                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Time</h4>
                     
-                    <!-- DETAILED BREAKDOWN -->
-                    <div class="flex justify-between items-center text-purple-800 hidden" id="row-design-cost">
+                    <!-- Design -->
+                    <div class="flex justify-between items-center hidden text-purple-800" id="row-design-cost">
                         <span class="w-1/3">Design:</span>
                         <span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1">0m</span>
                         <span id="cost-design" class="w-1/3 text-right font-bold">$0.00</span>
                     </div>
 
+                    <!-- Setup -->
                     <div class="flex justify-between items-center">
                         <span class="w-1/3">Setup:</span>
                         <span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
                         <span id="cost-setup" class="w-1/3 text-right font-bold">$0.00</span>
                     </div>
 
+                    <!-- Machine -->
                     <div class="flex justify-between items-center">
-                        <span class="w-1/3">Machine (<span id="lbl-machine">R1000</span>):</span>
+                        <span class="w-1/3">Machine Run:</span>
                         <span id="time-machine" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
                         <span id="cost-machine" class="w-1/3 text-right font-bold">$0.00</span>
                     </div>
 
+                    <!-- Operator -->
                     <div class="flex justify-between items-center">
                         <span class="w-1/3">Operator:</span>
                         <span id="time-op" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
@@ -136,13 +139,33 @@
 
                     <div class="border-t border-yellow-200 my-2 pt-1"></div>
                     <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
-                    <div class="mt-2 flex justify-between items-center bg-white p-2 rounded border border-yellow-100"><span class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</span><span class="font-bold text-green-600" id="profit-inhouse">$0.00</span></div>
+                    
+                    <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
+                        <div class="flex justify-between items-end">
+                            <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
+                            <div class="text-right"><div class="text-[10px] uppercase font-bold text-gray-400">Margin</div><div class="text-xl font-bold text-blue-600" id="margin-inhouse">0%</div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Vend -->
+            <!-- Vend (RESTORED) -->
             <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
-                <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended:</span> <span id="vend-total">$0.00</span></div>
+                <div class="space-y-2 text-xs text-gray-700">
+                    <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Stakes/Grommets:</span> <span id="vend-stakes" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Shipping:</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
+                    
+                    <div class="border-t border-indigo-200 my-1"></div>
+                    <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended Bill:</span> <span id="vend-total">$0.00</span></div>
+                    
+                    <div class="mt-4 bg-white p-3 rounded border border-indigo-200 shadow-sm">
+                        <div class="flex justify-between items-end">
+                            <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-vend">$0.00</div></div>
+                            <div class="text-right"><div class="text-[10px] uppercase font-bold text-gray-400">Margin</div><div class="text-xl font-bold text-blue-600" id="margin-vend">0%</div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -264,64 +287,56 @@
             const sqft = (w*h)/144;
             const totalSqFt = sqft * qty;
 
-            // RETAIL
+            // --- 1. RETAIL ---
             let baseRate = mat === '4mm' ? 8.00 : 15.00; 
             if(backend.Retail_Price_4mm_Base) baseRate = (mat==='4mm' ? parseFloat(backend.Retail_Price_4mm_Base) : parseFloat(backend.Retail_Price_10mm_Base));
             if(sides===2) baseRate += (mat==='4mm' ? 2.50 : 5.00);
 
             let price = baseRate * totalSqFt;
             
-            // Add Stakes & Grommets
             if(stakeType === 'Std') price += (qty * parseFloat(backend.Retail_Price_Stake_Std || 2.50));
             if(stakeType === 'HD') price += (qty * parseFloat(backend.Retail_Price_Stake_HD || 4.00));
             if(hasGrom) price += (qty * 4 * 0.25);
 
-            // Design Fee
             let feeDesign = 0;
             if(incDesign) {
-                feeDesign = parseFloat(backend.Retail_Fee_Design || 45); // Fixed fee per job
+                feeDesign = parseFloat(backend.Retail_Fee_Design || 45);
                 price += feeDesign;
             }
 
-            // Min
-            if(price < 100) price = 100;
+            if(price < 100) price = 100; // Min
 
             document.getElementById('unit-price').innerText = "$" + (price/qty).toFixed(2);
             document.getElementById('total-price').innerText = "$" + price.toFixed(2);
 
-            // --- DETAILED IN-HOUSE COST ---
+            // --- 2. IN-HOUSE COST ---
             
-            // 1. Materials
+            // Materials
             let matCostSqFt = mat === '4mm' ? (11.99/32) : (36.36/32); 
             if(backend.Cost_Sheet_4mm) matCostSqFt = (mat==='4mm' ? parseFloat(backend.Cost_Sheet_4mm) : parseFloat(backend.Cost_Sheet_10mm)) / 32;
             const costMat = totalSqFt * matCostSqFt * 1.1; // 10% Waste
-            
             const costInk = totalSqFt * parseFloat(backend.Cost_Ink_UV || 0.16) * sides;
-            
-            // 2. Design Time (Optional)
+            const subMat = costMat + costInk;
+
+            // Design Time
             let timeDesign = 0;
             let costDesign = 0;
             const rateOp = parseFloat(backend.Rate_Operator || 25);
-            
             if(incDesign) {
-                timeDesign = (15 * files) / 60; // 15 mins per file
-                costDesign = timeDesign * rateOp; // Assuming Operator rate for design if not set
+                timeDesign = (15 * files) / 60;
+                costDesign = timeDesign * rateOp;
                 document.getElementById('row-design-cost').classList.remove('hidden');
             } else {
                 document.getElementById('row-design-cost').classList.add('hidden');
             }
 
-            // 3. Setup Time
+            // Setup Time
             const timeSetup = parseFloat(backend.Time_Setup_Print || 15) / 60;
             const costSetup = timeSetup * rateOp;
 
-            // 4. Run Time (Machine + Operator)
-            let speed = 25; // Default Flatbed Linear Ft/Hr
-            if(backend.Speed_Flatbed_4mm) speed = parseFloat(backend.Speed_Flatbed_4mm);
-            
-            // Linear Print Logic (Approximate)
-            // Assuming 48" wide print capability, nesting height
-            const feedLen = (h/12); // Linear Feet per sign (Portrait)
+            // Run Time (Approximate Linear Feed)
+            let speed = parseFloat(backend.Speed_Flatbed_4mm || 25);
+            const feedLen = (h/12); // Portrait assumption
             const totalFeed = feedLen * qty * sides;
             const timeRun = totalFeed / speed; 
             
@@ -329,11 +344,12 @@
             const costMach = timeRun * rateMach;
             const costOp = timeRun * rateOp;
 
-            // Totals
-            const totalCost = costMat + costInk + costDesign + costSetup + costMach + costOp;
+            const totalCost = subMat + costDesign + costSetup + costMach + costOp;
+            const prof = price - totalCost;
             
-            // UI Updates
+            // Updates
             const fmt = (n) => "$" + n.toFixed(2);
+            const pct = (n) => (n * 100).toFixed(1) + "%";
             const fmtTime = (h) => { const mins = Math.round(h*60); return h >= 1 ? h.toFixed(1)+"h" : mins+"m"; };
 
             document.getElementById('cost-mat').innerText = fmt(costMat);
@@ -341,27 +357,64 @@
             
             document.getElementById('time-design').innerText = fmtTime(timeDesign);
             document.getElementById('cost-design').innerText = fmt(costDesign);
-            
             document.getElementById('time-setup').innerText = fmtTime(timeSetup);
             document.getElementById('cost-setup').innerText = fmt(costSetup);
-            
             document.getElementById('lbl-machine').innerText = mat==='4mm' ? 'HP R1000' : 'Roll/Mount';
             document.getElementById('time-machine').innerText = fmtTime(timeRun);
             document.getElementById('cost-machine').innerText = fmt(costMach);
-            
             document.getElementById('time-op').innerText = fmtTime(timeRun);
             document.getElementById('cost-op').innerText = fmt(costOp);
 
             document.getElementById('cost-total').innerText = fmt(totalCost);
-            
-            const prof = price - totalCost;
             document.getElementById('profit-inhouse').innerText = fmt(prof);
+            if(price>0) document.getElementById('margin-inhouse').innerText = pct(prof/price);
 
+            // --- 3. VENDED COST (SIGNS365) ---
+            
+            // Sheet Estimation (18x24 cuts 10 out of 4x8)
+            // Area of Sheet = 4608 sqin. Area of Sign = w*h. Yield = floor(4608/(w*h)) - Safe approx
+            const sheetYield = Math.floor(4608 / (w*h));
+            const sheetsNeeded = Math.ceil(qty / (sheetYield || 1));
+            
+            // Determine Tier
+            let tier = 'T1'; // 1-9
+            if(sheetsNeeded >= 10) tier = 'T2'; // 10-50
+            if(sheetsNeeded > 50) tier = 'T3'; // 51+
+            
+            // Construct Keys (e.g., S365_4mm_SS_T1)
+            const vKey = `S365_${mat}_${sides===1?'SS':'DS'}_${tier}`;
+            const vendRateSheet = parseFloat(backend[vKey] || 44); 
+            
+            const vendPrintCost = sheetsNeeded * vendRateSheet;
+            
+            // Add-ons
+            let vendAddons = 0;
+            if(stakeType === 'Std') vendAddons += (qty * parseFloat(backend.S365_Add_Stake_Std || 1.25));
+            if(stakeType === 'HD') vendAddons += (qty * parseFloat(backend.S365_Add_Stake_HD || 2.25));
+            if(hasGrom) vendAddons += (qty * parseFloat(backend.S365_Add_Grommet || 0.25));
+            
+            // Ship
+            let vendShip = parseFloat(backend.Ship_T1_Rate || 10);
+            const dimMax = Math.max(w,h);
+            if(sheetsNeeded > 5) vendShip = parseFloat(backend.Ship_T4_Rate_Low || 50); // Rough logic logic
+            if(sheetsNeeded * sheetYield >= 58) vendShip = parseFloat(backend.Ship_Freight_Flat || 199); // Freight logic
+
+            const totalVend = vendPrintCost + vendAddons + vendShip;
+            const profVend = price - totalVend;
+
+            document.getElementById('vend-print').innerText = fmt(vendPrintCost);
+            document.getElementById('vend-stakes').innerText = fmt(vendAddons);
+            document.getElementById('vend-ship').innerText = fmt(vendShip);
+            document.getElementById('vend-total').innerText = fmt(totalVend);
+            document.getElementById('profit-vend').innerText = fmt(profVend);
+            if(price>0) document.getElementById('margin-vend').innerText = pct(profVend/price);
+
+            // Alerts
             const profitWarn = document.getElementById('profit-warn');
-            if(prof < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
+            if(prof < 0 && profVend < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
             else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
 
-            // Generate Description
+            // Description
             const sideTxt = sides === 1 ? "Single-Sided" : "Double-Sided";
             const finishTxt = [];
             if(stakeType !== 'None') finishTxt.push(stakeType + " Stakes");
