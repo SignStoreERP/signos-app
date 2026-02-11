@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coroplast Calculator v7.0</title>
+    <title>Coroplast Calculator v7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* CORE STYLES */
@@ -105,7 +105,7 @@
                     </select>
                 </div>
 
-                <!-- Grommets (New Logic) -->
+                <!-- Grommets -->
                 <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
                     <span class="text-xs font-bold text-gray-700">Grommets</span>
                     <select id="grommet-mode" class="bg-white border text-xs p-1 rounded font-bold" onchange="calculate()">
@@ -153,7 +153,7 @@
                 <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
             </div>
             
-            <!-- Retail Tab (Updated List View) -->
+            <!-- Retail Tab -->
             <div id="tab-retail" class="tab-content active bg-white p-6">
                 <div class="flex justify-between items-center mb-4"><span class="text-xs font-bold text-gray-400 uppercase">Unit Price</span><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
                 
@@ -161,6 +161,7 @@
                     <div class="flex justify-between"><span>Prints (<span id="lbl-mat">4mm</span>):</span><span id="ret-print" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between hidden" id="row-ret-stakes"><span>Stakes:</span><span id="ret-stakes" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between hidden" id="row-ret-grom"><span>Grommets (<span id="lbl-grom-qty">0</span>):</span><span id="ret-grom" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between hidden text-blue-700" id="row-ret-gloss"><span>Gloss Finish:</span><span id="ret-gloss" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between hidden" id="row-ret-contour"><span>Contour Cut:</span><span id="ret-contour" class="font-bold">$0.00</span></div>
                     <div class="border-t border-dashed border-gray-200 my-1"></div>
                     <div class="flex justify-between"><span>Job Setup:</span><span id="ret-setup" class="font-bold">$0.00</span></div>
@@ -170,26 +171,49 @@
                 <div class="flex justify-between items-end border-t-2 border-gray-800 pt-2"><div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
             </div>
             
-            <!-- In-House Cost (Separated Logic) -->
+            <!-- In-House Cost (Detailed Labor) -->
             <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
                 <div class="space-y-2 text-xs text-gray-700">
                     
                     <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
                     <div class="flex justify-between"><span>Substrate:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
                     
-                    <!-- Dynamic Ink/Vinyl Lines -->
                     <div class="flex justify-between" id="row-cost-ink"><span>Ink (UV/Latex):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between hidden" id="row-cost-vinyl"><span>Vinyl Media:</span> <span id="cost-vinyl" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between hidden" id="row-cost-lam"><span>Laminate:</span> <span id="cost-lam" class="font-bold">$0.00</span></div>
                     
-                    <div class="border-t border-yellow-200 my-1 pt-1"></div>
-                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Hardware</h4>
-                    <div class="flex justify-between"><span>Stakes:</span> <span id="cost-stakes" class="font-bold">$0.00</span></div>
-                    <div class="flex justify-between"><span>Grommets:</span> <span id="cost-grom" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Hardware (Stakes/Groms):</span> <span id="cost-hard" class="font-bold">$0.00</span></div>
 
                     <div class="border-t border-yellow-200 my-1 pt-1"></div>
-                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Time</h4>
-                    <div class="flex justify-between items-center"><span class="w-1/3">Labor:</span><span id="cost-labor" class="w-1/3 text-right font-bold">$0.00</span></div>
+                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
+                    
+                    <!-- Design -->
+                    <div class="flex justify-between items-center text-purple-800 hidden" id="row-lab-design">
+                        <span class="w-1/3">Design:</span>
+                        <span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1">0m</span>
+                        <span id="cost-lab-design" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <!-- Setup -->
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Setup:</span>
+                        <span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                        <span id="cost-lab-setup" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <!-- Machine -->
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Machine (<span id="lbl-mach-name">R1000</span>):</span>
+                        <span id="time-machine" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                        <span id="cost-machine" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <!-- Operator -->
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Operator:</span>
+                        <span id="time-op" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                        <span id="cost-lab-op" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
 
                     <div class="border-t border-yellow-200 my-2 pt-1"></div>
                     <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
@@ -203,7 +227,7 @@
                 </div>
             </div>
 
-            <!-- Vended Cost (Detailed Breakdown) -->
+            <!-- Vended Cost -->
             <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
                 <div class="space-y-2 text-xs text-gray-700">
                     <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
@@ -354,11 +378,12 @@
             let retailStakes = 0;
             let retailGrom = 0;
             let retailContour = 0;
+            let retailGloss = 0;
 
             if(stakeType === 'Std') retailStakes = (qty * parseFloat(backend.Retail_Price_Stake_Std || 2.50));
             if(stakeType === 'HD') retailStakes = (qty * parseFloat(backend.Retail_Price_Stake_HD || 4.00));
 
-            // Grommet Count Logic
+            // Grommet Count
             let gromCount = 0;
             if(gromMode !== 'None') {
                 if(gromMode === 'Corners') gromCount = 4 * qty;
@@ -369,12 +394,17 @@
             }
 
             if(isContour) retailContour = retailPrint * parseFloat(backend.Retail_Adder_Contour_Pct || 0.25);
+            
+            // GLOSS CHARGE (New)
+            if(isGloss) {
+                retailGloss = qty * parseFloat(backend.Retail_Price_Gloss || 8.00);
+            }
 
             let feeDesign = 0;
             if(incDesign) feeDesign = parseFloat(backend.Retail_Fee_Design || 45);
             let feeSetup = parseFloat(backend.Retail_Fee_Setup || 15);
 
-            let price = retailPrint + retailStakes + retailGrom + retailContour + feeDesign + feeSetup;
+            let price = retailPrint + retailStakes + retailGrom + retailContour + retailGloss + feeDesign + feeSetup;
             if(price < 100) price = 100; // Min
 
             // Update Retail UI
@@ -393,6 +423,9 @@
 
             if(retailGrom > 0) { document.getElementById('row-ret-grom').classList.remove('hidden'); document.getElementById('ret-grom').innerText = fmt(retailGrom); document.getElementById('lbl-grom-qty').innerText = gromCount; }
             else document.getElementById('row-ret-grom').classList.add('hidden');
+
+            if(retailGloss > 0) { document.getElementById('row-ret-gloss').classList.remove('hidden'); document.getElementById('ret-gloss').innerText = fmt(retailGloss); }
+            else document.getElementById('row-ret-gloss').classList.add('hidden');
 
             if(retailContour > 0) { document.getElementById('row-ret-contour').classList.remove('hidden'); document.getElementById('ret-contour').innerText = fmt(retailContour); }
             else document.getElementById('row-ret-contour').classList.add('hidden');
@@ -416,7 +449,7 @@
             let costLam = 0;
 
             if(isDirect) {
-                // UV Ink only
+                // UV Ink
                 costInk = totalSqFt * parseFloat(backend.Cost_Ink_UV || 0.16) * sides;
                 document.getElementById('row-cost-vinyl').classList.add('hidden');
                 document.getElementById('row-cost-lam').classList.add('hidden');
@@ -430,40 +463,67 @@
             }
 
             const costGrommets = gromCount * parseFloat(backend.Cost_Grommet || 0.13);
-            
             let costStakes = 0;
             if(stakeType === 'Std') costStakes = qty * parseFloat(backend.Cost_Stake_Std || 0.93);
             if(stakeType === 'HD') costStakes = qty * parseFloat(backend.Cost_Stake_HD || 1.85);
-
-            // Labor
-            let timeTotal = 0;
-            const rateOp = parseFloat(backend.Rate_Operator || 25);
             
-            // Design
-            if(incDesign) timeTotal += (15 * files)/60;
-            // Setup
-            timeTotal += parseFloat(backend.Time_Setup_Print || 15)/60;
-            // Run
+            const costHardware = costGrommets + costStakes;
+
+            // --- LABOR BREAKDOWN ---
+            const rateDes = parseFloat(backend.Rate_Design || 35);
+            const rateOp = parseFloat(backend.Rate_Operator || 25);
+            const rateMach = parseFloat(backend.Rate_Machine_Flatbed || 45); // Assuming Flatbed default
+            
+            // 1. Design
+            let timeDesign = 0;
+            if(incDesign) timeDesign = (15 * files)/60;
+            const costDesign = timeDesign * rateDes;
+            
+            // 2. Setup
+            const timeSetup = parseFloat(backend.Time_Setup_Print || 15)/60;
+            const costSetup = timeSetup * rateOp;
+            
+            // 3. Machine Run
             let speed = parseFloat(backend.Speed_Flatbed_4mm || 25);
             if(!isDirect) speed = parseFloat(backend.Speed_Roll_Print || 150);
-            const feedLen = h/12;
-            const runTime = (feedLen * qty * sides) / speed;
-            timeTotal += runTime;
             
-            const costLabor = timeTotal * rateOp;
-            const costMachine = runTime * parseFloat(backend.Rate_Machine_Flatbed || 45);
+            const feedLen = h/12; 
+            const runTime = (feedLen * qty * sides) / speed; // Linear print time
+            const costMach = runTime * rateMach;
+            
+            // 4. Operator
+            // Op time = Run Time + Finishing Time (Grommets, etc)
+            // Estimation: 1 min per grommet/stake/handling per sign
+            const finishMins = (qty * 1) + gromCount; 
+            const opTime = runTime + (finishMins/60);
+            const costOp = opTime * rateOp;
 
-            const totalCost = costMat + costInk + costVinyl + costLam + costGrommets + costStakes + costLabor + costMachine;
+            const totalCost = costMat + costInk + costVinyl + costLam + costHardware + costDesign + costSetup + costMach + costOp;
             const prof = price - totalCost;
             
-            // In-House UI
+            // In-House UI Updates
             document.getElementById('cost-mat').innerText = fmt(costMat);
             document.getElementById('cost-ink').innerText = fmt(costInk);
             document.getElementById('cost-vinyl').innerText = fmt(costVinyl);
             document.getElementById('cost-lam').innerText = fmt(costLam);
-            document.getElementById('cost-stakes').innerText = fmt(costStakes);
-            document.getElementById('cost-grom').innerText = fmt(costGrommets);
-            document.getElementById('cost-labor').innerText = fmt(costLabor);
+            document.getElementById('cost-hard').innerText = fmt(costHardware);
+            
+            if(timeDesign > 0) {
+                document.getElementById('row-lab-design').classList.remove('hidden');
+                document.getElementById('time-design').innerText = fmtTime(timeDesign);
+                document.getElementById('cost-lab-design').innerText = fmt(costDesign);
+            } else document.getElementById('row-lab-design').classList.add('hidden');
+
+            document.getElementById('time-setup').innerText = fmtTime(timeSetup);
+            document.getElementById('cost-lab-setup').innerText = fmt(costSetup);
+            
+            document.getElementById('lbl-mach-name').innerText = isDirect ? 'HP R1000' : 'HP 300';
+            document.getElementById('time-machine').innerText = fmtTime(runTime);
+            document.getElementById('cost-machine').innerText = fmt(costMach);
+            
+            document.getElementById('time-op').innerText = fmtTime(opTime);
+            document.getElementById('cost-lab-op').innerText = fmt(costOp);
+
             document.getElementById('cost-total').innerText = fmt(totalCost);
             document.getElementById('profit-inhouse').innerText = fmt(prof);
             if(price>0) document.getElementById('margin-inhouse').innerText = pct(prof/price);
