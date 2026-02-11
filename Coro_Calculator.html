@@ -1,10 +1,9 @@
-<!-- ARTIFACT: Coro_Calculator.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coroplast Calculator v6.2</title>
+    <title>Coroplast Calculator v6.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -13,21 +12,31 @@
         .side-btn.selected { background-color: #2563eb; color: white; border-color: #2563eb; }
         .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
         .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
+        .mode-prod .prod-hidden { display: none !important; }
         .blur-section { filter: grayscale(100%) opacity(0.5); pointer-events: none; }
+        .warn-pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
     <div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+        
         <!-- HEADER -->
         <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
             <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">MENU</a>
-            <h2 class="text-lg font-bold" id="product-label">Custom Coroplast</h2>
+            <div class="text-center">
+                <h2 class="text-lg font-bold" id="product-label">Custom Coroplast</h2>
+                <div class="flex items-center justify-center gap-2 text-[10px]">
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span id="status-text" class="text-gray-400">CONNECTING...</span>
+                </div>
+            </div>
             <button onclick="location.reload()" class="text-gray-400 hover:text-white">↺</button>
         </div>
 
         <!-- WARNINGS -->
         <div id="size-warn" class="hidden bg-orange-500 text-white text-center py-2 px-4 text-xs font-bold uppercase">⚠️ Oversized: Exceeds 48" x 96" Sheet</div>
-        <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-2 px-4 text-sm font-bold uppercase">🛑 LOSS ALERT</div>
+        <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-2 px-4 text-sm font-bold uppercase border-b-4 border-red-800">🛑 LOSS ALERT: PRICE TOO LOW</div>
 
         <!-- INPUTS -->
         <div class="p-6 space-y-4">
@@ -51,60 +60,129 @@
                 <button type="button" id="btn-side-2" class="side-btn py-2 border rounded font-bold text-sm" onclick="setSides(2)">Double Sided</button>
                 <input type="hidden" id="sides" value="1">
             </div>
+            
             <!-- Finishing -->
             <div class="border-t border-gray-100 pt-2 space-y-2">
                 <div class="flex justify-between items-center"><span class="text-xs font-bold text-gray-700">H-Stakes?</span><select id="stake-type" class="border text-xs p-1 rounded" onchange="calculate()"><option value="None">None</option><option value="Std">Standard</option><option value="HD">Heavy Duty</option></select></div>
-                <div class="flex justify-between items-center"><span class="text-xs font-bold text-gray-700">Grommets?</span><input type="checkbox" id="has-grommets" class="toggle-checkbox" onchange="calculate()"></div>
+                <div class="flex justify-between items-center"><span class="text-xs font-bold text-gray-700">Grommets?</span><input type="checkbox" id="has-grommets" class="toggle-checkbox w-5 h-5 rounded border-gray-300" onchange="calculate()"></div>
             </div>
         </div>
 
         <!-- METRICS -->
         <div class="border-t border-gray-200">
             <div class="flex">
-                <button onclick="switchTab('retail')" class="flex-1 py-3 text-xs font-bold text-gray-500 bg-gray-50 tab-btn active" id="btn-retail">RETAIL</button>
-                <button onclick="switchTab('cost')" class="flex-1 py-3 text-xs font-bold text-gray-500 bg-gray-50 tab-btn" id="btn-cost">IN-HOUSE</button>
-                <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
+                <button onclick="switchTab('retail')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-retail">RETAIL</button>
+                <button onclick="switchTab('cost')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-cost">IN-HOUSE</button>
+                <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
             </div>
             
+            <!-- Retail -->
             <div id="tab-retail" class="tab-content active bg-white p-6">
                 <div class="flex justify-between items-center mb-4"><span class="text-xs font-bold text-gray-400 uppercase">Unit Price</span><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
-                <div class="flex justify-between items-end border-t pt-4"><div><span class="text-xs font-bold text-gray-400 uppercase">Total</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
+                <div class="flex justify-between items-end border-t pt-4"><div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
             </div>
             
-            <div id="tab-cost" class="tab-content bg-yellow-50 p-6"><div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div></div>
-            <div id="tab-vend" class="tab-content bg-indigo-50 p-6"><div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended:</span> <span id="vend-total">$0.00</span></div></div>
+            <!-- Cost -->
+            <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
+                <div class="space-y-1 text-xs text-gray-700">
+                    <div class="flex justify-between"><span>Material:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Ink:</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Labor:</span> <span id="cost-labor" class="font-bold">$0.00</span></div>
+                    <div class="border-t border-yellow-200 my-1 pt-1"></div>
+                    <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
+                    <div class="mt-2 flex justify-between items-center bg-white p-2 rounded border border-yellow-100"><span class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</span><span class="font-bold text-green-600" id="profit-inhouse">$0.00</span></div>
+                </div>
+            </div>
+
+            <!-- Vend -->
+            <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
+                <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended:</span> <span id="vend-total">$0.00</span></div>
+            </div>
         </div>
 
         <!-- DESCRIPTION -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20" readonly></textarea>
+            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
         </div>
+        
+        <div id="error-msg" class="hidden text-[10px] text-red-500 p-4 text-center bg-red-50"></div>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
+        const TAB_NAME = "PROD_Coroplast_Signs";
         let backend = {};
         
-        // Simplified Logic for Demo
+        let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
+
         function initSession() {
             const params = new URLSearchParams(window.location.search);
-            const mode = params.get('mode') || 'sales';
-            document.body.classList.add('mode-'+mode);
+            const urlMode = params.get('mode');
+            const storeUser = sessionStorage.getItem('signos_user');
+            const storeRole = sessionStorage.getItem('signos_role');
+
+            if(storeUser) currentUser.name = storeUser;
+            if(storeRole) currentUser.role = storeRole;
+            
+            if(urlMode) currentUser.mode = urlMode;
+            else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
+            else if(currentUser.role === 'PROD') currentUser.mode = 'production';
+            else currentUser.mode = 'sales';
+
+            const body = document.body;
+            body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
+            
+            if(currentUser.mode === 'sales') {
+                body.classList.add('mode-sales');
+                switchTab('retail'); 
+            } else if (currentUser.mode === 'production') {
+                body.classList.add('mode-prod');
+                switchTab('cost');
+            } else {
+                body.classList.add('mode-admin');
+            }
         }
-        function goBack() { window.location.href = `menu.html?mode=${new URLSearchParams(window.location.search).get('mode')}`; }
+
+        function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
         function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
-        function setSides(n) { document.getElementById('sides').value = n; document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('btn-side-'+n).classList.add('selected'); calculate(); }
-        function switchTab(id) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-'+id).classList.add('active'); }
+        
+        function setSides(n) { 
+            document.getElementById('sides').value = n; 
+            document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('selected')); 
+            document.getElementById('btn-side-'+n).classList.add('selected'); 
+            calculate(); 
+        }
+        
+        function switchTab(id) { 
+            document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); 
+            document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); 
+            document.getElementById('tab-'+id).classList.add('active'); 
+            document.getElementById('btn-'+id).classList.add('active'); 
+        }
 
         window.onload = async function() {
             initSession();
+            const statusText = document.getElementById("status-text");
+            const statusDot = document.getElementById("status-dot");
             try {
-                const response = await fetch(`${SCRIPT_URL}?tab=PROD_Coroplast_Signs`);
-                backend = await response.json();
-                document.getElementById('product-label').innerText = "ONLINE";
+                const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
+                const data = await response.json();
+                if(data.error) throw new Error(data.error);
+                backend = data;
+                
+                statusText.innerText = "ONLINE";
+                statusText.classList.replace("text-gray-400", "text-green-500");
+                statusDot.classList.replace("bg-red-500", "bg-green-500");
+                statusDot.classList.remove("animate-pulse");
+                if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
                 calculate();
-            } catch(e) { console.log(e); }
+            } catch(e) { 
+                statusText.innerText = "OFFLINE"; 
+                statusText.classList.replace("text-gray-400", "text-red-500");
+                document.getElementById("error-msg").innerText = e.message;
+                document.getElementById("error-msg").classList.remove("hidden");
+            }
         };
 
         function checkDim() {
@@ -112,7 +190,7 @@
             const h = parseFloat(document.getElementById('height').value)||0;
             const dim1 = Math.min(w,h);
             const dim2 = Math.max(w,h);
-            // Logic Fix: Only oversized if SMALL side > 48 OR LARGE side > 96
+            // FIXED LOGIC: Allow exactly 48x96. Only trigger if Short > 48 OR Long > 96
             if (dim1 > 48 || dim2 > 96) {
                 document.getElementById('size-warn').classList.remove('hidden');
                 document.getElementById('tab-cost').classList.add('blur-section');
@@ -120,6 +198,10 @@
                 document.getElementById('size-warn').classList.add('hidden');
                 document.getElementById('tab-cost').classList.remove('blur-section');
             }
+        }
+
+        function checkMethod() {
+            // Simplified for demo
         }
 
         function calculate() {
@@ -136,13 +218,15 @@
             const totalSqFt = sqft * qty;
 
             // RETAIL
-            let baseRate = mat === '4mm' ? 8.00 : 15.00; // Fallback
-            if(backend.Retail_Price_4mm_Base) baseRate = (mat==='4mm' ? backend.Retail_Price_4mm_Base : backend.Retail_Price_10mm_Base);
+            let baseRate = mat === '4mm' ? 8.00 : 15.00; 
+            if(backend.Retail_Price_4mm_Base) baseRate = (mat==='4mm' ? parseFloat(backend.Retail_Price_4mm_Base) : parseFloat(backend.Retail_Price_10mm_Base));
             if(sides===2) baseRate += (mat==='4mm' ? 2.50 : 5.00);
 
             let price = baseRate * totalSqFt;
-            if(stakeType === 'Std') price += (qty * 2.50);
-            if(stakeType === 'HD') price += (qty * 4.00);
+            
+            // Add Stakes
+            if(stakeType === 'Std') price += (qty * parseFloat(backend.Retail_Price_Stake_Std || 2.50));
+            if(stakeType === 'HD') price += (qty * parseFloat(backend.Retail_Price_Stake_HD || 4.00));
             if(hasGrom) price += (qty * 4 * 0.25);
 
             // Min
@@ -150,6 +234,24 @@
 
             document.getElementById('unit-price').innerText = "$" + (price/qty).toFixed(2);
             document.getElementById('total-price').innerText = "$" + price.toFixed(2);
+
+            // Cost (Simplified for Brief)
+            const costMat = totalSqFt * 0.90; 
+            const costInk = totalSqFt * 0.16;
+            const costLabor = 15 + (qty * 2);
+            const totalCost = costMat + costInk + costLabor;
+            
+            document.getElementById('cost-mat').innerText = "$" + costMat.toFixed(2);
+            document.getElementById('cost-ink').innerText = "$" + costInk.toFixed(2);
+            document.getElementById('cost-labor').innerText = "$" + costLabor.toFixed(2);
+            document.getElementById('cost-total').innerText = "$" + totalCost.toFixed(2);
+            
+            const prof = price - totalCost;
+            document.getElementById('profit-inhouse').innerText = "$" + prof.toFixed(2);
+
+            const profitWarn = document.getElementById('profit-warn');
+            if(prof < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
+            else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
 
             // Generate Description
             const sideTxt = sides === 1 ? "Single-Sided" : "Double-Sided";
