@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coroplast Calculator v7.1</title>
+    <title>Coroplast Calculator v7.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* CORE STYLES */
@@ -171,7 +171,7 @@
                 <div class="flex justify-between items-end border-t-2 border-gray-800 pt-2"><div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
             </div>
             
-            <!-- In-House Cost (Detailed Labor) -->
+            <!-- In-House Cost (Detailed Labor & Separate Hardware) -->
             <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
                 <div class="space-y-2 text-xs text-gray-700">
                     
@@ -182,7 +182,9 @@
                     <div class="flex justify-between hidden" id="row-cost-vinyl"><span>Vinyl Media:</span> <span id="cost-vinyl" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between hidden" id="row-cost-lam"><span>Laminate:</span> <span id="cost-lam" class="font-bold">$0.00</span></div>
                     
-                    <div class="flex justify-between"><span>Hardware (Stakes/Groms):</span> <span id="cost-hard" class="font-bold">$0.00</span></div>
+                    <!-- Separate Hardware Lines -->
+                    <div class="flex justify-between hidden" id="row-cost-stake"><span>Stakes:</span> <span id="cost-stake-val" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between hidden" id="row-cost-grom"><span>Grommets:</span> <span id="cost-grom-val" class="font-bold">$0.00</span></div>
 
                     <div class="border-t border-yellow-200 my-1 pt-1"></div>
                     <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
@@ -395,7 +397,7 @@
 
             if(isContour) retailContour = retailPrint * parseFloat(backend.Retail_Adder_Contour_Pct || 0.25);
             
-            // GLOSS CHARGE (New)
+            // GLOSS CHARGE
             if(isGloss) {
                 retailGloss = qty * parseFloat(backend.Retail_Price_Gloss || 8.00);
             }
@@ -467,12 +469,10 @@
             if(stakeType === 'Std') costStakes = qty * parseFloat(backend.Cost_Stake_Std || 0.93);
             if(stakeType === 'HD') costStakes = qty * parseFloat(backend.Cost_Stake_HD || 1.85);
             
-            const costHardware = costGrommets + costStakes;
-
             // --- LABOR BREAKDOWN ---
             const rateDes = parseFloat(backend.Rate_Design || 35);
             const rateOp = parseFloat(backend.Rate_Operator || 25);
-            const rateMach = parseFloat(backend.Rate_Machine_Flatbed || 45); // Assuming Flatbed default
+            const rateMach = parseFloat(backend.Rate_Machine_Flatbed || 45); 
             
             // 1. Design
             let timeDesign = 0;
@@ -488,17 +488,15 @@
             if(!isDirect) speed = parseFloat(backend.Speed_Roll_Print || 150);
             
             const feedLen = h/12; 
-            const runTime = (feedLen * qty * sides) / speed; // Linear print time
+            const runTime = (feedLen * qty * sides) / speed; 
             const costMach = runTime * rateMach;
             
             // 4. Operator
-            // Op time = Run Time + Finishing Time (Grommets, etc)
-            // Estimation: 1 min per grommet/stake/handling per sign
             const finishMins = (qty * 1) + gromCount; 
             const opTime = runTime + (finishMins/60);
             const costOp = opTime * rateOp;
 
-            const totalCost = costMat + costInk + costVinyl + costLam + costHardware + costDesign + costSetup + costMach + costOp;
+            const totalCost = costMat + costInk + costVinyl + costLam + costStakes + costGrommets + costDesign + costSetup + costMach + costOp;
             const prof = price - totalCost;
             
             // In-House UI Updates
@@ -506,7 +504,17 @@
             document.getElementById('cost-ink').innerText = fmt(costInk);
             document.getElementById('cost-vinyl').innerText = fmt(costVinyl);
             document.getElementById('cost-lam').innerText = fmt(costLam);
-            document.getElementById('cost-hard').innerText = fmt(costHardware);
+            
+            // Separate Hardware Lines
+            if(costStakes > 0) {
+                document.getElementById('row-cost-stake').classList.remove('hidden');
+                document.getElementById('cost-stake-val').innerText = fmt(costStakes);
+            } else document.getElementById('row-cost-stake').classList.add('hidden');
+
+            if(costGrommets > 0) {
+                document.getElementById('row-cost-grom').classList.remove('hidden');
+                document.getElementById('cost-grom-val').innerText = fmt(costGrommets);
+            } else document.getElementById('row-cost-grom').classList.add('hidden');
             
             if(timeDesign > 0) {
                 document.getElementById('row-lab-design').classList.remove('hidden');
