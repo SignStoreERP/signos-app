@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coroplast Calculator v6.6</title>
+    <title>Coroplast Calculator v6.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* CORE STYLES */
@@ -195,7 +195,7 @@
                 <div class="space-y-2 text-xs text-gray-700">
                     <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
                     <div class="flex justify-between"><span>Stakes/Grommets:</span> <span id="vend-stakes" class="font-bold">$0.00</span></div>
-                    <div class="flex justify-between"><span>Shipping:</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Shipping (<span id="vend-ship-tier">T1</span>):</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
                     
                     <div class="border-t border-indigo-200 my-1"></div>
                     <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended Bill:</span> <span id="vend-total">$0.00</span></div>
@@ -413,7 +413,6 @@
             // --- 3. VENDED COST (SIGNS365) ---
             
             // Sheet Estimation (18x24 cuts 10 out of 4x8)
-            // Area of Sheet = 4608 sqin. Area of Sign = w*h. Yield = floor(4608/(w*h)) - Safe approx
             const sheetYield = Math.floor(4608 / (w*h));
             const sheetsNeeded = Math.ceil(qty / (sheetYield || 1));
             
@@ -425,7 +424,6 @@
             // Construct Keys (e.g., S365_4mm_SS_T1)
             const vKey = `S365_${mat}_${sides===1?'SS':'DS'}_${tier}`;
             const vendRateSheet = parseFloat(backend[vKey] || 44); 
-            
             const vendPrintCost = sheetsNeeded * vendRateSheet;
             
             // Add-ons
@@ -434,10 +432,39 @@
             if(stakeType === 'HD') vendAddons += (qty * parseFloat(backend.S365_Add_Stake_HD || 2.25));
             if(hasGrom) vendAddons += (qty * parseFloat(backend.S365_Add_Grommet || 0.25));
             
-            // Ship
-            let vendShip = parseFloat(backend.Ship_T1_Rate || 10);
-            if(sheetsNeeded > 5) vendShip = parseFloat(backend.Ship_T4_Rate_Low || 50); // Rough logic logic
-            if(sheetsNeeded * sheetYield >= 58) vendShip = parseFloat(backend.Ship_Freight_Flat || 199); // Freight logic
+            // --- SHIPPING LOGIC (HARD CODED) ---
+            const maxDim = Math.max(w,h);
+            const minDim = Math.min(w,h);
+            let vendShip = 0;
+            let shipTier = "T1";
+
+            if (sheetsNeeded >= 20) {
+                // Freight Trigger (approx 20+ sheets)
+                vendShip = parseFloat(backend.Ship_Freight_Flat || 199);
+                shipTier = "Freight";
+            } else if (maxDim <= 36 && minDim <= 24) {
+                vendShip = parseFloat(backend.Ship_T1_Rate || 10);
+                shipTier = "T1";
+            } else if (maxDim <= 48 && minDim <= 32) {
+                vendShip = parseFloat(backend.Ship_T2_Rate || 15);
+                shipTier = "T2";
+            } else if (maxDim <= 48 && minDim <= 36) {
+                vendShip = parseFloat(backend.Ship_T3_Rate || 35);
+                shipTier = "T3";
+            } else if (maxDim <= 48 && minDim <= 48) {
+                // T4: 48x48
+                if (qty > 10) {
+                    vendShip = parseFloat(backend.Ship_T4_Rate_High || 75);
+                    shipTier = "T4 (High)";
+                } else {
+                    vendShip = parseFloat(backend.Ship_T4_Rate_Low || 50);
+                    shipTier = "T4 (Low)";
+                }
+            } else {
+                // Oversize T5
+                vendShip = parseFloat(backend.Ship_T5_Rate_Low || 75);
+                shipTier = "T5 (Oversize)";
+            }
 
             const totalVend = vendPrintCost + vendAddons + vendShip;
             const profVend = price - totalVend;
@@ -445,6 +472,7 @@
             document.getElementById('vend-print').innerText = fmt(vendPrintCost);
             document.getElementById('vend-stakes').innerText = fmt(vendAddons);
             document.getElementById('vend-ship').innerText = fmt(vendShip);
+            document.getElementById('vend-ship-tier').innerText = shipTier; // Debug label
             document.getElementById('vend-total').innerText = fmt(totalVend);
             document.getElementById('profit-vend').innerText = fmt(profVend);
             if(price>0) document.getElementById('margin-vend').innerText = pct(profVend/price);
