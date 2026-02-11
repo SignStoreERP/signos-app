@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Wrap Calculator v2.5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .warn-pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="max-w-md w-full bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+        
+        <!-- HEADER -->
+        <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
+            <a href="index.html" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
+            </a>
+            <div class="text-center">
+                <h2 class="text-lg font-bold" id="product-label">Vehicle Wraps</h2>
+                <div class="flex items-center justify-center gap-2 text-[10px]">
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span id="status-text" class="text-gray-400">CONNECTING...</span>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
+        </div>
+
+        <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-3 px-4 text-sm font-bold uppercase tracking-wide border-b-4 border-red-800">
+            🛑 LOSS ALERT: PRICE TOO LOW
+        </div>
+
+        <!-- INPUTS -->
+        <div class="p-6 space-y-4">
+            
+            <!-- Vehicle Identity -->
+            <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Vehicle Information</label>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="veh-year" placeholder="Year" class="w-1/4 border p-1 rounded text-sm font-bold">
+                    <input type="text" id="veh-make" placeholder="Make" class="w-3/4 border p-1 rounded text-sm font-bold">
+                </div>
+                <input type="text" id="veh-model" placeholder="Model (e.g. Transit 250 High Roof)" class="w-full border p-1 rounded text-sm font-bold">
+            </div>
+
+            <!-- Sectional Measurements -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Measurements (Inches)</label>
+                <div class="space-y-1">
+                    <!-- Header -->
+                    <div class="flex text-[9px] text-gray-400 uppercase font-bold px-1">
+                        <div class="w-24">Section</div>
+                        <div class="w-16 text-center">Width</div>
+                        <div class="w-16 text-center">Height</div>
+                        <div class="flex-1 text-right">Panels</div>
+                    </div>
+                    
+                    <!-- Rows -->
+                    <div class="flex items-center gap-2">
+                        <span class="w-24 text-xs font-bold text-gray-700">Front / Hood</span>
+                        <input type="number" id="w-front" placeholder="W" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <input type="number" id="h-front" placeholder="H" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <span class="flex-1 text-right text-xs font-bold text-gray-400" id="pan-front">-</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-24 text-xs font-bold text-gray-700">Rear</span>
+                        <input type="number" id="w-rear" placeholder="W" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <input type="number" id="h-rear" placeholder="H" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <span class="flex-1 text-right text-xs font-bold text-gray-400" id="pan-rear">-</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-24 text-xs font-bold text-gray-700">Driver Side</span>
+                        <input type="number" id="w-driver" placeholder="W" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <input type="number" id="h-driver" placeholder="H" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <span class="flex-1 text-right text-xs font-bold text-gray-400" id="pan-driver">-</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-24 text-xs font-bold text-gray-700">Pass. Side</span>
+                        <input type="number" id="w-pass" placeholder="W" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <input type="number" id="h-pass" placeholder="H" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <span class="flex-1 text-right text-xs font-bold text-gray-400" id="pan-pass">-</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-24 text-xs font-bold text-gray-700">Roof</span>
+                        <input type="number" id="w-roof" placeholder="W" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <input type="number" id="h-roof" placeholder="H" class="w-16 border p-1 rounded text-center text-sm" oninput="calculate()">
+                        <span class="flex-1 text-right text-xs font-bold text-gray-400" id="pan-roof">-</span>
+                    </div>
+                </div>
+                <!-- Total -->
+                <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+                    <span class="text-xs font-bold text-blue-600 uppercase">Billing Coverage</span>
+                    <span class="text-sm font-black text-blue-900"><span id="total-sqft">0.0</span> SqFt</span>
+                </div>
+            </div>
+
+            <!-- Complexity -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Complexity</label>
+                <select id="complexity" class="w-full border p-2 rounded bg-white font-bold text-sm h-10" onchange="calculate()">
+                    <option value="Simple">Box Truck / Trailer (Simple Flat)</option>
+                    <option value="Complex">Van / Car / Pickup (Curves)</option>
+                </select>
+            </div>
+
+            <div class="border-t border-gray-100 my-2"></div>
+
+            <!-- INSTALLATION TOGGLE -->
+            <div class="flex flex-col bg-blue-50 border border-blue-200 rounded">
+                <div class="flex items-center justify-between p-3">
+                    <span class="text-sm font-bold text-blue-900">Include Installation?</span>
+                    <div class="relative inline-block w-10 align-middle select-none">
+                        <input type="checkbox" id="has-install" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" checked onchange="calculate()"/>
+                        <label for="has-install" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
+                <div id="install-metrics" class="px-3 pb-2 flex justify-between text-[10px] text-blue-600 font-bold hidden">
+                    <span>Est Time: <span id="lbl-install-days">0</span> Days</span>
+                    <span>Rate: <span id="lbl-install-rate">$5</span>/sqft</span>
+                </div>
+            </div>
+
+            <!-- DESIGN TOGGLE -->
+            <div class="flex flex-col bg-purple-50 border border-purple-100 rounded">
+                <div class="flex items-center justify-between p-3">
+                    <span class="text-sm font-bold text-purple-900">Include Design?</span>
+                    <div class="relative inline-block w-10 align-middle select-none">
+                        <input type="checkbox" id="inc-design" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="calculate()"/>
+                        <label for="inc-design" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
+                <div id="design-metrics" class="px-3 pb-2 flex justify-between text-[10px] text-purple-600 font-bold hidden">
+                    <span>Hrs: <span id="lbl-design-hrs">0</span></span>
+                    <span>Rate: <span id="lbl-design-rate">$0</span>/hr</span>
+                </div>
+            </div>
+
+            <div class="text-[10px] text-center text-gray-400 uppercase tracking-widest border-t border-gray-100 pt-2">
+                Spec: 3M IJ180 Cast Wrap + 8518 Gloss Lam
+            </div>
+        </div>
+
+        <!-- METRICS -->
+        <div class="border-t border-gray-200">
+            <div class="flex">
+                <button onclick="switchTab('retail')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-retail">RETAIL</button>
+                <button onclick="switchTab('cost')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-cost">IN-HOUSE</button>
+                <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
+            </div>
+
+            <!-- TAB 1: RETAIL -->
+            <div id="tab-retail" class="tab-content active bg-white p-6">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Quote</span>
+                    <span class="text-3xl font-black text-blue-600" id="total-price">$0.00</span>
+                </div>
+                <div class="border-t border-gray-100 my-3"></div>
+                <div class="space-y-1 text-xs text-gray-600" id="retail-lines">
+                    <!-- Dynamic Rows Go Here -->
+                </div>
+                <div class="space-y-1 text-xs text-gray-600 mt-2 border-t border-dashed pt-2">
+                    <div class="flex justify-between text-blue-700 hidden" id="row-ret-install"><span>Installation Labor:</span><span id="ret-install" class="font-bold">$0.00</span></div>
+                    
+                    <!-- Design Fee Line with Dynamic Label -->
+                    <div class="flex justify-between text-purple-700 hidden" id="row-ret-design">
+                        <span><span id="lbl-design-title">Design Fee</span>:</span>
+                        <span id="ret-design" class="font-bold">$0.00</span>
+                    </div>
+                    
+                    <div class="flex justify-between text-gray-400 mt-2"><span>Price Per SqFt:</span><span id="unit-price" class="font-bold">$0.00</span></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: IN-HOUSE COST -->
+            <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
+                <div class="space-y-2 text-xs text-gray-700">
+                    
+                    <!-- MATERIALS -->
+                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials (Grimco)</h4>
+                    <div class="flex justify-between"><span>3M Cast Vinyl:</span> <span id="cost-mat-vinyl" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>3M Cast Lam:</span> <span id="cost-mat-lam" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Latex Ink:</span> <span id="cost-mat-ink" class="font-bold">$0.00</span></div>
+                    
+                    <div class="border-t border-yellow-200 mt-1 pt-1 space-y-1">
+                        <div class="flex justify-between text-[10px] text-gray-500 italic">
+                            <span>Print Area (w/ Overlaps):</span> <span id="val-prod-sqft">0.0 sqft</span>
+                        </div>
+                        <div class="flex justify-between font-bold text-gray-900">
+                            <span>Material Subtotal:</span> <span id="sub-materials">$0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-yellow-200 my-2"></div>
+
+                    <!-- PRODUCTION TIME -->
+                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Time & Cost</h4>
+                    
+                    <!-- Design -->
+                    <div class="flex justify-between items-center hidden" id="row-cost-design">
+                        <span class="w-1/3 text-purple-800">Design Labor:</span>
+                        <span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1">0m</span>
+                        <span id="cost-design" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <!-- Setup -->
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Job Setup:</span>
+                        <span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">30m</span>
+                        <span id="cost-setup" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <!-- Print Run -->
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Print Run:</span>
+                        <span id="time-print" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                        <span id="cost-print" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <!-- Laminate -->
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Lamination:</span>
+                        <span id="time-lam" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                        <span id="cost-lam" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <!-- Install -->
+                    <div class="flex justify-between items-center hidden" id="row-time-install">
+                        <span class="w-1/3 text-blue-800">Install (2-Man):</span>
+                        <span id="time-install" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1">0m</span>
+                        <span id="cost-install-lab" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <div class="border-t border-yellow-200 mt-1 pt-1 flex justify-between font-bold text-gray-900">
+                        <span>Production Subtotal:</span> <span id="sub-production">$0.00</span>
+                    </div>
+
+                    <div class="border-t-2 border-yellow-300 my-2"></div>
+                    <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Job Cost:</span> <span id="cost-total">$0.00</span></div>
+                    
+                    <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
+                        <div class="flex justify-between items-end">
+                            <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
+                            <div class="text-right"><div class="text-[10px] uppercase font-bold text-gray-400">Margin</div><div class="text-xl font-bold text-blue-600" id="margin-inhouse">0%</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: VENDED COST -->
+            <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
+                <!-- Paint Unavailable Warning -->
+                <div id="vend-install-warn" class="hidden mb-4 p-2 bg-orange-100 border border-orange-300 text-orange-800 rounded text-xs text-center font-bold">
+                    ⚠️ Install & Design Excluded<br><span class="text-[9px] font-normal">(Print Margin Analysis Only)</span>
+                </div>
+
+                <div class="space-y-2 text-xs text-gray-700">
+                    <div class="flex justify-between font-bold text-indigo-900"><span>Retail (Print Only):</span> <span id="vend-revenue">$0.00</span></div>
+                    <div class="border-t border-dashed border-indigo-200 my-1"></div>
+                    <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Shipping:</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
+                    <div class="border-t border-indigo-200 my-1"></div>
+                    <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Vendor Bill:</span> <span id="vend-total">$0.00</span></div>
+                    <div class="mt-4 bg-white p-3 rounded border border-indigo-200 shadow-sm">
+                        <div class="flex justify-between items-end">
+                            <div><div class="text-[10px] uppercase font-bold text-gray-400">Print Profit</div><div class="text-xl font-bold text-green-600" id="profit-vend">$0.00</div></div>
+                            <div class="text-right"><div class="text-[10px] uppercase font-bold text-gray-400">Print Margin</div><div class="text-xl font-bold text-blue-600" id="margin-vend">0%</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="error-msg" class="hidden text-[10px] text-red-500 p-4 text-center bg-red-50"></div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
+        const TAB_NAME = "PROD_Vehicle_Wraps"; 
+        let backend = {};
+
+        window.onload = async function() {
+            const statusText = document.getElementById("status-text");
+            const statusDot = document.getElementById("status-dot");
+            try {
+                const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                backend = data;
+                statusText.innerText = "ONLINE";
+                statusText.classList.replace("text-gray-400", "text-green-500");
+                statusDot.classList.replace("bg-red-500", "bg-green-500");
+                statusDot.classList.remove("animate-pulse");
+                if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
+                calculate();
+            } catch (e) {
+                statusText.innerText = "OFFLINE";
+                statusText.classList.replace("text-gray-400", "text-red-500");
+                document.getElementById("error-msg").innerText = e.message;
+                document.getElementById("error-msg").classList.remove("hidden");
+            }
+        };
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+            document.getElementById('btn-'+id).classList.add('active');
+        }
+
+        function calculate() {
+            if (!backend.Item_Name) return;
+
+            // --- GATHER MEASUREMENTS ---
+            const sections = [
+                {id: 'front', label: 'Front/Hood'},
+                {id: 'rear', label: 'Rear'},
+                {id: 'driver', label: 'Driver Side'},
+                {id: 'pass', label: 'Pass. Side'},
+                {id: 'roof', label: 'Roof'}
+            ];
+
+            let billableSqFt = 0;    
+            let productionSqFt = 0;  
+            const lineItems = [];
+            const fmt = (n) => new Intl.NumberFormat('en-US', {style:'currency', currency:'USD'}).format(n);
+            const fmtTime = (h) => { if(h<0.01) return "0m"; const hrs = Math.floor(h); const mins = Math.round((h-hrs)*60); return `${hrs}h ${mins}m`; };
+
+            // SECURE: NO HARDCODED VALUES
+            const baseRate = parseFloat(backend.Retail_Price_Wrap_SqFt || 0);
+            const maxPanelW = parseFloat(backend.Constraint_Max_Panel || 52); // Safe constraint default
+            const overlap = parseFloat(backend.Constraint_Overlap || 1);     // Safe constraint default
+            const effectiveW = maxPanelW - overlap;
+
+            sections.forEach(sec => {
+                const w = parseFloat(document.getElementById('w-' + sec.id).value) || 0;
+                const h = parseFloat(document.getElementById('h-' + sec.id).value) || 0;
+                
+                const sq = (w * h) / 144;
+                billableSqFt += sq;
+                
+                let panels = 0;
+                let prodSq = 0;
+                
+                if (sq > 0) {
+                    if (w <= maxPanelW) panels = 1;
+                    else panels = Math.ceil((w - overlap) / effectiveW);
+                    
+                    const totalOverlapInches = (panels - 1) * overlap;
+                    const prodWidth = w + totalOverlapInches;
+                    prodSq = (prodWidth * h) / 144;
+                    productionSqFt += prodSq;
+
+                    document.getElementById('pan-' + sec.id).innerText = panels;
+                    const price = sq * baseRate;
+                    lineItems.push(`<div class="flex justify-between"><span>${sec.label} (${panels} Panels):</span><span class="font-bold">${fmt(price)}</span></div>`);
+                } else {
+                    document.getElementById('pan-' + sec.id).innerText = "-";
+                }
+            });
+
+            document.getElementById('total-sqft').innerText = billableSqFt.toFixed(1);
+            document.getElementById('val-prod-sqft').innerText = productionSqFt.toFixed(1) + " sqft";
+            document.getElementById('retail-lines').innerHTML = lineItems.join('');
+
+            // Inputs
+            const complexity = document.getElementById('complexity').value;
+            const hasInstall = document.getElementById('has-install').checked;
+            const incDesign = document.getElementById('inc-design').checked;
+
+            // --- 1. RETAIL ---
+            const retailWrap = billableSqFt * baseRate;
+
+            // Install Logic
+            let retailInstall = 0;
+            let installRateDisplay = parseFloat(backend.Retail_Price_Install_Simple || 0);
+            
+            if (hasInstall) {
+                if (complexity === 'Complex') {
+                    const mult = parseFloat(backend.Retail_Mult_Complex || 0);
+                    installRateDisplay = installRateDisplay * mult;
+                }
+                retailInstall = billableSqFt * installRateDisplay;
+                
+                document.getElementById('install-metrics').classList.remove('hidden');
+                document.getElementById('lbl-install-rate').innerText = "$" + installRateDisplay.toFixed(2);
+                
+                const speedInst = complexity === 'Simple' ? parseFloat(backend.Speed_Install_Simple || 25) : parseFloat(backend.Speed_Install_Complex || 10);
+                const hrs = billableSqFt / speedInst;
+                const days = hrs / 8; // 8hr day
+                document.getElementById('lbl-install-days').innerText = days.toFixed(1);
+                
+                document.getElementById('row-ret-install').classList.remove('hidden');
+                document.getElementById('ret-install').innerText = fmt(retailInstall);
+            } else {
+                document.getElementById('install-metrics').classList.add('hidden');
+                document.getElementById('row-ret-install').classList.add('hidden');
+            }
+
+            // Design Retail
+            let retailDesign = 0;
+            if (incDesign) {
+                const rateSimp = parseFloat(backend.Retail_Rate_Design_Simp || 0);
+                const rateCplx = parseFloat(backend.Retail_Rate_Design_Cplx || 0);
+                
+                const desRate = (complexity === 'Simple') ? rateSimp : rateCplx;
+                
+                const baseHrs = parseFloat(backend.Time_Design_Base || 0);
+                const timeMult = (complexity === 'Complex') ? parseFloat(backend.Time_Mult_Design_Cplx || 0) : 1.0;
+                
+                const totalDesHrs = baseHrs * timeMult;
+                retailDesign = totalDesHrs * desRate;
+
+                document.getElementById('row-ret-design').classList.remove('hidden');
+                document.getElementById('ret-design').innerText = fmt(retailDesign);
+                
+                document.getElementById('lbl-design-title').innerText = (complexity === 'Simple') ? "Design Fee (Simple)" : "Design Fee (Complex)";
+                document.getElementById('design-metrics').classList.remove('hidden');
+                document.getElementById('lbl-design-hrs').innerText = totalDesHrs.toFixed(1);
+                document.getElementById('lbl-design-rate').innerText = "$" + desRate;
+
+            } else {
+                document.getElementById('row-ret-design').classList.add('hidden');
+                document.getElementById('design-metrics').classList.add('hidden');
+            }
+
+            const totalQuote = retailWrap + retailInstall + retailDesign;
+
+            // --- 2. IN-HOUSE COST (Uses PRODUCTION SqFt) ---
+            const waste = parseFloat(backend.Waste_Factor || 0);
+            
+            // Materials Cost
+            const costVinyl = productionSqFt * parseFloat(backend.Cost_Vinyl_Cast || 0) * waste;
+            const costLam = productionSqFt * parseFloat(backend.Cost_Lam_Cast || 0) * waste;
+            const costInk = productionSqFt * parseFloat(backend.Cost_Ink_Latex || 0);
+            
+            const subMaterials = costVinyl + costLam + costInk;
+
+            // Production Time & Labor
+            const rateOp = parseFloat(backend.Rate_Operator || 0);
+            
+            // Design Labor (Internal)
+            let timeDesign = 0;
+            let costDesign = 0;
+            if (incDesign) {
+                const baseHrs = parseFloat(backend.Time_Design_Base || 0);
+                const timeMult = (complexity === 'Complex') ? parseFloat(backend.Time_Mult_Design_Cplx || 0) : 1.0;
+                timeDesign = baseHrs * timeMult;
+                costDesign = timeDesign * rateOp;
+
+                document.getElementById('row-cost-design').classList.remove('hidden');
+                document.getElementById('time-design').innerText = fmtTime(timeDesign);
+                document.getElementById('cost-design').innerText = fmt(costDesign);
+            } else {
+                document.getElementById('row-cost-design').classList.add('hidden');
+            }
+
+            // Setup Cost (Internal)
+            const timeSetup = 0.5; 
+            const costSetup = timeSetup * rateOp;
+
+            // Print Run (Uses Production SqFt)
+            const speedPrint = parseFloat(backend.Speed_Print_Roll || 1); // Avoid div/0
+            const timePrint = productionSqFt / speedPrint;
+            const costPrint = timePrint * (parseFloat(backend.Rate_Machine_Print || 0) + rateOp);
+
+            // Laminate Run (Uses Production SqFt)
+            const speedLam = parseFloat(backend.Speed_Lam_Roll || 1); // Avoid div/0
+            const timeLam = productionSqFt / speedLam;
+            const costLamRun = timeLam * rateOp; 
+
+            // Install Labor Cost (Uses Billable SqFt)
+            let costInstallLab = 0;
+            if (hasInstall) {
+                const speedInst = complexity === 'Simple' ? parseFloat(backend.Speed_Install_Simple || 25) : parseFloat(backend.Speed_Install_Complex || 10);
+                const installHrs = billableSqFt / speedInst;
+                const rateCrew = parseFloat(backend.Rate_Install_Lead || 0) + parseFloat(backend.Rate_Install_Assist || 0);
+                costInstallLab = installHrs * rateCrew;
+                
+                document.getElementById('row-time-install').classList.remove('hidden');
+                document.getElementById('time-install').innerText = fmtTime(installHrs);
+                document.getElementById('cost-install-lab').innerText = fmt(costInstallLab);
+            } else {
+                document.getElementById('row-time-install').classList.add('hidden');
+            }
+
+            const subProduction = costDesign + costSetup + costPrint + costLamRun + costInstallLab;
+            const totalInHouse = subMaterials + subProduction;
+
+            // --- 3. VENDED (PRINT MARGIN ANALYSIS) ---
+            const vendRate = parseFloat(backend.S365_Wrap_SqFt || 0);
+            const vendPrint = productionSqFt * vendRate; 
+            
+            const vendShip = parseFloat(backend.Ship_Std || 0);
+            const totalVended = vendPrint + vendShip;
+
+            // Vended Profit = Retail Print Revenue - Vendor Print Cost
+            const vendProfit = retailWrap - totalVended;
+
+            // --- UI UPDATE ---
+            const pct = (n) => (n * 100).toFixed(1) + "%";
+
+            // Retail
+            document.getElementById('total-price').innerText = fmt(totalQuote);
+            if(billableSqFt>0) document.getElementById('unit-price').innerText = fmt(totalQuote/billableSqFt);
+            else document.getElementById('unit-price').innerText = "$0.00";
+
+            // Cost - Materials
+            document.getElementById('cost-mat-vinyl').innerText = fmt(costVinyl);
+            document.getElementById('cost-mat-lam').innerText = fmt(costLam);
+            document.getElementById('cost-mat-ink').innerText = fmt(costInk);
+            document.getElementById('sub-materials').innerText = fmt(subMaterials);
+
+            // Cost - Production
+            document.getElementById('cost-setup').innerText = fmt(costSetup);
+            
+            document.getElementById('time-print').innerText = fmtTime(timePrint);
+            document.getElementById('cost-print').innerText = fmt(costPrint);
+            
+            document.getElementById('time-lam').innerText = fmtTime(timeLam);
+            document.getElementById('cost-lam').innerText = fmt(costLamRun);
+            
+            document.getElementById('sub-production').innerText = fmt(subProduction);
+
+            // Totals
+            document.getElementById('cost-total').innerText = fmt(totalInHouse);
+            const profIn = totalQuote - totalInHouse;
+            document.getElementById('profit-inhouse').innerText = fmt(profIn);
+            if(totalQuote>0) document.getElementById('margin-inhouse').innerText = pct(profIn/totalQuote);
+
+            // Vend
+            document.getElementById('vend-revenue').innerText = fmt(retailWrap);
+            document.getElementById('vend-print').innerText = fmt(vendPrint);
+            document.getElementById('vend-ship').innerText = fmt(vendShip);
+            document.getElementById('vend-total').innerText = fmt(totalVended);
+            
+            document.getElementById('profit-vend').innerText = fmt(vendProfit);
+            if(retailWrap>0) document.getElementById('margin-vend').innerText = pct(vendProfit/retailWrap);
+
+            // Warnings
+            if(hasInstall) document.getElementById('vend-install-warn').classList.remove('hidden');
+            else document.getElementById('vend-install-warn').classList.add('hidden');
+
+            const profitWarn = document.getElementById('profit-warn');
+            if (profIn < 0 && vendProfit < 0) {
+                profitWarn.classList.remove('hidden');
+                profitWarn.classList.add('warn-pulse');
+            } else {
+                profitWarn.classList.add('hidden');
+                profitWarn.classList.remove('warn-pulse');
+            }
+        }
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignOS System Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .code-block { font-family: monospace; background: #f3f4f6; padding: 2px 4px; rounded: 4px; color: #c026d3; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans p-8">
+
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
+        
+        <!-- HEADER -->
+        <div class="bg-gray-900 px-8 py-6 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black tracking-tight">SignOS Documentation</h1>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">System Architecture & Logic Guide</p>
+            </div>
+            <div class="text-right text-xs">
+                <div class="font-bold text-gray-400">VERSION 3.2</div>
+                <div class="text-green-400">LIVE</div>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="flex border-b border-gray-200">
+            <button onclick="switchTab('index')" class="flex-1 py-4 text-sm font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-index">SYSTEM INDEX</button>
+            <button onclick="switchTab('logic')" class="flex-1 py-4 text-sm font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-logic">CALCULATOR LOGIC</button>
+            <button onclick="switchTab('glossary')" class="flex-1 py-4 text-sm font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-glossary">GLOSSARY</button>
+        </div>
+
+        <!-- CONTENT: INDEX -->
+        <div id="tab-index" class="tab-content active p-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">File Index & Status</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-gray-500 font-bold uppercase text-xs">
+                        <tr>
+                            <th class="px-4 py-3">File Name</th>
+                            <th class="px-4 py-3">Type</th>
+                            <th class="px-4 py-3">Backend Tab Link</th>
+                            <th class="px-4 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">Gateway.html</td><td>Security</td><td>Master_Staff</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">index.html</td><td>Menu</td><td>(Navigation Only)</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">YardSign_Calculator.html</td><td>Rigid</td><td>PROD_Yard_Signs</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">Coro_Calculator.html</td><td>Rigid</td><td>PROD_Coroplast_Signs</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">ACM_Calculator.html</td><td>Rigid</td><td>PROD_ACM_Signs</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">Acrylic_Calculator.html</td><td>Rigid</td><td>PROD_Acrylic_Signs</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">Banner_Calculator.html</td><td>Roll</td><td>PROD_Vinyl_Banners</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">Decal_Calculator.html</td><td>Roll</td><td>PROD_Decals</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">Wrap_Calculator.html</td><td>Roll</td><td>PROD_Vehicle_Wraps</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                        <tr><td class="px-4 py-3 font-mono text-blue-600">CutVinyl_Calculator.html</td><td>Roll</td><td>PROD_Cut_Vinyl</td><td><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONTENT: LOGIC -->
+        <div id="tab-logic" class="tab-content p-8 space-y-8">
+            
+            <section>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">1. The Waterfall Architecture</h3>
+                <p class="text-sm text-gray-600 mb-4">SignOS uses a strict one-way flow of data to ensure consistency.</p>
+                <div class="bg-gray-50 p-4 rounded border border-gray-200 text-sm space-y-2">
+                    <p><span class="font-bold text-blue-600">Level 1 (Masters):</span> The Source of Truth. Defines raw costs (e.g., Ink = $0.16/sqft). Only Owners edit this.</p>
+                    <p>↓</p>
+                    <p><span class="font-bold text-purple-600">Level 2 (Products):</span> The Context Layer. Combines Master data to build a product price (e.g., A Banner uses Ink + Vinyl + Grommets). Managers edit this.</p>
+                    <p>↓</p>
+                    <p><span class="font-bold text-green-600">Level 3 (Frontend):</span> The Calculator. Takes User Input (Qty 10) and multiplies it by Level 2 data. No math happens here.</p>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">2. Production Physics</h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-sm text-gray-700 mb-1">Linear Print Logic (Roll/Hybrid)</h4>
+                        <p class="text-xs text-gray-500">Printers have a fixed width (64"). If a sign is 48x96, the system calculates print time based on feeding 8 linear feet through the machine, not just total square footage. This accounts for the physical carriage movement time.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm text-gray-700 mb-1">Sheet Logic (Rigid)</h4>
+                        <p class="text-xs text-gray-500">For Coroplast and ACM, the system calculates how many full 4x8 sheets are required. Setup time and Load/Unload time are applied <strong>per sheet</strong>, not per small sign, to ensure accurate labor costing for batch runs.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">3. Profit Guard & Risk</h3>
+                <p class="text-sm text-gray-600">Every calculator includes a <span class="font-bold text-orange-600">Risk Buffer</span> (typically 15-20%). This is not profit; it is a cost reserve for mistakes, material flaws, and reprints. If the Net Profit drops below $0.00 on both In-House and Vendor tabs, a <span class="font-bold text-red-600">LOSS ALERT</span> warning triggers on the screen.</p>
+            </section>
+        </div>
+
+        <!-- CONTENT: GLOSSARY -->
+        <div id="tab-glossary" class="tab-content p-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Backend Variable Glossary</h2>
+            <p class="text-sm text-gray-500 mb-6">Use these prefixes to understand the variables in the Google Sheet.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div class="border p-4 rounded bg-white">
+                    <span class="code-block">Retail_</span>
+                    <p class="text-xs text-gray-600 mt-1">Customer-facing prices. (e.g., <span class="font-mono">Retail_Price_Sign_SS</span>).</p>
+                </div>
+
+                <div class="border p-4 rounded bg-white">
+                    <span class="code-block">Cost_</span>
+                    <p class="text-xs text-gray-600 mt-1">Internal manufacturing cost. (e.g., <span class="font-mono">Cost_Ink_UV</span>).</p>
+                </div>
+
+                <div class="border p-4 rounded bg-white">
+                    <span class="code-block">S365_</span> / <span class="code-block">Vend_</span>
+                    <p class="text-xs text-gray-600 mt-1">Wholesale pricing from Signs365. Used for the "Vended" tab comparison.</p>
+                </div>
+
+                <div class="border p-4 rounded bg-white">
+                    <span class="code-block">Time_</span>
+                    <p class="text-xs text-gray-600 mt-1">Standard production time in Minutes. (e.g., <span class="font-mono">Time_Setup_Print</span> = 15).</p>
+                </div>
+
+                <div class="border p-4 rounded bg-white">
+                    <span class="code-block">Rate_</span>
+                    <p class="text-xs text-gray-600 mt-1">Hourly cost of Labor or Machinery. (e.g., <span class="font-mono">Rate_Operator</span> = $25/hr).</p>
+                </div>
+
+                <div class="border p-4 rounded bg-white">
+                    <span class="code-block">Constraint_</span>
+                    <p class="text-xs text-gray-600 mt-1">Physical limits. (e.g., <span class="font-mono">Constraint_Bed_Width</span> = 64").</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+            document.getElementById('btn-'+id).classList.add('active');
+        }
+    </script>
+</body>
+</html>
