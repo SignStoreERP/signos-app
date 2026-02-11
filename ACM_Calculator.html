@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACM Calculator v4.3</title>
+    <title>ACM Calculator v5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -15,8 +15,10 @@
         .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
         .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
         .mode-prod .prod-hidden { display: none !important; }
+        .mode-prod .prod-width { width: 100% !important; text-align: right; }
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
+        .blur-section { filter: grayscale(100%) opacity(0.5); pointer-events: none; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
@@ -32,7 +34,9 @@
         </div>
 
         <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
-            <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">MENU</a>
+            <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
+            </a>
             <div class="text-center">
                 <h2 class="text-lg font-bold" id="product-label">ACM Signs</h2>
                 <div class="flex items-center justify-center gap-2 text-[10px]">
@@ -40,53 +44,63 @@
                     <span id="status-text" class="text-gray-400">CONNECTING...</span>
                 </div>
             </div>
-            <button onclick="location.reload()" class="text-gray-400 hover:text-white">↺</button>
+            <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
         </div>
 
-        <div id="size-warn" class="hidden bg-orange-500 text-white text-center py-2 px-4 text-xs font-bold uppercase">⚠️ Exceeds 60" x 120"</div>
-        <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-3 px-4 text-sm font-bold uppercase border-b-4 border-red-800">🛑 LOSS ALERT</div>
+        <div id="size-warn" class="hidden bg-orange-500 text-white text-center py-2 px-4 text-xs font-bold uppercase">⚠️ Oversized: Exceeds 48" x 96" Sheet</div>
+        <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-2 px-4 text-sm font-bold uppercase border-b-4 border-red-800">🛑 LOSS ALERT: PRICE TOO LOW</div>
 
         <!-- INPUTS -->
         <div class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="block text-xs font-bold text-gray-500 uppercase">Width</label><input type="number" id="width" value="24" class="w-full border p-2 rounded font-bold text-gray-800" oninput="calculate()"></div>
-                <div><label class="block text-xs font-bold text-gray-500 uppercase">Height</label><input type="number" id="height" value="18" class="w-full border p-2 rounded font-bold text-gray-800" oninput="calculate()"></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="width" value="24" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="checkDim(); calculate()"></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="height" value="18" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="checkDim(); calculate()"></div>
             </div>
+            
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="block text-xs font-bold text-gray-500 uppercase">Qty</label><input type="number" id="qty" value="1" class="w-full border p-2 rounded font-bold text-gray-800" oninput="calculate()"></div>
-                <div><label class="block text-xs font-bold text-gray-500 uppercase">Sides</label>
-                    <div class="grid grid-cols-2 gap-1 h-[42px]">
-                        <button type="button" id="btn-side-1" class="side-btn selected border rounded text-xs font-bold" onclick="setSides(1)">1</button>
-                        <button type="button" id="btn-side-2" class="side-btn border rounded text-xs font-bold" onclick="setSides(2)">2</button>
-                    </div>
-                    <input type="hidden" id="sides" value="1">
-                </div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label><input type="number" id="qty" value="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()"></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Files</label><input type="number" id="files" value="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()"></div>
             </div>
+            
             <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase">Material</label>
-                <select id="material" class="w-full border p-2 rounded font-bold text-sm" onchange="calculate()">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Material</label>
+                <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px]" onchange="calculate()">
                     <option value="3mm">3mm ACM (Standard)</option>
                     <option value="6mm">6mm ACM (Heavy Duty)</option>
                 </select>
             </div>
-            <!-- NEW: LAMINATE TOGGLE -->
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase">Laminate Finish</label>
-                <select id="lam-finish" class="w-full border p-2 rounded font-bold text-sm" onchange="calculate()">
-                    <option value="Gloss">Gloss (Standard)</option>
-                    <option value="Matte">Matte (Anti-Glare)</option>
-                </select>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btn-side-1" class="side-btn selected py-2 border rounded font-bold text-sm" onclick="setSides(1)">Single Sided</button>
+                <button type="button" id="btn-side-2" class="side-btn py-2 border rounded font-bold text-sm" onclick="setSides(2)">Double Sided</button>
+                <input type="hidden" id="sides" value="1">
             </div>
             
-            <div class="border-t border-gray-100 my-2"></div>
-            
-            <!-- Shape -->
-            <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
-                <span class="text-xs font-bold text-gray-700">Shape</span>
-                <select id="cut-type" class="bg-white border text-xs p-1 rounded" onchange="calculate()">
-                    <option value="Square">Square/Rect</option>
-                    <option value="Contour">Contour (+35%)</option>
-                </select>
+            <div class="space-y-2 border-t border-gray-100 pt-2">
+                <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
+                    <span class="text-xs font-bold text-gray-700">Shape / Cut</span>
+                    <select id="cut-type" class="bg-white border text-xs p-1 rounded font-bold" onchange="calculate()">
+                        <option value="Square">Square/Rect</option>
+                        <option value="Contour">Contour Cut</option>
+                        <option value="Rounded">Rounded Corners</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
+                    <span class="text-[10px] font-bold text-gray-700">Gloss Laminate?</span>
+                    <div class="relative inline-block w-8 align-middle select-none">
+                        <input type="checkbox" id="is-gloss" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="calculate()"/>
+                        <label for="is-gloss" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-2 bg-purple-50 border border-purple-100 rounded">
+                    <span class="text-xs font-bold text-purple-900">Include Design Fee?</span>
+                    <div class="relative inline-block w-10 align-middle select-none">
+                        <input type="checkbox" id="inc-design" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="calculate()"/>
+                        <label for="inc-design" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -98,18 +112,74 @@
                 <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
             </div>
             
+            <!-- RETAIL TAB -->
             <div id="tab-retail" class="tab-content active bg-white p-6">
                 <div class="flex justify-between items-center mb-4"><span class="text-xs font-bold text-gray-400 uppercase">Unit Price</span><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
-                <div class="flex justify-between items-end border-t pt-4"><div><span class="text-xs font-bold text-gray-400 uppercase">Total</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
+                
+                <div class="space-y-1 text-xs text-gray-600 border-t border-gray-100 pt-2 mb-2">
+                    <div class="flex justify-between"><span>Base Print (<span id="lbl-mat">3mm</span>):</span><span id="ret-print" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between hidden text-blue-700" id="row-ret-gloss"><span>Gloss Finish:</span><span id="ret-gloss" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between hidden text-orange-700" id="row-ret-contour"><span>CNC Contour:</span><span id="ret-contour" class="font-bold">$0.00</span></div>
+                    <div class="border-t border-dashed border-gray-200 my-1"></div>
+                    <div class="flex justify-between"><span>Setup:</span><span id="ret-setup" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between text-purple-700 hidden" id="row-ret-design"><span>Design Fee:</span><span id="ret-design" class="font-bold">$0.00</span></div>
+                </div>
+
+                <div class="flex justify-between items-end border-t-2 border-gray-800 pt-2"><div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
             </div>
             
+            <!-- IN-HOUSE TAB -->
             <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
-                <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
-                <div class="mt-2 text-xs text-gray-500 flex justify-between"><span>Sheet Used:</span> <span id="sheet-used" class="font-bold text-gray-800">4x8</span></div>
+                <div class="space-y-2 text-xs text-gray-700">
+                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
+                    <div class="flex justify-between"><span>Substrate:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Ink (UV):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
+                    
+                    <div class="border-t border-yellow-200 my-1 pt-1"></div>
+                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
+                    
+                    <div class="flex justify-between items-center hidden" id="row-lab-design">
+                        <span class="w-1/3">Design:</span><span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1">0m</span><span id="cost-lab-design" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Setup:</span><span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-lab-setup" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">Print (R1000):</span><span id="time-run" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-run" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="w-1/3">CNC Router:</span><span id="time-cnc" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-cnc" class="w-1/3 text-right font-bold">$0.00</span>
+                    </div>
+
+                    <div class="border-t border-yellow-200 my-2 pt-1"></div>
+                    <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
+                    
+                    <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
+                        <div class="flex justify-between items-end">
+                            <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
+                            <div class="text-right"><div class="text-[10px] uppercase font-bold text-gray-400">Margin</div><div class="text-xl font-bold text-blue-600" id="margin-inhouse">0%</div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
+
+            <!-- VENDED TAB -->
             <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
-                <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Vended:</span> <span id="vend-total">$0.00</span></div>
+                <div class="space-y-2 text-xs text-gray-700">
+                    <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between text-indigo-800"><span>Extras (Gloss/Cut):</span> <span id="vend-extras" class="font-bold">$0.00</span></div>
+                    <div class="flex justify-between"><span>Shipping (<span id="vend-ship-tier">T1</span>):</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
+                    
+                    <div class="border-t border-indigo-200 my-1"></div>
+                    <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended Bill:</span> <span id="vend-total">$0.00</span></div>
+                    
+                    <div class="mt-4 bg-white p-3 rounded border border-indigo-200 shadow-sm">
+                        <div class="flex justify-between items-end">
+                            <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-vend">$0.00</div></div>
+                            <div class="text-right"><div class="text-[10px] uppercase font-bold text-gray-400">Margin</div><div class="text-xl font-bold text-blue-600" id="margin-vend">0%</div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -150,8 +220,20 @@
 
         function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
         function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
-        function setSides(n) { document.getElementById('sides').value = n; document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('btn-side-'+n).classList.add('selected'); calculate(); }
-        function switchTab(id) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-'+id).classList.add('active'); }
+        
+        function setSides(n) { 
+            document.getElementById('sides').value = n; 
+            document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('selected')); 
+            document.getElementById('btn-side-'+n).classList.add('selected'); 
+            calculate(); 
+        }
+        
+        function switchTab(id) { 
+            document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); 
+            document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); 
+            document.getElementById('tab-'+id).classList.add('active'); 
+            document.getElementById('btn-'+id).classList.add('active'); 
+        }
 
         window.onload = async function() {
             initSession();
@@ -169,69 +251,215 @@
                 if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
                 calculate();
             } catch(e) { 
-                statusText.innerText = "OFFLINE"; statusText.classList.replace("text-gray-400", "text-red-500");
-                document.getElementById("error-msg").innerText = e.message; document.getElementById("error-msg").classList.remove("hidden");
+                statusText.innerText = "OFFLINE"; 
+                statusText.classList.replace("text-gray-400", "text-red-500");
+                document.getElementById("error-msg").innerText = e.message;
+                document.getElementById("error-msg").classList.remove("hidden");
             }
         };
+
+        function checkDim() {
+            const w = parseFloat(document.getElementById('width').value)||0;
+            const h = parseFloat(document.getElementById('height').value)||0;
+            const dim1 = Math.min(w,h);
+            const dim2 = Math.max(w,h);
+            if (dim1 > 48 || dim2 > 96) {
+                document.getElementById('size-warn').classList.remove('hidden');
+                document.getElementById('tab-cost').classList.add('blur-section');
+            } else {
+                document.getElementById('size-warn').classList.add('hidden');
+                document.getElementById('tab-cost').classList.remove('blur-section');
+            }
+        }
 
         function calculate() {
             if(!backend.Item_Name) return;
             const w = parseFloat(document.getElementById('width').value)||0;
             const h = parseFloat(document.getElementById('height').value)||0;
             const qty = parseFloat(document.getElementById('qty').value)||1;
+            const files = parseFloat(document.getElementById('files').value)||1;
+            const sides = parseInt(document.getElementById('sides').value);
             const mat = document.getElementById('material').value;
             const cutType = document.getElementById('cut-type').value;
-            const lamFinish = document.getElementById('lam-finish').value;
-            const sides = parseInt(document.getElementById('sides').value);
+            const isGloss = document.getElementById('is-gloss').checked;
+            const incDesign = document.getElementById('inc-design').checked;
 
             const sqft = (w*h)/144;
             const totalSqFt = sqft * qty;
 
-            // RETAIL
-            let baseRate = mat === '6mm' ? 16.50 : 14.00;
-            if(backend.Retail_Price_3mm_Base) baseRate = (mat==='6mm' ? backend.Retail_Price_6mm_Base : backend.Retail_Price_3mm_Base);
-            if(sides===2) baseRate += 7.00;
+            // --- 1. RETAIL ---
+            let baseRate = mat === '3mm' ? parseFloat(backend.Retail_Price_3mm_Base||14) : parseFloat(backend.Retail_Price_6mm_Base||16.5);
+            if(sides===2) baseRate += (mat === '3mm' ? parseFloat(backend.Retail_Adder_DS_3mm||7) : parseFloat(backend.Retail_Adder_DS_6mm||8.25));
 
-            let price = baseRate * totalSqFt;
-            if(cutType === 'Contour') price *= 1.35;
-            
-            if(price < 50) price = 50;
+            let retailPrint = baseRate * totalSqFt;
+            let retailContour = 0;
+            let retailGloss = 0;
 
-            document.getElementById('unit-price').innerText = "$" + (price/qty).toFixed(2);
-            document.getElementById('total-price').innerText = "$" + price.toFixed(2);
-
-            // COST LOGIC (SHEET SELECTION)
-            const dim1 = Math.min(w,h);
-            const dim2 = Math.max(w,h);
-            let selectedSheet = "4x8";
-            let sheetCost = parseFloat(backend.Cost_Sheet_3mm || 63.24);
-            let valid = true;
-
-            if (dim1 <= 48 && dim2 <= 96) { selectedSheet = "4x8"; }
-            else if (dim1 <= 48 && dim2 <= 120) { selectedSheet = "4x10"; sheetCost = parseFloat(backend.Cost_Sheet_4x10 || 90.74); }
-            else if (dim1 <= 60 && dim2 <= 120) { selectedSheet = "5x10"; sheetCost = parseFloat(backend.Cost_Sheet_5x10 || 107.76); }
-            else { valid = false; document.getElementById('size-warn').classList.remove('hidden'); }
-
-            if(valid) {
-                document.getElementById('size-warn').classList.add('hidden');
-                document.getElementById('sheet-used').innerText = selectedSheet;
-                
-                const sheetsNeeded = Math.ceil(totalSqFt / (selectedSheet === "4x8" ? 32 : (selectedSheet === "4x10" ? 40 : 50)));
-                const matCost = sheetsNeeded * sheetCost;
-                const inkCost = totalSqFt * 0.16;
-                const laborCost = 30 + (qty * 5); // Sim
-                const totalCost = matCost + inkCost + laborCost;
-                
-                document.getElementById('cost-total').innerText = "$" + totalCost.toFixed(2);
-                const prof = price - totalCost;
-                
-                const profitWarn = document.getElementById('profit-warn');
-                if(prof < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
-                else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
+            if(cutType === 'Contour' || cutType === 'Rounded') {
+                retailContour = retailPrint * parseFloat(backend.Retail_Adder_Contour_Pct || 0.35);
             }
 
-            // Desc
-            const desc = `(x${qty}) ${w}" x ${h}" ${mat} ACM. Direct Print + ${lamFinish} Laminate. ${cutType} Cut. (Req: ${selectedSheet} Sheet).`;
+            if(isGloss) {
+                retailGloss = qty * parseFloat(backend.Retail_Price_Gloss || 8.00);
+            }
+
+            let feeDesign = 0;
+            if(incDesign) feeDesign = parseFloat(backend.Retail_Fee_Design || 45);
+            let feeSetup = parseFloat(backend.Retail_Fee_Setup || 25);
+
+            let price = retailPrint + retailContour + retailGloss + feeDesign + feeSetup;
+            const minOrder = parseFloat(backend.Retail_Min_Order || 50);
+            if(price < minOrder) price = minOrder;
+
+            // Retail UI
+            const fmt = (n) => "$" + n.toFixed(2);
+            const pct = (n) => (n * 100).toFixed(1) + "%";
+            const fmtTime = (h) => { const mins = Math.round(h*60); return h >= 1 ? h.toFixed(1)+"h" : mins+"m"; };
+
+            document.getElementById('lbl-mat').innerText = mat;
+            document.getElementById('ret-print').innerText = fmt(retailPrint);
+            document.getElementById('unit-price').innerText = fmt(price/qty);
+            document.getElementById('total-price').innerText = fmt(price);
+            document.getElementById('ret-setup').innerText = fmt(feeSetup);
+
+            if(retailGloss > 0) { document.getElementById('row-ret-gloss').classList.remove('hidden'); document.getElementById('ret-gloss').innerText = fmt(retailGloss); }
+            else document.getElementById('row-ret-gloss').classList.add('hidden');
+
+            if(retailContour > 0) { document.getElementById('row-ret-contour').classList.remove('hidden'); document.getElementById('ret-contour').innerText = fmt(retailContour); }
+            else document.getElementById('row-ret-contour').classList.add('hidden');
+
+            if(feeDesign > 0) { document.getElementById('row-ret-design').classList.remove('hidden'); document.getElementById('ret-design').innerText = fmt(feeDesign); }
+            else document.getElementById('row-ret-design').classList.add('hidden');
+
+            // --- 2. IN-HOUSE COST ---
+            
+            // Materials
+            let sheetCost = mat === '3mm' ? parseFloat(backend.Cost_Sheet_3mm||63.24) : parseFloat(backend.Cost_Sheet_6mm||98.58);
+            const costMat = (totalSqFt / 32) * sheetCost * parseFloat(backend.Waste_Factor || 1.2);
+            const costInk = totalSqFt * parseFloat(backend.Cost_Ink_UV || 0.16) * sides;
+
+            // Labor Rates
+            const rateDes = parseFloat(backend.Rate_Design || 35);
+            const rateOp = parseFloat(backend.Rate_Operator || 25);
+            const rateCNC = parseFloat(backend.Rate_CNC_Labor || 35); // CNC Op
+            const rateMachPrint = parseFloat(backend.Rate_Machine_Print || 45);
+            const rateMachCNC = parseFloat(backend.Rate_Machine_CNC || 35);
+
+            // Time
+            let timeDesign = incDesign ? (15 * files)/60 : 0;
+            const costDesign = timeDesign * rateDes;
+
+            const timeSetup = parseFloat(backend.Time_Setup_Print || 15)/60;
+            const costSetup = timeSetup * rateOp;
+
+            // Print Run
+            const speedPrint = parseFloat(backend.Speed_Print_LF || 25);
+            const feedLen = (h/12);
+            const runTime = (feedLen * qty * sides) / speedPrint;
+            const costRun = runTime * rateMachPrint;
+
+            // CNC Run
+            const timeSetupCNC = parseFloat(backend.Time_Setup_CNC || 10)/60;
+            const minsPerUnit = cutType === 'Square' ? parseFloat(backend.Time_Cut_Square||2) : parseFloat(backend.Time_Cut_Contour||8);
+            const runTimeCNC = (minsPerUnit * qty) / 60;
+            const totalTimeCNC = timeSetupCNC + runTimeCNC;
+            const costCNC = totalTimeCNC * (rateMachCNC + rateCNC);
+
+            const totalCost = costMat + costInk + costDesign + costSetup + costRun + costCNC;
+            const prof = price - totalCost;
+
+            // In-House UI
+            document.getElementById('cost-mat').innerText = fmt(costMat);
+            document.getElementById('cost-ink').innerText = fmt(costInk);
+            
+            if(timeDesign > 0) { document.getElementById('row-lab-design').classList.remove('hidden'); document.getElementById('time-design').innerText = fmtTime(timeDesign); document.getElementById('cost-lab-design').innerText = fmt(costDesign); }
+            else document.getElementById('row-lab-design').classList.add('hidden');
+
+            document.getElementById('time-setup').innerText = fmtTime(timeSetup);
+            document.getElementById('cost-lab-setup').innerText = fmt(costSetup);
+            document.getElementById('time-run').innerText = fmtTime(runTime);
+            document.getElementById('cost-run').innerText = fmt(costRun);
+            document.getElementById('time-cnc').innerText = fmtTime(totalTimeCNC);
+            document.getElementById('cost-cnc').innerText = fmt(costCNC);
+
+            document.getElementById('cost-total').innerText = fmt(totalCost);
+            document.getElementById('profit-inhouse').innerText = fmt(prof);
+            if(price>0) document.getElementById('margin-inhouse').innerText = pct(prof/price);
+
+            // --- 3. VENDED COST (SIGNS365) ---
+            
+            // SqFt Basis
+            const vKeySqFt = `S365_${mat}_${sides===1?'SS':'DS'}_SqFt`;
+            const rateSqFt = parseFloat(backend[vKeySqFt] || 0);
+            let vendPrint = totalSqFt * rateSqFt;
+
+            // Extras
+            let vendExtras = 0;
+            if(isGloss) vendExtras += (qty * parseFloat(backend.S365_Gloss_Rate || 4));
+            if(cutType === 'Contour') vendExtras += (vendPrint * parseFloat(backend.S365_Contour_Pct || 0.1));
+            if(cutType === 'Rounded') vendExtras += parseFloat(backend.S365_Rounded_Fee || 5);
+
+            // Shipping (Backend Logic)
+            const sheetsNeeded = Math.ceil(totalSqFt / 32);
+            const maxDim = Math.max(w,h);
+            const minDim = Math.min(w,h);
+            const freightCost = parseFloat(backend.Ship_Freight_Cost || 199);
+            let vendShip = 0;
+            let shipTier = "T1";
+
+            // Full Sheet (Special)
+            if (maxDim === 96 && minDim === 48) { vendShip = freightCost; shipTier = "Freight (Full)"; }
+            // T1 Small
+            else if (maxDim <= parseFloat(backend.Ship_T1_Max_Long || 36) && minDim <= parseFloat(backend.Ship_T1_Max_Short || 24)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T1_Freight_Trigger || 58)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T1_Rate || 10); shipTier = "T1"; }
+            }
+            // T2 Med
+            else if (maxDim <= parseFloat(backend.Ship_T2_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T2_Max_Short || 32)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T2_Freight_Trigger || 22)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T2_Rate || 15); shipTier = "T2"; }
+            }
+            // T3 Large
+            else if (maxDim <= parseFloat(backend.Ship_T3_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T3_Max_Short || 36)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T3_Freight_Trigger || 22)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T3_Rate || 35); shipTier = "T3"; }
+            }
+            // T4 Square
+            else if (maxDim <= parseFloat(backend.Ship_T4_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T4_Max_Short || 48)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T4_Freight_Trigger || 10)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T4_Rate_Low || 50); shipTier = "T4"; }
+            }
+            // T5 Oversize
+            else {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T5_Freight_Trigger || 10)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T5_Rate_Low || 75); shipTier = "T5"; }
+            }
+
+            const totalVend = vendPrint + vendExtras + vendShip;
+            const profVend = price - totalVend;
+
+            // Vendor UI
+            document.getElementById('vend-print').innerText = fmt(vendPrint);
+            document.getElementById('vend-extras').innerText = fmt(vendExtras);
+            document.getElementById('vend-ship').innerText = fmt(vendShip);
+            document.getElementById('vend-ship-tier').innerText = shipTier;
+            document.getElementById('vend-total').innerText = fmt(totalVend);
+            document.getElementById('profit-vend').innerText = fmt(profVend);
+            if(price>0) document.getElementById('margin-vend').innerText = pct(profVend/price);
+
+            // Alerts
+            const profitWarn = document.getElementById('profit-warn');
+            if(prof < 0 && profVend < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
+            else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
+
+            // Description
+            const sideTxt = sides === 1 ? "Single-Sided" : "Double-Sided";
+            const finishTxt = [];
+            if(isGloss) finishTxt.push("Gloss Laminate");
+            if(cutType === 'Contour') finishTxt.push("Contour Cut");
+            if(cutType === 'Rounded') finishTxt.push("Rounded Corners");
+            
+            const desc = `(x${qty}) ${w}" x ${h}" ${mat} ACM Sign. ${sideTxt} Print. ${finishTxt.length > 0 ? finishTxt.join(', ') : 'Square Cut'}.`;
             document.getElementById('job-desc').value = desc;
         }
     </script>
