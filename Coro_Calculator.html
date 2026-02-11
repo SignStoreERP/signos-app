@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coroplast Calculator v6.7</title>
+    <title>Coroplast Calculator v6.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* CORE STYLES */
@@ -432,38 +432,41 @@
             if(stakeType === 'HD') vendAddons += (qty * parseFloat(backend.S365_Add_Stake_HD || 2.25));
             if(hasGrom) vendAddons += (qty * parseFloat(backend.S365_Add_Grommet || 0.25));
             
-            // --- SHIPPING LOGIC (HARD CODED) ---
+            // --- SHIPPING LOGIC (BACKEND DRIVEN) ---
             const maxDim = Math.max(w,h);
             const minDim = Math.min(w,h);
+            const freightCost = parseFloat(backend.Ship_Freight_Cost || 199);
+            
             let vendShip = 0;
             let shipTier = "T1";
 
-            if (sheetsNeeded >= 20) {
-                // Freight Trigger (approx 20+ sheets)
-                vendShip = parseFloat(backend.Ship_Freight_Flat || 199);
-                shipTier = "Freight";
-            } else if (maxDim <= 36 && minDim <= 24) {
-                vendShip = parseFloat(backend.Ship_T1_Rate || 10);
-                shipTier = "T1";
-            } else if (maxDim <= 48 && minDim <= 32) {
-                vendShip = parseFloat(backend.Ship_T2_Rate || 15);
-                shipTier = "T2";
-            } else if (maxDim <= 48 && minDim <= 36) {
-                vendShip = parseFloat(backend.Ship_T3_Rate || 35);
-                shipTier = "T3";
-            } else if (maxDim <= 48 && minDim <= 48) {
-                // T4: 48x48
-                if (qty > 10) {
-                    vendShip = parseFloat(backend.Ship_T4_Rate_High || 75);
-                    shipTier = "T4 (High)";
-                } else {
-                    vendShip = parseFloat(backend.Ship_T4_Rate_Low || 50);
-                    shipTier = "T4 (Low)";
-                }
-            } else {
-                // Oversize T5
-                vendShip = parseFloat(backend.Ship_T5_Rate_Low || 75);
-                shipTier = "T5 (Oversize)";
+            // 1. FULL SHEET (Special Case)
+            if (maxDim === 96 && minDim === 48) {
+                vendShip = freightCost;
+                shipTier = "Freight (Full)";
+            }
+            // 2. TIER LOGIC FETCHED FROM BACKEND
+            else if (maxDim <= parseFloat(backend.Ship_T1_Max_Long || 36) && minDim <= parseFloat(backend.Ship_T1_Max_Short || 24)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T1_Freight_Trigger || 58)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T1_Rate || 10); shipTier = "T1"; }
+            }
+            else if (maxDim <= parseFloat(backend.Ship_T2_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T2_Max_Short || 32)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T2_Freight_Trigger || 22)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T2_Rate || 15); shipTier = "T2"; }
+            }
+            else if (maxDim <= parseFloat(backend.Ship_T3_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T3_Max_Short || 36)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T3_Freight_Trigger || 22)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T3_Rate || 35); shipTier = "T3"; }
+            }
+            else if (maxDim <= parseFloat(backend.Ship_T4_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T4_Max_Short || 48)) {
+                if (sheetsNeeded >= parseFloat(backend.Ship_T4_Freight_Trigger || 10)) { vendShip = freightCost; shipTier = "Freight"; }
+                else if (sheetsNeeded >= parseFloat(backend.Ship_T4_High_Qty || 6)) { vendShip = parseFloat(backend.Ship_T4_Rate_High || 75); shipTier = "T4 (High)"; }
+                else { vendShip = parseFloat(backend.Ship_T4_Rate_Low || 50); shipTier = "T4 (Low)"; }
+            }
+            else {
+                // OVERSIZE
+                if (sheetsNeeded >= parseFloat(backend.Ship_T5_Freight_Trigger || 10)) { vendShip = freightCost; shipTier = "Freight"; }
+                else { vendShip = parseFloat(backend.Ship_T5_Rate_Low || 75); shipTier = "T5"; }
             }
 
             const totalVend = vendPrintCost + vendAddons + vendShip;
@@ -472,7 +475,7 @@
             document.getElementById('vend-print').innerText = fmt(vendPrintCost);
             document.getElementById('vend-stakes').innerText = fmt(vendAddons);
             document.getElementById('vend-ship').innerText = fmt(vendShip);
-            document.getElementById('vend-ship-tier').innerText = shipTier; // Debug label
+            document.getElementById('vend-ship-tier').innerText = shipTier; 
             document.getElementById('vend-total').innerText = fmt(totalVend);
             document.getElementById('profit-vend').innerText = fmt(profVend);
             if(price>0) document.getElementById('margin-vend').innerText = pct(profVend/price);
