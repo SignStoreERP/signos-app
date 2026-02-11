@@ -3,45 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cut Vinyl Calculator v3.0</title>
+    <title>Cut Vinyl Calculator v3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* CORE STYLES */
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
-        
-        /* VIEW MODE LOGIC */
         .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
         .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
-        .mode-prod .prod-hidden { display: none !important; } 
-        .mode-prod .prod-width { width: 100% !important; text-align: right; }
-
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
-
     <div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
         
-        <!-- 1. AUTH HEADER -->
-        <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
-            <div class="flex gap-3">
-                <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
-                <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
-            </div>
-            <button onclick="logout()" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
-        </div>
-
-        <!-- 2. PRODUCT HEADER -->
+        <!-- HEADER -->
         <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
-            <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
-            </a>
+            <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">MENU</a>
             <div class="text-center">
                 <h2 class="text-lg font-bold" id="product-label">Cut Vinyl Lettering</h2>
                 <div class="flex items-center justify-center gap-2 text-[10px]">
@@ -49,100 +28,45 @@
                     <span id="status-text" class="text-gray-400">CONNECTING...</span>
                 </div>
             </div>
-            <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
+            <button onclick="location.reload()" class="text-gray-400 hover:text-white">↺</button>
         </div>
 
-        <!-- WARNING BANNERS -->
-        <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-3 px-4 text-sm font-bold uppercase tracking-wide border-b-4 border-red-800">
-            🛑 LOSS ALERT: PRICE TOO LOW
-        </div>
+        <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-3 px-4 text-sm font-bold uppercase border-b-4 border-red-800">🛑 LOSS ALERT</div>
 
         <!-- INPUTS -->
         <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-xs font-bold text-gray-500 uppercase">Width</label><input type="number" id="width" value="12" class="w-full border p-2 rounded font-bold" oninput="calculate()"></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase">Height</label><input type="number" id="height" value="6" class="w-full border p-2 rounded font-bold" oninput="calculate()"></div>
+            </div>
             
-            <!-- Dimensions -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Width (Inches)</label>
-                    <input type="number" id="width" value="12" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Height (Inches)</label>
-                    <input type="number" id="height" value="6" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()">
-                </div>
-            </div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase">Quantity</label><input type="number" id="qty" value="1" class="w-full border p-2 rounded font-bold" oninput="calculate()"></div>
 
-            <!-- Qty -->
+            <!-- COLOR PICKER -->
             <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label>
-                <input type="number" id="qty" value="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Vinyl Color</label>
+                <div class="relative">
+                    <input type="text" id="vinyl-color" placeholder="Select Color below..." readonly class="w-full border p-2 pl-10 rounded font-bold text-sm bg-gray-50">
+                    <div class="absolute top-2 left-2 w-6 h-6 rounded border border-gray-300" id="selected-swatch" style="background-color: #fff;"></div>
+                </div>
+                <div id="color-grid" class="grid grid-cols-8 gap-1 mt-2 max-h-32 overflow-y-auto border p-1 rounded bg-gray-50"></div>
             </div>
 
-            <!-- Material Selection -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Vinyl Series</label>
-                    <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-12" onchange="calculate()">
-                        <option value="651">Oracal 651 (Std)</option>
-                        <option value="751">Oracal 751 (Cast)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Color</label>
-                    <input type="text" list="vinyl-colors" id="vinyl-color" placeholder="Select Color" class="w-full border p-2 rounded bg-white font-bold text-sm h-12">
-                    <datalist id="vinyl-colors">
-                        <option value="White (010)">
-                        <option value="Black (070)">
-                        <option value="Red (031)">
-                        <option value="Blue (067)">
-                        <option value="Silver (090)">
-                        <option value="Gold (091)">
-                    </datalist>
-                </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase">Series</label>
+                <select id="material" class="w-full border p-2 rounded font-bold text-sm" onchange="calculate()">
+                    <option value="651">Oracal 651 (Standard)</option>
+                    <option value="751">Oracal 751 (Cast)</option>
+                </select>
             </div>
 
-            <div class="border-t border-gray-100 my-2"></div>
-
-            <!-- WEEDING COMPLEXITY -->
+            <!-- Complexity -->
             <div class="bg-gray-50 border border-gray-200 rounded p-3">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Weeding Complexity</label>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Weeding</label>
                 <div class="flex gap-2">
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" name="complexity" value="Simple" class="peer sr-only" checked onchange="calculate()">
-                        <div class="p-2 rounded border border-gray-300 text-center text-xs font-bold text-gray-500 peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-600 transition">
-                            Simple<br><span class="text-[9px] font-normal opacity-80">Large Text</span>
-                        </div>
-                    </label>
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" name="complexity" value="Complex" class="peer sr-only" onchange="calculate()">
-                        <div class="p-2 rounded border border-gray-300 text-center text-xs font-bold text-gray-500 peer-checked:bg-orange-500 peer-checked:text-white peer-checked:border-orange-600 transition">
-                            Complex<br><span class="text-[9px] font-normal opacity-80">Serifs / Small</span>
-                        </div>
-                    </label>
+                    <label class="flex-1 cursor-pointer"><input type="radio" name="complexity" value="Simple" class="peer sr-only" checked onchange="calculate()"><div class="p-2 rounded border text-center text-xs font-bold text-gray-500 peer-checked:bg-green-500 peer-checked:text-white">Simple</div></label>
+                    <label class="flex-1 cursor-pointer"><input type="radio" name="complexity" value="Complex" class="peer sr-only" onchange="calculate()"><div class="p-2 rounded border text-center text-xs font-bold text-gray-500 peer-checked:bg-orange-500 peer-checked:text-white">Complex</div></label>
                 </div>
-            </div>
-
-            <!-- SERVICES -->
-            <div class="space-y-2 border-t border-gray-100 pt-2">
-                <div class="flex items-center justify-between p-2 bg-blue-50 border border-blue-100 rounded">
-                    <span class="text-xs font-bold text-blue-900">Include Installation?</span>
-                    <div class="relative inline-block w-10 align-middle select-none">
-                        <input type="checkbox" id="inc-install" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="calculate()"/>
-                        <label for="inc-install" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-between p-2 bg-purple-50 border border-purple-100 rounded">
-                    <span class="text-xs font-bold text-purple-900">Include Design Fee?</span>
-                    <div class="relative inline-block w-10 align-middle select-none">
-                        <input type="checkbox" id="inc-design" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="calculate()"/>
-                        <label for="inc-design" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="text-[10px] text-center text-gray-400 uppercase tracking-widest border-t border-gray-100 pt-2">
-                Production: Graphtec Plotter + Hand Weed/Mask
             </div>
         </div>
 
@@ -151,375 +75,115 @@
             <div class="flex">
                 <button onclick="switchTab('retail')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-retail">RETAIL</button>
                 <button onclick="switchTab('cost')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-cost">IN-HOUSE</button>
-                <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
             </div>
-
-            <!-- TAB 1: RETAIL -->
+            
             <div id="tab-retail" class="tab-content active bg-white p-6">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Effective Unit Price</span>
-                    <div class="text-right"><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
-                </div>
-
-                <!-- DYNAMIC DISCOUNT TABLE -->
-                <div class="mb-4 text-right">
-                    <button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:underline uppercase tracking-wide">Show Volume Discounts ▼</button>
-                    <div id="discount-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
-                        <table class="w-full text-right">
-                            <thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200">
-                                <tr>
-                                    <th class="pb-1 pr-4">Quantity</th>
-                                    <th class="pb-1 pr-4">Unit Price</th>
-                                    <th class="pb-1 text-green-600">Savings</th>
-                                </tr>
-                            </thead>
-                            <tbody class="font-bold text-gray-700" id="discount-rows"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="border-t border-gray-100 my-3"></div>
-                <div class="space-y-1 text-xs text-gray-600">
-                    <div class="flex justify-between"><span>Vinyl Cut (<span id="lbl-sqft">0</span> sqft):</span><span id="ret-print" class="font-bold">$0.00</span></div>
-                    <div class="flex justify-between text-orange-700 hidden" id="row-ret-complex"><span>Complex Weeding:</span><span id="ret-complex" class="font-bold">$0.00</span></div>
-                    <div class="flex justify-between text-blue-700 hidden" id="row-ret-install"><span>Installation:</span><span id="ret-install" class="font-bold">$0.00</span></div>
-                    <div class="border-t border-dashed border-gray-200 my-1"></div>
-                    <div class="flex justify-between text-gray-700"><span>Job Setup:</span><span id="ret-setup" class="font-bold">$0.00</span></div>
-                    <div class="flex justify-between text-purple-700 hidden" id="row-ret-design"><span>Design Fee:</span><span id="ret-design" class="font-bold">$0.00</span></div>
-                </div>
-                
-                <div class="border-t-2 border-gray-800 my-3"></div>
-                <div class="flex justify-between items-end">
-                    <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span>
-                        <div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block ml-1">MINIMUM APPLIED</div>
-                    </div>
-                    <span class="text-3xl font-black text-blue-600" id="total-price">---</span>
-                </div>
+                <div class="flex justify-between items-center mb-4"><span class="text-xs font-bold text-gray-400 uppercase">Unit Price</span><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
+                <div class="flex justify-between items-end border-t pt-4"><div><span class="text-xs font-bold text-gray-400 uppercase">Total</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
             </div>
-
-            <!-- TAB 2: IN-HOUSE COST -->
+            
             <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
-                <div class="space-y-2 text-xs text-gray-700">
-                    
-                    <!-- MATERIALS -->
-                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
-                    <div class="flex justify-between"><span>Vinyl Media:</span> <span id="cost-mat-vinyl" class="font-bold">$0.00</span></div>
-                    <div class="flex justify-between"><span>Transfer Tape:</span> <span id="cost-mat-tape" class="font-bold">$0.00</span></div>
-                    
-                    <div class="border-t border-yellow-200 my-1 pt-1"></div>
-                    
-                    <!-- TIME -->
-                    <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
-                    <div class="flex justify-between items-center"><span class="w-1/3">Plotting:</span><span id="time-plot" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-plot" class="w-1/3 text-right font-bold">$0.00</span></div>
-                    <div class="flex justify-between items-center"><span class="w-1/3">Weeding:</span><span id="time-weed" class="w-1/3 text-right text-[10px] bg-orange-100 rounded px-1">0m</span><span id="cost-weed" class="w-1/3 text-right font-bold">$0.00</span></div>
-                    <div class="flex justify-between items-center"><span class="w-1/3">Masking:</span><span id="time-mask" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-mask" class="w-1/3 text-right font-bold">$0.00</span></div>
-                    <div class="flex justify-between items-center hidden" id="row-cost-install"><span class="w-1/3">Install:</span><span id="time-install" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1">0m</span><span id="cost-install" class="w-1/3 text-right font-bold">$0.00</span></div>
-
-                    <div class="border-t border-yellow-200 my-2 pt-1"></div>
-                    <div class="flex justify-between items-center text-orange-700"><span class="w-1/2">Waste (20%):</span><span id="cost-waste" class="w-1/2 text-right font-bold">$0.00</span></div>
-                    
-                    <div class="border-t-2 border-yellow-300 my-2"></div>
-                    <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Job Cost:</span> <span id="cost-total">$0.00</span></div>
-                    
-                    <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
-                        <div class="flex justify-between items-end">
-                            <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
-                            <div class="text-right"><div class="text-[10px] uppercase font-bold text-gray-400">Margin</div><div class="text-xl font-bold text-blue-600" id="margin-inhouse">0%</div></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: VENDED COST -->
-            <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
-                <div class="p-4 bg-indigo-100 text-indigo-800 rounded text-center text-xs font-bold">
-                    ⚠️ Wholesale Unavailable<br>
-                    <span class="font-normal text-[10px]">Cut Vinyl is primarily produced In-House.<br>See "Decals" for printed alternatives.</span>
-                </div>
+                <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
             </div>
         </div>
-        
+
         <!-- DESCRIPTION -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white text-gray-600 font-mono h-20 outline-none" readonly></textarea>
+            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
         </div>
-
-        <div id="error-msg" class="hidden text-[10px] text-red-500 p-4 text-center bg-red-50"></div>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
-        const TAB_NAME = "PROD_Cut_Vinyl"; 
+        const TAB_NAME = "PROD_Cut_Vinyl";
         let backend = {};
+        
+        // COLOR DB
+        const COLORS = [
+            {c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"},
+            {c:"031", n:"Red", h:"#C0142C"}, {c:"049", n:"King Blue", h:"#002359"},
+            {c:"067", n:"Blue", h:"#005697"}, {c:"063", n:"Lime", h:"#81B930"},
+            {c:"090", n:"Silver", h:"#8A8D8F"}, {c:"091", n:"Gold", h:"#897238"},
+            {c:"021", n:"Yellow", h:"#FED100"}, {c:"034", n:"Orange", h:"#E54909"},
+            {c:"041", n:"Pink", h:"#CC4F81"}, {c:"080", n:"Brown", h:"#52341C"}
+        ];
 
-        // --- AUTH ---
+        function initColors() {
+            const grid = document.getElementById('color-grid');
+            COLORS.forEach(col => {
+                const div = document.createElement('div');
+                div.className = "w-full h-6 rounded cursor-pointer border border-gray-200 hover:border-blue-500 shadow-sm";
+                div.style.backgroundColor = col.h;
+                div.title = `${col.n} (${col.c})`;
+                div.onclick = function() { 
+                    document.getElementById('vinyl-color').value = `${col.n} (${col.c})`;
+                    document.getElementById('selected-swatch').style.backgroundColor = col.h;
+                    calculate();
+                };
+                grid.appendChild(div);
+            });
+        }
+
         let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
-
         function initSession() {
             const params = new URLSearchParams(window.location.search);
-            const urlMode = params.get('mode');
-            const storeUser = sessionStorage.getItem('signos_user');
-            const storeRole = sessionStorage.getItem('signos_role');
-
-            if(storeUser) currentUser.name = storeUser;
-            if(storeRole) currentUser.role = storeRole;
-            
-            if(urlMode) currentUser.mode = urlMode;
-            else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
-            else if(currentUser.role === 'PROD') currentUser.mode = 'production';
-            else currentUser.mode = 'sales';
-
-            document.getElementById('auth-user').innerText = currentUser.name;
-            document.getElementById('auth-role').innerText = currentUser.role;
-
+            const urlMode = params.get('mode') || 'sales';
+            currentUser.mode = urlMode;
             const body = document.body;
             body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
-            
-            if(currentUser.mode === 'sales') {
-                body.classList.add('mode-sales');
-                switchTab('retail'); 
-            } else if (currentUser.mode === 'production') {
-                body.classList.add('mode-prod');
-                switchTab('cost');
-            } else {
-                body.classList.add('mode-admin');
-            }
+            if(currentUser.mode === 'sales') { body.classList.add('mode-sales'); switchTab('retail'); }
+            else if (currentUser.mode === 'production') { body.classList.add('mode-prod'); switchTab('cost'); }
+            else { body.classList.add('mode-admin'); }
         }
 
-        function logout() {
-            sessionStorage.clear();
-            window.location.href = 'index.html';
-        }
-
-        function goBack() {
-            window.location.href = `menu.html?mode=${currentUser.mode}`;
-        }
+        function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
+        function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+        function switchTab(id) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-'+id).classList.add('active'); }
 
         window.onload = async function() {
             initSession();
-            const statusText = document.getElementById("status-text");
-            const statusDot = document.getElementById("status-dot");
+            initColors();
             try {
                 const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
                 const data = await response.json();
-                if (data.error) throw new Error(data.error);
                 backend = data;
-                
-                statusText.innerText = "ONLINE";
-                statusText.classList.replace("text-gray-400", "text-green-500");
-                statusDot.classList.replace("bg-red-500", "bg-green-500");
-                statusDot.classList.remove("animate-pulse");
-                
-                if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
+                document.getElementById("status-text").innerText = "ONLINE";
+                document.getElementById("status-text").classList.add("text-green-500");
                 calculate();
-            } catch (e) {
-                statusText.innerText = "OFFLINE";
-                statusText.classList.replace("text-gray-400", "text-red-500");
-                document.getElementById("error-msg").innerText = e.message;
-                document.getElementById("error-msg").classList.remove("hidden");
-            }
+            } catch(e) { console.log(e); }
         };
 
-        function switchTab(id) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-'+id).classList.add('active');
-            document.getElementById('btn-'+id).classList.add('active');
-        }
-
-        function toggleDiscounts() {
-            document.getElementById('discount-table').classList.toggle('hidden');
-        }
-
-        function toggleOpt(id) {
-            const el = document.getElementById(id);
-            if(el.classList.contains('hidden')) el.classList.remove('hidden');
-            else el.classList.add('hidden');
-        }
-
         function calculate() {
-            if (!backend.Item_Name) return;
-
-            // Inputs
-            const w = parseFloat(document.getElementById('width').value) || 0;
-            const h = parseFloat(document.getElementById('height').value) || 0;
-            const qty = parseFloat(document.getElementById('qty').value) || 1;
+            if(!backend.Item_Name) return;
+            const w = parseFloat(document.getElementById('width').value)||0;
+            const h = parseFloat(document.getElementById('height').value)||0;
+            const qty = parseFloat(document.getElementById('qty').value)||1;
             const mat = document.getElementById('material').value;
-            const color = document.getElementById('vinyl-color').value || "Standard";
+            const color = document.getElementById('vinyl-color').value || "White (010)";
             const complexity = document.querySelector('input[name="complexity"]:checked').value;
-            const hasInstall = document.getElementById('inc-install').checked;
-            const incDesign = document.getElementById('inc-design').checked;
 
             const sqft = (w*h)/144;
             const totalSqFt = sqft * qty;
 
-            // --- 1. RETAIL ---
             const baseRate = mat === '651' ? parseFloat(backend.Retail_Price_651_SqFt || 12) : parseFloat(backend.Retail_Price_751_SqFt || 18);
+            let retailPrint = baseRate * totalSqFt;
+            if(complexity === 'Complex') retailPrint += (totalSqFt * 5.00);
             
-            // Dynamic Discounts
-            let discPct = 0;
-            let currentBestTier = 0;
-            let i = 1;
-            const tiers = []; 
-            while(backend[`Tier_${i}_Qty`]) {
-                const tQty = parseFloat(backend[`Tier_${i}_Qty`]);
-                const tDisc = parseFloat(backend[`Tier_${i}_Disc`] || 0);
-                tiers.push({ q: tQty, d: tDisc });
-                if (qty >= tQty) currentBestTier = tDisc;
-                i++;
-            }
-            discPct = currentBestTier;
-            
-            const unitRate = baseRate * (1 - discPct);
-            let retailPrint = unitRate * totalSqFt;
+            let price = Math.max(retailPrint, parseFloat(backend.Retail_Min_Order || 45));
 
-            // Adders
-            let retailWeed = 0;
-            if (complexity === 'Complex') {
-                retailWeed = totalSqFt * parseFloat(backend.Retail_Weed_Complex_Add || 5.00);
-            }
+            document.getElementById('unit-price').innerText = "$" + (price/qty).toFixed(2);
+            document.getElementById('total-price').innerText = "$" + price.toFixed(2);
 
-            let retailInstall = 0;
-            if (hasInstall) {
-                retailInstall = totalSqFt * parseFloat(backend.Retail_Install_Rate || 5.00);
-            }
+            const costVinyl = totalSqFt * (mat==='651' ? 0.85 : 2.50);
+            const costWeed = (totalSqFt * (complexity==='Simple'?2:10)/60) * 20; 
+            const totalCost = costVinyl + costWeed;
+            document.getElementById('cost-total').innerText = "$" + totalCost.toFixed(2);
 
-            let feeDesign = incDesign ? parseFloat(backend.Retail_Fee_Design || 60) : 0; // Hourly rate assumption
-            let feeSetup = parseFloat(backend.Retail_Fee_Setup || 15);
+            if(price - totalCost < 0) document.getElementById('profit-warn').classList.remove('hidden');
+            else document.getElementById('profit-warn').classList.add('hidden');
 
-            let totalQuote = retailPrint + retailWeed + retailInstall + feeDesign + feeSetup;
-
-            // Min Order
-            const minOrder = parseFloat(backend.Retail_Min_Order || 45);
-            const minBadge = document.getElementById('min-badge');
-            if (totalQuote < minOrder) {
-                totalQuote = minOrder;
-                minBadge.classList.remove('hidden');
-            } else {
-                minBadge.classList.add('hidden');
-            }
-
-            // --- DISCOUNT TABLE ---
-            let rowsHtml = "";
-            tiers.forEach(tier => {
-                const trRate = baseRate * (1 - tier.d);
-                const trPrint = trRate * (sqft * tier.q);
-                // Scale variable
-                const trWeed = complexity === 'Complex' ? (sqft * tier.q * parseFloat(backend.Retail_Weed_Complex_Add || 5)) : 0;
-                const trInstall = hasInstall ? (sqft * tier.q * parseFloat(backend.Retail_Install_Rate || 5)) : 0;
-                
-                const trTotalRaw = trPrint + trWeed + trInstall + feeSetup + feeDesign;
-                const trFinal = Math.max(trTotalRaw, minOrder);
-                const trUnit = trFinal / tier.q;
-                
-                const discDisplay = tier.d > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.d*100).toFixed(0)}%</span>` : "";
-                
-                rowsHtml += `<tr>
-                    <td class="pr-4 py-1 text-gray-500">${tier.q}${discDisplay}</td>
-                    <td class="pr-4 py-1 text-blue-600 font-bold">$${trUnit.toFixed(2)}</td>
-                    <td class="py-1 text-green-600 font-bold">${(tier.d*100).toFixed(0)}% Off</td>
-                </tr>`;
-            });
-            document.getElementById('discount-rows').innerHTML = rowsHtml;
-
-            // --- 2. IN-HOUSE COST ---
-            const waste = parseFloat(backend.Waste_Factor || 1.20);
-            const costMatRaw = mat === '651' ? parseFloat(backend.Cost_Vinyl_651 || 0.85) : parseFloat(backend.Cost_Vinyl_751 || 2.50);
-            const costTapeRaw = parseFloat(backend.Cost_Transfer_Tape || 0.15);
-            
-            const costVinyl = totalSqFt * costMatRaw * waste;
-            const costTape = totalSqFt * costTapeRaw * waste;
-
-            // Time & Labor
-            const rateShop = parseFloat(backend.Rate_Labor_Shop || 20);
-            const ratePlot = parseFloat(backend.Rate_Machine_Plot || 5);
-            const rateInstall = parseFloat(backend.Rate_Labor_Install || 32);
-
-            const speedPlot = parseFloat(backend.Speed_Plot_SqFt || 50);
-            const timePlot = totalSqFt / speedPlot;
-            const costPlot = timePlot * ratePlot;
-
-            const speedWeed = complexity === 'Simple' ? parseFloat(backend.Time_Weed_Simple || 2.0) : parseFloat(backend.Time_Weed_Complex || 10.0);
-            const timeWeed = (totalSqFt * speedWeed) / 60;
-            const costWeed = timeWeed * rateShop;
-
-            const timeMask = (totalSqFt * parseFloat(backend.Time_Mask_SqFt || 1.0)) / 60;
-            const costMask = timeMask * rateShop;
-
-            const timeSetup = parseFloat(backend.Time_Setup_Job || 15) / 60;
-            const costSetup = timeSetup * rateShop;
-
-            let timeInstall = 0;
-            let costInstall = 0;
-            if (hasInstall) {
-                timeInstall = (totalSqFt * 10) / 60; // Estimate 10 mins per sqft for complex
-                costInstall = timeInstall * rateInstall;
-            }
-
-            const subtotal = costVinyl + costTape + costPlot + costWeed + costMask + costSetup + costInstall + feeDesign;
-            const riskCost = subtotal * (waste - 1);
-            const totalInHouse = subtotal + riskCost;
-
-            // --- UI ---
-            const fmt = (n) => new Intl.NumberFormat('en-US', {style:'currency', currency:'USD'}).format(n);
-            const fmtTime = (h) => { if(h < 0.01) return "0m"; const hrs = Math.floor(h); const mins = Math.round((h-hrs)*60); return hrs>0 ? `${hrs}h ${mins}m` : `${mins}m`; };
-            const pct = (n) => (n * 100).toFixed(1) + "%";
-
-            // Retail
-            document.getElementById('unit-price').innerText = fmt(totalQuote/qty);
-            document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(1);
-            document.getElementById('ret-print').innerText = fmt(retailPrint);
-            
-            if(retailWeed > 0) { document.getElementById('row-ret-complex').classList.remove('hidden'); document.getElementById('ret-complex').innerText = fmt(retailWeed); }
-            else document.getElementById('row-ret-complex').classList.add('hidden');
-
-            if(retailInstall > 0) { document.getElementById('row-ret-install').classList.remove('hidden'); document.getElementById('ret-install').innerText = fmt(retailInstall); }
-            else document.getElementById('row-ret-install').classList.add('hidden');
-
-            document.getElementById('ret-setup').innerText = fmt(feeSetup);
-            if(feeDesign > 0) { document.getElementById('row-ret-design').classList.remove('hidden'); document.getElementById('ret-design').innerText = fmt(feeDesign); }
-            else document.getElementById('row-ret-design').classList.add('hidden');
-
-            document.getElementById('total-price').innerText = fmt(totalQuote);
-
-            // Cost
-            document.getElementById('cost-mat-vinyl').innerText = fmt(costVinyl);
-            document.getElementById('cost-mat-tape').innerText = fmt(costTape);
-            
-            document.getElementById('time-plot').innerText = fmtTime(timePlot);
-            document.getElementById('cost-plot').innerText = fmt(costPlot);
-            
-            document.getElementById('time-weed').innerText = fmtTime(timeWeed);
-            document.getElementById('cost-weed').innerText = fmt(costWeed);
-            
-            document.getElementById('time-mask').innerText = fmtTime(timeMask);
-            document.getElementById('cost-mask').innerText = fmt(costMask);
-
-            if(costInstall > 0) { document.getElementById('row-cost-install').classList.remove('hidden'); document.getElementById('time-install').innerText = fmtTime(timeInstall); document.getElementById('cost-install').innerText = fmt(costInstall); }
-            else document.getElementById('row-cost-install').classList.add('hidden');
-
-            document.getElementById('cost-waste').innerText = fmt(riskCost);
-            document.getElementById('cost-total').innerText = fmt(totalInHouse);
-
-            const profIn = totalQuote - totalInHouse;
-            document.getElementById('profit-inhouse').innerText = fmt(profIn);
-            document.getElementById('margin-inhouse').innerText = pct(profIn/totalQuote);
-
-            // Alert
-            const profitWarn = document.getElementById('profit-warn');
-            if (profIn < 0) {
-                profitWarn.classList.remove('hidden');
-                profitWarn.classList.add('warn-pulse');
-            } else {
-                profitWarn.classList.add('hidden');
-                profitWarn.classList.remove('warn-pulse');
-            }
-
-            // Description
-            const installTxt = hasInstall ? "Includes Installation" : "Supply Only";
-            const desc = `(x${qty}) ${w}" x ${h}" Cut Vinyl Lettering. Material: Oracal ${mat} (${color}). Weeding: ${complexity}. ${installTxt}.`;
+            const desc = `(x${qty}) ${w}" x ${h}" Cut Vinyl. ${mat} Series: ${color}. Weeding: ${complexity}.`;
             document.getElementById('job-desc').value = desc;
         }
     </script>
