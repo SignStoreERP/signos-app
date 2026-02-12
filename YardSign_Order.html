@@ -5,16 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configurator: Yard Signs</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Model Viewer for AR -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    
     <script type="importmap">
         { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
     </script>
+
     <style>
         .checkered-bg {
             background-color: #e5e7eb;
             background-image: linear-gradient(45deg, #f3f4f6 25%, transparent 25%), linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f3f4f6 75%), linear-gradient(-45deg, transparent 75%, #f3f4f6 75%);
             background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
+        /* Hide AR viewer default UI */
+        model-viewer { width: 100%; height: 200px; display: none; }
+
+        /* PRINT STYLES - LANDSCAPE 11x8.5 */
+        @media print {
+            @page { size: 11in 8.5in; margin: 0.25in; }
+            body { background-color: white; -webkit-print-color-adjust: exact; }
+            #main-app-container, #auth-header, #editor-modal, #proof-controls { display: none !important; }
+            #print-proof-modal { position: fixed !important; display: flex !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; background: white !important; z-index: 9999 !important; padding: 0 !important; }
+            #proof-content { width: 100% !important; height: 100% !important; padding: 0 !important; box-shadow: none !important; }
+            .dim-w, .dim-h { border-color: #000 !important; color: #000 !important; }
+            .dim-w::before, .dim-w::after, .dim-h::before, .dim-h::after { background: #000 !important; }
+        }
+
+        /* Dimensions for Proof */
+        .dim-w { border-top: 1px solid #94a3b8; position: absolute; top: -15px; left: 0; right: 0; text-align: center; font-size: 10px; color: #64748b; }
+        .dim-w::before, .dim-w::after { content: ''; position: absolute; top: -3px; height: 7px; width: 1px; background: #94a3b8; }
+        .dim-w::before { left: 0; } .dim-w::after { right: 0; }
+        .dim-h { border-left: 1px solid #94a3b8; position: absolute; left: -15px; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; }
+        .dim-h span { transform: rotate(-90deg); }
+        .dim-h::before, .dim-h::after { content: ''; position: absolute; left: -3px; width: 7px; height: 1px; background: #94a3b8; }
+        .dim-h::before { top: 0; } .dim-h::after { bottom: 0; }
     </style>
+    
     <script>
         const user = sessionStorage.getItem('signos_user');
         if (!user) window.location.href = 'index.html';
@@ -23,7 +50,7 @@
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
     <!-- AUTH HEADER -->
-    <div class="bg-gray-800 text-white px-6 py-2 flex justify-between items-center text-xs shadow-md z-20">
+    <div id="auth-header" class="bg-gray-800 text-white px-6 py-2 flex justify-between items-center text-xs shadow-md z-20">
         <div class="flex gap-4">
             <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
             <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
@@ -32,10 +59,10 @@
     </div>
 
     <!-- MAIN APP -->
-    <div class="flex-1 flex overflow-hidden">
+    <div id="main-app-container" class="flex-1 flex overflow-hidden">
         
-        <!-- LEFT: Calculator Inputs (1/3 Width) -->
-        <div class="w-1/3 min-w-[350px] bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
+        <!-- LEFT: Calculator & Actions -->
+        <div class="w-1/3 min-w-[380px] bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
             <div class="p-6 border-b border-gray-100">
                 <div class="flex items-center gap-2 mb-1 text-gray-400 text-xs font-bold uppercase"><a href="order_menu.html">← Back</a></div>
                 <h1 class="text-2xl font-black text-gray-900">Yard Signs</h1>
@@ -43,12 +70,12 @@
             </div>
 
             <div class="p-6 space-y-5 overflow-y-auto flex-1">
-                <!-- Specs -->
+                <!-- Calculator Inputs -->
                 <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label><input type="number" id="qty" value="10" class="w-full border p-2 rounded font-bold text-lg" oninput="calculate()"></div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Size</label><input type="text" value='24" x 18"' readonly class="w-full border p-2 rounded bg-gray-100 text-gray-500 font-bold"></div>
-                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded h-[42px] bg-white font-bold" onchange="calculate(); update3DState()"><option value="1">Single</option><option value="2">Double</option></select></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded h-[46px] bg-white font-bold" onchange="calculate(); update3DState()"><option value="1">Single</option><option value="2">Double</option></select></div>
                 </div>
 
                 <div class="flex items-center p-2 border rounded bg-gray-50">
@@ -56,16 +83,34 @@
                     <label for="stakes" class="ml-2 text-sm font-bold text-gray-700">Include Wire Stakes</label>
                 </div>
 
-                <!-- 3D Actions -->
+                <!-- Design Actions -->
                 <hr class="border-gray-100">
                 <div class="space-y-2">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase">Design Actions</h3>
-                    <button onclick="openEditor('A')" class="w-full border border-blue-200 text-blue-600 hover:bg-blue-50 font-bold py-2 rounded text-sm">Upload/Edit Front Art</button>
-                    <button onclick="openEditor('B')" id="btn-edit-b" class="w-full border border-gray-200 text-gray-400 font-bold py-2 rounded text-sm hidden">Upload/Edit Back Art</button>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase">Design & Tools</h3>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="openEditor('A')" class="border border-blue-200 text-blue-600 hover:bg-blue-50 font-bold py-2 rounded text-xs">Edit Front</button>
+                        <button onclick="openEditor('B')" id="btn-edit-b" class="border border-gray-200 text-gray-400 font-bold py-2 rounded text-xs hidden">Edit Back</button>
+                    </div>
+
+                    <button id="btn-proof" class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 px-4 rounded text-xs flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        Generate Art Proof
+                    </button>
+
+                    <button id="btn-ar" class="w-full bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded text-xs flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
+                        View in AR
+                    </button>
+                    
+                    <div id="ar-qr-container" class="hidden p-2 bg-gray-50 rounded border text-center">
+                        <model-viewer id="ar-viewer-hidden" src="" ios-src="" ar ar-modes="scene-viewer quick-look" camera-controls auto-rotate class="w-full h-32 bg-gray-100 rounded"></model-viewer>
+                        <p class="text-[9px] text-gray-400 mt-1">Scan or Click to view in AR</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Footer: Price & Add -->
+            <!-- Footer -->
             <div class="p-6 bg-gray-50 border-t border-gray-200">
                 <div class="flex justify-between items-end mb-4">
                     <span class="text-xs font-bold text-gray-400 uppercase">Total</span>
@@ -75,7 +120,7 @@
             </div>
         </div>
 
-        <!-- RIGHT: 3D Preview (2/3 Width) -->
+        <!-- RIGHT: 3D Preview -->
         <div class="flex-1 bg-gray-200 relative">
             <div id="canvas-container" class="absolute inset-0 cursor-move"></div>
             <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur rounded-lg p-2 shadow-sm text-[10px] text-gray-500 pointer-events-none">
@@ -84,28 +129,93 @@
         </div>
     </div>
 
-    <!-- DESIGN EDITOR MODAL (Hidden) -->
+    <!-- 1. FULL DESIGN EDITOR MODAL -->
     <div id="editor-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center">
-                <h3 class="font-bold">Design Studio <span id="editor-side-label" class="text-blue-400 ml-2">SIDE A</span></h3>
+                <h3 class="font-bold text-lg">Design Studio <span id="editor-side-label" class="text-blue-400 ml-2">SIDE A</span></h3>
                 <button onclick="closeEditor()" class="text-gray-400 hover:text-white">✕</button>
             </div>
             <div class="flex-1 flex overflow-hidden">
-                <div class="w-64 bg-gray-50 border-r border-gray-200 p-4 space-y-4">
-                    <label class="block w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 px-3 rounded cursor-pointer text-center text-xs">
-                        <input type="file" id="editor-upload" accept="image/*" class="hidden"> <span>Upload Image</span>
-                    </label>
-                    <button class="w-full text-xs bg-white border rounded py-2" onclick="setSizing('fit')">Fit to Sign</button>
-                    <button class="w-full text-xs bg-white border rounded py-2" onclick="setSizing('fill')">Fill (Cover)</button>
+                <!-- Toolbar -->
+                <div class="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto space-y-6">
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Source</h4>
+                        <label class="block w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 px-3 rounded cursor-pointer text-center text-xs">
+                            <input type="file" id="editor-upload" accept="image/*" class="hidden"> <span>Upload Image</span>
+                        </label>
+                        <div class="mt-2 flex items-center gap-2">
+                            <label class="text-xs text-gray-600">Background:</label>
+                            <input type="color" id="editor-bg-color" value="#ffffff" class="w-8 h-8 rounded cursor-pointer border border-gray-300">
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Transform</h4>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="bg-white border rounded p-1 hover:bg-blue-50" title="Rotate 90" onclick="rotateImg()">↻</button>
+                            <button class="bg-white border rounded p-1 hover:bg-blue-50" title="Flip H" onclick="flipImg('h')">↔</button>
+                            <button class="bg-white border rounded p-1 hover:bg-blue-50" title="Flip V" onclick="flipImg('v')">↕</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sizing</h4>
+                        <div class="space-y-2">
+                            <button class="w-full text-xs bg-white border rounded py-2 hover:bg-blue-50" onclick="setSizing('fit')">Fit (Contain)</button>
+                            <button class="w-full text-xs bg-white border rounded py-2 hover:bg-blue-50" onclick="setSizing('fill')">Scale to Fill</button>
+                            <button class="w-full text-xs bg-white border rounded py-2 hover:bg-blue-50" onclick="setSizing('stretch')">Stretch</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Align</h4>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div></div><button class="bg-white border rounded p-1 text-xs" onclick="alignImg('top')">T</button><div></div>
+                            <button class="bg-white border rounded p-1 text-xs" onclick="alignImg('left')">L</button>
+                            <button class="bg-white border rounded p-1 text-xs font-bold" onclick="alignImg('center')">+</button>
+                            <button class="bg-white border rounded p-1 text-xs" onclick="alignImg('right')">R</button>
+                            <div></div><button class="bg-white border rounded p-1 text-xs" onclick="alignImg('bottom')">B</button><div></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex-1 bg-gray-200 flex items-center justify-center p-8 checkered-bg relative">
-                    <canvas id="editor-canvas" class="shadow-2xl border-4 border-white"></canvas>
+                <!-- Canvas -->
+                <div class="flex-1 bg-gray-200 flex items-center justify-center p-8 checkered-bg relative overflow-hidden">
+                    <canvas id="editor-canvas" class="shadow-2xl border-4 border-white cursor-move"></canvas>
                 </div>
             </div>
             <div class="bg-white border-t border-gray-200 px-4 py-3 flex justify-end gap-3">
                 <button onclick="closeEditor()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                <button id="btn-editor-save" class="px-6 py-2 text-sm bg-blue-600 text-white font-bold rounded shadow">Save & Apply</button>
+                <button id="btn-editor-save" class="px-6 py-2 text-sm bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700">Save & Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PRINT PROOF MODAL -->
+    <div id="print-proof-modal" class="fixed inset-0 bg-gray-100 z-50 hidden flex flex-col">
+        <div id="proof-controls" class="bg-gray-800 text-white p-4 shrink-0 flex justify-between items-center shadow-lg print:hidden">
+            <h2 class="font-bold text-lg">Art Proof Preview</h2>
+            <div class="flex gap-4">
+                <button onclick="document.getElementById('print-proof-modal').classList.add('hidden')" class="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded">Close</button>
+                <button onclick="window.print()" class="px-6 py-2 text-sm bg-blue-600 hover:bg-blue-500 font-bold rounded shadow">Print Proof</button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-auto p-4 flex items-start justify-center print:p-0 print:items-stretch print:overflow-visible">
+            <div id="proof-content" class="bg-white shadow-2xl w-full max-w-[11in] aspect-[11/8.5] p-8 flex flex-col print:shadow-none print:w-full print:h-full print:max-w-none print:aspect-auto">
+                <div class="flex justify-between items-end border-b-4 border-gray-900 pb-2 mb-4 shrink-0">
+                    <div><h1 class="text-3xl font-black text-gray-900 uppercase">Art Proof</h1><p class="text-xs text-gray-500 font-medium mt-1">Order #PENDING • <span id="proof-date"></span></p></div>
+                    <div class="text-right"><div class="text-xl font-bold text-blue-700">SignOS</div><div class="text-[10px] text-gray-400 uppercase tracking-widest">Production Control</div></div>
+                </div>
+                <div class="flex-1 grid grid-cols-12 gap-6 min-h-0">
+                    <div class="col-span-3 flex flex-col gap-4">
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100"><h3 class="font-bold text-gray-900 border-b border-gray-200 mb-2 pb-1 uppercase text-[10px]">Specs</h3><div class="space-y-1 text-[10px]"><div class="flex justify-between"><span class="text-gray-500">Material</span><span class="font-medium">4mm Coroplast</span></div><div class="flex justify-between"><span class="text-gray-500">Size</span><span class="font-medium">24" x 18"</span></div></div></div>
+                        <div class="mt-auto bg-blue-50 border border-blue-100 p-3 rounded-lg"><h3 class="font-bold text-blue-900 mb-1 text-[10px]">Agreement</h3><p class="text-[9px] text-blue-800 mb-4 leading-tight">By signing, I approve this artwork for production.</p><div class="space-y-3"><div><div class="h-px bg-blue-300 w-full"></div><span class="text-[9px] text-blue-400 uppercase">Signature</span></div><div><div class="h-px bg-blue-300 w-full"></div><span class="text-[9px] text-blue-400 uppercase">Date</span></div></div></div>
+                    </div>
+                    <div class="col-span-9 flex flex-col h-full">
+                        <p id="proof-desc" class="text-xs text-gray-700 mb-3 leading-snug font-medium"></p>
+                        <div class="flex-1 flex gap-4 items-stretch min-h-0">
+                            <div class="flex-1 border border-gray-200 rounded p-4 flex flex-col relative bg-white"><div class="absolute top-2 left-2 bg-gray-900 text-white text-[10px] font-bold px-2 py-0.5 rounded">SIDE A</div><div class="flex-1 flex items-center justify-center relative p-4"><div class="relative inline-block"><div class="dim-w"><span class="bg-white px-1">24"</span></div><div class="dim-h"><span class="bg-white px-1">18"</span></div><img id="proof-img-a" class="max-w-full max-h-full object-contain border border-gray-100 shadow-sm" style="max-height: 4.5in;" src=""></div></div></div>
+                            <div class="flex-1 border border-gray-200 rounded p-4 flex flex-col relative bg-white"><div class="absolute top-2 left-2 bg-gray-900 text-white text-[10px] font-bold px-2 py-0.5 rounded">SIDE B</div><div class="flex-1 flex items-center justify-center relative p-4"><div class="relative inline-block"><div class="dim-w"><span class="bg-white px-1">24"</span></div><div class="dim-h"><span class="bg-white px-1">18"</span></div><img id="proof-img-b" class="max-w-full max-h-full object-contain border border-gray-100 shadow-sm" style="max-height: 4.5in;" src=""></div></div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -114,12 +224,12 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-        // --- 1. PRICING LOGIC ---
+        // --- 1. PRICING LOGIC (Standard SignOS) ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
         let backend = {};
 
-        // Expose calculate to window
         window.calculate = function() {
             if(!backend.Item_Name) return;
             const qty = parseFloat(document.getElementById('qty').value)||1;
@@ -137,7 +247,6 @@
 
             let price = (baseRate * (1-disc)) * qty;
             if(hasStakes) price += (qty * parseFloat(backend.Retail_Price_Stake || 2.50));
-            
             price += parseFloat(backend.Retail_Fee_Setup || 15);
             const min = parseFloat(backend.Retail_Min_Order || 100);
             if(price < min) price = min;
@@ -145,17 +254,25 @@
             document.getElementById('total-price').innerText = "$" + price.toFixed(2);
         };
 
-        // --- 2. 3D VISUALIZER LOGIC ---
+        // --- 2. 3D VISUALIZER LOGIC (High Fidelity) ---
         let scene, camera, renderer, controls, signGroup, matFront, matBack;
-        const savedStates = { A: { img: null }, B: { img: null } };
+        
+        // Editor State
+        const defaultState = { 
+            img: null, imgLoaded: false, rotation: 0, flipX: 1, flipY: 1, bgColor: '#ffffff',
+            x: 600, y: 450, width: 0, height: 0, canvasWidth: 1200, canvasHeight: 900
+        };
+        const savedStates = { A: { ...defaultState }, B: { ...defaultState } };
+        let activeSide = 'A';
+        let currentState = savedStates.A;
 
         function initThree() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xe5e7eb); // Light Gray
+            scene.background = new THREE.Color(0xe5e7eb);
             camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
             camera.position.set(0, 12, 45);
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); // Enable screenshots
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.shadowMap.enabled = true;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -163,9 +280,9 @@
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             
-            // Lights
             const amb = new THREE.AmbientLight(0xffffff, 1.5); scene.add(amb);
-            const dir = new THREE.DirectionalLight(0xffffff, 1.5); dir.position.set(10, 20, 20); dir.castShadow = true; scene.add(dir);
+            const dir = new THREE.DirectionalLight(0xffffff, 1.8); dir.position.set(10, 20, 20); dir.castShadow = true; scene.add(dir);
+            const backLight = new THREE.DirectionalLight(0xffffff, 1.2); backLight.position.set(-10, 15, -20); scene.add(backLight);
 
             buildSign();
             animate();
@@ -174,26 +291,51 @@
         function buildSign() {
             if(signGroup) scene.remove(signGroup);
             signGroup = new THREE.Group();
+            signGroup.name = "YardSign_Group";
 
-            const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            matFront = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            matBack = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            // Helper to build stakes
+            const createWire = (h, x, y, z, rZ=0, name="Wire") => {
+                const geo = new THREE.CylinderGeometry(0.0767, 0.0767, h, 8);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.6, roughness: 0.4 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, y, z);
+                mesh.rotation.z = rZ;
+                mesh.castShadow = true;
+                mesh.name = name;
+                return mesh;
+            };
 
-            // 24x18 Board
-            const geo = new THREE.BoxGeometry(24, 18, 0.15);
-            const mesh = new THREE.Mesh(geo, [matWhite, matWhite, matWhite, matWhite, matFront, matBack]);
-            mesh.castShadow = true;
-            mesh.position.y = 17; // Lifted for stakes
-            signGroup.add(mesh);
+            // Stakes (6 Parts)
+            signGroup.add(createWire(8, -5, -4, 0, 0, "Leg_Lower"));
+            signGroup.add(createWire(8, 5, -4, 0, 0, "Leg_Lower"));
+            signGroup.add(createWire(16, -5, 8, 0, 0, "Leg_Upper"));
+            signGroup.add(createWire(16, 5, 8, 0, 0, "Leg_Upper"));
+            signGroup.add(createWire(10, 0, 0, 0, Math.PI / 2, "Bar_Step"));
+            signGroup.add(createWire(10, 0, 8, 0, Math.PI / 2, "Bar_Stop"));
 
-            // Stakes
-            const wireMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.6, roughness: 0.4 });
-            const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 8), wireMat); legL.position.set(-5, -4, 0); legL.name="stake";
-            const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 8), wireMat); legR.position.set(5, -4, 0); legR.name="stake";
-            const legTL = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 16), wireMat); legTL.position.set(-5, 8, 0); legTL.name="stake";
-            const legTR = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 16), wireMat); legTR.position.set(5, 8, 0); legTR.name="stake";
+            // Board (24x18)
+            const geo = new THREE.BoxGeometry(24, 18, 0.157);
+            const whiteBase = { color: 0xffffff, roughness: 0.3, metalness: 0.0 };
+            const matEdge = new THREE.MeshStandardMaterial({ ...whiteBase });
+            matFront = new THREE.MeshStandardMaterial({ ...whiteBase, name: 'Mat_Front' });
+            matBack = new THREE.MeshStandardMaterial({ ...whiteBase, name: 'Mat_Back' });
             
-            signGroup.add(legL, legR, legTL, legTR);
+            const materials = [matEdge, matEdge, matEdge, matEdge, matFront, matBack];
+            const board = new THREE.Mesh(geo, materials);
+            board.name = "Sign_Board";
+            board.castShadow = true;
+            board.position.set(0, 17, 0);
+            signGroup.add(board);
+
+            // Grass
+            const grassGeo = new THREE.CircleGeometry(18, 64);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 1, side: THREE.DoubleSide });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.rotation.x = -Math.PI / 2;
+            grass.position.y = -0.05;
+            grass.receiveShadow = true;
+            signGroup.add(grass);
+
             scene.add(signGroup);
         }
 
@@ -203,89 +345,197 @@
             const sides = document.getElementById('sides').value;
             const hasStakes = document.getElementById('stakes').checked;
             
-            // Toggle Stakes Visibility
+            // Toggle Stakes Visibility (Traverse for specific names)
             signGroup.traverse(child => {
-                if(child.name === 'stake') child.visible = hasStakes;
+                if(["Leg_Lower", "Leg_Upper", "Bar_Step", "Bar_Stop"].includes(child.name)) {
+                    child.visible = hasStakes;
+                }
             });
 
-            // Toggle Side B Button
+            // Toggle Side B UI
             const btnB = document.getElementById('btn-edit-b');
             if(sides === "2") {
                 btnB.classList.remove('hidden');
             } else {
                 btnB.classList.add('hidden');
-                // Reset Side B to white if switching back
                 matBack.map = null; matBack.needsUpdate = true;
             }
         };
 
-        // --- 3. EDITOR & CART LOGIC ---
-        let activeSide = 'A';
+        // --- 3. FULL EDITOR LOGIC ---
+        const modal = document.getElementById('editor-modal');
         const canvas = document.getElementById('editor-canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 1200; canvas.height = 900; // 4:3 Ratio for 24x18
+        canvas.width = 1200; canvas.height = 900;
 
         window.openEditor = function(side) {
             activeSide = side;
+            currentState = savedStates[side];
             document.getElementById('editor-side-label').innerText = "SIDE " + side;
-            document.getElementById('editor-modal').classList.remove('hidden');
-            // Reset canvas/Load saved image logic would go here
-            ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,1200,900);
+            document.getElementById('editor-bg-color').value = currentState.bgColor;
+            drawEditor();
+            modal.classList.remove('hidden');
         };
 
-        window.closeEditor = function() { document.getElementById('editor-modal').classList.add('hidden'); };
+        window.closeEditor = function() { modal.classList.add('hidden'); };
 
-        // Upload Image
+        function drawEditor() {
+            ctx.fillStyle = currentState.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (currentState.imgLoaded && currentState.img) {
+                ctx.save();
+                ctx.translate(currentState.x, currentState.y);
+                ctx.rotate(currentState.rotation * Math.PI / 180);
+                ctx.scale(currentState.flipX, currentState.flipY);
+                ctx.drawImage(currentState.img, -currentState.width / 2, -currentState.height / 2, currentState.width, currentState.height);
+                ctx.restore();
+            }
+        }
+
+        // Editor Toolbar Functions
+        window.rotateImg = () => { currentState.rotation = (currentState.rotation + 90) % 360; drawEditor(); };
+        window.flipImg = (axis) => { if(axis==='h') currentState.flipX *= -1; if(axis==='v') currentState.flipY *= -1; drawEditor(); };
+        
+        window.setSizing = (mode) => {
+            if (!currentState.imgLoaded) return;
+            const cw = currentState.canvasWidth, ch = currentState.canvasHeight;
+            const ratio = currentState.img.width / currentState.img.height;
+            const cRatio = cw / ch;
+            currentState.x = cw/2; currentState.y = ch/2; currentState.rotation = 0;
+            
+            if (mode === 'fit') {
+                if (ratio > cRatio) { currentState.width = cw; currentState.height = cw / ratio; }
+                else { currentState.height = ch; currentState.width = ch * ratio; }
+            } else if (mode === 'fill') {
+                if (ratio > cRatio) { currentState.height = ch; currentState.width = ch * ratio; }
+                else { currentState.width = cw; currentState.height = cw / ratio; }
+            } else if (mode === 'stretch') { currentState.width = cw; currentState.height = ch; }
+            drawEditor();
+        };
+
+        window.alignImg = (pos) => {
+            if (!currentState.imgLoaded) return;
+            const wH = currentState.width/2, hH = currentState.height/2;
+            const cw = currentState.canvasWidth, ch = currentState.canvasHeight;
+            if(pos==='center'){ currentState.x=cw/2; currentState.y=ch/2; }
+            else if(pos==='left') currentState.x=wH;
+            else if(pos==='right') currentState.x=cw-wH;
+            else if(pos==='top') currentState.y=hH;
+            else if(pos==='bottom') currentState.y=ch-hH;
+            drawEditor();
+        };
+
+        // File Upload
         document.getElementById('editor-upload').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (evt) => {
                 const img = new Image();
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0, 1200, 900); // Simple stretch for POC
-                };
+                img.onload = () => { currentState.img = img; currentState.imgLoaded = true; window.setSizing('fit'); };
                 img.src = evt.target.result;
             };
-            reader.readAsDataURL(e.target.files);
+            if(e.target.files) reader.readAsDataURL(e.target.files);
         });
 
-        // Apply Texture
+        // Background Color
+        document.getElementById('editor-bg-color').addEventListener('input', (e) => { currentState.bgColor = e.target.value; drawEditor(); });
+
+        // Save & Apply
         document.getElementById('btn-editor-save').addEventListener('click', () => {
             const dataUrl = canvas.toDataURL('image/png');
+            currentState.previewUrl = dataUrl;
             const tex = new THREE.TextureLoader().load(dataUrl);
             tex.colorSpace = THREE.SRGBColorSpace;
-            
-            if(activeSide === 'A') { matFront.map = tex; matFront.needsUpdate = true; savedStates.A.img = dataUrl; }
-            else { matBack.map = tex; matBack.needsUpdate = true; savedStates.B.img = dataUrl; }
-            
+            if(activeSide === 'A') { matFront.map = tex; matFront.needsUpdate = true; }
+            else { matBack.map = tex; matBack.needsUpdate = true; }
             closeEditor();
         });
 
+        // Dragging Logic
+        canvas.addEventListener('mousedown', (e) => {
+            currentState.isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+            currentState.lastMouseX = (e.clientX - rect.left) * scaleX;
+            currentState.lastMouseY = (e.clientY - rect.top) * scaleY;
+        });
+        window.addEventListener('mouseup', () => { currentState.isDragging = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (!currentState.isDragging || !currentState.imgLoaded) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            currentState.x += (mouseX - currentState.lastMouseX);
+            currentState.y += (mouseY - currentState.lastMouseY);
+            currentState.lastMouseX = mouseX; currentState.lastMouseY = mouseY;
+            drawEditor();
+        });
+
+        // --- 4. EXPORT & CART ---
+        
         window.addToCart = function() {
-            // 1. Snapshot
             renderer.render(scene, camera);
             const thumb = renderer.domElement.toDataURL('image/png');
-
-            // 2. Build Item
             const item = {
                 id: Date.now(),
                 product: "Yard Sign",
-                desc: `24x18 Coroplast (${document.getElementById('sides').value === '1' ? 'Single' : 'Double'} Sided)`,
+                desc: `24x18 Coroplast (${document.getElementById('sides').value === '1' ? 'SS' : 'DS'}). ${document.getElementById('stakes').checked ? '+ Stakes' : 'Sign Only'}`,
                 qty: document.getElementById('qty').value,
                 price: document.getElementById('total-price').innerText,
                 proofImage: thumb,
                 stakes: document.getElementById('stakes').checked
             };
-
-            // 3. Save
             let cart = JSON.parse(sessionStorage.getItem('signos_cart')) || [];
             cart.push(item);
             sessionStorage.setItem('signos_cart', JSON.stringify(cart));
-            
             alert("Added to Order!");
             window.location.href = 'order_menu.html';
         };
 
-        // --- INIT ---
+        // Export GLB (AR)
+        function exportGLB(download = false) {
+            const exporter = new GLTFExporter();
+            const sceneClone = signGroup.clone();
+            
+            // For AR, strip the bottom legs so it sits on the ground table
+            if (!download) {
+                const toRemove = [];
+                sceneClone.traverse((child) => { if (child.name === "Leg_Lower") toRemove.push(child); });
+                toRemove.forEach(child => child.parent.remove(child));
+            }
+
+            exporter.parse(sceneClone, function ( gltf ) {
+                const blob = new Blob( [ gltf ], { type: 'application/octet-stream' } );
+                const url = URL.createObjectURL( blob );
+                if (download) {
+                    const link = document.createElement( 'a' );
+                    link.style.display = 'none'; link.href = url; link.download = 'signos_yard_sign.glb';
+                    document.body.appendChild( link ); link.click(); document.body.removeChild( link );
+                } else {
+                    const mv = document.getElementById('ar-viewer-hidden');
+                    mv.src = url; mv.iosSrc = url; mv.alt = "Custom Yard Sign";
+                    document.getElementById('ar-qr-container').classList.remove('hidden');
+                    document.getElementById('ar-viewer-hidden').style.display = 'block';
+                }
+            }, undefined, { binary: true });
+        }
+        document.getElementById('btn-ar').addEventListener('click', () => exportGLB(false));
+
+        // Generate Proof
+        document.getElementById('btn-proof').addEventListener('click', () => {
+            document.getElementById('proof-date').innerText = new Date().toLocaleDateString();
+            const hasSideB = savedStates.B.imgLoaded;
+            const desc = `24" x 18" 4mm corrugated plastic yard sign. Digital print on ${hasSideB ? "two sides" : "one side"}. ${document.getElementById('stakes').checked ? 'Includes 10x24 H-Stake.' : 'Sign Only.'}`;
+            document.getElementById('proof-desc').innerText = desc;
+            
+            // Set Images
+            document.getElementById('proof-img-a').src = savedStates.A.previewUrl || "https://placehold.co/600x450/e2e8f0/94a3b8?text=Blank+White";
+            document.getElementById('proof-img-b').src = savedStates.B.previewUrl || "https://placehold.co/600x450/e2e8f0/94a3b8?text=Blank+White";
+            
+            document.getElementById('print-proof-modal').classList.remove('hidden');
+        });
+
+        // INIT
         window.onload = async function() {
             document.getElementById('auth-user').innerText = sessionStorage.getItem('signos_user');
             document.getElementById('auth-role').innerText = sessionStorage.getItem('signos_role');
