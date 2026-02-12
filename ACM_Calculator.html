@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACM Calculator v5.1</title>
+    <title>ACM Calculator v5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -485,6 +485,8 @@
 
         // --- 2. IN-HOUSE COST (OPTIMIZED) ---
         
+        let totalCost = 0; // Fix: Declare totalCost globally for this function
+
         // Run Optimization
         const optimization = optimizeSheet(w, h, qty, mat);
         
@@ -524,7 +526,7 @@
             const totalTimeCNC = timeSetupCNC + runTimeCNC;
             const costCNC = totalTimeCNC * (rateMachCNC + rateCNC);
 
-            const totalCost = costMatRaw + costInk + costDesign + costSetup + costRun + costCNC;
+            totalCost = costMatRaw + costInk + costDesign + costSetup + costRun + costCNC;
             const prof = price - totalCost;
 
             // In-House UI Updates
@@ -539,6 +541,7 @@
         } else {
             document.getElementById('opt-stock-size').innerText = "TOO LARGE";
             document.getElementById('cost-total').innerText = "---";
+            totalCost = Infinity; // Ensure we don't accidentally pass the profit guard with undefined/0
         }
 
         // --- 3. VENDED COST (SIGNS365) ---
