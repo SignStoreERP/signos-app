@@ -107,6 +107,7 @@
 
         <!-- RIGHT PANEL: 3D VIEW -->
         <div class="w-full md:flex-1 bg-gray-200 relative h-1/2 md:h-full order-1 md:order-2">
+            
             <!-- Three.js Canvas -->
             <div id="canvas-container" class="absolute inset-0 cursor-move z-10"></div>
             
@@ -132,6 +133,7 @@
                 <span class="text-[10px] font-bold text-gray-500 tracking-wider">3D PREVIEW</span>
             </div>
         </div>
+
     </div>
 
     <!-- FULL DESIGN STUDIO MODAL -->
@@ -143,10 +145,8 @@
             </div>
             
             <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-                <!-- Toolbar (Restored) -->
+                <!-- Toolbar -->
                 <div class="w-full md:w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto flex md:flex-col gap-6 shrink-0">
-                    
-                    <!-- Source -->
                     <div>
                         <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Source</h4>
                         <label class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded cursor-pointer text-center text-xs shadow">
@@ -157,8 +157,6 @@
                             <input type="color" id="editor-bg-color" value="#ffffff" class="w-8 h-8 rounded cursor-pointer border border-gray-300">
                         </div>
                     </div>
-
-                    <!-- Transform -->
                     <div>
                         <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Transform</h4>
                         <div class="grid grid-cols-3 gap-2">
@@ -167,8 +165,6 @@
                             <button class="tool-btn" title="Flip V" onclick="flipImg('v')">↕</button>
                         </div>
                     </div>
-
-                    <!-- Sizing -->
                     <div>
                         <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Sizing</h4>
                         <div class="space-y-2">
@@ -177,35 +173,24 @@
                             <button class="w-full text-xs bg-white border border-gray-300 rounded py-2 hover:bg-blue-50 font-medium" onclick="setSizing('stretch')">Stretch to Fit</button>
                         </div>
                     </div>
-
-                    <!-- Alignment -->
                     <div>
                         <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Align</h4>
                         <div class="grid grid-cols-3 gap-2">
-                            <div></div>
-                            <button class="tool-btn text-xs" onclick="alignImg('top')">Top</button>
-                            <div></div>
+                            <div></div><button class="tool-btn text-xs" onclick="alignImg('top')">Top</button><div></div>
                             <button class="tool-btn text-xs" onclick="alignImg('left')">Left</button>
                             <button class="tool-btn text-xs font-bold" onclick="alignImg('center')">+</button>
                             <button class="tool-btn text-xs" onclick="alignImg('right')">Right</button>
-                            <div></div>
-                            <button class="tool-btn text-xs" onclick="alignImg('bottom')">Bot</button>
-                            <div></div>
+                            <div></div><button class="tool-btn text-xs" onclick="alignImg('bottom')">Bot</button><div></div>
                         </div>
                     </div>
-
                     <button onclick="resetCanvas()" class="text-xs text-red-400 hover:text-red-600 underline mt-auto text-center w-full">Clear / Reset Canvas</button>
                 </div>
-
                 <!-- Canvas -->
                 <div class="flex-1 bg-gray-200 relative overflow-hidden flex items-center justify-center checkered-bg">
                     <canvas id="editor-canvas" class="shadow-2xl border-4 border-white max-w-[90%] max-h-[90%] cursor-move"></canvas>
-                    <div class="absolute bottom-4 left-4 bg-white/80 p-2 rounded text-[10px] text-gray-500 pointer-events-none">
-                        Drag to reposition • Use toolbar to adjust
-                    </div>
+                    <div class="absolute bottom-4 left-4 bg-white/80 p-2 rounded text-[10px] text-gray-500 pointer-events-none">Drag to reposition • Use toolbar to adjust</div>
                 </div>
             </div>
-
             <div class="bg-white border-t border-gray-200 px-4 py-3 flex justify-end gap-3 shrink-0">
                 <button onclick="closeEditor()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded font-bold">Cancel</button>
                 <button id="btn-editor-save" class="px-6 py-2 text-sm bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700">Save & Apply</button>
@@ -257,7 +242,7 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xe5e7eb);
             camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-            camera.position.set(0, 15, 45); 
+            camera.position.set(0, 15, 45);
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.shadowMap.enabled = true;
@@ -265,9 +250,11 @@
             container.appendChild(renderer.domElement);
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.target.set(0, 17, 0); 
+            controls.target.set(0, 17, 0);
+            
             scene.add(new THREE.AmbientLight(0xffffff, 1.2));
             const dir = new THREE.DirectionalLight(0xffffff, 1.5); dir.position.set(10, 20, 20); dir.castShadow = true; scene.add(dir);
+
             buildSign(); animate(); fitCamera();
             window.addEventListener('resize', () => { camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(container.clientWidth, container.clientHeight); });
         }
@@ -275,18 +262,30 @@
         function buildSign() {
             if(signGroup) scene.remove(signGroup);
             signGroup = new THREE.Group();
+
             const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0 });
             matFront = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0 });
             matBack = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0 });
             
-            // Ensure Materials are Visible (White 1x1 Texture)
             const blankUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
             new THREE.TextureLoader().load(blankUrl, (t) => { matFront.map = t; matBack.map = t; matFront.needsUpdate = true; matBack.needsUpdate = true; });
 
-            const board = new THREE.Mesh(new THREE.BoxGeometry(24, 18, 0.15), [matWhite, matWhite, matWhite, matWhite, matFront, matBack]);
-            board.position.y = 17; board.castShadow = true;
-            signGroup.add(board);
+            // FIX: Rebuilt the board out of separate meshes to prevent iOS USDZ crashing
+            const boardThickness = 0.15;
+            const boardBase = new THREE.Mesh(new THREE.BoxGeometry(24, 18, boardThickness * 0.98), matWhite);
+            boardBase.position.y = 17; boardBase.castShadow = true; boardBase.name = "Sign_Board_Base";
+            signGroup.add(boardBase);
 
+            const frontFace = new THREE.Mesh(new THREE.PlaneGeometry(24, 18), matFront);
+            frontFace.position.set(0, 17, boardThickness / 2); frontFace.name = "Sign_Board_Front";
+            signGroup.add(frontFace);
+
+            const backFace = new THREE.Mesh(new THREE.PlaneGeometry(24, 18), matBack);
+            backFace.rotation.y = Math.PI; // Flip it 180 degrees
+            backFace.position.set(0, 17, -boardThickness / 2); backFace.name = "Sign_Board_Back";
+            signGroup.add(backFace);
+
+            // Wires
             const wireMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.6, roughness: 0.4 });
             const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 24), wireMat); legL.position.set(-5, 4, 0); legL.name="stake";
             const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 24), wireMat); legR.position.set(5, 4, 0); legR.name="stake";
@@ -294,9 +293,11 @@
             const bar2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 10), wireMat); bar2.rotation.z=1.57; bar2.position.set(0,0,0); bar2.name="stake";
             signGroup.add(legL, legR, bar1, bar2);
 
+            // Grass
             const grass = new THREE.Mesh(new THREE.CircleGeometry(25, 32), new THREE.MeshStandardMaterial({ color: 0x4ade80 }));
             grass.rotation.x = -1.57; grass.position.y = -8; grass.receiveShadow = true; grass.name = "Grass_Plane";
             signGroup.add(grass);
+
             scene.add(signGroup);
         }
 
@@ -317,27 +318,63 @@
             const btn = document.getElementById('btn-ar');
             const status = document.getElementById('ar-status');
             const mv = document.getElementById('ar-viewer');
+            
             status.classList.remove('hidden');
             btn.disabled = true;
+
+            const exportScene = new THREE.Scene();
             const sceneClone = signGroup.clone();
-            const grass = sceneClone.getObjectByName("Grass_Plane"); if(grass) grass.parent.remove(grass);
             
-            // SCALE FIX: 1 Unit = 1 Meter in WebXR. Scale 24 units down to 0.6 meters (24 inches).
-            sceneClone.scale.set(0.0254, 0.0254, 0.0254);
-            sceneClone.position.y = 0.2032; // Offset vertical to sit on floor
+            // Remove stakes entirely if unselected so they don't hide in the exported file
+            if (!document.getElementById('stakes').checked) {
+                const toRemove = [];
+                sceneClone.traverse(c => { if(c.name==='stake') toRemove.push(c); });
+                toRemove.forEach(c => c.parent.remove(c));
+            }
+
+            // FIX: Foolproof Scaling. WebXR uses Meters. Our scene is built in Inches. (1 inch = 0.0254 meters)
+            // Instead of scaling the group, we map the scale directly into the physical geometry to ensure 100% AR compatibility.
+            sceneClone.traverse((child) => {
+                if (child.isMesh) {
+                    child.geometry = child.geometry.clone();
+                    child.geometry.scale(0.0254, 0.0254, 0.0254);
+                    child.position.multiplyScalar(0.0254);
+                }
+            });
+
+            // Shift the whole scene up so the grass (at Y = -8 inches) sits exactly at Y = 0 (the real world AR Floor)
+            sceneClone.position.y += (8 * 0.0254);
+            
+            // Remove Grass for AR
+            const grass = sceneClone.getObjectByName("Grass_Plane"); if(grass) grass.parent.remove(grass);
+
+            exportScene.add(sceneClone);
 
             const exporter = new GLTFExporter();
-            exporter.parse(sceneClone, async function ( gltf ) {
+            exporter.parse(exportScene, async function ( gltf ) {
                 const glbBlob = new Blob( [ gltf ], { type: 'application/octet-stream' } );
                 const glbUrl = URL.createObjectURL( glbBlob );
-                const usdzExporter = new USDZExporter();
-                const usdzArray = await usdzExporter.parse( sceneClone );
-                const usdzBlob = new Blob( [ usdzArray ], { type: 'model/vnd.usdz+zip' } );
-                const usdzUrl = URL.createObjectURL( usdzBlob );
-                mv.src = glbUrl; mv.iosSrc = usdzUrl;
-                mv.activateAR();
-                status.classList.add('hidden');
-                btn.disabled = false;
+                
+                try {
+                    const usdzExporter = new USDZExporter();
+                    const usdzArray = await usdzExporter.parse( exportScene );
+                    const usdzBlob = new Blob( [ usdzArray ], { type: 'model/vnd.usdz+zip' } );
+                    const usdzUrl = URL.createObjectURL( usdzBlob );
+
+                    mv.src = glbUrl;
+                    mv.iosSrc = usdzUrl;
+                    
+                    setTimeout(() => {
+                        mv.activateAR();
+                        status.classList.add('hidden');
+                        btn.disabled = false;
+                    }, 100);
+                } catch(err) {
+                    console.error("AR Error:", err);
+                    alert("Could not generate AR experience.");
+                    status.classList.add('hidden');
+                    btn.disabled = false;
+                }
             }, undefined, { binary: true });
         });
 
@@ -384,7 +421,8 @@
                 };
                 img.src = evt.target.result;
             };
-            if(e.target.files && e.target.files) r.readAsDataURL(e.target.files); // FIXED: Added  index
+            // FIX: Replaced `e.target.files` with `e.target.files` so it actually reads the specific image.
+            if(e.target.files && e.target.files) r.readAsDataURL(e.target.files);
         });
 
         document.getElementById('editor-bg-color').addEventListener('input', (e) => { currentState.bgColor = e.target.value; drawEditor(); });
@@ -419,7 +457,7 @@
 
         function getPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches.clientX : e.clientX;
+            const clientX = e.touches ? e.touches.clientX : e.clientX; // Ensure touch uses the first finger
             const clientY = e.touches ? e.touches.clientY : e.clientY;
             return { x: (clientX - rect.left) * (canvas.width/rect.width), y: (clientY - rect.top) * (canvas.height/rect.height) };
         }
