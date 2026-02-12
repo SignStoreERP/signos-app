@@ -5,88 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configurator: Yard Signs</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+    </script>
+    <style>
+        .checkered-bg {
+            background-color: #e5e7eb;
+            background-image: linear-gradient(45deg, #f3f4f6 25%, transparent 25%), linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f3f4f6 75%), linear-gradient(-45deg, transparent 75%, #f3f4f6 75%);
+            background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+    <script>
+        const user = sessionStorage.getItem('signos_user');
+        if (!user) window.location.href = 'index.html';
+    </script>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans flex items-center justify-center">
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
-    <div class="max-w-4xl w-full bg-white shadow-2xl rounded-xl overflow-hidden flex">
+    <!-- AUTH HEADER -->
+    <div class="bg-gray-800 text-white px-6 py-2 flex justify-between items-center text-xs shadow-md z-20">
+        <div class="flex gap-4">
+            <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
+            <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
+        </div>
+        <button onclick="sessionStorage.clear(); window.location.href='index.html'" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px]">Logout</button>
+    </div>
+
+    <!-- MAIN APP -->
+    <div class="flex-1 flex overflow-hidden">
         
-        <!-- LEFT: Calculator Inputs -->
-        <div class="w-1/2 p-8 bg-gray-50 border-r border-gray-200">
-            <h2 class="text-xl font-black text-gray-900 mb-6">Configure Specifications</h2>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label>
-                    <input type="number" id="qty" value="10" class="w-full border p-3 rounded font-bold text-xl" oninput="calculate()">
-                </div>
+        <!-- LEFT: Calculator Inputs (1/3 Width) -->
+        <div class="w-1/3 min-w-[350px] bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex items-center gap-2 mb-1 text-gray-400 text-xs font-bold uppercase"><a href="order_menu.html">← Back</a></div>
+                <h1 class="text-2xl font-black text-gray-900">Yard Signs</h1>
+                <p class="text-xs text-green-500 font-bold mt-1" id="status-msg">CONNECTING...</p>
+            </div>
 
+            <div class="p-6 space-y-5 overflow-y-auto flex-1">
+                <!-- Specs -->
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label><input type="number" id="qty" value="10" class="w-full border p-2 rounded font-bold text-lg" oninput="calculate()"></div>
+                
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Size (Fixed)</label>
-                        <input type="text" value='24" x 18"' readonly class="w-full border p-3 rounded bg-gray-100 text-gray-500 font-bold">
-                        <input type="hidden" id="width" value="24"><input type="hidden" id="height" value="18">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label>
-                        <select id="sides" class="w-full border p-3 rounded font-bold" onchange="calculate()">
-                            <option value="1">Single Sided</option>
-                            <option value="2">Double Sided</option>
-                        </select>
-                    </div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Size</label><input type="text" value='24" x 18"' readonly class="w-full border p-2 rounded bg-gray-100 text-gray-500 font-bold"></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded h-[42px] bg-white font-bold" onchange="calculate(); update3DState()"><option value="1">Single</option><option value="2">Double</option></select></div>
                 </div>
 
-                <div class="flex items-center p-3 border rounded bg-white">
-                    <input type="checkbox" id="stakes" class="w-5 h-5 text-blue-600 rounded" checked onchange="calculate()">
+                <div class="flex items-center p-2 border rounded bg-gray-50">
+                    <input type="checkbox" id="stakes" class="w-5 h-5 text-blue-600 rounded" checked onchange="calculate(); update3DState()">
                     <label for="stakes" class="ml-2 text-sm font-bold text-gray-700">Include Wire Stakes</label>
                 </div>
+
+                <!-- 3D Actions -->
+                <hr class="border-gray-100">
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase">Design Actions</h3>
+                    <button onclick="openEditor('A')" class="w-full border border-blue-200 text-blue-600 hover:bg-blue-50 font-bold py-2 rounded text-sm">Upload/Edit Front Art</button>
+                    <button onclick="openEditor('B')" id="btn-edit-b" class="w-full border border-gray-200 text-gray-400 font-bold py-2 rounded text-sm hidden">Upload/Edit Back Art</button>
+                </div>
             </div>
 
-            <div id="status-msg" class="mt-8 text-center text-xs font-bold text-gray-400">CONNECTING TO PRICING ENGINE...</div>
+            <!-- Footer: Price & Add -->
+            <div class="p-6 bg-gray-50 border-t border-gray-200">
+                <div class="flex justify-between items-end mb-4">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Total</span>
+                    <span class="text-3xl font-black text-blue-600" id="total-price">---</span>
+                </div>
+                <button onclick="addToCart()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transform hover:scale-[1.02] transition">ADD TO ORDER</button>
+            </div>
         </div>
 
-        <!-- RIGHT: Pricing & Action -->
-        <div class="w-1/2 p-8 flex flex-col">
-            <div class="flex-1 flex flex-col justify-center items-center text-center space-y-2">
-                <span class="text-sm font-bold text-gray-400 uppercase tracking-widest">Estimated Total</span>
-                <span class="text-5xl font-black text-blue-600" id="total-price">---</span>
-                <span class="text-sm text-gray-500 font-medium" id="unit-price">---</span>
-            </div>
-
-            <div class="mt-auto space-y-3">
-                <button onclick="launchDesigner()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform hover:scale-[1.02] transition flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    DESIGN & ADD TO CART
-                </button>
-                <a href="order_menu.html" class="block text-center text-xs font-bold text-gray-400 hover:text-gray-600">Cancel & Go Back</a>
+        <!-- RIGHT: 3D Preview (2/3 Width) -->
+        <div class="flex-1 bg-gray-200 relative">
+            <div id="canvas-container" class="absolute inset-0 cursor-move"></div>
+            <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur rounded-lg p-2 shadow-sm text-[10px] text-gray-500 pointer-events-none">
+                Interactive Preview • Drag to Rotate
             </div>
         </div>
     </div>
 
-    <script>
+    <!-- DESIGN EDITOR MODAL (Hidden) -->
+    <div id="editor-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+            <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center">
+                <h3 class="font-bold">Design Studio <span id="editor-side-label" class="text-blue-400 ml-2">SIDE A</span></h3>
+                <button onclick="closeEditor()" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div class="flex-1 flex overflow-hidden">
+                <div class="w-64 bg-gray-50 border-r border-gray-200 p-4 space-y-4">
+                    <label class="block w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 px-3 rounded cursor-pointer text-center text-xs">
+                        <input type="file" id="editor-upload" accept="image/*" class="hidden"> <span>Upload Image</span>
+                    </label>
+                    <button class="w-full text-xs bg-white border rounded py-2" onclick="setSizing('fit')">Fit to Sign</button>
+                    <button class="w-full text-xs bg-white border rounded py-2" onclick="setSizing('fill')">Fill (Cover)</button>
+                </div>
+                <div class="flex-1 bg-gray-200 flex items-center justify-center p-8 checkered-bg relative">
+                    <canvas id="editor-canvas" class="shadow-2xl border-4 border-white"></canvas>
+                </div>
+            </div>
+            <div class="bg-white border-t border-gray-200 px-4 py-3 flex justify-end gap-3">
+                <button onclick="closeEditor()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                <button id="btn-editor-save" class="px-6 py-2 text-sm bg-blue-600 text-white font-bold rounded shadow">Save & Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- 1. PRICING LOGIC ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
         let backend = {};
 
-        window.onload = async function() {
-            try {
-                const response = await fetch(`${SCRIPT_URL}?tab=PROD_Yard_Signs`);
-                backend = await response.json();
-                document.getElementById('status-msg').innerText = "PRICING ENGINE ONLINE";
-                document.getElementById('status-msg').className = "mt-8 text-center text-xs font-bold text-green-500";
-                calculate();
-            } catch(e) { console.error(e); }
-        };
-
-        function calculate() {
+        // Expose calculate to window
+        window.calculate = function() {
             if(!backend.Item_Name) return;
             const qty = parseFloat(document.getElementById('qty').value)||1;
             const sides = parseInt(document.getElementById('sides').value);
             const hasStakes = document.getElementById('stakes').checked;
 
-            // Simplified Backend Logic for Hybrid Page
             let baseRate = parseFloat(backend.Retail_Price_Sign_SS || 12);
             if(sides === 2) baseRate += parseFloat(backend.Retail_Price_Sign_DS || 3);
             
-            // Discount Logic
             let disc = 0;
             if(qty >= parseFloat(backend.Tier_4_Qty||250)) disc = parseFloat(backend.Tier_4_Disc||0.1);
             else if(qty >= parseFloat(backend.Tier_3_Qty||100)) disc = parseFloat(backend.Tier_3_Disc||0.08);
@@ -94,35 +136,167 @@
             else if(qty >= parseFloat(backend.Tier_1_Qty||20)) disc = parseFloat(backend.Tier_1_Disc||0.02);
 
             let price = (baseRate * (1-disc)) * qty;
-            
             if(hasStakes) price += (qty * parseFloat(backend.Retail_Price_Stake || 2.50));
             
-            const setup = parseFloat(backend.Retail_Fee_Setup || 15);
-            price += setup;
-
+            price += parseFloat(backend.Retail_Fee_Setup || 15);
             const min = parseFloat(backend.Retail_Min_Order || 100);
             if(price < min) price = min;
 
             document.getElementById('total-price').innerText = "$" + price.toFixed(2);
-            document.getElementById('unit-price').innerText = "$" + (price/qty).toFixed(2) + " / unit";
+        };
+
+        // --- 2. 3D VISUALIZER LOGIC ---
+        let scene, camera, renderer, controls, signGroup, matFront, matBack;
+        const savedStates = { A: { img: null }, B: { img: null } };
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xe5e7eb); // Light Gray
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 12, 45);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); // Enable screenshots
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            container.appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            
+            // Lights
+            const amb = new THREE.AmbientLight(0xffffff, 1.5); scene.add(amb);
+            const dir = new THREE.DirectionalLight(0xffffff, 1.5); dir.position.set(10, 20, 20); dir.castShadow = true; scene.add(dir);
+
+            buildSign();
+            animate();
         }
 
-        function launchDesigner() {
-            const quoteData = {
+        function buildSign() {
+            if(signGroup) scene.remove(signGroup);
+            signGroup = new THREE.Group();
+
+            const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            matFront = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            matBack = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+
+            // 24x18 Board
+            const geo = new THREE.BoxGeometry(24, 18, 0.15);
+            const mesh = new THREE.Mesh(geo, [matWhite, matWhite, matWhite, matWhite, matFront, matBack]);
+            mesh.castShadow = true;
+            mesh.position.y = 17; // Lifted for stakes
+            signGroup.add(mesh);
+
+            // Stakes
+            const wireMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.6, roughness: 0.4 });
+            const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 8), wireMat); legL.position.set(-5, -4, 0); legL.name="stake";
+            const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 8), wireMat); legR.position.set(5, -4, 0); legR.name="stake";
+            const legTL = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 16), wireMat); legTL.position.set(-5, 8, 0); legTL.name="stake";
+            const legTR = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 16), wireMat); legTR.position.set(5, 8, 0); legTR.name="stake";
+            
+            signGroup.add(legL, legR, legTL, legTR);
+            scene.add(signGroup);
+        }
+
+        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+
+        window.update3DState = function() {
+            const sides = document.getElementById('sides').value;
+            const hasStakes = document.getElementById('stakes').checked;
+            
+            // Toggle Stakes Visibility
+            signGroup.traverse(child => {
+                if(child.name === 'stake') child.visible = hasStakes;
+            });
+
+            // Toggle Side B Button
+            const btnB = document.getElementById('btn-edit-b');
+            if(sides === "2") {
+                btnB.classList.remove('hidden');
+            } else {
+                btnB.classList.add('hidden');
+                // Reset Side B to white if switching back
+                matBack.map = null; matBack.needsUpdate = true;
+            }
+        };
+
+        // --- 3. EDITOR & CART LOGIC ---
+        let activeSide = 'A';
+        const canvas = document.getElementById('editor-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 1200; canvas.height = 900; // 4:3 Ratio for 24x18
+
+        window.openEditor = function(side) {
+            activeSide = side;
+            document.getElementById('editor-side-label').innerText = "SIDE " + side;
+            document.getElementById('editor-modal').classList.remove('hidden');
+            // Reset canvas/Load saved image logic would go here
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,1200,900);
+        };
+
+        window.closeEditor = function() { document.getElementById('editor-modal').classList.add('hidden'); };
+
+        // Upload Image
+        document.getElementById('editor-upload').addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, 1200, 900); // Simple stretch for POC
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(e.target.files);
+        });
+
+        // Apply Texture
+        document.getElementById('btn-editor-save').addEventListener('click', () => {
+            const dataUrl = canvas.toDataURL('image/png');
+            const tex = new THREE.TextureLoader().load(dataUrl);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            
+            if(activeSide === 'A') { matFront.map = tex; matFront.needsUpdate = true; savedStates.A.img = dataUrl; }
+            else { matBack.map = tex; matBack.needsUpdate = true; savedStates.B.img = dataUrl; }
+            
+            closeEditor();
+        });
+
+        window.addToCart = function() {
+            // 1. Snapshot
+            renderer.render(scene, camera);
+            const thumb = renderer.domElement.toDataURL('image/png');
+
+            // 2. Build Item
+            const item = {
                 id: Date.now(),
                 product: "Yard Sign",
-                width: 24,
-                height: 18,
+                desc: `24x18 Coroplast (${document.getElementById('sides').value === '1' ? 'Single' : 'Double'} Sided)`,
                 qty: document.getElementById('qty').value,
-                sides: document.getElementById('sides').value,
-                stakes: document.getElementById('stakes').checked,
                 price: document.getElementById('total-price').innerText,
-                desc: `24x18 Yard Sign (${document.getElementById('sides').value === '1' ? 'Single' : 'Double'} Sided)`
+                proofImage: thumb,
+                stakes: document.getElementById('stakes').checked
             };
-            sessionStorage.setItem('current_design_job', JSON.stringify(quoteData));
-            window.location.href = 'YardSign3D.html'; // Redirects to your 3D tool
-        }
+
+            // 3. Save
+            let cart = JSON.parse(sessionStorage.getItem('signos_cart')) || [];
+            cart.push(item);
+            sessionStorage.setItem('signos_cart', JSON.stringify(cart));
+            
+            alert("Added to Order!");
+            window.location.href = 'order_menu.html';
+        };
+
+        // --- INIT ---
+        window.onload = async function() {
+            document.getElementById('auth-user').innerText = sessionStorage.getItem('signos_user');
+            document.getElementById('auth-role').innerText = sessionStorage.getItem('signos_role');
+            initThree();
+            try {
+                const res = await fetch(`${SCRIPT_URL}?tab=PROD_Yard_Signs`);
+                backend = await res.json();
+                document.getElementById('status-msg').innerText = "ONLINE";
+                calculate();
+            } catch(e) {}
+        };
     </script>
 </body>
 </html>
-
