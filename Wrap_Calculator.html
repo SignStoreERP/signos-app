@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wrap Calculator v5.2</title>
+    <title>Wrap Calculator v5.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -14,9 +14,9 @@
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
         
-        /* Compact Inputs for Table */
-        .tbl-input { @apply w-full border border-gray-300 p-1 rounded text-[10px] font-bold text-gray-700 text-center h-8; }
-        .tbl-select { @apply w-full border border-gray-300 p-1 rounded text-[10px] font-bold text-gray-700 h-8 bg-white; }
+        /* Ultra Compact Inputs */
+        .tbl-input { @apply w-full border border-gray-300 p-0.5 rounded text-[9px] font-bold text-gray-700 text-center h-6; }
+        .tbl-select { @apply w-full border border-gray-300 p-0.5 rounded text-[9px] font-bold text-gray-700 h-6 bg-white; }
         
         /* View Mode Logic */
         .mode-prod .prod-hidden { display: none !important; }
@@ -76,12 +76,12 @@
                 <table class="w-full text-left table-fixed">
                     <thead class="text-[9px] text-gray-400 uppercase font-bold bg-gray-100 border-b border-gray-200">
                         <tr>
-                            <th class="py-2 pl-2 w-[28%]">Name</th>
-                            <th class="py-2 w-[28%]">Type</th>
+                            <th class="py-2 pl-2 w-[25%]">Name</th>
+                            <th class="py-2 w-[30%]">Type</th>
                             <th class="py-2 w-[12%] text-center">Qty</th>
                             <th class="py-2 w-[12%] text-center">W</th>
                             <th class="py-2 w-[12%] text-center">H</th>
-                            <th class="py-2 w-[8%]"></th>
+                            <th class="py-2 w-[9%]"></th>
                         </tr>
                     </thead>
                     <tbody id="section-list" class="divide-y divide-gray-200"></tbody>
@@ -90,13 +90,17 @@
             </div>
         </div>
 
-        <!-- Production Panel Table -->
+        <!-- Production Panel Table (Formatted) -->
         <div id="prod-panel-container" class="hidden">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Production Panels (54" Media / 1" Overlap)</label>
             <div class="bg-blue-50 border border-blue-100 rounded p-2">
-                <table class="w-full text-[10px]">
+                <table class="w-full text-[10px] table-fixed">
                     <thead class="text-blue-400 uppercase font-bold text-left">
-                        <tr><th>Area</th><th>Size</th><th class="text-right">Panels</th></tr>
+                        <tr>
+                            <th class="w-1/3">Area</th>
+                            <th class="w-1/3 text-center">Size</th>
+                            <th class="w-1/3 text-right">Panels</th>
+                        </tr>
                     </thead>
                     <tbody id="prod-panel-body" class="text-blue-900 font-mono"></tbody>
                 </table>
@@ -292,7 +296,7 @@
     <!-- DESCRIPTION -->
     <div class="bg-gray-50 p-4 border-t border-gray-200">
         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-        <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-24 text-gray-600 font-mono outline-none" readonly></textarea>
+        <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-28 text-gray-600 font-mono outline-none" readonly></textarea>
     </div>
 
 </div>
@@ -312,7 +316,7 @@
         sectionCount++;
         const tbody = document.getElementById('section-list');
         const tr = document.createElement('tr');
-        tr.className = "section-row border-b border-gray-100 last:border-0 group align-top";
+        tr.className = "section-row border-b border-gray-100 last:border-0 group align-top text-[9px]";
         tr.id = `sec-${sectionCount}`;
         tr.innerHTML = `
             <td class="py-1 px-1"><input type="text" class="sec-name tbl-input text-left" placeholder="Part Name" oninput="calculate()"></td>
@@ -322,9 +326,18 @@
                     <option value="Perf">Perf</option>
                     <option value="Decal">Decal</option>
                 </select>
+                
+                <!-- Perf Option: Included -->
+                <div class="mt-1 hidden perf-opt">
+                    <label class="flex items-center justify-center gap-1 text-blue-600">
+                        <input type="checkbox" class="sec-inc" onchange="calculate()"> Included in Cost
+                    </label>
+                </div>
+
+                <!-- Decal Option: Complex -->
                 <div class="mt-1 hidden complex-opt">
-                    <label class="flex items-center justify-center gap-1 text-[9px] text-orange-600">
-                        <input type="checkbox" class="sec-complex" onchange="calculate()"> Cplx
+                    <label class="flex items-center justify-center gap-1 text-orange-600">
+                        <input type="checkbox" class="sec-complex" onchange="calculate()"> Complex
                     </label>
                 </div>
             </td>
@@ -340,12 +353,18 @@
 
     window.toggleOpt = function(select) {
         const row = select.closest('tr');
-        const opt = row.querySelector('.complex-opt');
-        if(select.value === 'Decal') opt.classList.remove('hidden');
-        else {
-            opt.classList.add('hidden');
-            row.querySelector('.sec-complex').checked = false;
-        }
+        const optCplx = row.querySelector('.complex-opt');
+        const optPerf = row.querySelector('.perf-opt');
+        
+        // Reset Logic
+        optCplx.classList.add('hidden');
+        optPerf.classList.add('hidden');
+        row.querySelector('.sec-complex').checked = false;
+        // Keep Perf included state or reset? Usually reset on type change
+        row.querySelector('.sec-inc').checked = false; 
+
+        if(select.value === 'Decal') optCplx.classList.remove('hidden');
+        if(select.value === 'Perf') optPerf.classList.remove('hidden');
     };
 
     window.removeSection = function(id) {
@@ -398,7 +417,11 @@
 
         let sqftWrap = 0, sqftPerf = 0, sqftDecal = 0;
         let retailWrap = 0, retailPerf = 0, retailDecal = 0;
-        const panelLog = []; // For Production Table
+        
+        // For Description
+        let qtyDecalTotal = 0;
+
+        const panelLog = []; 
 
         // 1. ITERATE ROWS
         document.querySelectorAll('.section-row').forEach(row => {
@@ -407,7 +430,9 @@
             const qty = parseFloat(row.querySelector('.sec-qty').value) || 1;
             const w = parseFloat(row.querySelector('.sec-w').value) || 0;
             const h = parseFloat(row.querySelector('.sec-h').value) || 0;
+            
             const isComplex = row.querySelector('.sec-complex').checked;
+            const isIncluded = row.querySelector('.sec-inc').checked;
             
             const areaSqFt = (w * h) / 144;
             const totalSqFt = areaSqFt * qty;
@@ -424,8 +449,15 @@
                 const panels = Math.ceil(w / 53);
                 panelLog.push({name, size: `${w}x${h}`, panels: panels * qty});
             }
-            if(type === 'Perf') { sqftPerf += totalSqFt; retailPerf += (totalSqFt * ratePerf); }
-            if(type === 'Decal') { sqftDecal += totalSqFt; retailDecal += (totalSqFt * rateDecal); }
+            if(type === 'Perf') { 
+                sqftPerf += totalSqFt; 
+                if(!isIncluded) retailPerf += (totalSqFt * ratePerf); 
+            }
+            if(type === 'Decal') { 
+                sqftDecal += totalSqFt; 
+                qtyDecalTotal += qty;
+                retailDecal += (totalSqFt * rateDecal); 
+            }
         });
 
         // 2. UPDATE PROD PANEL TABLE
@@ -434,7 +466,7 @@
         if(panelLog.length > 0) {
             document.getElementById('prod-panel-container').classList.remove('hidden');
             panelLog.forEach(log => {
-                prodBody.innerHTML += `<tr class="border-b border-blue-100 last:border-0"><td>${log.name}</td><td>${log.size}"</td><td class="text-right font-bold">${log.panels}</td></tr>`;
+                prodBody.innerHTML += `<tr class="border-b border-blue-100 last:border-0"><td class="w-1/3">${log.name}</td><td class="w-1/3 text-center">${log.size}"</td><td class="w-1/3 text-right font-bold">${log.panels}</td></tr>`;
             });
         } else {
             document.getElementById('prod-panel-container').classList.add('hidden');
@@ -606,17 +638,15 @@
         else { warn.classList.add('hidden'); }
 
         // DESCRIPTION GENERATOR
-        const veh = `${document.getElementById('veh-year').value} ${document.getElementById('veh-make').value} ${document.getElementById('veh-model').value}`;
+        const descLines = [];
+        descLines.push("Vehicle Wrap Graphics");
+        if (sqftWrap > 0) descLines.push(`${sqftWrap.toFixed(1)}sqft wrap vinyl`);
+        if (sqftPerf > 0) descLines.push(`${sqftPerf.toFixed(1)}sqft perforated vinyl`);
+        if (sqftDecal > 0) descLines.push(`(x${qtyDecalTotal}) ${sqftDecal.toFixed(1)}sqft contour cut decal`);
+        if (hasRemoval) descLines.push("Vehicle graphic removal");
+        if (hasInstall) descLines.push("Vehicle wrap graphics installation");
         
-        let desc = `${sqftWrap.toFixed(1)}sqft vehicle wrap with full color digital print on cast wrap media with cast wrap UV resistant gloss overlaminate`;
-        
-        if (sqftPerf > 0) desc += ` with ${sqftPerf.toFixed(1)}sqft cast wrap window vinyl with UV resistant gloss overlaminate`;
-        
-        if (hasInstall) desc += ` and installation including vehicle surface prep and installation labor`;
-        
-        if (hasRemoval) desc += ` - removal priced separately and requires survey by technicians`;
-        
-        document.getElementById('job-desc').value = desc;
+        document.getElementById('job-desc').value = descLines.join('\n');
     };
 </script>
 </body>
