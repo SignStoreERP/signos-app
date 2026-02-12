@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wrap Calculator v5.4</title>
+    <title>Wrap Calculator v5.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -69,18 +69,18 @@
             <input type="text" id="veh-model" placeholder="Model" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="updateDesc()">
         </div>
 
-        <!-- Graphic Areas (Compact Table) -->
+        <!-- Graphic Areas (Refined Column Widths) -->
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Graphic Areas</label>
             <div class="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
                 <table class="w-full table-fixed">
                     <thead class="text-[9px] text-gray-400 uppercase font-bold bg-gray-100 border-b border-gray-200 text-left">
                         <tr>
-                            <th class="py-2 pl-2 w-[30%]">Name</th>
-                            <th class="py-2 w-[26%]">Type</th>
-                            <th class="py-2 w-[12%] text-center">Qty</th>
-                            <th class="py-2 w-[12%] text-center">W</th>
-                            <th class="py-2 w-[12%] text-center">H</th>
+                            <th class="py-2 pl-2 w-[24%]">Name</th>
+                            <th class="py-2 w-[20%]">Type</th>
+                            <th class="py-2 w-[16%] text-center">Qty</th>
+                            <th class="py-2 w-[16%] text-center">W</th>
+                            <th class="py-2 w-[16%] text-center">H</th>
                             <th class="py-2 w-[8%]"></th>
                         </tr>
                     </thead>
@@ -320,8 +320,8 @@
         tr.className = "section-row border-b border-gray-100 last:border-0 group align-top text-[9px]";
         tr.id = `sec-${sectionCount}`;
         tr.innerHTML = `
-            <td class="py-1 pr-1"><input type="text" class="sec-name tbl-input text-left" placeholder="Name" oninput="calculate()"></td>
-            <td class="py-1 pr-1">
+            <td class="py-1 px-1"><input type="text" class="sec-name tbl-input text-left" placeholder="Name" oninput="calculate()"></td>
+            <td class="py-1 px-1">
                 <select class="sec-type tbl-select" onchange="toggleOpt(this); calculate()">
                     <option value="Wrap">Wrap</option>
                     <option value="Perf">Perf</option>
