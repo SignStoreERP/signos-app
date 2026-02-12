@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurator: Yard Signs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans flex items-center justify-center">
+
+    <div class="max-w-4xl w-full bg-white shadow-2xl rounded-xl overflow-hidden flex">
+        
+        <!-- LEFT: Calculator Inputs -->
+        <div class="w-1/2 p-8 bg-gray-50 border-r border-gray-200">
+            <h2 class="text-xl font-black text-gray-900 mb-6">Configure Specifications</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label>
+                    <input type="number" id="qty" value="10" class="w-full border p-3 rounded font-bold text-xl" oninput="calculate()">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Size (Fixed)</label>
+                        <input type="text" value='24" x 18"' readonly class="w-full border p-3 rounded bg-gray-100 text-gray-500 font-bold">
+                        <input type="hidden" id="width" value="24"><input type="hidden" id="height" value="18">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label>
+                        <select id="sides" class="w-full border p-3 rounded font-bold" onchange="calculate()">
+                            <option value="1">Single Sided</option>
+                            <option value="2">Double Sided</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center p-3 border rounded bg-white">
+                    <input type="checkbox" id="stakes" class="w-5 h-5 text-blue-600 rounded" checked onchange="calculate()">
+                    <label for="stakes" class="ml-2 text-sm font-bold text-gray-700">Include Wire Stakes</label>
+                </div>
+            </div>
+
+            <div id="status-msg" class="mt-8 text-center text-xs font-bold text-gray-400">CONNECTING TO PRICING ENGINE...</div>
+        </div>
+
+        <!-- RIGHT: Pricing & Action -->
+        <div class="w-1/2 p-8 flex flex-col">
+            <div class="flex-1 flex flex-col justify-center items-center text-center space-y-2">
+                <span class="text-sm font-bold text-gray-400 uppercase tracking-widest">Estimated Total</span>
+                <span class="text-5xl font-black text-blue-600" id="total-price">---</span>
+                <span class="text-sm text-gray-500 font-medium" id="unit-price">---</span>
+            </div>
+
+            <div class="mt-auto space-y-3">
+                <button onclick="launchDesigner()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform hover:scale-[1.02] transition flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    DESIGN & ADD TO CART
+                </button>
+                <a href="order_menu.html" class="block text-center text-xs font-bold text-gray-400 hover:text-gray-600">Cancel & Go Back</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
+        let backend = {};
+
+        window.onload = async function() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?tab=PROD_Yard_Signs`);
+                backend = await response.json();
+                document.getElementById('status-msg').innerText = "PRICING ENGINE ONLINE";
+                document.getElementById('status-msg').className = "mt-8 text-center text-xs font-bold text-green-500";
+                calculate();
+            } catch(e) { console.error(e); }
+        };
+
+        function calculate() {
+            if(!backend.Item_Name) return;
+            const qty = parseFloat(document.getElementById('qty').value)||1;
+            const sides = parseInt(document.getElementById('sides').value);
+            const hasStakes = document.getElementById('stakes').checked;
+
+            // Simplified Backend Logic for Hybrid Page
+            let baseRate = parseFloat(backend.Retail_Price_Sign_SS || 12);
+            if(sides === 2) baseRate += parseFloat(backend.Retail_Price_Sign_DS || 3);
+            
+            // Discount Logic
+            let disc = 0;
+            if(qty >= parseFloat(backend.Tier_4_Qty||250)) disc = parseFloat(backend.Tier_4_Disc||0.1);
+            else if(qty >= parseFloat(backend.Tier_3_Qty||100)) disc = parseFloat(backend.Tier_3_Disc||0.08);
+            else if(qty >= parseFloat(backend.Tier_2_Qty||50)) disc = parseFloat(backend.Tier_2_Disc||0.05);
+            else if(qty >= parseFloat(backend.Tier_1_Qty||20)) disc = parseFloat(backend.Tier_1_Disc||0.02);
+
+            let price = (baseRate * (1-disc)) * qty;
+            
+            if(hasStakes) price += (qty * parseFloat(backend.Retail_Price_Stake || 2.50));
+            
+            const setup = parseFloat(backend.Retail_Fee_Setup || 15);
+            price += setup;
+
+            const min = parseFloat(backend.Retail_Min_Order || 100);
+            if(price < min) price = min;
+
+            document.getElementById('total-price').innerText = "$" + price.toFixed(2);
+            document.getElementById('unit-price').innerText = "$" + (price/qty).toFixed(2) + " / unit";
+        }
+
+        function launchDesigner() {
+            const quoteData = {
+                id: Date.now(),
+                product: "Yard Sign",
+                width: 24,
+                height: 18,
+                qty: document.getElementById('qty').value,
+                sides: document.getElementById('sides').value,
+                stakes: document.getElementById('stakes').checked,
+                price: document.getElementById('total-price').innerText,
+                desc: `24x18 Yard Sign (${document.getElementById('sides').value === '1' ? 'Single' : 'Double'} Sided)`
+            };
+            sessionStorage.setItem('current_design_job', JSON.stringify(quoteData));
+            window.location.href = 'YardSign3D.html'; // Redirects to your 3D tool
+        }
+    </script>
+</body>
+</html>
+
