@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wrap Calculator v5.3</title>
+    <title>Wrap Calculator v5.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -15,8 +15,8 @@
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
         
         /* Ultra Compact Inputs */
-        .tbl-input { @apply w-full border border-gray-300 p-0.5 rounded text-[9px] font-bold text-gray-700 text-center h-6; }
-        .tbl-select { @apply w-full border border-gray-300 p-0.5 rounded text-[9px] font-bold text-gray-700 h-6 bg-white; }
+        .tbl-input { @apply w-full min-w-0 border border-gray-300 px-1 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border; }
+        .tbl-select { @apply w-full min-w-0 border border-gray-300 px-0.5 py-0.5 rounded text-[10px] font-bold text-gray-700 h-6 bg-white box-border; }
         
         /* View Mode Logic */
         .mode-prod .prod-hidden { display: none !important; }
@@ -73,15 +73,15 @@
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Graphic Areas</label>
             <div class="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                <table class="w-full text-left table-fixed">
-                    <thead class="text-[9px] text-gray-400 uppercase font-bold bg-gray-100 border-b border-gray-200">
+                <table class="w-full table-fixed">
+                    <thead class="text-[9px] text-gray-400 uppercase font-bold bg-gray-100 border-b border-gray-200 text-left">
                         <tr>
-                            <th class="py-2 pl-2 w-[25%]">Name</th>
-                            <th class="py-2 w-[30%]">Type</th>
+                            <th class="py-2 pl-2 w-[30%]">Name</th>
+                            <th class="py-2 w-[26%]">Type</th>
                             <th class="py-2 w-[12%] text-center">Qty</th>
                             <th class="py-2 w-[12%] text-center">W</th>
                             <th class="py-2 w-[12%] text-center">H</th>
-                            <th class="py-2 w-[9%]"></th>
+                            <th class="py-2 w-[8%]"></th>
                         </tr>
                     </thead>
                     <tbody id="section-list" class="divide-y divide-gray-200"></tbody>
@@ -168,6 +168,7 @@
                 <div class="flex justify-between" id="row-ret-wrap"><span>Wrap Vinyl (<span id="qty-wrap">0</span> sqft):</span><span id="ret-wrap" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-blue-600" id="row-ret-perf"><span>Window Perf (<span id="qty-perf">0</span> sqft):</span><span id="ret-perf" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-orange-600" id="row-ret-decal"><span>Decals (<span id="qty-decal">0</span> sqft):</span><span id="ret-decal" class="font-bold">$0.00</span></div>
+                
                 <div class="flex justify-between hidden text-red-600" id="row-ret-removal"><span>Graphic Removal:</span><span id="ret-removal" class="font-bold">$0.00</span></div>
 
                 <div class="border-t border-dashed border-gray-200 my-1"></div>
@@ -178,7 +179,7 @@
             </div>
         </div>
 
-        <!-- TAB 2: IN-HOUSE COST (Standardized) -->
+        <!-- TAB 2: IN-HOUSE COST -->
         <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
             <div class="space-y-1 text-xs text-gray-700">
                 
@@ -217,7 +218,7 @@
 
                 <div class="flex justify-between items-center mt-1 hidden" id="row-weed">
                     <span class="w-1/3">Weeding:</span>
-                    <span id="time-weed" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span>
+                    <span id="time-weed" class="w-1/3 text-right text-[10px] bg-green-100 rounded px-1 prod-width">0m</span>
                     <span id="cost-weed" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
                 </div>
 
@@ -319,8 +320,8 @@
         tr.className = "section-row border-b border-gray-100 last:border-0 group align-top text-[9px]";
         tr.id = `sec-${sectionCount}`;
         tr.innerHTML = `
-            <td class="py-1 px-1"><input type="text" class="sec-name tbl-input text-left" placeholder="Part Name" oninput="calculate()"></td>
-            <td class="py-1 px-1">
+            <td class="py-1 pr-1"><input type="text" class="sec-name tbl-input text-left" placeholder="Name" oninput="calculate()"></td>
+            <td class="py-1 pr-1">
                 <select class="sec-type tbl-select" onchange="toggleOpt(this); calculate()">
                     <option value="Wrap">Wrap</option>
                     <option value="Perf">Perf</option>
@@ -330,7 +331,7 @@
                 <!-- Perf Option: Included -->
                 <div class="mt-1 hidden perf-opt">
                     <label class="flex items-center justify-center gap-1 text-blue-600">
-                        <input type="checkbox" class="sec-inc" onchange="calculate()"> Included in Cost
+                        <input type="checkbox" class="sec-inc" onchange="calculate()"> Included
                     </label>
                 </div>
 
@@ -356,11 +357,9 @@
         const optCplx = row.querySelector('.complex-opt');
         const optPerf = row.querySelector('.perf-opt');
         
-        // Reset Logic
         optCplx.classList.add('hidden');
         optPerf.classList.add('hidden');
         row.querySelector('.sec-complex').checked = false;
-        // Keep Perf included state or reset? Usually reset on type change
         row.querySelector('.sec-inc').checked = false; 
 
         if(select.value === 'Decal') optCplx.classList.remove('hidden');
@@ -417,10 +416,9 @@
 
         let sqftWrap = 0, sqftPerf = 0, sqftDecal = 0;
         let retailWrap = 0, retailPerf = 0, retailDecal = 0;
+        let totalWeedingTimeMins = 0;
         
-        // For Description
         let qtyDecalTotal = 0;
-
         const panelLog = []; 
 
         // 1. ITERATE ROWS
@@ -445,7 +443,6 @@
             if(type === 'Wrap') { 
                 sqftWrap += totalSqFt; 
                 retailWrap += (totalSqFt * rateWrap);
-                // PANEL LOGIC (54" Media, 1" Overlap => 53" Effective)
                 const panels = Math.ceil(w / 53);
                 panelLog.push({name, size: `${w}x${h}`, panels: panels * qty});
             }
@@ -457,6 +454,10 @@
                 sqftDecal += totalSqFt; 
                 qtyDecalTotal += qty;
                 retailDecal += (totalSqFt * rateDecal); 
+                
+                // WEEDING CALCULATION
+                const weedRate = isComplex ? (parseFloat(backend.Time_Weed_Complex || 8)) : (parseFloat(backend.Time_Weed_Simple || 2));
+                totalWeedingTimeMins += (totalSqFt * weedRate);
             }
         });
 
@@ -482,7 +483,6 @@
         const feeSetup = parseFloat(backend.Retail_Fee_Setup || 25);
         const feeDesign = document.getElementById('inc-design').checked ? (parseFloat(backend.Retail_Rate_Design_Cplx || 85) * 2) : 0; 
 
-        // Removal
         const hasRemoval = document.getElementById('has-removal').checked;
         const retailRemoval = hasRemoval ? 300 : 0; 
 
@@ -537,7 +537,10 @@
         
         const timePrint = totalSqFt / parseFloat(backend.Speed_Print_Roll || 150);
         const timeLam = totalSqFt / parseFloat(backend.Speed_Lam_Roll || 300);
-        const timeWeed = sqftDecal * parseFloat(backend.Time_Weed_Simple || 2) / 60;
+        
+        // Weeding is now calculated per row (totalWeedingTimeMins)
+        const timeWeed = totalWeedingTimeMins / 60; 
+        
         const timeMask = sqftDecal * parseFloat(backend.Time_Mask_SqFt || 1) / 60;
         const timeThru = totalSqFt / 200;
         const timePrep = hasInstall ? (totalSqFt / 50) : 0;
@@ -639,7 +642,7 @@
 
         // DESCRIPTION GENERATOR
         const descLines = [];
-        descLines.push("Vehicle Wrap Graphics");
+        descLines.push("Full color digital print on cast wrap vinyl vehicle graphics with UV resistant overlaminate");
         if (sqftWrap > 0) descLines.push(`${sqftWrap.toFixed(1)}sqft wrap vinyl`);
         if (sqftPerf > 0) descLines.push(`${sqftPerf.toFixed(1)}sqft perforated vinyl`);
         if (sqftDecal > 0) descLines.push(`(x${qtyDecalTotal}) ${sqftDecal.toFixed(1)}sqft contour cut decal`);
