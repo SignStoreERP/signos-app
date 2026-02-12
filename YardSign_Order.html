@@ -19,8 +19,7 @@
             background-image: linear-gradient(45deg, #f3f4f6 25%, transparent 25%), linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f3f4f6 75%), linear-gradient(-45deg, transparent 75%, #f3f4f6 75%);
             background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
-        /* AR Viewer hidden until activated */
-        model-viewer { width: 100%; height: 200px; display: none; background-color: #f3f4f6; border-radius: 8px; }
+        model-viewer { width: 100%; height: 100%; display: none; }
         @media print { body { display: none; } }
     </style>
     <script>
@@ -82,29 +81,13 @@
                 <div class="border-t border-gray-100 pt-4">
                     <h3 class="text-[10px] font-bold text-gray-400 uppercase mb-2">Design Tools</h3>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="openEditor('A')" class="border border-blue-200 bg-blue-50 text-blue-700 font-bold py-3 rounded text-xs hover:bg-blue-100 transition">
-                            Edit Front
-                        </button>
-                        <button onclick="openEditor('B')" id="btn-edit-b" class="border border-gray-200 bg-gray-50 text-gray-400 font-bold py-3 rounded text-xs hidden">
-                            Edit Back
-                        </button>
+                        <button onclick="openEditor('A')" class="border border-blue-200 bg-blue-50 text-blue-700 font-bold py-3 rounded text-xs hover:bg-blue-100 transition">Edit Front</button>
+                        <button onclick="openEditor('B')" id="btn-edit-b" class="border border-gray-200 bg-gray-50 text-gray-400 font-bold py-3 rounded text-xs hidden">Edit Back</button>
                     </div>
                 </div>
-
-                <!-- AR Integration -->
-                <div class="border-t border-gray-100 pt-4">
-                    <button id="btn-ar" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded text-xs flex items-center justify-center gap-2 mb-2 shadow-sm transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
-                        View in AR (iOS & Android)
-                    </button>
-                    <div id="ar-container" class="hidden text-center">
-                        <model-viewer id="ar-viewer" src="" ios-src="" ar ar-modes="scene-viewer quick-look" camera-controls auto-rotate shadow-intensity="1">
-                            <button slot="ar-button" class="absolute bottom-4 right-4 bg-white px-4 py-2 rounded shadow font-bold text-xs">
-                                👋 Activate AR
-                            </button>
-                        </model-viewer>
-                        <p class="text-[9px] text-gray-400 mt-1 uppercase">Generating Universal AR Files...</p>
-                    </div>
+                
+                <div id="ar-status" class="hidden text-center p-2 bg-blue-50 text-blue-600 text-[10px] font-bold rounded animate-pulse">
+                    Preparing AR Experience...
                 </div>
             </div>
 
@@ -119,22 +102,36 @@
 
         <!-- RIGHT PANEL: 3D VIEW -->
         <div class="w-full md:flex-1 bg-gray-200 relative h-1/2 md:h-full order-1 md:order-2">
-            <div id="canvas-container" class="absolute inset-0 cursor-move"></div>
             
-            <div class="absolute bottom-4 right-4 flex gap-2">
+            <!-- Three.js Canvas -->
+            <div id="canvas-container" class="absolute inset-0 cursor-move z-10"></div>
+            
+            <!-- Hidden Model Viewer for iOS AR Hand-off -->
+            <model-viewer id="ar-viewer" src="" ios-src="" ar ar-modes="quick-look" camera-controls></model-viewer>
+
+            <!-- Overlay Controls -->
+            <div class="absolute bottom-4 right-4 flex gap-2 z-20">
                 <button onclick="fitCamera()" class="bg-white p-2 rounded shadow text-gray-600 hover:text-blue-600" title="Fit to View">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
                 </button>
             </div>
 
-            <div class="absolute top-4 left-4 bg-white/90 backdrop-blur rounded px-2 py-1 shadow-sm pointer-events-none">
+            <!-- AR BUTTON OVERLAY -->
+            <div class="absolute bottom-4 left-4 z-20">
+                <button id="btn-ar" class="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold flex items-center gap-2 transition transform hover:scale-105">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
+                    View in AR
+                </button>
+            </div>
+
+            <div class="absolute top-4 left-4 bg-white/90 backdrop-blur rounded px-2 py-1 shadow-sm pointer-events-none z-20">
                 <span class="text-[10px] font-bold text-gray-500 tracking-wider">3D PREVIEW</span>
             </div>
         </div>
 
     </div>
 
-    <!-- DESIGN EDITOR MODAL (Re-integrated from v1.0) -->
+    <!-- EDITOR MODAL -->
     <div id="editor-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-2 sm:p-4">
         <div class="bg-white rounded-xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center shrink-0">
@@ -148,23 +145,10 @@
                     <label class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded cursor-pointer text-center block">
                         <input type="file" id="editor-upload" accept="image/*" class="hidden"> 📷 Upload Art
                     </label>
-                    
-                    <div class="space-y-1">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase">Transform</p>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button class="bg-white border rounded p-2 hover:bg-blue-50" onclick="rotateImg()">↻</button>
-                            <button class="bg-white border rounded p-2 hover:bg-blue-50" onclick="flipImg('h')">↔</button>
-                            <button class="bg-white border rounded p-2 hover:bg-blue-50" onclick="flipImg('v')">↕</button>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase">Sizing</p>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button class="bg-white border rounded p-2 hover:bg-blue-50 text-[10px] font-bold" onclick="setSizing('fit')">Fit</button>
-                            <button class="bg-white border rounded p-2 hover:bg-blue-50 text-[10px] font-bold" onclick="setSizing('fill')">Fill</button>
-                            <button class="bg-white border rounded p-2 hover:bg-blue-50 text-[10px] font-bold" onclick="setSizing('stretch')">Stch</button>
-                        </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="bg-white border rounded p-2 hover:bg-blue-50" onclick="rotateImg()">↻</button>
+                        <button class="bg-white border rounded p-2 hover:bg-blue-50" onclick="setSizing('fit')">Fit</button>
+                        <button class="bg-white border rounded p-2 hover:bg-blue-50" onclick="setSizing('fill')">Fill</button>
                     </div>
                 </div>
                 <!-- Canvas -->
@@ -185,9 +169,9 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-        import { USDZExporter } from 'three/addons/exporters/USDZExporter.js'; // NEW: Apple Format Support
+        import { USDZExporter } from 'three/addons/exporters/USDZExporter.js';
 
-        // --- PRICING LOGIC ---
+        // --- PRICING ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
         let backend = {};
 
@@ -223,7 +207,7 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xe5e7eb);
             camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-            camera.position.set(0, 5, 40);
+            camera.position.set(0, 15, 45); // Centered View
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.shadowMap.enabled = true;
@@ -231,6 +215,7 @@
             container.appendChild(renderer.domElement);
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
+            controls.target.set(0, 17, 0); // Focus on Sign Center
             
             scene.add(new THREE.AmbientLight(0xffffff, 1.2));
             const dir = new THREE.DirectionalLight(0xffffff, 1.5); dir.position.set(10, 20, 20); dir.castShadow = true; scene.add(dir);
@@ -250,29 +235,42 @@
             if(signGroup) scene.remove(signGroup);
             signGroup = new THREE.Group();
 
-            const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            matFront = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            matBack = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            // Materials - Ensure White is solid for AR
+            const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0 });
+            matFront = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0 });
+            matBack = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0 });
 
+            // Initialize with blank white textures to ensure visibility in AR
+            const blankUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
+            const loader = new THREE.TextureLoader();
+            loader.load(blankUrl, (t) => { matFront.map = t; matBack.map = t; matFront.needsUpdate = true; matBack.needsUpdate = true; });
+
+            // Board (24x18) - Centered at Y=17 (8" gap + 9" half-height)
             const board = new THREE.Mesh(new THREE.BoxGeometry(24, 18, 0.15), [matWhite, matWhite, matWhite, matWhite, matFront, matBack]);
             board.position.y = 17; board.castShadow = true;
             signGroup.add(board);
 
+            // Stakes (24" Total: 8" Ground (hidden), 8" Gap, 8" Insert)
             const wireMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.6, roughness: 0.4 });
+            // Legs (24" tall, from y=-8 to y=16)
             const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 24), wireMat); legL.position.set(-5, 4, 0); legL.name="stake";
             const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 24), wireMat); legR.position.set(5, 4, 0); legR.name="stake";
+            // Crossbars
             const bar1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 10), wireMat); bar1.rotation.z=1.57; bar1.position.set(0,8,0); bar1.name="stake";
             const bar2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08, 10), wireMat); bar2.rotation.z=1.57; bar2.position.set(0,0,0); bar2.name="stake";
+            
             signGroup.add(legL, legR, bar1, bar2);
 
+            // Grass (Visual Reference Only - Excluded in AR export ideally, but kept for context here)
             const grass = new THREE.Mesh(new THREE.CircleGeometry(25, 32), new THREE.MeshStandardMaterial({ color: 0x4ade80 }));
             grass.rotation.x = -1.57; grass.position.y = -8; grass.receiveShadow = true;
+            grass.name = "Grass_Plane";
             signGroup.add(grass);
 
             scene.add(signGroup);
         }
 
-        window.fitCamera = function() { camera.position.set(0, 15, 45); controls.target.set(0, 10, 0); controls.update(); };
+        window.fitCamera = function() { camera.position.set(0, 15, 45); controls.target.set(0, 17, 0); controls.update(); };
         function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
 
         window.update3DState = function() {
@@ -287,38 +285,48 @@
         // --- AR EXPORT LOGIC (USDZ + GLB) ---
         document.getElementById('btn-ar').addEventListener('click', () => {
             const btn = document.getElementById('btn-ar');
-            const arContainer = document.getElementById('ar-container');
+            const status = document.getElementById('ar-status');
             const mv = document.getElementById('ar-viewer');
             
-            btn.innerText = "Generating 3D Files...";
+            status.classList.remove('hidden');
             btn.disabled = true;
-            arContainer.classList.remove('hidden');
 
             const sceneClone = signGroup.clone();
-            // Remove legs for table-top AR
-            const toRemove = [];
-            sceneClone.traverse((child) => { if (child.name === "stake" && child.geometry.type === 'CylinderGeometry') toRemove.push(child); });
-            // Note: We keep stakes for now or remove based on preference. Let's keep them for "Yard" view.
             
+            // 1. REMOVE GRASS (We want AR to show real world ground)
+            const grass = sceneClone.getObjectByName("Grass_Plane");
+            if(grass) grass.parent.remove(grass);
+
+            // 2. SCALE TO METERS (Critical Fix)
+            // 1 Unit = 1 Inch. WebXR expects Meters. 
+            // Scale by 0.0254 to convert 24 units -> 0.6 meters.
+            sceneClone.scale.set(0.0254, 0.0254, 0.0254);
+
+            // 3. ADJUST POSITION
+            // Move everything UP by 8 inches (0.2m) relative to the scaled root
+            // because our model has y=0 at the crossbar, and -8 at the leg bottom.
+            // We want leg bottom to be at y=0 in AR.
+            sceneClone.position.y = 0.2032; // 8 inches in meters
+
+            // 4. GENERATE
             const exporter = new GLTFExporter();
             exporter.parse(sceneClone, async function ( gltf ) {
-                // 1. GLB for Android
                 const glbBlob = new Blob( [ gltf ], { type: 'application/octet-stream' } );
                 const glbUrl = URL.createObjectURL( glbBlob );
                 
-                // 2. USDZ for iOS
                 const usdzExporter = new USDZExporter();
                 const usdzArray = await usdzExporter.parse( sceneClone );
                 const usdzBlob = new Blob( [ usdzArray ], { type: 'model/vnd.usdz+zip' } );
                 const usdzUrl = URL.createObjectURL( usdzBlob );
 
-                // 3. Feed Model Viewer
                 mv.src = glbUrl;
                 mv.iosSrc = usdzUrl;
-                mv.style.display = 'block';
                 
-                btn.innerText = "AR Ready (Scroll Down)";
-                btn.classList.add('bg-green-600');
+                // Trigger Native AR
+                mv.activateAR();
+                
+                status.classList.add('hidden');
+                btn.disabled = false;
                 
             }, undefined, { binary: true });
         });
@@ -332,7 +340,15 @@
             activeSide = side;
             currentState = savedStates[side];
             document.getElementById('editor-side-label').innerText = "SIDE " + side;
-            drawEditor();
+            
+            // FORCE DRAW IMMEDIATELY
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,1200,900);
+            if(currentState.img && currentState.imgLoaded) {
+                drawEditor(); // Use existing draw logic
+            } else {
+                // If new, just ensure white BG
+                ctx.fillRect(0,0,1200,900); 
+            }
             document.getElementById('editor-modal').classList.remove('hidden');
         };
 
@@ -372,7 +388,7 @@
         window.setSizing = (mode) => {
             if(!currentState.img) return;
             currentState.x=600; currentState.y=450; currentState.rot=0;
-            if(mode==='fill') { currentState.w=1200; currentState.h=900; } // lazy fill
+            if(mode==='fill') { currentState.w=1200; currentState.h=900; } 
             else if(mode==='fit') { 
                 const r = currentState.img.width/currentState.img.height;
                 if(r>1.33) { currentState.w=1200; currentState.h=1200/r; } else { currentState.h=900; currentState.w=900*r; }
@@ -398,32 +414,17 @@
             return { x: (clientX - rect.left) * (canvas.width/rect.width), y: (clientY - rect.top) * (canvas.height/rect.height) };
         }
 
-        function startDrag(e) { 
-            if(!currentState.img) return; 
-            isDragging=true; 
-            const p = getPos(e); 
-            lastX=p.x; lastY=p.y; 
-        }
-        
-        function doDrag(e) {
-            if(!isDragging) return;
-            e.preventDefault();
-            const p = getPos(e);
-            currentState.x += (p.x - lastX);
-            currentState.y += (p.y - lastY);
-            lastX=p.x; lastY=p.y;
-            drawEditor();
-        }
+        function startDrag(e) { if(!currentState.img) return; isDragging=true; const p = getPos(e); lastX=p.x; lastY=p.y; }
+        function doDrag(e) { if(!isDragging) return; e.preventDefault(); const p = getPos(e); currentState.x += (p.x - lastX); currentState.y += (p.y - lastY); lastX=p.x; lastY=p.y; drawEditor(); }
         function stopDrag() { isDragging=false; }
 
         document.getElementById('btn-editor-save').addEventListener('click', () => {
             const dataUrl = canvas.toDataURL('image/png');
             savedStates[activeSide].previewUrl = dataUrl;
-            new THREE.TextureLoader().load(dataUrl, (tex) => {
-                tex.colorSpace = THREE.SRGBColorSpace;
-                if(activeSide==='A') { matFront.map=tex; matFront.needsUpdate=true; }
-                else { matBack.map=tex; matBack.needsUpdate=true; }
-            });
+            const tex = new THREE.TextureLoader().load(dataUrl);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            if(activeSide==='A') { matFront.map=tex; matFront.needsUpdate=true; }
+            else { matBack.map=tex; matBack.needsUpdate=true; }
             closeEditor();
         });
 
@@ -459,5 +460,3 @@
     </script>
 </body>
 </html>
-
-
