@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wrap Calculator v5.0</title>
+    <title>Wrap Calculator v5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -14,7 +14,7 @@
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
         /* Compact Inputs for Table */
-        .tbl-input { @apply w-full border p-1 rounded text-xs font-bold text-gray-700; }
+        .tbl-input { @apply w-full border p-1 rounded text-xs font-bold text-gray-700 text-center; }
     </style>
     <script>
         const user = sessionStorage.getItem('signos_user');
@@ -58,9 +58,9 @@
         
         <!-- Vehicle Info -->
         <div class="grid grid-cols-3 gap-2">
-            <input type="text" id="veh-year" placeholder="Year" class="tbl-input bg-gray-50" oninput="updateDesc()">
-            <input type="text" id="veh-make" placeholder="Make" class="tbl-input bg-gray-50" oninput="updateDesc()">
-            <input type="text" id="veh-model" placeholder="Model" class="tbl-input bg-gray-50" oninput="updateDesc()">
+            <input type="text" id="veh-year" placeholder="Year" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="updateDesc()">
+            <input type="text" id="veh-make" placeholder="Make" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="updateDesc()">
+            <input type="text" id="veh-model" placeholder="Model" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="updateDesc()">
         </div>
 
         <!-- Graphic Areas (Dynamic Table) -->
@@ -70,11 +70,11 @@
                 <table class="w-full text-left">
                     <thead class="text-[9px] text-gray-400 uppercase font-bold bg-gray-100 border-b border-gray-200">
                         <tr>
-                            <th class="py-2 pl-2 w-24">Name</th>
+                            <th class="py-2 pl-2 w-24">Area Name</th>
                             <th class="py-2">Type</th>
-                            <th class="py-2 w-10 text-center">Qty</th>
-                            <th class="py-2 w-10 text-center">W</th>
-                            <th class="py-2 w-10 text-center">H</th>
+                            <th class="py-2 w-10 text-center">W (in)</th>
+                            <th class="py-2 w-10 text-center">H (in)</th>
+                            <th class="py-2 w-8 text-center">Qty</th>
                             <th class="py-2 w-6"></th>
                         </tr>
                     </thead>
@@ -84,7 +84,7 @@
             </div>
         </div>
 
-        <!-- NEW: Production Panel Table -->
+        <!-- Production Panel Table -->
         <div id="prod-panel-container" class="hidden">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Production Panels (54" Media / 1" Overlap)</label>
             <div class="bg-blue-50 border border-blue-100 rounded p-2">
@@ -158,7 +158,6 @@
                 <div class="flex justify-between" id="row-ret-wrap"><span>Wrap Vinyl (<span id="qty-wrap">0</span> sqft):</span><span id="ret-wrap" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-blue-600" id="row-ret-perf"><span>Window Perf (<span id="qty-perf">0</span> sqft):</span><span id="ret-perf" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-orange-600" id="row-ret-decal"><span>Decals (<span id="qty-decal">0</span> sqft):</span><span id="ret-decal" class="font-bold">$0.00</span></div>
-                
                 <div class="flex justify-between hidden text-red-600" id="row-ret-removal"><span>Graphic Removal:</span><span id="ret-removal" class="font-bold">$0.00</span></div>
 
                 <div class="border-t border-dashed border-gray-200 my-1"></div>
@@ -169,28 +168,79 @@
             </div>
         </div>
 
-        <!-- TAB 2: IN-HOUSE COST -->
+        <!-- TAB 2: IN-HOUSE COST (Standardized Layout) -->
         <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
             <div class="space-y-1 text-xs text-gray-700">
                 
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
-                <div class="prod-row"><span>Vinyl (Cast/Perf):</span> <span id="cost-vinyl" class="font-bold">$0.00</span></div>
-                <div class="prod-row"><span>Laminate:</span> <span id="cost-lam" class="font-bold">$0.00</span></div>
-                <div class="prod-row"><span>Ink (Latex):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between"><span>Vinyl Media:</span> <span id="cost-vinyl" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between"><span>Laminate:</span> <span id="cost-lam" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between"><span>Ink (Latex):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
 
                 <div class="border-t border-yellow-200 my-1 pt-1"></div>
 
-                <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Labor Breakdown</h4>
-                <div class="prod-row text-purple-800" id="row-cost-design"><span>Design:</span><span id="cost-design" class="font-bold">$0.00</span></div>
-                <div class="prod-row"><span>Printer Setup:</span><span id="cost-setup-print" class="font-bold">$0.00</span></div>
-                <div class="prod-row"><span>Printing:</span><span id="cost-print" class="font-bold">$0.00</span></div>
-                <div class="prod-row"><span>Lamination:</span><span id="cost-lam-lab" class="font-bold">$0.00</span></div>
-                <div class="prod-row hidden" id="row-weed"><span>Weeding:</span><span id="cost-weed" class="font-bold">$0.00</span></div>
-                <div class="prod-row hidden" id="row-mask"><span>Masking:</span><span id="cost-mask" class="font-bold">$0.00</span></div>
-                <div class="prod-row"><span>Thru Cut / Trim:</span><span id="cost-thru" class="font-bold">$0.00</span></div>
-                <div class="prod-row"><span>Vehicle Prep:</span><span id="cost-prep" class="font-bold">$0.00</span></div>
-                <div class="prod-row" id="row-cost-install"><span>Installation:</span><span id="cost-install" class="font-bold">$0.00</span></div>
-                <div class="prod-row hidden text-red-700" id="row-cost-removal"><span>Removal (2hr):</span><span id="cost-removal" class="font-bold">$0.00</span></div>
+                <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
+                
+                <!-- 3-Column Standard Layout -->
+                <div class="flex justify-between items-center text-purple-800 hidden" id="row-cost-design">
+                    <span class="w-1/3">Design:</span>
+                    <span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1">0m</span>
+                    <span id="cost-design" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1">
+                    <span class="w-1/3">Printer Setup:</span>
+                    <span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                    <span id="cost-setup-print" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1">
+                    <span class="w-1/3">Printing:</span>
+                    <span id="time-print" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                    <span id="cost-print" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1">
+                    <span class="w-1/3">Lamination:</span>
+                    <span id="time-lam" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                    <span id="cost-lam-lab" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1 hidden" id="row-weed">
+                    <span class="w-1/3">Weeding:</span>
+                    <span id="time-weed" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                    <span id="cost-weed" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1 hidden" id="row-mask">
+                    <span class="w-1/3">Masking:</span>
+                    <span id="time-mask" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                    <span id="cost-mask" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1">
+                    <span class="w-1/3">Trimming:</span>
+                    <span id="time-thru" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
+                    <span id="cost-thru" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1">
+                    <span class="w-1/3">Vehicle Prep:</span>
+                    <span id="time-prep" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1">0m</span>
+                    <span id="cost-prep" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1 hidden" id="row-cost-install">
+                    <span class="w-1/3">Installation:</span>
+                    <span id="time-install" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1">0m</span>
+                    <span id="cost-install" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center mt-1 text-red-700 hidden" id="row-cost-removal">
+                    <span class="w-1/3">Removal:</span>
+                    <span id="time-removal" class="w-1/3 text-right text-[10px] bg-red-100 rounded px-1">0m</span>
+                    <span id="cost-removal" class="w-1/3 text-right font-bold">$0.00</span>
+                </div>
 
                 <div class="border-t-2 border-yellow-300 my-2 pt-1"></div>
                 <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
@@ -217,6 +267,7 @@
                 <div class="bg-white/50 p-2 rounded mt-2 border border-indigo-100">
                     <div class="flex justify-between text-indigo-900"><span>Print Subtotal:</span> <span class="font-bold" id="vend-sub">$0.00</span></div>
                     <div class="flex justify-between text-gray-500 mt-1"><span>+ Internal Install:</span> <span class="font-bold" id="vend-install">$0.00</span></div>
+                    <div class="flex justify-between text-red-500 mt-1 hidden" id="row-vend-removal"><span>+ Internal Removal:</span> <span class="font-bold" id="vend-removal">$0.00</span></div>
                 </div>
 
                 <div class="border-t-2 border-indigo-300 my-2 pt-1"></div>
@@ -259,9 +310,9 @@
         tr.className = "section-row border-b border-gray-100 last:border-0 group align-top";
         tr.id = `sec-${sectionCount}`;
         tr.innerHTML = `
-            <td class="py-2 pl-2"><input type="text" class="sec-name tbl-input" placeholder="Part Name" oninput="calculate()"></td>
+            <td class="py-2 pl-2"><input type="text" class="sec-name tbl-input text-left" placeholder="Part Name" oninput="calculate()"></td>
             <td class="py-2 pr-1">
-                <select class="sec-type tbl-input" onchange="toggleOpt(this); calculate()">
+                <select class="sec-type tbl-input text-left" onchange="toggleOpt(this); calculate()">
                     <option value="Wrap">Wrap Vinyl</option>
                     <option value="Perf">Window Perf</option>
                     <option value="Decal">Contour Decal</option>
@@ -272,9 +323,9 @@
                     </label>
                 </div>
             </td>
-            <td class="py-2 px-1"><input type="number" class="sec-qty tbl-input text-center" value="1" oninput="calculate()"></td>
-            <td class="py-2 px-1"><input type="number" class="sec-w tbl-input text-center" placeholder="W" oninput="calculate()"></td>
-            <td class="py-2 px-1"><input type="number" class="sec-h tbl-input text-center" placeholder="H" oninput="calculate()"></td>
+            <td class="py-2 px-1"><input type="number" class="sec-w tbl-input" placeholder="W" oninput="calculate()"></td>
+            <td class="py-2 px-1"><input type="number" class="sec-h tbl-input" placeholder="H" oninput="calculate()"></td>
+            <td class="py-2 px-1"><input type="number" class="sec-qty tbl-input" value="1" oninput="calculate()"></td>
             <td class="py-2 text-center">
                 <button onclick="removeSection(${sectionCount})" class="text-gray-300 hover:text-red-500 font-bold text-lg leading-none">×</button>
             </td>
@@ -356,18 +407,15 @@
             const areaSqFt = (w * h) / 144;
             const totalSqFt = areaSqFt * qty;
 
-            // Rate Fetch
             const rateWrap = parseFloat(backend.Retail_Price_Wrap_SqFt || 15);
             const ratePerf = parseFloat(backend.Retail_Price_Perf_SqFt || 12);
             let rateDecal = parseFloat(backend.Retail_Price_Decal_SqFt || 14);
-            if(isComplex) rateDecal += 5; // Simple Adder for Complex Decals
+            if(isComplex) rateDecal += 5; 
 
             if(type === 'Wrap') { 
                 sqftWrap += totalSqFt; 
                 retailWrap += (totalSqFt * rateWrap);
-                
                 // PANEL LOGIC (54" Media, 1" Overlap => 53" Effective)
-                // Assume panels run along the Width
                 const panels = Math.ceil(w / 53);
                 panelLog.push({name, size: `${w}x${h}`, panels: panels * qty});
             }
@@ -399,12 +447,18 @@
 
         // Removal
         const hasRemoval = document.getElementById('has-removal').checked;
-        const retailRemoval = hasRemoval ? 300 : 0; // Default $300 flat
+        const retailRemoval = hasRemoval ? 300 : 0; 
 
         const totalQuote = retailWrap + retailPerf + retailDecal + retailInstall + feeSetup + feeDesign + retailRemoval;
 
         // UI RETAIL
         const fmt = (n) => "$" + n.toFixed(2);
+        const fmtTime = (h) => { 
+            const mins = Math.round(h*60); 
+            if(mins < 60) return mins + "m";
+            return h.toFixed(1) + "h";
+        };
+
         document.getElementById('total-price').innerText = fmt(totalQuote);
         
         document.getElementById('ret-wrap').innerText = fmt(retailWrap);
@@ -452,13 +506,11 @@
         const timePrep = hasInstall ? (totalSqFt / 50) : 0;
         const speedInstall = diff === 'Simple' ? 25 : 10;
         const timeInstall = hasInstall ? (totalSqFt / speedInstall) : 0;
-        
-        // Removal Time (2 hrs fixed if checked)
         const timeRemoval = hasRemoval ? 2.0 : 0;
 
         // Costs
-        const cDesign = feeDesign > 0 ? (2 * rateOp) : 0; // Est 2 hrs internal
-        const cSetup = (parseFloat(backend.Retail_Fee_Setup || 25) / 60) * rateOp; // Setup Time
+        const cDesign = feeDesign > 0 ? (2 * rateOp) : 0; 
+        const cSetup = (parseFloat(backend.Retail_Fee_Setup || 25) / 60) * rateOp; 
         const cPrint = timePrint * rateOp;
         const cLam = timeLam * rateOp;
         const cWeed = timeWeed * rateOp;
@@ -466,34 +518,49 @@
         const cThru = timeThru * rateOp;
         const cPrep = timePrep * rateInstallInternal;
         const cInstall = timeInstall * rateInstallInternal;
-        const cRemoval = timeRemoval * rateInstallInternal; // Removal is install labor
+        const cRemoval = timeRemoval * rateInstallInternal; 
 
         const totalInternal = costMatWrap + costMatPerf + costMatDecal + costLamWrap + costLamPerf + costLamDecal + costInk + cDesign + cSetup + cPrint + cLam + cWeed + cMask + cThru + cPrep + cInstall + cRemoval;
 
-        // UI IN-HOUSE
+        // UI IN-HOUSE (STANDARDIZED)
         document.getElementById('cost-vinyl').innerText = fmt(costMatWrap + costMatPerf + costMatDecal);
         document.getElementById('cost-lam').innerText = fmt(costLamWrap + costLamPerf + costLamDecal);
         document.getElementById('cost-ink').innerText = fmt(costInk);
         
+        document.getElementById('time-design').innerText = fmtTime(feeDesign > 0 ? 2 : 0);
         document.getElementById('cost-design').innerText = fmt(cDesign);
         document.getElementById('row-cost-design').classList.toggle('hidden', cDesign === 0);
         
+        document.getElementById('time-setup').innerText = fmtTime(25/60);
         document.getElementById('cost-setup-print').innerText = fmt(cSetup);
+        
+        document.getElementById('time-print').innerText = fmtTime(timePrint);
         document.getElementById('cost-print').innerText = fmt(cPrint);
+        
+        document.getElementById('time-lam').innerText = fmtTime(timeLam);
         document.getElementById('cost-lam-lab').innerText = fmt(cLam);
         
         document.getElementById('row-weed').classList.toggle('hidden', cWeed === 0);
+        document.getElementById('time-weed').innerText = fmtTime(timeWeed);
         document.getElementById('cost-weed').innerText = fmt(cWeed);
+        
         document.getElementById('row-mask').classList.toggle('hidden', cMask === 0);
+        document.getElementById('time-mask').innerText = fmtTime(timeMask);
         document.getElementById('cost-mask').innerText = fmt(cMask);
         
+        document.getElementById('time-thru').innerText = fmtTime(timeThru);
         document.getElementById('cost-thru').innerText = fmt(cThru);
-        document.getElementById('cost-prep').innerText = fmt(cPrep);
-        document.getElementById('cost-install').innerText = fmt(cInstall);
-        document.getElementById('row-cost-install').classList.toggle('hidden', !hasInstall);
         
-        document.getElementById('cost-removal').innerText = fmt(cRemoval);
+        document.getElementById('time-prep').innerText = fmtTime(timePrep);
+        document.getElementById('cost-prep').innerText = fmt(cPrep);
+        
+        document.getElementById('row-cost-install').classList.toggle('hidden', !hasInstall);
+        document.getElementById('time-install').innerText = fmtTime(timeInstall);
+        document.getElementById('cost-install').innerText = fmt(cInstall);
+        
         document.getElementById('row-cost-removal').classList.toggle('hidden', !hasRemoval);
+        document.getElementById('time-removal').innerText = fmtTime(timeRemoval);
+        document.getElementById('cost-removal').innerText = fmt(cRemoval);
 
         document.getElementById('cost-total').innerText = fmt(totalInternal);
         document.getElementById('profit-inhouse').innerText = fmt(totalQuote - totalInternal);
@@ -510,7 +577,6 @@
         const freightTrig = parseFloat(backend.S365_Ship_Freight_Trigger || 1000);
         const vendShip = totalSqFt >= freightTrig ? 199 : 10;
 
-        // Vended adds internal install/prep/removal costs
         const totalVendProject = vendWrap + vendPerf + vendDecal + vendShip + cInstall + cPrep + cRemoval + cDesign; 
 
         document.getElementById('vend-wrap').innerText = fmt(vendWrap);
@@ -518,7 +584,12 @@
         document.getElementById('vend-decal').innerText = fmt(vendDecal);
         document.getElementById('vend-ship').innerText = fmt(vendShip);
         document.getElementById('vend-sub').innerText = fmt(vendWrap+vendPerf+vendDecal+vendShip);
-        document.getElementById('vend-install').innerText = fmt(cInstall + cPrep + cRemoval);
+        document.getElementById('vend-install').innerText = fmt(cInstall + cPrep);
+        
+        // Vended Removal Line
+        document.getElementById('row-vend-removal').classList.toggle('hidden', !hasRemoval);
+        document.getElementById('vend-removal').innerText = fmt(cRemoval);
+
         document.getElementById('vend-total').innerText = fmt(totalVendProject);
         document.getElementById('profit-vend').innerText = fmt(totalQuote - totalVendProject);
 
