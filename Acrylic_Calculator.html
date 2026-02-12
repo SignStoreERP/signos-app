@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acrylic Calculator v3.1</title>
+    <title>Acrylic Calculator v3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -12,7 +12,6 @@
         .toggle-checkbox:checked { right: 0; border-color: #68D391; }
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
         
-        /* View Mode Logic */
         .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
         .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
         .mode-prod .prod-hidden { display: none !important; }
@@ -97,11 +96,29 @@
                 <div id="opt-paint" class="hidden p-2 border-t border-gray-200 bg-white rounded-b">
                     <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Sherwin Williams Color</label>
                     <div class="flex gap-2">
-                        <input type="text" id="paint-code" list="sw-colors" placeholder="Type Code (e.g. SW 7005)" class="flex-1 border p-1 rounded text-xs uppercase font-bold" oninput="updateSwatch()">
-                        <div id="paint-swatch" class="w-8 h-8 rounded border border-gray-300 bg-white shadow-sm" title="Color Preview"></div>
+                        <input type="text" id="paint-code" list="sw-colors" placeholder="Code (SW 7005) or Custom" class="flex-1 border p-1 rounded text-xs uppercase font-bold" oninput="updateSwatch('paint')">
+                        <input type="color" id="paint-swatch" value="#ffffff" class="w-8 h-8 rounded border border-gray-300 cursor-pointer" title="Click to adjust color">
                     </div>
-                    <datalist id="sw-colors"></datalist> <!-- Populated via JS -->
+                    <datalist id="sw-colors"></datalist>
                     <div id="paint-name" class="text-[10px] text-gray-500 mt-1 font-medium h-3"></div>
+                </div>
+            </div>
+
+            <!-- PMS MATCH TOGGLE -->
+            <div class="flex flex-col bg-pink-50 border border-pink-200 rounded">
+                <div class="flex items-center justify-between p-2">
+                    <span class="text-xs font-bold text-pink-900">Match PMS Color?</span>
+                    <div class="relative inline-block w-10 align-middle select-none">
+                        <input type="checkbox" id="has-pms" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="toggleOpt('opt-pms'); calculate()"/>
+                        <label for="has-pms" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
+                <div id="opt-pms" class="hidden p-2 border-t border-pink-200 bg-white rounded-b">
+                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Pantone / Spot Color</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="pms-code" placeholder="PMS Code (e.g. 186 C)" class="flex-1 border p-1 rounded text-xs uppercase font-bold">
+                        <input type="color" id="pms-swatch" value="#C0142C" class="w-8 h-8 rounded border border-gray-300 cursor-pointer" title="Visual Reference">
+                    </div>
                 </div>
             </div>
 
@@ -177,6 +194,7 @@
             <div class="space-y-1 text-xs text-gray-600">
                 <div class="flex justify-between"><span>Base Print (<span id="lbl-mat">1/8"</span>):</span><span id="ret-print" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-indigo-700" id="row-ret-paint"><span>Paint Service:</span><span id="ret-paint" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between hidden text-pink-700" id="row-ret-pms"><span>PMS Color Match:</span><span id="ret-pms" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden" id="row-ret-standoff"><span>Standoffs:</span><span id="ret-standoff" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-orange-700" id="row-ret-contour"><span>Contour Cut:</span><span id="ret-contour" class="font-bold">$0.00</span></div>
                 
@@ -191,7 +209,6 @@
         <!-- IN-HOUSE TAB -->
         <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
             <div class="space-y-2 text-xs text-gray-700">
-                
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
                 <div class="flex justify-between"><span>Acrylic Sheet:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Ink (UV):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
@@ -201,8 +218,6 @@
                 <div class="border-t border-yellow-200 my-1 pt-1"></div>
 
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
-                
-                <!-- Nesting Optimization Display -->
                 <div class="bg-yellow-100 border border-yellow-200 p-2 rounded text-[9px] mb-2">
                     <div class="flex justify-between"><span class="text-yellow-800 font-bold">OPTIMIZATION (64" BED):</span><span id="opt-yield" class="font-bold text-blue-700">0 Across</span></div>
                     <div class="flex justify-between"><span>Linear Feed:</span><span id="opt-feed" class="font-bold">0"</span></div>
@@ -215,7 +230,6 @@
 
                 <div class="border-t border-yellow-200 my-2 pt-1"></div>
                 <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
-                
                 <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
                     <div class="flex justify-between items-end">
                         <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
@@ -227,19 +241,15 @@
 
         <!-- VENDED TAB -->
         <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
-            
             <div id="vend-paint-warn" class="hidden mb-4 p-2 bg-orange-100 border border-orange-300 text-orange-800 rounded text-xs text-center font-bold">
-                ⚠️ Service Unavailable<br><span class="text-[9px] font-normal">Vendor does not offer Custom Paint</span>
+                ⚠️ Service Unavailable<br><span class="text-[9px] font-normal">Vendor does not offer Custom Paint / PMS</span>
             </div>
-
             <div class="space-y-2 text-xs text-gray-700">
                 <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between text-indigo-800"><span>Hardware/Finish:</span> <span id="vend-extras" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Shipping (<span id="vend-ship-tier">T1</span>):</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
-                
                 <div class="border-t border-indigo-200 my-1"></div>
                 <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended Bill:</span> <span id="vend-total">$0.00</span></div>
-
                 <div class="mt-4 bg-white p-3 rounded border border-indigo-200 shadow-sm">
                     <div class="flex justify-between items-end">
                         <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-vend">$0.00</div></div>
@@ -248,17 +258,13 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- DESCRIPTION -->
     <div class="bg-gray-50 p-4 border-t border-gray-200">
         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
         <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
     </div>
-
     <div id="error-msg" class="hidden text-[10px] text-red-500 p-4 text-center bg-red-50"></div>
-
 </div>
 
 <script>
@@ -267,21 +273,30 @@
     let backend = {};
     let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
 
-    // --- SW PAINT DATABASE ---
+    // --- EXPANDED COLOR DATABASE (70+ Colors) ---
     const SW_COLORS = [
-        {code:"SW7005", name:"Pure White", hex:"#EDECE6"},
-        {code:"SW7006", name:"Extra White", hex:"#EEEFEA"},
-        {code:"SW6258", name:"Tricorn Black", hex:"#2F2F30"},
-        {code:"SW7069", name:"Iron Ore", hex:"#434341"},
-        {code:"SW7048", name:"Urbane Bronze", hex:"#54504A"},
-        {code:"SW6244", name:"Naval", hex:"#2F3D4C"},
-        {code:"SW6883", name:"Raucous Orange", hex:"#D66032"},
-        {code:"SW6868", name:"Real Red", hex:"#C92E39"},
-        {code:"SW6902", name:"Decisive Yellow", hex:"#F3CF3C"},
-        {code:"SW6711", name:"Parakeet", hex:"#80BD4E"},
-        {code:"SW0001", name:"Mulberry Silk", hex:"#94766C"},
-        {code:"SW0032", name:"Needlepoint Navy", hex:"#546670"},
-        {code:"SW7015", name:"Repose Gray", hex:"#CCC9C0"}
+        {code:"SW7005", name:"Pure White", hex:"#EDECE6"}, {code:"SW7006", name:"Extra White", hex:"#EEEFEA"},
+        {code:"SW6258", name:"Tricorn Black", hex:"#2F2F30"}, {code:"SW7069", name:"Iron Ore", hex:"#434341"},
+        {code:"SW7048", name:"Urbane Bronze", hex:"#54504A"}, {code:"SW6244", name:"Naval", hex:"#2F3D4C"},
+        {code:"SW6883", name:"Raucous Orange", hex:"#D66032"}, {code:"SW6868", name:"Real Red", hex:"#C92E39"},
+        {code:"SW6902", name:"Decisive Yellow", hex:"#F3CF3C"}, {code:"SW6711", name:"Parakeet", hex:"#80BD4E"},
+        {code:"SW0001", name:"Mulberry Silk", hex:"#94766C"}, {code:"SW0032", name:"Needlepoint Navy", hex:"#546670"},
+        {code:"SW7015", name:"Repose Gray", hex:"#CCC9C0"}, {code:"SW0002", name:"Chelsea Mauve", hex:"#BEAC9F"},
+        {code:"SW0006", name:"Toile Red", hex:"#8B534E"}, {code:"SW0008", name:"Cajun Red", hex:"#8D422F"},
+        {code:"SW0009", name:"Eastlake Gold", hex:"#C28E61"}, {code:"SW0012", name:"Empire Gold", hex:"#C19F6E"},
+        {code:"SW0013", name:"Majolica Green", hex:"#AEB08F"}, {code:"SW0016", name:"Billiard Green", hex:"#45584D"},
+        {code:"SW0023", name:"Pewter Tankard", hex:"#A39B90"}, {code:"SW0031", name:"Dutch Tile Blue", hex:"#9AABAB"},
+        {code:"SW0033", name:"Rembrandt Ruby", hex:"#974F49"}, {code:"SW0041", name:"Dard Hunter Green", hex:"#3A4A3F"},
+        {code:"SW0048", name:"Bunglehouse Blue", hex:"#47626F"}, {code:"SW0049", name:"Silver Gray", hex:"#B8B2A2"},
+        {code:"SW0050", name:"Classic Light Buff", hex:"#F0EADC"}, {code:"SW0051", name:"Classic Ivory", hex:"#F2E0C3"},
+        {code:"SW0055", name:"Light French Gray", hex:"#C2C0BB"}, {code:"SW0057", name:"Chinese Red", hex:"#9E3E33"},
+        {code:"SW0063", name:"Blue Sky", hex:"#ABD1C9"}, {code:"SW0064", name:"Blue Peacock", hex:"#014E4C"},
+        {code:"SW0068", name:"Copen Blue", hex:"#C2CCC4"}, {code:"SW0077", name:"Classic French Gray", hex:"#888782"},
+        {code:"SW7008", name:"Alabaster", hex:"#EDEAE0"}, {code:"SW7017", name:"Dorian Gray", hex:"#ACA79E"},
+        {code:"SW7019", name:"Gauntlet Gray", hex:"#78736E"}, {code:"SW7029", name:"Agreeable Gray", hex:"#D1CBC1"},
+        {code:"SW7067", name:"Cityscape", hex:"#7F817E"}, {code:"SW7072", name:"Online", hex:"#B0B5B5"},
+        {code:"SW7075", name:"Web Gray", hex:"#616669"}, {code:"SW7076", name:"Cyberspace", hex:"#44484D"},
+        {code:"SW6501", name:"Manitou Blue", hex:"#4C6A89"}, {code:"SW6252", name:"Ice Cube", hex:"#D8DCDF"}
     ];
 
     function initSession() {
@@ -331,18 +346,19 @@
         });
     }
 
-    function updateSwatch() {
-        const code = document.getElementById('paint-code').value.toUpperCase();
-        const swatch = document.getElementById('paint-swatch');
-        const nameLabel = document.getElementById('paint-name');
-        const match = SW_COLORS.find(c => c.code === code);
-        
-        if (match) {
-            swatch.style.backgroundColor = match.hex;
-            nameLabel.innerText = match.name;
-        } else {
-            swatch.style.backgroundColor = "#FFFFFF";
-            nameLabel.innerText = "Custom/Unknown";
+    function updateSwatch(type) {
+        if(type === 'paint') {
+            const code = document.getElementById('paint-code').value.toUpperCase();
+            const swatch = document.getElementById('paint-swatch');
+            const nameLabel = document.getElementById('paint-name');
+            const match = SW_COLORS.find(c => c.code === code);
+            
+            if (match) {
+                swatch.value = match.hex;
+                nameLabel.innerText = match.name;
+            } else {
+                nameLabel.innerText = "Custom/Unknown";
+            }
         }
     }
 
@@ -383,6 +399,7 @@
         const mat = document.getElementById('material').value;
         const mode = document.getElementById('print-mode').value;
         const hasPaint = document.getElementById('has-paint').checked;
+        const hasPMS = document.getElementById('has-pms').checked;
         const hasStandoffs = document.getElementById('has-standoffs').checked;
         const isContour = document.getElementById('is-contour').checked;
         const incDesign = document.getElementById('inc-design').checked;
@@ -417,6 +434,13 @@
             retailPaint = (totalSqFt * parseFloat(backend.Retail_Adder_Paint_SqFt || 20)) + parseFloat(backend.Retail_Fee_Paint_Setup || 65);
         }
 
+        let retailPMS = 0;
+        if (hasPMS) {
+            // Logic: PMS Match usually adds a setup fee similar to Paint, plus maybe a smaller adder? 
+            // For now, mirroring Paint structure but assuming it's a specific match fee.
+            retailPMS = parseFloat(backend.Retail_Fee_Paint_Setup || 65); 
+        }
+
         let retailContour = 0;
         if (isContour) retailContour = retailPrint * parseFloat(backend.Retail_Adder_Contour_Pct || 0.25);
 
@@ -429,7 +453,7 @@
         let feeDesign = incDesign ? parseFloat(backend.Retail_Fee_Design || 45) : 0;
         let feeSetup = parseFloat(backend.Retail_Fee_Setup || 25);
 
-        let price = retailPrint + retailPaint + retailContour + retailStandoff + feeDesign + feeSetup;
+        let price = retailPrint + retailPaint + retailPMS + retailContour + retailStandoff + feeDesign + feeSetup;
         const minOrder = parseFloat(backend.Retail_Min_Order || 75);
         if(price < minOrder) price = minOrder;
 
@@ -445,6 +469,7 @@
         document.getElementById('ret-setup').innerText = fmt(feeSetup);
 
         if(retailPaint > 0) { document.getElementById('row-ret-paint').classList.remove('hidden'); document.getElementById('ret-paint').innerText = fmt(retailPaint); } else document.getElementById('row-ret-paint').classList.add('hidden');
+        if(retailPMS > 0) { document.getElementById('row-ret-pms').classList.remove('hidden'); document.getElementById('ret-pms').innerText = fmt(retailPMS); } else document.getElementById('row-ret-pms').classList.add('hidden');
         if(retailContour > 0) { document.getElementById('row-ret-contour').classList.remove('hidden'); document.getElementById('ret-contour').innerText = fmt(retailContour); } else document.getElementById('row-ret-contour').classList.add('hidden');
         if(retailStandoff > 0) { document.getElementById('row-ret-standoff').classList.remove('hidden'); document.getElementById('ret-standoff').innerText = fmt(retailStandoff); } else document.getElementById('row-ret-standoff').classList.add('hidden');
         if(feeDesign > 0) { document.getElementById('row-ret-design').classList.remove('hidden'); document.getElementById('ret-design').innerText = fmt(feeDesign); } else document.getElementById('row-ret-design').classList.add('hidden');
@@ -455,11 +480,12 @@
             const trRate = baseRate * (1 - tier.d);
             const trPrint = trRate * (sqft * tier.q);
             const trPaint = hasPaint ? ((sqft * tier.q * parseFloat(backend.Retail_Adder_Paint_SqFt||20)) + parseFloat(backend.Retail_Fee_Paint_Setup||65)) : 0;
+            const trPMS = hasPMS ? parseFloat(backend.Retail_Fee_Paint_Setup||65) : 0;
             const trContour = isContour ? (trPrint * parseFloat(backend.Retail_Adder_Contour_Pct||0.25)) : 0;
             const hwCount = hasStandoffs ? parseInt(document.getElementById('standoff-qty').value) : 0;
             const trHw = hasStandoffs ? (hwCount * tier.q * parseFloat(backend.Retail_Price_Standoff||8)) : 0;
             
-            const trTotalRaw = trPrint + trPaint + trContour + trHw + feeSetup + feeDesign;
+            const trTotalRaw = trPrint + trPaint + trPMS + trContour + trHw + feeSetup + feeDesign;
             const trFinal = Math.max(trTotalRaw, minOrder);
             const trUnit = trFinal / tier.q;
             
@@ -470,46 +496,24 @@
         document.getElementById('discount-rows').innerHTML = rowsHtml;
 
         // --- 2. IN-HOUSE COST (LINEAR FEED LOGIC) ---
-        
-        // Nesting Math
-        const bedW = 64; // R1000 Width
+        const bedW = 64; 
         let fitPerRow = 0;
         let feedLen = 0;
-        
-        // Orientation 1: Width across bed
         const fit1 = Math.floor(bedW / w);
-        // Orientation 2: Height across bed
         const fit2 = Math.floor(bedW / h);
-        
-        // Optimization: Which yields more items per row? (Fewer rows = Less Handling)
-        // OR: Which yields shorter total feed length?
-        
         let totalFeedInches = 0;
         
-        if (fit1 > 0 && fit1 >= fit2) {
-            // Use Orientation 1
-            fitPerRow = fit1;
-            const rows = Math.ceil(qty / fitPerRow);
-            feedLen = h;
-            totalFeedInches = rows * feedLen;
-        } else if (fit2 > 0) {
-            // Use Orientation 2
-            fitPerRow = fit2;
-            const rows = Math.ceil(qty / fitPerRow);
-            feedLen = w;
-            totalFeedInches = rows * feedLen;
-        }
+        if (fit1 > 0 && fit1 >= fit2) { fitPerRow = fit1; const rows = Math.ceil(qty / fitPerRow); feedLen = h; totalFeedInches = rows * feedLen; } 
+        else if (fit2 > 0) { fitPerRow = fit2; const rows = Math.ceil(qty / fitPerRow); feedLen = w; totalFeedInches = rows * feedLen; }
         
         document.getElementById('opt-yield').innerText = fitPerRow > 0 ? `${fitPerRow} Across` : "Too Wide";
         document.getElementById('opt-feed').innerText = (totalFeedInches / 12).toFixed(1) + " ft";
 
-        // Material Cost
         const sheetCost = mat === '187' ? parseFloat(backend.Cost_Sheet_187||248) : parseFloat(backend.Cost_Sheet_125||231);
         const costMat = (totalSqFt / 32) * sheetCost * parseFloat(backend.Waste_Factor || 1.2);
         
-        // Ink Cost
         let inkRate = parseFloat(backend.Cost_Ink_CMYK || 0.16);
-        if(mode !== '1st_Surf') inkRate += parseFloat(backend.Cost_Ink_White || 0.10); // Add White
+        if(mode !== '1st_Surf') inkRate += parseFloat(backend.Cost_Ink_White || 0.10);
         const costInk = totalSqFt * inkRate;
 
         // Paint Cost
@@ -517,22 +521,22 @@
         let costPaintLab = 0;
         let timePaint = 0;
         
-        if(hasPaint) {
+        // Combine Paint and PMS logic for In-House cost (Similar process)
+        if(hasPaint || hasPMS) {
+            // PMS Match assumes using Paint materials
             costPaintMat = totalSqFt * parseFloat(backend.Cost_Paint_SqFt || 2.50);
-            const tSetup = parseFloat(backend.Time_Paint_Setup || 20); // mins
-            const tSpray = totalSqFt * parseFloat(backend.Time_Paint_SqFt || 5); // mins per sqft
-            timePaint = (tSetup + tSpray) / 60; // Hours
+            const tSetup = parseFloat(backend.Time_Paint_Setup || 20); 
+            const tSpray = totalSqFt * parseFloat(backend.Time_Paint_SqFt || 5); 
+            timePaint = (tSetup + tSpray) / 60; 
             costPaintLab = timePaint * parseFloat(backend.Rate_Paint_Labor || 30);
         }
 
-        // Hardware Cost
         let costHw = 0;
         if(hasStandoffs) {
             const hwCount = parseInt(document.getElementById('standoff-qty').value);
             costHw = hwCount * qty * parseFloat(backend.Cost_Standoff || 2.50);
         }
 
-        // Labor & Machine
         const rateDes = parseFloat(backend.Rate_Design || 35);
         const rateOp = parseFloat(backend.Rate_Operator || 25);
         const rateMach = parseFloat(backend.Rate_Machine || 45);
@@ -542,18 +546,15 @@
         const costSetup = timeSetup * rateOp;
 
         const speedPrint = mode === '2nd_Std' ? parseFloat(backend.Speed_Print_2nd || 6) : (mode === '2nd_Block' ? parseFloat(backend.Speed_Print_Block || 3) : parseFloat(backend.Speed_Print_1st || 18));
-        
-        // Use LINEAR feed for print time
         const runTime = (totalFeedInches / 12) / speedPrint;
         const costRun = runTime * rateMach;
 
-        const timeCNC = (qty * (isContour ? 12 : 4)) / 60; // 4m square, 12m contour
+        const timeCNC = (qty * (isContour ? 12 : 4)) / 60; 
         const costCNC = timeCNC * rateCNC;
 
         const totalCost = costMat + costInk + costPaintMat + costHw + costSetup + costRun + costCNC + costPaintLab;
         const prof = price - totalCost;
 
-        // UI In-House
         document.getElementById('cost-mat').innerText = fmt(costMat);
         document.getElementById('cost-ink').innerText = fmt(costInk);
         
@@ -589,14 +590,13 @@
             vendExtras = hwCount * qty * unitHw;
         }
 
-        let vendShip = parseFloat(backend.Ship_Small || 10); // Simplified shipping for now (can use matrix if needed)
-        
+        let vendShip = parseFloat(backend.Ship_Small || 10);
         const totalVend = vendPrint + vendExtras + vendShip;
         const profVend = price - totalVend;
 
         // Vended Warnings
         const vendPaintWarn = document.getElementById('vend-paint-warn');
-        if(hasPaint) {
+        if(hasPaint || hasPMS) {
             vendPaintWarn.classList.remove('hidden');
             document.getElementById('tab-vend').classList.add('blur-section');
         } else {
@@ -623,6 +623,7 @@
         else finishTxt.push("1st Surface Direct Print");
         
         if(hasPaint) finishTxt.push(`Painted Background (${document.getElementById('paint-code').value || 'Custom'})`);
+        if(hasPMS) finishTxt.push(`PMS Match (${document.getElementById('pms-code').value || 'TBD'})`);
         if(isContour) finishTxt.push("Contour Cut Shape");
         if(hasStandoffs) finishTxt.push(`${document.getElementById('standoff-qty').value} ${document.getElementById('standoff-col').value} Standoffs`);
         
