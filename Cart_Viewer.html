@@ -11,10 +11,23 @@
             .print-border { border: 1px solid #000; }
         }
     </style>
+    <script>
+        const user = sessionStorage.getItem('signos_user');
+        if (!user) window.location.href = 'index.html';
+    </script>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans p-8">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <div class="max-w-5xl mx-auto">
+    <!-- AUTH HEADER -->
+    <div class="bg-gray-800 text-white px-6 py-2 flex justify-between items-center text-xs shadow-md no-print">
+        <div class="flex gap-4">
+            <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
+            <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
+        </div>
+        <button onclick="sessionStorage.clear(); window.location.href='index.html'" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px]">Logout</button>
+    </div>
+
+    <div class="max-w-5xl mx-auto p-8">
         <!-- Header -->
         <div class="flex justify-between items-center mb-8 no-print">
             <h1 class="text-3xl font-black text-gray-900">Order Cart</h1>
@@ -43,16 +56,14 @@
                 <table class="w-full text-left">
                     <thead>
                         <tr class="border-b-2 border-gray-200 text-xs uppercase text-gray-500 font-bold">
-                            <th class="py-2 w-24">Proof</th>
+                            <th class="py-2 w-32">Proof</th>
                             <th class="py-2">Item Details</th>
                             <th class="py-2 text-center">Qty</th>
                             <th class="py-2 text-right">Price</th>
                             <th class="py-2 w-10 no-print"></th>
                         </tr>
                     </thead>
-                    <tbody id="cart-body" class="text-sm text-gray-700 font-medium">
-                        <!-- Dynamic Rows -->
-                    </tbody>
+                    <tbody id="cart-body" class="text-sm text-gray-700 font-medium"></tbody>
                     <tfoot>
                         <tr class="border-t-2 border-gray-900">
                             <td colspan="3" class="pt-4 text-right font-bold uppercase text-gray-500">Order Total</td>
@@ -73,6 +84,8 @@
 
     <script>
         window.onload = function() {
+            document.getElementById('auth-user').innerText = sessionStorage.getItem('signos_user');
+            document.getElementById('auth-role').innerText = sessionStorage.getItem('signos_role');
             document.getElementById('date-display').innerText = new Date().toLocaleDateString();
             renderCart();
         };
@@ -81,7 +94,6 @@
             const cart = JSON.parse(sessionStorage.getItem('signos_cart')) || [];
             const tbody = document.getElementById('cart-body');
             tbody.innerHTML = '';
-            
             let total = 0;
 
             if(cart.length === 0) {
@@ -92,11 +104,10 @@
             cart.forEach((item, index) => {
                 const cleanPrice = parseFloat(item.price.replace('$','')) || 0;
                 total += cleanPrice;
-
                 const row = document.createElement('tr');
                 row.className = "border-b border-gray-100 hover:bg-gray-50";
                 row.innerHTML = `
-                    <td class="py-3"><img src="${item.proofImage}" class="w-16 h-12 object-contain border bg-white rounded"></td>
+                    <td class="py-3"><img src="${item.proofImage}" class="w-24 h-16 object-contain border bg-white rounded"></td>
                     <td class="py-3">
                         <div class="font-bold text-gray-900">${item.product}</div>
                         <div class="text-xs text-gray-500">${item.desc}</div>
@@ -104,13 +115,10 @@
                     </td>
                     <td class="py-3 text-center font-bold">${item.qty}</td>
                     <td class="py-3 text-right font-bold text-gray-900">${item.price}</td>
-                    <td class="py-3 text-center no-print">
-                        <button onclick="removeItem(${index})" class="text-red-400 hover:text-red-600 font-bold">×</button>
-                    </td>
+                    <td class="py-3 text-center no-print"><button onclick="removeItem(${index})" class="text-red-400 hover:text-red-600 font-bold">×</button></td>
                 `;
                 tbody.appendChild(row);
             });
-
             document.getElementById('cart-total').innerText = "$" + total.toFixed(2);
         }
 
