@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wrap Calculator v5.5</title>
+    <title>Wrap Calculator v5.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -13,10 +13,6 @@
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
-        
-        /* Ultra Compact Inputs */
-        .tbl-input { @apply w-full min-w-0 border border-gray-300 px-1 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border; }
-        .tbl-select { @apply w-full min-w-0 border border-gray-300 px-0.5 py-0.5 rounded text-[10px] font-bold text-gray-700 h-6 bg-white box-border; }
         
         /* View Mode Logic */
         .mode-prod .prod-hidden { display: none !important; }
@@ -64,24 +60,24 @@
         
         <!-- Vehicle Info -->
         <div class="grid grid-cols-3 gap-2">
-            <input type="text" id="veh-year" placeholder="Year" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="updateDesc()">
-            <input type="text" id="veh-make" placeholder="Make" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="updateDesc()">
-            <input type="text" id="veh-model" placeholder="Model" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="updateDesc()">
+            <input type="text" id="veh-year" placeholder="Year" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="calculate()">
+            <input type="text" id="veh-make" placeholder="Make" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="calculate()">
+            <input type="text" id="veh-model" placeholder="Model" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="calculate()">
         </div>
 
-        <!-- Graphic Areas (Refined Column Widths) -->
+        <!-- Graphic Areas (Optimized Layout) -->
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Graphic Areas</label>
             <div class="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
                 <table class="w-full table-fixed">
                     <thead class="text-[9px] text-gray-400 uppercase font-bold bg-gray-100 border-b border-gray-200 text-left">
                         <tr>
-                            <th class="py-2 pl-2 w-[24%]">Name</th>
-                            <th class="py-2 w-[20%]">Type</th>
-                            <th class="py-2 w-[16%] text-center">Qty</th>
-                            <th class="py-2 w-[16%] text-center">W</th>
-                            <th class="py-2 w-[16%] text-center">H</th>
-                            <th class="py-2 w-[8%]"></th>
+                            <th class="py-2 pl-2 w-[25%]">Name</th>
+                            <th class="py-2 w-[23%]">Type</th>
+                            <th class="py-2 w-[12%] text-center">Qty</th>
+                            <th class="py-2 w-[15%] text-center">W</th>
+                            <th class="py-2 w-[15%] text-center">H</th>
+                            <th class="py-2 w-[10%]"></th>
                         </tr>
                     </thead>
                     <tbody id="section-list" class="divide-y divide-gray-200"></tbody>
@@ -312,40 +308,39 @@
     document.getElementById('auth-user').innerText = sessionStorage.getItem('signos_user') || 'Guest';
     document.getElementById('auth-role').innerText = sessionStorage.getItem('signos_role') || '---';
 
-    // --- SECTION LOGIC ---
+    // --- SECTION LOGIC (Gemini Optimized) ---
     window.addSection = function() {
         sectionCount++;
         const tbody = document.getElementById('section-list');
         const tr = document.createElement('tr');
-        tr.className = "section-row border-b border-gray-100 last:border-0 group align-top text-[9px]";
+        // Added 'bg-white' and alignment classes, removed cell padding via child inputs
+        tr.className = "section-row group align-top text-[10px] bg-white hover:bg-gray-50 transition-colors";
         tr.id = `sec-${sectionCount}`;
         tr.innerHTML = `
-            <td class="py-1 px-1"><input type="text" class="sec-name tbl-input text-left" placeholder="Name" oninput="calculate()"></td>
-            <td class="py-1 px-1">
-                <select class="sec-type tbl-select" onchange="toggleOpt(this); calculate()">
+            <td><input type="text" class="sec-name w-full border border-gray-300 px-1 py-0.5 rounded text-[10px] font-bold text-gray-700 text-left h-6 box-border" placeholder="Name" oninput="calculate()"></td>
+            <td>
+                <select class="sec-type w-full border border-gray-300 px-0.5 py-0.5 rounded text-[10px] font-bold text-gray-700 h-6 bg-white box-border" onchange="toggleOpt(this); calculate()">
                     <option value="Wrap">Wrap</option>
                     <option value="Perf">Perf</option>
                     <option value="Decal">Decal</option>
                 </select>
-                
-                <!-- Perf Option: Included -->
+                <!-- Perf Option -->
                 <div class="mt-1 hidden perf-opt">
                     <label class="flex items-center justify-center gap-1 text-blue-600">
-                        <input type="checkbox" class="sec-inc" onchange="calculate()"> Included
+                        <input type="checkbox" class="sec-inc" onchange="calculate()"> Incl.
                     </label>
                 </div>
-
-                <!-- Decal Option: Complex -->
+                <!-- Decal Option -->
                 <div class="mt-1 hidden complex-opt">
                     <label class="flex items-center justify-center gap-1 text-orange-600">
-                        <input type="checkbox" class="sec-complex" onchange="calculate()"> Complex
+                        <input type="checkbox" class="sec-complex" onchange="calculate()"> Cplx
                     </label>
                 </div>
             </td>
-            <td class="py-1 px-1"><input type="number" class="sec-qty tbl-input" value="1" oninput="calculate()"></td>
-            <td class="py-1 px-1"><input type="number" class="sec-w tbl-input" placeholder="W" oninput="calculate()"></td>
-            <td class="py-1 px-1"><input type="number" class="sec-h tbl-input" placeholder="H" oninput="calculate()"></td>
-            <td class="py-1 text-center">
+            <td><input type="number" class="sec-qty w-full border border-gray-300 px-0 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border" value="1" oninput="calculate()"></td>
+            <td><input type="number" class="sec-w w-full border border-gray-300 px-0 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border" placeholder="W" oninput="calculate()"></td>
+            <td><input type="number" class="sec-h w-full border border-gray-300 px-0 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border" placeholder="H" oninput="calculate()"></td>
+            <td class="text-center">
                 <button onclick="removeSection(${sectionCount})" class="text-gray-300 hover:text-red-500 font-bold text-lg leading-none">×</button>
             </td>
         `;
@@ -640,9 +635,17 @@
         if(profIn < 0 && profVe < 0) { warn.classList.remove('hidden'); warn.classList.add('warn-pulse'); }
         else { warn.classList.add('hidden'); }
 
-        // DESCRIPTION GENERATOR
+        // DESCRIPTION GENERATOR (Updated with Year/Make/Model)
+        const year = document.getElementById('veh-year').value.trim();
+        const make = document.getElementById('veh-make').value.trim();
+        const model = document.getElementById('veh-model').value.trim();
+        let vehPrefix = "";
+        
+        if(year && make && model) vehPrefix = `[${year}] [${make}] [${model}] - `;
+        else if (make && model) vehPrefix = `[${make}] [${model}] - `;
+
         const descLines = [];
-        descLines.push("Full color digital print on cast wrap vinyl vehicle graphics with UV resistant overlaminate");
+        descLines.push(vehPrefix + "Full color digital print on cast wrap vinyl vehicle graphics with UV resistant overlaminate");
         if (sqftWrap > 0) descLines.push(`${sqftWrap.toFixed(1)}sqft wrap vinyl`);
         if (sqftPerf > 0) descLines.push(`${sqftPerf.toFixed(1)}sqft perforated vinyl`);
         if (sqftDecal > 0) descLines.push(`(x${qtyDecalTotal}) ${sqftDecal.toFixed(1)}sqft contour cut decal`);
