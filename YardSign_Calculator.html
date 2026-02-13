@@ -3,20 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yard Sign Calculator v21.3</title>
+    <title>Yard Sign Calculator v21.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
-        .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
-        .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
-        .mode-prod .prod-hidden { display: none !important; }
-        .mode-prod .prod-width { width: 100% !important; text-align: right; }
-    </style>
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- CORE JS -->
+    <script src="core.js"></script> 
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
@@ -51,7 +43,8 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label>
-                <input type="number" id="qty" value="10" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()">
+                <!-- FIX 1: Min attribute added -->
+                <input type="number" id="qty" value="10" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label>
@@ -184,10 +177,11 @@
                 </div>
 
                 <div class="border-t border-yellow-200 my-2 pt-1"></div>
-                <div class="flex justify-between items-center text-orange-700">
-                    <span class="w-1/2">Anticipated Waste:</span> 
-                    <span id="risk-pct" class="w-1/4 text-right text-[10px] bg-orange-100 rounded px-1 text-orange-800 font-bold prod-width">0%</span>
-                    <span id="cost-waste" class="w-1/4 text-right font-bold prod-hidden">$0.00</span>
+                <!-- FIX 4: Risk displayed but excluded from total -->
+                <div class="flex justify-between items-center text-gray-400">
+                    <span class="w-1/2 text-[10px] uppercase">Calculated Risk Buffer:</span> 
+                    <span id="risk-pct" class="w-1/4 text-right text-[10px] bg-gray-100 rounded px-1 font-bold prod-width">0%</span>
+                    <span id="cost-waste" class="w-1/4 text-right font-bold prod-hidden text-[10px]">$0.00</span>
                 </div>
 
                 <div class="border-t-2 border-yellow-300 my-2 prod-hidden"></div>
@@ -234,37 +228,9 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypbRuIJmkXqC447Yd1akhlhDrEyRoq0ypfZNHf0dI77KrZWUUeOqvUm5122O2RdzyYEQ/exec";
     const TAB_NAME = "PROD_Yard_Signs";
     let backend = {};
-    let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
-
-    function initSession() {
-        const params = new URLSearchParams(window.location.search);
-        const urlMode = params.get('mode');
-        const storeUser = sessionStorage.getItem('signos_user');
-        const storeRole = sessionStorage.getItem('signos_role');
-
-        if(storeUser) currentUser.name = storeUser;
-        if(storeRole) currentUser.role = storeRole;
-
-        if(urlMode) currentUser.mode = urlMode;
-        else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
-        else if(currentUser.role === 'PROD') currentUser.mode = 'production';
-        else currentUser.mode = 'sales';
-
-        document.getElementById('auth-user').innerText = currentUser.name;
-        document.getElementById('auth-role').innerText = currentUser.role;
-
-        const body = document.body;
-        body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
-        if(currentUser.mode === 'sales') { body.classList.add('mode-sales'); switchTab('retail'); }
-        else if (currentUser.mode === 'production') { body.classList.add('mode-prod'); switchTab('cost'); }
-        else { body.classList.add('mode-admin'); }
-    }
-
-    function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
-    function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
 
     window.onload = async function() {
-        initSession();
+        initSession(); 
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
         try {
@@ -289,19 +255,16 @@
         }
     };
 
-    function switchTab(id) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-'+id).classList.add('active');
-        document.getElementById('btn-'+id).classList.add('active');
-    }
-
-    function toggleDiscounts() { document.getElementById('discount-table').classList.toggle('hidden'); }
-
     function calculate() {
         if (!backend.Retail_Price_Sign_SS) return;
 
-        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        // FIX 1: Negative Quantity Protection
+        let qty = parseFloat(document.getElementById('qty').value);
+        if (qty < 1) { 
+            qty = 1; 
+            document.getElementById('qty').value = 1; 
+        }
+
         const sides = parseInt(document.getElementById('sides').value);
         const numDesigns = parseFloat(document.getElementById('files').value) || 1;
         const hasStakes = document.getElementById('stakes').checked;
@@ -314,33 +277,28 @@
         const adderDS = parseFloat(backend.Retail_Price_Sign_DS || 3.00);
         const stakePrice = parseFloat(backend.Retail_Price_Stake || 2.50);
         
-        // Find correct base price from tiers
         let baseSignPrice = defaultBase;
         let i = 1;
         const tiers = []; 
 
         while(backend[`Tier_${i}_Qty`]) {
             const tQty = parseFloat(backend[`Tier_${i}_Qty`]);
-            const tPrice = parseFloat(backend[`Tier_${i}_Price`] || 0); // NEW: Looking for Price, not Disc
+            const tPrice = parseFloat(backend[`Tier_${i}_Price`] || 0); 
             tiers.push({ q: tQty, p: tPrice });
             
             if (qty >= tQty) { baseSignPrice = tPrice; }
             i++;
         }
 
-        // Custom Quote Trigger
         let isCustom = false;
         if (baseSignPrice === 0) isCustom = true;
 
-        // Calculate Single Unit Price (Sign + Sides + Stake)
         let unitTotal = baseSignPrice;
         if (sides === 2) unitTotal += adderDS;
         if (hasStakes) unitTotal += stakePrice;
 
-        // Calculate Totals
         let totalSignAndStake = unitTotal * qty;
 
-        // Fees
         const feeSetupRate = parseFloat(backend.Retail_Fee_Setup || 15.00);
         const totalSetupPrice = chargeSetupPerFile ? (feeSetupRate * numDesigns) : feeSetupRate;
         const feeDesignRate = parseFloat(backend.Retail_Fee_Design || 45.00);
@@ -348,7 +306,6 @@
 
         let quoteTotal = totalSignAndStake + totalSetupPrice + totalDesignPrice;
 
-        // Min Order
         const minOrder = parseFloat(backend.Retail_Min_Order || 75);
         const minBadge = document.getElementById('min-badge');
         
@@ -359,17 +316,13 @@
             minBadge.classList.add('hidden');
         }
 
-        // --- UI UPDATES ---
         const fmt = (n) => "$" + n.toFixed(2);
         const pct = (n) => (n * 100).toFixed(1) + "%";
         const fmtTime = (h) => { const hrs = Math.floor(h); const mins = Math.round((h - hrs) * 60); return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`; };
 
-        // Discount Table Loop
         let rowsHtml = "";
         tiers.forEach(tier => {
-            if(tier.p === 0) return; // Skip custom quote tiers in table
-            
-            // What is the price of this row?
+            if(tier.p === 0) return; 
             let rowBase = tier.p;
             if (sides === 2) rowBase += adderDS;
             if (hasStakes) rowBase += stakePrice;
@@ -382,7 +335,6 @@
         });
         document.getElementById('discount-rows').innerHTML = rowsHtml;
 
-        // Main Display
         if (isCustom) {
             document.getElementById('unit-price').innerText = "CUSTOM";
             document.getElementById('total-price').innerText = "CONTACT US";
@@ -397,8 +349,7 @@
         document.getElementById('ret-setup').innerText = fmt(totalSetupPrice);
         document.getElementById('ret-design').innerText = fmt(totalDesignPrice);
         
-        // --- 2. IN-HOUSE & VENDED COST ---
-        // (Standard logic remains identical to v21.2)
+        // --- 2. IN-HOUSE ---
         
         const bulkTrigger = parseFloat(backend.Bulk_Qty_Trigger || 1100);
         let blankCost = parseFloat(backend.Cost_Blank_Standard || 0.91);
@@ -441,7 +392,9 @@
         const riskPct = (sides === 2 ? parseFloat(backend.Rework_Risk_DS || 0.05) : 0) + ((numDesigns > 1) ? (numDesigns-1)*parseFloat(backend.Rework_Risk_File || 0.02) : 0);
         const totalRiskCost = (qty * riskPct) * (blankCost + inkRate + rateMachine + rateOp); 
 
-        const totalInternalCost = totalMatCost + totalInkCost + totalStakeCost + totalDesignCost + setupCost + runCost + opRunCost + totalRiskCost;
+        // FIX 4: Exclude Risk Cost from Total Internal Sum
+        const totalInternalCost = totalMatCost + totalInkCost + totalStakeCost + totalDesignCost + setupCost + runCost + opRunCost; 
+        // Note: totalRiskCost is calculated but NOT added above.
 
         document.getElementById('lbl-qty-mat').innerText = qty;
         document.getElementById('cost-mat').innerText = fmt(totalMatCost);
@@ -457,7 +410,7 @@
         document.getElementById('cost-machine').innerText = fmt(runCost);
         document.getElementById('time-op').innerText = fmtTime(totalRunTimeHrs);
         document.getElementById('cost-op').innerText = fmt(opRunCost);
-        document.getElementById('risk-pct').innerText = (riskPct * 100).toFixed(1) + "% Risk";
+        document.getElementById('risk-pct').innerText = (riskPct * 100).toFixed(1) + "% Buffer";
         document.getElementById('cost-waste').innerText = fmt(totalRiskCost);
         document.getElementById('cost-total').innerText = fmt(totalInternalCost);
 
@@ -486,10 +439,10 @@
         document.getElementById('profit-vend').innerText = fmt(profitVend);
         if(!isCustom && quoteTotal>0) document.getElementById('margin-vend').innerText = pct(profitVend / quoteTotal);
 
-        // Description
+        // FIX 3: Updated Job Description Text
         const sideTxt = sides === 1 ? "ONE" : "TWO";
-        const stakeTxt = hasStakes ? "with 10x24 Wire Step Stakes" : "NO Stakes";
-        document.getElementById('job-desc').value = `(x${qty}) 24" x 18" 4mm Coroplast Signs. Direct Print ${sideTxt} Side(s). ${stakeTxt}.`;
+        const stakeTxt = hasStakes ? "with 10\" x 24\" wire H-frame step stakes" : "NO Stakes";
+        document.getElementById('job-desc').value = `(x${qty}) 24" x 18" 4mm Coroplast Signs with direct print latex ink on ${sideTxt} side(s) ${stakeTxt}.`;
     }
 </script>
 </body>
