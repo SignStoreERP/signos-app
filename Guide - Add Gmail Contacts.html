@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Import Company Contacts to Gmail</title>
+    <style>
+        /* Client-specific styles */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; }
+        
+        /* Reset styles */
+        img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        table { border-collapse: collapse !important; }
+        body { 
+            height: 100% !important; 
+            margin: 0 !important; 
+            padding: 0 !important; 
+            width: 100% !important; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f8f9fa; 
+            color: #3c4043; 
+        }
+        
+        /* General Styles */
+        .wrapper { width: 100%; table-layout: fixed; padding: 20px 0; }
+        .main-content { 
+            background-color: #ffffff; 
+            margin: 0 auto; 
+            width: 100%; 
+            max-width: 600px; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 1px solid #dadce0;
+        }
+        .header { background-color: #1a73e8; padding: 40px 20px; text-align: center; color: #ffffff; }
+        .content-body { padding: 30px 40px; }
+        
+        .step-container { margin-bottom: 35px; }
+        .step-header { margin-bottom: 12px; }
+        .step-number { 
+            display: inline-block; 
+            background-color: #1a73e8; 
+            color: #ffffff; 
+            width: 28px; 
+            height: 28px; 
+            border-radius: 50%; 
+            text-align: center; 
+            line-height: 28px; 
+            font-weight: bold; 
+            margin-right: 12px; 
+            font-size: 14px; 
+            vertical-align: middle;
+        }
+        .step-title { 
+            font-size: 18px; 
+            font-weight: 600; 
+            color: #202124; 
+            display: inline-block; 
+            vertical-align: middle; 
+        }
+        .step-text { 
+            line-height: 1.6; 
+            color: #5f6368; 
+            font-size: 15px;
+            margin-bottom: 15px;
+        }
+        
+        /* Interactive GIF Container */
+        .gif-wrapper {
+            position: relative;
+            width: 100%;
+            background-color: #f1f3f4;
+            border-radius: 6px;
+            border: 1px solid #e8eaed;
+            margin-top: 15px;
+            cursor: pointer;
+            overflow: hidden;
+            line-height: 0;
+            min-height: 200px; /* Prevents layout jump */
+        }
+
+        .gif-media {
+            display: block;
+            width: 100%;
+            height: auto;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Play Button Overlay */
+        .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.1);
+            transition: opacity 0.3s ease;
+            z-index: 2;
+        }
+
+        .play-overlay:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        .gif-wrapper.playing .play-overlay {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .play-button {
+            background-color: rgba(26, 115, 232, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .play-button svg {
+            margin-right: 8px;
+        }
+        
+        .img-placeholder {
+            display: block;
+            width: 100%;
+            padding: 40px 0;
+            background-color: #f1f3f4;
+            border: 2px dashed #dadce0;
+            color: #70757a;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 13px;
+            border-radius: 6px;
+        }
+        
+        .footer { background-color: #f8f9fa; padding: 30px 20px; text-align: center; font-size: 12px; color: #70757a; border-top: 1px solid #e8eaed; }
+        .accent-link { color: #1a73e8; text-decoration: none; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <table class="wrapper" role="presentation" border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="center">
+                <table class="main-content" role="presentation" border="0" cellpadding="0" cellspacing="0">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td class="header">
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 500; letter-spacing: -0.5px;">Update Your Company Contacts</h1>
+                            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Step-by-step guide for Google Workspace</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td class="content-body">
+                            
+                            <p style="margin-bottom: 25px; line-height: 1.6; font-size: 16px;">
+                                Hello Team,<br><br>
+                                We’ve updated the central directory. To ensure you have the latest contact information, please import the attached CSV file: <strong>Sign_Store_Contacts_20260213.csv</strong>.
+                            </p>
+
+                            <!-- Step 1 -->
+                            <div class="step-container">
+                                <div class="step-header">
+                                    <span class="step-number">1</span>
+                                    <span class="step-title">Open Google Contacts</span>
+                                </div>
+                                <div class="step-text">
+                                    Navigate to <a href="https://contacts.google.com" class="accent-link">contacts.google.com</a> or use the <strong>Waffle</strong> icon in Gmail.
+                                </div>
+                                
+                                <div class="gif-wrapper" onclick="handlePlay(this)">
+                                    <div class="play-overlay">
+                                        <div class="play-button">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                            Click to Play
+                                        </div>
+                                    </div>
+                                    <!-- Using Imgur 'h' suffix (Huge Thumbnail) to force static JPG -->
+                                    <img 
+                                        src="https://i.imgur.com/5GVgU7mh.jpg" 
+                                        data-gif="https://i.imgur.com/5GVgU7m.gif" 
+                                        data-static="https://i.imgur.com/5GVgU7mh.jpg"
+                                        alt="Opening Google Contacts" 
+                                        class="gif-media">
+                                </div>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="step-container">
+                                <div class="step-header">
+                                    <span class="step-number">2</span>
+                                    <span class="step-title">Find the Import Option</span>
+                                </div>
+                                <div class="step-text">
+                                    On the left-side menu, scroll down and click on <strong>Import</strong>.
+                                </div>
+                                
+                                <div class="gif-wrapper" onclick="handlePlay(this)">
+                                    <div class="play-overlay">
+                                        <div class="play-button">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                            Click to Play
+                                        </div>
+                                    </div>
+                                    <!-- Using Imgur 'h' suffix (Huge Thumbnail) to force static JPG -->
+                                    <img 
+                                        src="https://i.imgur.com/yOkyUCch.jpg" 
+                                        data-gif="https://i.imgur.com/yOkyUCc.gif" 
+                                        data-static="https://i.imgur.com/yOkyUCch.jpg"
+                                        alt="Locating Import Button" 
+                                        class="gif-media">
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="step-container">
+                                <div class="step-header">
+                                    <span class="step-number">3</span>
+                                    <span class="step-title">Select & Upload File</span>
+                                </div>
+                                <div class="step-text">
+                                    Click <strong>Select file</strong> and choose the <em>Sign_Store_Contacts_20260213.csv</em> file you saved.
+                                </div>
+                                
+                                <div class="gif-wrapper" onclick="handlePlay(this)">
+                                    <div class="play-overlay">
+                                        <div class="play-button">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                            Click to Play
+                                        </div>
+                                    </div>
+                                    <!-- Using Imgur 'h' suffix (Huge Thumbnail) to force static JPG -->
+                                    <img 
+                                        src="https://i.imgur.com/B5quqcLh.jpg" 
+                                        data-gif="https://i.imgur.com/B5quqcL.gif" 
+                                        data-static="https://i.imgur.com/B5quqcLh.jpg"
+                                        alt="Selecting CSV File" 
+                                        class="gif-media">
+                                </div>
+                            </div>
+
+                            <!-- Step 4 -->
+                            <div class="step-container">
+                                <div class="step-header">
+                                    <span class="step-number">4</span>
+                                    <span class="step-title">Label & Import</span>
+                                </div>
+                                <div class="step-text">
+                                    We recommend applying a label (e.g., "Company Contacts") so you can find these easily. Type the name, hit Enter, and click <strong>Import</strong>.
+                                </div>
+                                
+                                <div class="gif-wrapper" onclick="handlePlay(this)">
+                                    <div class="play-overlay">
+                                        <div class="play-button">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                            Click to Play
+                                        </div>
+                                    </div>
+                                    <!-- Using Imgur 'h' suffix (Huge Thumbnail) to force static JPG -->
+                                    <img 
+                                        src="https://i.imgur.com/ZVtmcnZh.jpg" 
+                                        data-gif="https://i.imgur.com/ZVtmcnZ.gif" 
+                                        data-static="https://i.imgur.com/ZVtmcnZh.jpg"
+                                        alt="Labeling and Importing" 
+                                        class="gif-media">
+                                </div>
+                            </div>
+
+                            <!-- Step 5 -->
+                            <div class="step-container">
+                                <div class="step-header">
+                                    <span class="step-number">5</span>
+                                    <span class="step-title">Verify Success</span>
+                                </div>
+                                <div class="step-text">
+                                    Once the import is complete, you should see your contacts appear under the label you just created.
+                                </div>
+                                <div class="gif-wrapper" onclick="handlePlay(this)">
+                                    <div class="play-overlay">
+                                        <div class="play-button">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                            Click to Play
+                                        </div>
+                                    </div>
+                                    <!-- Using Imgur 'h' suffix (Huge Thumbnail) to force static JPG -->
+                                    <img 
+                                        src="https://i.imgur.com/pLDx2Nfh.jpg" 
+                                        data-gif="https://i.imgur.com/pLDx2Nf.gif" 
+                                        data-static="https://i.imgur.com/pLDx2Nfh.jpg"
+                                        alt="Verify Contact Import" 
+                                        class="gif-media">
+                                </div>
+                            </div>
+
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px; width: 100%;">
+                                <tr>
+                                    <td style="padding: 20px; background-color: #e8f0fe; border-radius: 8px; border-left: 4px solid #1a73e8;">
+                                        <p style="margin: 0; font-size: 14px; color: #1967d2; line-height: 1.5;">
+                                            <strong>Need help?</strong> If you see an error or are having trouble, please reach out to evan@signstoremacon.com
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td class="footer">
+                            <strong>The Sign Store</strong><br>
+                            Internal Documentation &copy; 2026
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        function handlePlay(element) {
+            // 1. Find the img tag inside the clicked wrapper
+            const currentImg = element.querySelector('img');
+            const gifSrc = currentImg.getAttribute('data-gif');
+            const staticSrc = currentImg.getAttribute('data-static');
+            
+            // 2. Logic: If it is already playing, stop it. If stopped, play it.
+            if (element.classList.contains('playing')) {
+                // STOPPING
+                element.classList.remove('playing');
+                currentImg.src = staticSrc;
+                return;
+            }
+
+            // 3. STOP ALL OTHERS first (One at a time rule)
+            const allWrappers = document.querySelectorAll('.gif-wrapper');
+            allWrappers.forEach(wrapper => {
+                if (wrapper !== element && wrapper.classList.contains('playing')) {
+                    wrapper.classList.remove('playing');
+                    const otherImg = wrapper.querySelector('img');
+                    otherImg.src = otherImg.getAttribute('data-static');
+                }
+            });
+
+            // 4. START PLAYING the clicked one
+            element.classList.add('playing');
+            currentImg.src = gifSrc;
+        }
+    </script>
+
+</body>
+</html>
