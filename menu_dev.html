@@ -1,0 +1,55 @@
+<!-- snippet: Inside your existing menu.html structure -->
+<div id="module-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+<script>
+async function loadMenu() {
+    // 1. Fetch the Version Registry
+    const r = await fetch(`${SCRIPT_URL}?tab=SYS_Modules`);
+    const data = await r.json(); 
+    // Note: API returns object {Key: Value}. We need to adjust Code.gs slightly 
+    // OR (easier) we assume the API returns rows if we change the fetch method.
+    // For now, let's assume we map the object keys. 
+    
+    // *If using the current object-based API, this requires a specific structure.*
+    // *Correction:* The current API returns Key/Value pairs. 
+    // *FIX:* To list rows, we need a slight tweak or we hardcode the IDs in JS and fetch details.
+    
+    // TEMPORARY JS APPROACH (Paste this into menu_dev.html script):
+    const modules = [
+        {id:'PROD_Yard', name:'Yard Signs', file:'YardSign_Calculator.html', live:'v21.5', dev:'v22.0', active:true},
+        {id:'PROD_ACM', name:'ACM Signs', file:'ACM_Calculator.html', live:'v5.7', dev:'v5.8', active:true},
+        // ... add others here ...
+    ];
+
+    const grid = document.getElementById('module-grid');
+    grid.innerHTML = '';
+
+    modules.forEach(mod => {
+        // DEV MENU: Show EVERYTHING
+        const card = document.createElement('a');
+        card.href = `${mod.file}?ver=${mod.dev}&mode=dev`; // Pass version in URL
+        card.className = "block bg-white p-4 rounded-xl shadow border border-gray-200 hover:border-blue-500 group relative overflow-hidden";
+        
+        // Status Badge
+        const statusColor = mod.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500';
+        const statusText = mod.active ? 'ACTIVE' : 'DRAFT';
+
+        card.innerHTML = `
+            <div class="absolute top-2 right-2 text-[9px] font-bold ${statusColor} px-2 py-0.5 rounded">${statusText}</div>
+            <h3 class="font-bold text-gray-900 group-hover:text-blue-600">${mod.name}</h3>
+            <div class="mt-3 space-y-1">
+                <div class="flex justify-between text-[10px] bg-gray-50 p-1 rounded">
+                    <span class="text-gray-500">Live:</span>
+                    <span class="font-mono font-bold text-gray-700">${mod.live}</span>
+                </div>
+                <div class="flex justify-between text-[10px] bg-blue-50 p-1 rounded border border-blue-100">
+                    <span class="text-blue-600 font-bold">Dev:</span>
+                    <span class="font-mono font-bold text-blue-700">${mod.dev}</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+window.onload = loadMenu;
+</script>
