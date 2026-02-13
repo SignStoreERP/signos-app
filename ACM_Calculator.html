@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACM Calculator v5.6</title>
+    <title>ACM Calculator v5.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
@@ -530,13 +530,21 @@
         if((price-totalCost) < 0 && profVend < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
         else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
 
-        const sideTxt = sides === 1 ? "Single-Sided" : "Double-Sided";
-        const finishTxt = [];
-        if(hasLam) finishTxt.push(lamType + " Laminate");
-        if(cutType === 'Contour') finishTxt.push("CNC Shape");
-        if(isRounded) finishTxt.push("Rounded Corners");
-        if(cutType === 'Square') finishTxt.push("Square/Shear Cut");
-        const desc = `(x${qty}) ${w}" x ${h}" ${mat} ACM Sign. ${sideTxt} Print. ${finishTxt.length > 0 ? finishTxt.join(', ') : ''}.`;
+        // Updated Description Generator
+        const sideTxt = sides === 1 ? "ONE side" : "TWO sides";
+        let lamTxt = "";
+        if(hasLam) {
+            lamTxt = ` and ${lamType.toLowerCase()} UV protective overlaminate`;
+        }
+        
+        let cutTxt = "";
+        if(cutType === 'Square') cutTxt = "shear cut";
+        else if(cutType === 'Contour') cutTxt = "CNC contour cut shape";
+
+        let extraTxt = "";
+        if(isRounded) extraTxt = " with rounded corners";
+
+        const desc = `(x${qty}) ${w}" x ${h}" ${mat} ACM sign with full color digital print${lamTxt} on ${sideTxt} ${cutTxt}${extraTxt}.`;
         document.getElementById('job-desc').value = desc;
     }
 </script>
