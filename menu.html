@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS ERP</title>
+    <title>SignOS ERP | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // *** SECURITY BOUNCER ***
         const user = sessionStorage.getItem('signos_user');
-        if (!user) { window.location.href = 'index.html'; }
+        if (!user) window.location.href = 'index.html';
     </script>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans hidden" id="main-body">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- AUTH HEADER -->
+    <!-- 1. AUTH HEADER -->
     <div class="bg-gray-800 text-white px-6 py-2 flex justify-between items-center text-xs shadow-md">
         <div class="flex gap-4">
             <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
@@ -32,166 +32,138 @@
             </div>
             <div class="text-right">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <span class="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></span> v3.5 Online
+                    <span class="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></span> System v3.5
                 </span>
-                <div class="mt-2 text-[10px]"><a href="docs.html" class="text-blue-400 hover:text-blue-600 underline font-bold">View Documentation</a></div>
+                <div class="mt-2 text-[10px]">
+                    <a href="docs.html" class="text-blue-400 hover:text-blue-600 underline font-bold">View Documentation</a>
+                </div>
             </div>
         </div>
 
-        <div class="space-y-10">
+        <!-- DYNAMIC GRID CONTAINER -->
+        <div id="app-container" class="space-y-10">
+            <!-- Content injected by JS -->
+        </div>
 
-            <!-- SECTION 1: RIGID SIGNS -->
-            <section>
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">Rigid Signs</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    
-                    <!-- Yard Signs -->
-                    <a href="YardSign_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-blue-600 text-sm">Yard Signs</h3><p class="text-[10px] text-gray-500 uppercase">Standard (24x18)</p></div>
+        <!-- ADMIN WORKFLOW (Hidden by default) -->
+        <div id="admin-workflow" class="hidden border-t-2 border-dashed border-gray-300 pt-8 mt-8">
+            <a href="order_menu.html" class="block w-full bg-gradient-to-r from-gray-900 to-gray-800 hover:from-blue-900 hover:to-blue-800 text-white rounded-xl p-6 shadow-xl transform hover:scale-[1.01] transition-all group">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/10 rounded-lg">
+                            <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         </div>
-                    </a>
-
-                    <!-- Coroplast -->
-                    <a href="Coro_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-purple-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-purple-600 text-sm">Custom Coroplast</h3><p class="text-[10px] text-gray-500 uppercase">Any Size (4mm/10mm)</p></div>
+                        <div>
+                            <h3 class="text-xl font-bold tracking-tight">Order Workflow (Beta)</h3>
+                            <p class="text-xs text-gray-400 font-medium">Quote → 3D Design → Cart → Work Order</p>
                         </div>
-                    </a>
-
-                    <!-- ACM -->
-                    <a href="ACM_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-slate-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-slate-50 text-slate-600 rounded-lg flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-slate-600 text-sm">ACM Signs</h3><p class="text-[10px] text-gray-500 uppercase">Post & Panel (3mm/6mm)</p></div>
-                        </div>
-                    </a>
-
-                    <!-- Acrylic -->
-                    <a href="Acrylic_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-teal-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center group-hover:bg-teal-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-teal-600 text-sm">Acrylic Signs</h3><p class="text-[10px] text-gray-500 uppercase">2nd Surface / Paint</p></div>
-                        </div>
-                    </a>
-
-                </div>
-            </section>
-
-            <!-- SECTION 2: ROLL MEDIA -->
-            <section>
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">Roll Media (Wide Format)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                    <!-- Banners -->
-                    <a href="Banner_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-indigo-600 text-sm">Vinyl Banners</h3><p class="text-[10px] text-gray-500 uppercase">Scrim / Mesh / 18oz</p></div>
-                        </div>
-                    </a>
-
-                    <!-- Decals -->
-                    <a href="Decal_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-pink-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-pink-50 text-pink-600 rounded-lg flex items-center justify-center group-hover:bg-pink-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-pink-600 text-sm">Decals & Stickers</h3><p class="text-[10px] text-gray-500 uppercase">Kiss Cut / Die Cut</p></div>
-                        </div>
-                    </a>
-
-                    <!-- Wraps -->
-                    <a href="Wrap_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l2-2h10l2 2v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-1H8v1a1 1 0 01-1-1v-6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 14a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-indigo-600 text-sm">Vehicle Wraps</h3><p class="text-[10px] text-gray-500 uppercase">Fleet / Full Color</p></div>
-                        </div>
-                    </a>
-
-                    <!-- Cut Vinyl -->
-                    <a href="CutVinyl_Calculator.html" class="nav-link block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-yellow-500 hover:shadow-md transition group">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-lg flex items-center justify-center group-hover:bg-yellow-500 group-hover:text-white transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
-                            </div>
-                            <div><h3 class="font-bold text-gray-900 group-hover:text-yellow-600 text-sm">Cut Vinyl Lettering</h3><p class="text-[10px] text-gray-500 uppercase">Plot / Weed / Mask</p></div>
-                        </div>
-                    </a>
-
-                </div>
-            </section>
-
-            <!-- SECTION 3: ADMIN WORKFLOW (Hidden by default) -->
-            <div id="admin-workflow" class="hidden border-t-2 border-dashed border-gray-300 pt-8 mt-8">
-                <a href="order_menu.html" class="block w-full bg-gradient-to-r from-gray-900 to-gray-800 hover:from-blue-900 hover:to-blue-800 text-white rounded-xl p-6 shadow-xl transform hover:scale-[1.01] transition-all group">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-4">
-                            <div class="p-3 bg-white/10 rounded-lg">
-                                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-bold tracking-tight">Launch Order Workflow</h3>
-                                <p class="text-xs text-gray-400 font-medium">Full E-Commerce Suite: Quote → Design 3D → Cart → Work Order</p>
-                            </div>
-                        </div>
-                        <span class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full group-hover:bg-white group-hover:text-blue-900 transition">START NEW ORDER →</span>
                     </div>
-                </a>
-            </div>
-
+                    <span class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full group-hover:bg-white group-hover:text-blue-900 transition">LAUNCH →</span>
+                </div>
+            </a>
         </div>
+
     </div>
 
-    <script>
-        window.onload = function() {
-            // 1. Get Mode and User info
-            const params = new URLSearchParams(window.location.search);
-            const mode = params.get('mode') || 'sales'; // Default to sales
+<script>
+    // --- THE REGISTRY (Source of Truth) ---
+    // Controls which modules appear and their version numbers.
+    const modules = [
+        // RIGID
+        { id: 'PROD_Yard', cat: 'Rigid Signs', name: 'Yard Signs', file: 'YardSign_Calculator.html', ver: 'v21.5', status: 'active', icon: 'blue' },
+        { id: 'PROD_Coro', cat: 'Rigid Signs', name: 'Custom Coroplast', file: 'Coro_Calculator.html', ver: 'v7.3', status: 'active', icon: 'purple' },
+        { id: 'PROD_ACM', cat: 'Rigid Signs', name: 'ACM Signs', file: 'ACM_Calculator.html', ver: 'v5.7', status: 'active', icon: 'slate' },
+        { id: 'PROD_Acr', cat: 'Rigid Signs', name: 'Acrylic Signs', file: 'Acrylic_Calculator.html', ver: 'v3.2', status: 'active', icon: 'teal' },
+        
+        // ROLL
+        { id: 'PROD_Ban', cat: 'Roll Media (Wide Format)', name: 'Vinyl Banners', file: 'Banner_Calculator.html', ver: 'v9.2', status: 'active', icon: 'indigo' },
+        { id: 'PROD_Dec', cat: 'Roll Media (Wide Format)', name: 'Decals & Stickers', file: 'Decal_Calculator.html', ver: 'v3.0', status: 'active', icon: 'pink' },
+        { id: 'PROD_Wrap', cat: 'Roll Media (Wide Format)', name: 'Vehicle Wraps', file: 'Wrap_Calculator.html', ver: 'v5.6', status: 'active', icon: 'blue' },
+        { id: 'PROD_Cut', cat: 'Roll Media (Wide Format)', name: 'Cut Vinyl', file: 'CutVinyl_Calculator.html', ver: 'v3.3', status: 'active', icon: 'yellow' },
+
+        // BETA / DRAFT (Hidden from Live Menu)
+        { id: 'PROD_3D', cat: 'Beta', name: '3D Designer', file: 'YardSign_Order.html', ver: 'v1.0', status: 'draft', icon: 'gray' }
+    ];
+
+    window.onload = function() {
+        // 1. Auth Setup
+        const user = sessionStorage.getItem('signos_user');
+        const role = sessionStorage.getItem('signos_role');
+        document.getElementById('auth-user').innerText = user;
+        document.getElementById('auth-role').innerText = role;
+
+        if (role === 'ADMIN') document.getElementById('admin-workflow').classList.remove('hidden');
+
+        // 2. Render Menu
+        renderMenu();
+    };
+
+    function renderMenu() {
+        const container = document.getElementById('app-container');
+        container.innerHTML = '';
+
+        // Group by Category
+        const categories = {};
+        modules.forEach(mod => {
+            if (mod.status !== 'active') return; // FILTER: Only show Active
+            if (!categories[mod.cat]) categories[mod.cat] = [];
+            categories[mod.cat].push(mod);
+        });
+
+        // Build HTML
+        for (const [catName, mods] of Object.entries(categories)) {
+            // Section Header
+            const section = document.createElement('section');
+            section.innerHTML = `<h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">${catName}</h2>`;
             
-            // Session Storage handles the Name
-            const user = sessionStorage.getItem('signos_user');
-            
-            // SECURITY CHECK
-            if (!user) { window.location.href = 'index.html'; return; }
+            // Grid
+            const grid = document.createElement('div');
+            grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4";
 
-            // Reveal Page if Authenticated
-            document.getElementById('main-body').classList.remove('hidden');
-            const role = sessionStorage.getItem('signos_role') || mode.toUpperCase();
+            mods.forEach(mod => {
+                const link = document.createElement('a');
+                // Pass Version & Mode to the Calculator
+                link.href = `${mod.file}?mode=live&ver=${mod.ver}`;
+                link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
+                
+                // Color Logic for Icons
+                const colors = {
+                    blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
+                    purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white",
+                    slate: "bg-slate-50 text-slate-600 group-hover:bg-slate-600 group-hover:text-white",
+                    teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white",
+                    indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
+                    pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white",
+                    yellow: "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white",
+                };
+                const iconClass = colors[mod.icon] || colors.blue;
 
-            // 2. Update Header
-            document.getElementById('auth-user').innerText = user;
-            document.getElementById('auth-role').innerText = role;
-
-            // 3. Logic to Reveal Admin Workflow
-            if (role === 'ADMIN') {
-                document.getElementById('admin-workflow').classList.remove('hidden');
-            }
-
-            // 4. Update Navigation Links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                const currentHref = link.getAttribute('href');
-                if (!currentHref.includes('?mode=')) {
-                    link.setAttribute('href', `${currentHref}?mode=${mode}`);
-                }
+                link.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center transition ${iconClass}">
+                            <!-- Generic Icon -->
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900 group-hover:text-blue-600 text-sm">${mod.name}</h3>
+                            <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">${mod.ver}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(link);
             });
-        };
 
-        function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
-    </script>
+            section.appendChild(grid);
+            container.appendChild(section);
+        }
+    }
+
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+    }
+</script>
 </body>
 </html>
+
+
