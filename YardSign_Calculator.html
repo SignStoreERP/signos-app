@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yard Sign Calculator v21.6</title>
+    <title>Yard Sign Calculator v21.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* CORE STYLES */
@@ -31,7 +31,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-<div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+<div id="main-card" class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
 
     <!-- 1. AUTH HEADER -->
     <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
@@ -49,13 +49,11 @@
         </a>
         <div class="text-center">
             <h2 class="text-lg font-bold" id="product-label">Yard Signs</h2>
-            <!-- BACKEND DRIVEN VERSION BADGE -->
-            <div class="flex items-center justify-center gap-2 mt-0.5">
-                <span id="version-tag" class="text-[9px] font-mono bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded hidden">v---</span>
-                <div class="flex items-center gap-1 text-[10px]">
-                    <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <span id="status-text" class="text-gray-400">CONNECTING...</span>
-                </div>
+            <!-- CLEAN STATUS INDICATOR -->
+            <div class="flex items-center justify-center gap-2 text-[10px] mt-0.5">
+                <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span id="status-text" class="font-bold text-gray-400">CONNECTING...</span>
+                <span id="version-display" class="text-gray-600 font-mono hidden"></span>
             </div>
         </div>
         <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
@@ -264,19 +262,25 @@
     let backend = {};
     let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
 
+    // --- STRICT SESSION SECURITY ---
     function initSession() {
         const params = new URLSearchParams(window.location.search);
-        const urlMode = params.get('mode');
+        const urlMode = params.get('mode'); 
         const storeUser = sessionStorage.getItem('signos_user');
         const storeRole = sessionStorage.getItem('signos_role');
+
         if(storeUser) currentUser.name = storeUser;
         if(storeRole) currentUser.role = storeRole;
-        
-        // Mode Logic: URL param overrides Role
-        if(urlMode) currentUser.mode = urlMode; 
-        else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
-        else if(currentUser.role === 'PROD') currentUser.mode = 'production';
-        else currentUser.mode = 'sales';
+
+        // STRICT ROLE ENFORCEMENT
+        // Sales/Prod users cannot override mode via URL. Only Admin can.
+        if (currentUser.role === 'ADMIN') {
+            currentUser.mode = urlMode || 'dev'; 
+        } else if (currentUser.role === 'PROD') {
+            currentUser.mode = 'production';
+        } else {
+            currentUser.mode = 'sales';
+        }
 
         document.getElementById('auth-user').innerText = currentUser.name;
         document.getElementById('auth-role').innerText = currentUser.role;
@@ -284,9 +288,15 @@
         const body = document.body;
         body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
         
-        if(currentUser.mode === 'sales') { body.classList.add('mode-sales'); switchTab('retail'); }
-        else if (currentUser.mode === 'production') { body.classList.add('mode-prod'); switchTab('cost'); }
-        else { body.classList.add('mode-admin'); }
+        if(currentUser.mode === 'sales') { 
+            body.classList.add('mode-sales'); 
+            switchTab('retail'); 
+        } else if (currentUser.mode === 'production') { 
+            body.classList.add('mode-prod'); 
+            switchTab('cost'); 
+        } else { 
+            body.classList.add('mode-admin'); 
+        }
     }
 
     function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
@@ -306,53 +316,49 @@
         
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
+        const vDisplay = document.getElementById("version-display");
         
         try {
             // 1. Fetch Backend Data
             const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
             const data = await response.json();
-            
             if (data.error) throw new Error(data.error);
             backend = data;
 
-            // 2. Set Online Status
-            statusText.innerText = "ONLINE";
-            statusText.classList.replace("text-gray-400", "text-green-500");
-            statusDot.classList.replace("bg-red-500", "bg-green-500");
+            // 2. KILL SWITCH LOGIC (Is_Live)
+            // Checks if module is live. If not, only Admin can access.
+            // Note: Requires 'Is_Live' key in backend. Fallback to TRUE if missing.
+            const isLive = (backend.Is_Live === undefined) ? true : (backend.Is_Live === true || backend.Is_Live === "TRUE");
+            
+            if (!isLive && currentUser.role !== 'ADMIN') {
+                document.getElementById('main-card').innerHTML = `
+                    <div class="p-10 text-center">
+                        <h1 class="text-xl font-black text-gray-400">MODULE OFFLINE</h1>
+                        <p class="text-xs text-gray-500 mt-2">This calculator is currently disabled by administrators.</p>
+                        <button onclick="goBack()" class="mt-6 bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs">Return to Menu</button>
+                    </div>`;
+                return;
+            }
+
+            // 3. Status & Header Update
+            const isDev = currentUser.mode === 'dev';
+            
+            statusText.innerText = isDev ? "DEV MODE" : "ONLINE";
+            statusText.className = isDev ? "font-bold text-orange-500" : "font-bold text-green-500";
+            statusDot.className = isDev ? "w-2 h-2 rounded-full bg-orange-500" : "w-2 h-2 rounded-full bg-green-500";
             statusDot.classList.remove("animate-pulse");
 
-            // 3. Set Product Title
+            // Version Display (Clean Gray)
+            const ver = isDev ? (backend.Sys_Version_Dev || 'v0.0') : (backend.Sys_Version_Live || 'v0.0');
+            vDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
+            vDisplay.classList.remove('hidden');
+
             if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
-
-            // --- 4. BACKEND VERSION CONTROL ---
-            // The HTML asks the Sheet: "What version am I?"
-            const params = new URLSearchParams(window.location.search);
-            const isDev = params.get('mode') === 'dev'; 
-            
-            // If mode=dev, pull 'Sys_Version_Dev'. If live, pull 'Sys_Version_Live'.
-            // Fallbacks provided in case keys are missing during migration.
-            const ver = isDev ? (backend.Sys_Version_Dev || 'DEV') : (backend.Sys_Version_Live || 'LIVE');
-            
-            // Render the Badge
-            const vTag = document.getElementById('version-tag');
-            vTag.innerText = isDev ? `DEV ${ver}` : `LIVE ${ver}`;
-            vTag.classList.remove('hidden');
-            
-            // Color Coding
-            if(isDev) {
-                vTag.classList.add('bg-orange-100', 'text-orange-800', 'border', 'border-orange-200');
-                vTag.classList.remove('bg-gray-800', 'text-gray-300');
-            } else {
-                vTag.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-200');
-                vTag.classList.remove('bg-gray-800', 'text-gray-300');
-            }
-            // ---------------------------------------------
-
             calculate();
 
         } catch (e) {
             statusText.innerText = "OFFLINE";
-            statusText.classList.replace("text-gray-400", "text-red-500");
+            statusText.className = "font-bold text-red-500";
             document.getElementById("error-msg").innerText = e.message;
             document.getElementById("error-msg").classList.remove("hidden");
         }
@@ -511,3 +517,5 @@
 </script>
 </body>
 </html>
+
+
