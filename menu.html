@@ -32,7 +32,7 @@
             </div>
             <div class="text-right">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <span class="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></span> System v3.5
+                    <span class="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></span> System v3.6
                 </span>
                 <div class="mt-2 text-[10px]">
                     <a href="docs.html" class="text-blue-400 hover:text-blue-600 underline font-bold">View Documentation</a>
@@ -66,11 +66,11 @@
     </div>
 
 <script>
-    // --- THE REGISTRY (Source of Truth) ---
-    // Controls which modules appear and their version numbers.
+    // --- THE REGISTRY (Manual Sync with SYS_Modules) ---
+    // Update this array when SYS_Modules in Backend changes.
     const modules = [
         // RIGID
-        { id: 'PROD_Yard', cat: 'Rigid Signs', name: 'Yard Signs', file: 'YardSign_Calculator.html', ver: 'v21.5', status: 'active', icon: 'blue' },
+        { id: 'PROD_Yard', cat: 'Rigid Signs', name: 'Yard Signs', file: 'YardSign_Calculator.html', ver: 'v21.6', status: 'active', icon: 'blue' },
         { id: 'PROD_Coro', cat: 'Rigid Signs', name: 'Custom Coroplast', file: 'Coro_Calculator.html', ver: 'v7.3', status: 'active', icon: 'purple' },
         { id: 'PROD_ACM', cat: 'Rigid Signs', name: 'ACM Signs', file: 'ACM_Calculator.html', ver: 'v5.7', status: 'active', icon: 'slate' },
         { id: 'PROD_Acr', cat: 'Rigid Signs', name: 'Acrylic Signs', file: 'Acrylic_Calculator.html', ver: 'v3.2', status: 'active', icon: 'teal' },
@@ -81,7 +81,7 @@
         { id: 'PROD_Wrap', cat: 'Roll Media (Wide Format)', name: 'Vehicle Wraps', file: 'Wrap_Calculator.html', ver: 'v5.6', status: 'active', icon: 'blue' },
         { id: 'PROD_Cut', cat: 'Roll Media (Wide Format)', name: 'Cut Vinyl', file: 'CutVinyl_Calculator.html', ver: 'v3.3', status: 'active', icon: 'yellow' },
 
-        // BETA / DRAFT (Hidden from Live Menu)
+        // BETA / DRAFT (Hidden from Live Menu if status != active)
         { id: 'PROD_3D', cat: 'Beta', name: '3D Designer', file: 'YardSign_Order.html', ver: 'v1.0', status: 'draft', icon: 'gray' }
     ];
 
@@ -122,7 +122,7 @@
 
             mods.forEach(mod => {
                 const link = document.createElement('a');
-                // Pass Version & Mode to the Calculator
+                // Pass Version & Mode to the Calculator (Mode=Live forces Green Badge)
                 link.href = `${mod.file}?mode=live&ver=${mod.ver}`;
                 link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
                 
@@ -165,5 +165,3 @@
 </script>
 </body>
 </html>
-
-
