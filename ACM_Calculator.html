@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACM Calculator v5.8</title>
+    <title>ACM Calculator v5.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* CORE STYLES */
@@ -153,7 +153,10 @@
         <div id="tab-retail" class="tab-content active bg-white p-6">
             <div class="flex justify-between items-center mb-1">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Unit Price</span>
-                <div class="text-right"><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
+                <div class="text-right">
+                    <span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span>
+                    <span class="text-[10px] text-gray-400 block">(Sign Only - No Fees)</span>
+                </div>
             </div>
             
             <div class="border-t border-gray-100 my-3"></div>
@@ -166,11 +169,17 @@
                 <div class="flex justify-between hidden text-gray-700" id="row-ret-round"><span>Rounded Corners:</span><span id="ret-round" class="font-bold">$0.00</span></div>
                 
                 <div class="border-t border-dashed border-gray-200 my-1"></div>
-                <div class="flex justify-between"><span>Setup (<span id="lbl-setup-type">Flat</span>):</span><span id="ret-setup" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between text-blue-700"><span>Setup (<span id="lbl-setup-type">Flat</span>):</span><span id="ret-setup" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between text-purple-700 hidden" id="row-ret-design"><span>Design Fee:</span><span id="ret-design" class="font-bold">$0.00</span></div>
             </div>
 
-            <div class="flex justify-between items-end border-t-2 border-gray-800 pt-2 mt-2"><div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
+            <div class="flex justify-between items-end border-t-2 border-gray-800 pt-2 mt-2">
+                <div>
+                    <span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span>
+                    <div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block ml-1">MINIMUM APPLIED</div>
+                </div>
+                <span class="text-3xl font-black text-blue-600" id="total-price">---</span>
+            </div>
         </div>
 
         <!-- IN-HOUSE TAB -->
@@ -399,6 +408,7 @@
         }
 
         // --- 1. RETAIL ---
+        // Calculate Base Product Value (Sign + Options) ONLY
         let baseRate = mat === '3mm' ? parseFloat(backend.Retail_Price_3mm_Base||14) : parseFloat(backend.Retail_Price_6mm_Base||16.5);
         if(sides===2) baseRate += (mat === '3mm' ? parseFloat(backend.Retail_Adder_DS_3mm||7) : parseFloat(backend.Retail_Adder_DS_6mm||8.25));
 
@@ -431,6 +441,19 @@
 
         if(hasLam) retailLam = qty * parseFloat(backend.Retail_Price_Lam || 8.00);
 
+        // Product Subtotal (Physical Goods)
+        let productTotal = retailPrint + retailContour + retailShear + retailRounded + retailLam;
+        
+        // Apply Minimum Order to Product Only
+        const minOrder = parseFloat(backend.Retail_Min_Order || 50);
+        if(productTotal < minOrder) { 
+            productTotal = minOrder; 
+            document.getElementById('min-badge').classList.remove('hidden');
+        } else {
+            document.getElementById('min-badge').classList.add('hidden');
+        }
+
+        // Calculate Fees (Below the Line)
         let feeDesign = incDesign ? parseFloat(backend.Retail_Fee_Design || 45) : 0;
         let setupMins = parseFloat(backend.Time_Setup_Base || 5);
         if (setupPerFile && files > 1) {
@@ -438,9 +461,8 @@
         }
         const feeSetup = setupMins * rateMinute;
 
-        let price = retailPrint + retailContour + retailShear + retailRounded + retailLam + feeDesign + feeSetup;
-        const minOrder = parseFloat(backend.Retail_Min_Order || 50);
-        if(price < minOrder) price = minOrder;
+        // Final Invoice Total
+        const grandTotal = productTotal + feeDesign + feeSetup;
 
         // UI RETAIL
         const fmt = (n) => "$" + n.toFixed(2);
@@ -449,8 +471,13 @@
 
         document.getElementById('lbl-mat').innerText = mat;
         document.getElementById('ret-print').innerText = fmt(retailPrint);
-        document.getElementById('unit-price').innerText = fmt(price/qty);
-        document.getElementById('total-price').innerText = fmt(price);
+        
+        // Unit Price shows Product / Qty (Excludes Fees)
+        document.getElementById('unit-price').innerText = fmt(productTotal/qty);
+        
+        // Total Price shows Everything
+        document.getElementById('total-price').innerText = fmt(grandTotal);
+        
         document.getElementById('ret-setup').innerText = fmt(feeSetup);
         document.getElementById('lbl-setup-type').innerText = setupPerFile ? `${files} Files` : "Flat";
 
@@ -522,7 +549,7 @@
             }
 
             totalCost = costMatRaw + costInk + costLam + costSetup + costRun + costCNC + costShear + costRound;
-            const prof = price - totalCost;
+            const prof = grandTotal - totalCost;
 
             document.getElementById('time-setup').innerText = fmtTime(timeSetup); document.getElementById('cost-lab-setup').innerText = fmt(costSetup);
             document.getElementById('time-run').innerText = fmtTime(runTime); document.getElementById('cost-run').innerText = fmt(costRun);
@@ -532,7 +559,7 @@
             
             document.getElementById('cost-total').innerText = fmt(totalCost);
             document.getElementById('profit-inhouse').innerText = fmt(prof);
-            if(price>0) document.getElementById('margin-inhouse').innerText = pct(prof/price);
+            if(grandTotal>0) document.getElementById('margin-inhouse').innerText = pct(prof/grandTotal);
 
         } else {
             document.getElementById('opt-stock-size').innerText = "TOO LARGE";
@@ -565,7 +592,7 @@
         else { vendShip = parseFloat(backend.Ship_T5_Rate_Low || 75); shipTier = "T5"; }
 
         const totalVend = vendPrint + vendExtras + vendShip;
-        const profVend = price - totalVend;
+        const profVend = grandTotal - totalVend;
 
         document.getElementById('vend-print').innerText = fmt(vendPrint);
         document.getElementById('vend-extras').innerText = fmt(vendExtras);
@@ -573,10 +600,10 @@
         document.getElementById('vend-ship-tier').innerText = shipTier;
         document.getElementById('vend-total').innerText = fmt(totalVend);
         document.getElementById('profit-vend').innerText = fmt(profVend);
-        if(price>0) document.getElementById('margin-vend').innerText = pct(profVend/price);
+        if(grandTotal>0) document.getElementById('margin-vend').innerText = pct(profVend/grandTotal);
 
         const profitWarn = document.getElementById('profit-warn');
-        if((price-totalCost) < 0 && profVend < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
+        if((grandTotal-totalCost) < 0 && profVend < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
         else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
 
         // Description Generator
