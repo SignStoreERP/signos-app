@@ -3,28 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coroplast Calculator v7.3</title>
+    <title>Coroplast Calculator v7.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
     <style>
-        /* CORE STYLES */
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        
-        /* TOGGLE SWITCHES (Slide Tabs) */
         .toggle-checkbox:checked { right: 0; border-color: #68D391; }
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
-        
-        /* BUTTON GROUPS */
         .side-btn.selected { background-color: #2563eb; color: white; border-color: #2563eb; }
-        
-        /* VIEW MODES */
         .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
         .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
         .mode-prod .prod-hidden { display: none !important; }
         .mode-prod .prod-width { width: 100% !important; text-align: right; }
-        
-        /* ALERTS */
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
         .blur-section { filter: grayscale(100%) opacity(0.5); pointer-events: none; }
@@ -32,7 +24,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-<div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+<div id="main-card" class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
 
     <!-- 1. AUTH HEADER -->
     <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
@@ -50,34 +42,30 @@
         </a>
         <div class="text-center">
             <h2 class="text-lg font-bold" id="product-label">Custom Coroplast</h2>
-            <div class="flex items-center justify-center gap-2 text-[10px]">
+            <div class="flex items-center justify-center gap-2 text-[10px] mt-0.5">
                 <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span id="status-text" class="text-gray-400">CONNECTING...</span>
+                <span id="status-text" class="font-bold text-gray-400">CONNECTING...</span>
+                <span id="version-display" class="text-gray-600 font-mono hidden"></span>
             </div>
         </div>
         <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
     </div>
 
-    <!-- WARNINGS -->
     <div id="size-warn" class="hidden bg-orange-500 text-white text-center py-2 px-4 text-xs font-bold uppercase">⚠️ Oversized: Exceeds 48" x 96" Sheet</div>
     <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-2 px-4 text-sm font-bold uppercase border-b-4 border-red-800">🛑 LOSS ALERT: PRICE TOO LOW</div>
 
     <!-- INPUTS -->
     <div class="p-6 space-y-4">
-        
-        <!-- Dimensions -->
         <div class="grid grid-cols-2 gap-4">
             <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="width" value="24" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="checkDim(); calculate()"></div>
             <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="height" value="18" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="checkDim(); calculate()"></div>
         </div>
 
-        <!-- Qty & Files -->
         <div class="grid grid-cols-2 gap-4">
             <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label><input type="number" id="qty" value="10" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()"></div>
             <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Files</label><input type="number" id="files" value="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()"></div>
         </div>
 
-        <!-- Material -->
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Material</label>
             <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px]" onchange="calculate()">
@@ -86,17 +74,14 @@
             </select>
         </div>
 
-        <!-- Sides -->
         <div class="grid grid-cols-2 gap-2">
             <button type="button" id="btn-side-1" class="side-btn selected py-2 border rounded font-bold text-sm" onclick="setSides(1)">Single Sided</button>
             <button type="button" id="btn-side-2" class="side-btn py-2 border rounded font-bold text-sm" onclick="setSides(2)">Double Sided</button>
             <input type="hidden" id="sides" value="1">
         </div>
 
-        <!-- Finishing Options -->
+        <!-- FINISHING -->
         <div class="space-y-2 border-t border-gray-100 pt-2">
-            
-            <!-- Stakes -->
             <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
                 <span class="text-xs font-bold text-gray-700">H-Stakes</span>
                 <select id="stake-type" class="bg-white border text-xs p-1 rounded font-bold" onchange="calculate()">
@@ -106,7 +91,6 @@
                 </select>
             </div>
 
-            <!-- Grommets -->
             <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
                 <span class="text-xs font-bold text-gray-700">Grommets</span>
                 <select id="grommet-mode" class="bg-white border text-xs p-1 rounded font-bold" onchange="calculate()">
@@ -117,7 +101,6 @@
                 </select>
             </div>
 
-            <!-- Extras -->
             <div class="grid grid-cols-2 gap-2">
                 <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
                     <span class="text-[10px] font-bold text-gray-700">Contour Cut?</span>
@@ -126,7 +109,6 @@
                         <label for="is-contour" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
                     </div>
                 </div>
-                
                 <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
                     <span class="text-[10px] font-bold text-gray-700">Gloss Finish?</span>
                     <div class="relative inline-block w-8 align-middle select-none">
@@ -136,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- Design Fee -->
             <div class="flex items-center justify-between p-2 bg-purple-50 border border-purple-100 rounded">
                 <span class="text-xs font-bold text-purple-900">Include Design Fee?</span>
                 <div class="relative inline-block w-10 align-middle select-none">
@@ -144,20 +125,18 @@
                     <label for="inc-design" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
                 </div>
             </div>
-
         </div>
-
     </div>
 
     <!-- METRICS -->
     <div class="border-t border-gray-200">
-        <div class="flex">
+        <div class="flex" id="tab-container">
             <button onclick="switchTab('retail')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-retail">RETAIL</button>
             <button onclick="switchTab('cost')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-cost">IN-HOUSE</button>
             <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
         </div>
 
-        <!-- Retail Tab -->
+        <!-- RETAIL TAB -->
         <div id="tab-retail" class="tab-content active bg-white p-6">
             <div class="flex justify-between items-center mb-1">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Effective Unit Price</span>
@@ -166,27 +145,20 @@
                 </div>
             </div>
 
-            <!-- DYNAMIC DISCOUNT TABLE -->
+            <!-- DISCOUNT TABLE -->
             <div class="mb-4 text-right">
                 <button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:underline uppercase tracking-wide">Show Volume Discounts ▼</button>
                 <div id="discount-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
                     <table class="w-full text-right">
                         <thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200">
-                            <tr>
-                                <th class="pb-1 pr-4">Quantity</th>
-                                <th class="pb-1 pr-4">Unit Price</th>
-                                <th class="pb-1 text-green-600">Savings</th>
-                            </tr>
+                            <tr><th class="pb-1 pr-4">Quantity</th><th class="pb-1 pr-4">Unit Price</th><th class="pb-1 text-green-600">Savings</th></tr>
                         </thead>
-                        <tbody class="font-bold text-gray-700" id="discount-rows">
-                            <!-- Populated by JS Loop -->
-                        </tbody>
+                        <tbody class="font-bold text-gray-700" id="discount-rows"></tbody>
                     </table>
                 </div>
             </div>
 
             <div class="border-t border-gray-100 my-3"></div>
-
             <div class="space-y-1 text-xs text-gray-600">
                 <div class="flex justify-between"><span>Prints (<span id="lbl-mat">4mm</span>):</span><span id="ret-print" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden" id="row-ret-stakes"><span>Stakes:</span><span id="ret-stakes" class="font-bold">$0.00</span></div>
@@ -202,7 +174,7 @@
             <div class="flex justify-between items-end border-t-2 border-gray-800 pt-2 mt-2"><div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span></div><span class="text-3xl font-black text-blue-600" id="total-price">---</span></div>
         </div>
 
-        <!-- In-House Cost -->
+        <!-- IN-HOUSE TAB -->
         <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
             <div class="space-y-2 text-xs text-gray-700">
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
@@ -211,41 +183,16 @@
                 <div class="flex justify-between hidden" id="row-cost-vinyl"><span>Vinyl Media:</span> <span id="cost-vinyl" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden" id="row-cost-lam"><span>Laminate:</span> <span id="cost-lam" class="font-bold">$0.00</span></div>
                 
-                <!-- Separate Hardware Lines -->
                 <div class="flex justify-between hidden" id="row-cost-stake"><span>Stakes:</span> <span id="cost-stake-val" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden" id="row-cost-grom"><span>Grommets:</span> <span id="cost-grom-val" class="font-bold">$0.00</span></div>
 
                 <div class="border-t border-yellow-200 my-1 pt-1"></div>
-
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
                 
-                <!-- Design -->
-                <div class="flex justify-between items-center text-purple-800 hidden" id="row-lab-design">
-                    <span class="w-1/3">Design:</span>
-                    <span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1">0m</span>
-                    <span id="cost-lab-design" class="w-1/3 text-right font-bold">$0.00</span>
-                </div>
-
-                <!-- Setup -->
-                <div class="flex justify-between items-center">
-                    <span class="w-1/3">Setup:</span>
-                    <span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
-                    <span id="cost-lab-setup" class="w-1/3 text-right font-bold">$0.00</span>
-                </div>
-
-                <!-- Machine -->
-                <div class="flex justify-between items-center">
-                    <span class="w-1/3">Machine (<span id="lbl-mach-name">R1000</span>):</span>
-                    <span id="time-machine" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
-                    <span id="cost-machine" class="w-1/3 text-right font-bold">$0.00</span>
-                </div>
-
-                <!-- Operator -->
-                <div class="flex justify-between items-center">
-                    <span class="w-1/3">Operator:</span>
-                    <span id="time-op" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span>
-                    <span id="cost-lab-op" class="w-1/3 text-right font-bold">$0.00</span>
-                </div>
+                <div class="flex justify-between items-center text-purple-800 hidden" id="row-lab-design"><span class="w-1/3">Design:</span><span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1">0m</span><span id="cost-lab-design" class="w-1/3 text-right font-bold">$0.00</span></div>
+                <div class="flex justify-between items-center"><span class="w-1/3">Setup:</span><span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-lab-setup" class="w-1/3 text-right font-bold">$0.00</span></div>
+                <div class="flex justify-between items-center"><span class="w-1/3">Machine (<span id="lbl-mach-name">R1000</span>):</span><span id="time-machine" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-machine" class="w-1/3 text-right font-bold">$0.00</span></div>
+                <div class="flex justify-between items-center"><span class="w-1/3">Operator:</span><span id="time-op" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-lab-op" class="w-1/3 text-right font-bold">$0.00</span></div>
 
                 <div class="border-t border-yellow-200 my-2 pt-1"></div>
                 <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
@@ -259,19 +206,16 @@
             </div>
         </div>
 
-        <!-- Vended Cost -->
+        <!-- VENDED TAB -->
         <div id="tab-vend" class="tab-content bg-indigo-50 p-6">
             <div class="space-y-2 text-xs text-gray-700">
                 <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
-                <div class="flex justify-between text-indigo-800"><span>Finishing (Grom/Gloss):</span> <span id="vend-finish" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between text-indigo-800"><span>Finishing:</span> <span id="vend-finish" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between text-indigo-800"><span>Vendor Setup:</span> <span id="vend-setup" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Hardware (Stakes):</span> <span id="vend-stakes" class="font-bold">$0.00</span></div>
-                
                 <div class="flex justify-between"><span>Shipping (<span id="vend-ship-tier">T1</span>):</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
-                
                 <div class="border-t border-indigo-200 my-1"></div>
                 <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Vended Bill:</span> <span id="vend-total">$0.00</span></div>
-
                 <div class="mt-4 bg-white p-3 rounded border border-indigo-200 shadow-sm">
                     <div class="flex justify-between items-end">
                         <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-vend">$0.00</div></div>
@@ -280,7 +224,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- DESCRIPTION -->
@@ -288,83 +231,75 @@
         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
         <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
     </div>
-
     <div id="error-msg" class="hidden text-[10px] text-red-500 p-4 text-center bg-red-50"></div>
-
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/a/macros/signstoremacon.com/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
     const TAB_NAME = "PROD_Coroplast_Signs";
     let backend = {};
     let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
 
     function initSession() {
-        const params = new URLSearchParams(window.location.search);
-        const urlMode = params.get('mode');
         const storeUser = sessionStorage.getItem('signos_user');
         const storeRole = sessionStorage.getItem('signos_role');
+        const storeMode = sessionStorage.getItem('signos_mode');
 
         if(storeUser) currentUser.name = storeUser;
         if(storeRole) currentUser.role = storeRole;
-
-        if(urlMode) currentUser.mode = urlMode;
-        else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
-        else if(currentUser.role === 'PROD') currentUser.mode = 'production';
-        else currentUser.mode = 'sales';
+        if(storeMode) currentUser.mode = storeMode;
 
         document.getElementById('auth-user').innerText = currentUser.name;
         document.getElementById('auth-role').innerText = currentUser.role;
 
         const body = document.body;
         body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
+        
         if(currentUser.mode === 'sales') { body.classList.add('mode-sales'); switchTab('retail'); }
         else if (currentUser.mode === 'production') { body.classList.add('mode-prod'); switchTab('cost'); }
         else { body.classList.add('mode-admin'); }
     }
 
     function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
-    function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
-
-    function setSides(n) {
-        document.getElementById('sides').value = n;
-        document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('selected'));
-        document.getElementById('btn-side-'+n).classList.add('selected');
-        calculate();
-    }
-
-    function switchTab(id) {
-        document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
-        document.getElementById('tab-'+id).classList.add('active');
-        document.getElementById('btn-'+id).classList.add('active');
-    }
-
-    function toggleDiscounts() {
-        document.getElementById('discount-table').classList.toggle('hidden');
-    }
+    function setSides(n) { document.getElementById('sides').value = n; document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('btn-side-'+n).classList.add('selected'); calculate(); }
+    function switchTab(id) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-'+id).classList.add('active'); }
+    function toggleDiscounts() { document.getElementById('discount-table').classList.toggle('hidden'); }
 
     window.onload = async function() {
         initSession();
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
+        const vDisplay = document.getElementById("version-display");
+        
         try {
-            const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
+            const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}&ip=${clientIP}&user=${currentUser.name}&role=${currentUser.role}&req=view_module`);
             const data = await response.json();
             if(data.error) throw new Error(data.error);
             backend = data;
-            
-            statusText.innerText = "ONLINE";
-            statusText.classList.replace("text-gray-400", "text-green-500");
-            statusDot.classList.replace("bg-red-500", "bg-green-500");
+
+            // Kill Switch Logic
+            const isLive = (backend.Is_Live === undefined) ? true : (backend.Is_Live === true || backend.Is_Live === "TRUE");
+            if (!isLive && currentUser.role !== 'ADMIN') {
+                document.getElementById('main-card').innerHTML = `<div class="p-10 text-center"><h1 class="text-xl font-black text-gray-400">MODULE OFFLINE</h1><button onclick="goBack()" class="mt-6 bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs">Return to Menu</button></div>`;
+                return;
+            }
+
+            // Status UI
+            const isDev = currentUser.mode === 'dev';
+            statusText.innerText = isDev ? "DEV MODE" : "ONLINE";
+            statusText.className = isDev ? "font-bold text-orange-500" : "font-bold text-green-500";
+            statusDot.className = isDev ? "w-2 h-2 rounded-full bg-orange-500" : "w-2 h-2 rounded-full bg-green-500";
             statusDot.classList.remove("animate-pulse");
-            
+
+            const ver = isDev ? (backend.Sys_Version_Dev || 'v0.0') : (backend.Sys_Version_Live || 'v0.0');
+            vDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
+            vDisplay.classList.remove('hidden');
+
             if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
-            
             calculate();
+
         } catch(e) {
             statusText.innerText = "OFFLINE";
-            statusText.classList.replace("text-gray-400", "text-red-500");
+            statusText.className = "font-bold text-red-500";
             document.getElementById("error-msg").innerText = e.message;
             document.getElementById("error-msg").classList.remove("hidden");
         }
@@ -375,7 +310,6 @@
         const h = parseFloat(document.getElementById('height').value)||0;
         const dim1 = Math.min(w,h);
         const dim2 = Math.max(w,h);
-        
         if (dim1 > 48 || dim2 > 96) {
             document.getElementById('size-warn').classList.remove('hidden');
             document.getElementById('tab-cost').classList.add('blur-section');
@@ -387,14 +321,12 @@
 
     function calculate() {
         if(!backend.Item_Name) return;
-
         const w = parseFloat(document.getElementById('width').value)||0;
         const h = parseFloat(document.getElementById('height').value)||0;
         const qty = parseFloat(document.getElementById('qty').value)||1;
         const files = parseFloat(document.getElementById('files').value)||1;
         const sides = parseInt(document.getElementById('sides').value);
         const mat = document.getElementById('material').value;
-        
         const stakeType = document.getElementById('stake-type').value;
         const gromMode = document.getElementById('grommet-mode').value;
         const isContour = document.getElementById('is-contour').checked;
@@ -408,38 +340,29 @@
         // --- 1. RETAIL ---
         let baseRate = mat === '4mm' ? 8.00 : 15.00;
         if(backend.Retail_Price_4mm_Base) baseRate = (mat==='4mm' ? parseFloat(backend.Retail_Price_4mm_Base) : parseFloat(backend.Retail_Price_10mm_Base));
-        
         if(sides===2) baseRate += (mat==='4mm' ? 2.50 : 5.00);
 
-        // --- DYNAMIC DISCOUNT TABLES ---
+        // Dynamic Discounts
         let discPct = 0;
         let currentBestTier = 0;
         const tiers = [];
-        
-        // Decide which table to load based on material
         const tierPrefix = (mat === '10mm') ? 'Tier_10mm_' : 'Tier_4mm_';
-        
         let i = 1;
-        // Fallback: If "Tier_4mm_1_Qty" doesn't exist, try generic "Tier_1_Qty"
         let useGeneric = false;
         if (!backend[`${tierPrefix}1_Qty`] && backend[`Tier_1_Qty`]) useGeneric = true;
 
         while(true) {
             let tQtyKey = useGeneric ? `Tier_${i}_Qty` : `${tierPrefix}${i}_Qty`;
             let tDiscKey = useGeneric ? `Tier_${i}_Disc` : `${tierPrefix}${i}_Disc`;
-            
             if(!backend[tQtyKey]) break;
-
             const tQty = parseFloat(backend[tQtyKey]);
             const tDisc = parseFloat(backend[tDiscKey] || 0);
             tiers.push({ q: tQty, d: tDisc });
-            
             if (qty >= tQty) currentBestTier = tDisc;
             i++;
         }
         discPct = currentBestTier;
 
-        // Apply discount to the BASE RATE
         const unitRate = baseRate * (1 - discPct);
         const retailPrint = unitRate * totalSqFt;
 
@@ -461,43 +384,30 @@
         }
 
         if(isContour) retailContour = retailPrint * parseFloat(backend.Retail_Adder_Contour_Pct || 0.25);
-        
-        if(isGloss) {
-            retailGloss = qty * parseFloat(backend.Retail_Price_Gloss || 8.00);
-        }
+        if(isGloss) retailGloss = qty * parseFloat(backend.Retail_Price_Gloss || 8.00);
 
         let feeDesign = 0;
         if(incDesign) feeDesign = parseFloat(backend.Retail_Fee_Design || 45);
-        
         let feeSetup = parseFloat(backend.Retail_Fee_Setup || 15);
 
         let price = retailPrint + retailStakes + retailGrom + retailContour + retailGloss + feeDesign + feeSetup;
-        if(price < 100) price = 100; // Min
+        if(price < 100) price = 100;
 
-        // --- DISCOUNT TABLE RENDER ---
+        // DISCOUNT TABLE RENDER
         let rowsHtml = "";
         tiers.forEach(tier => {
             const trRate = baseRate * (1 - tier.d);
             const trPrint = trRate * (sqft * tier.q);
-            
-            // Add fixed costs for table estimation
             const trStakes = stakeType === 'Std' ? (tier.q * parseFloat(backend.Retail_Price_Stake_Std||2.5)) : (stakeType === 'HD' ? (tier.q * parseFloat(backend.Retail_Price_Stake_HD||4)) : 0);
-            
-            const trTotalRaw = trPrint + trStakes + feeSetup + feeDesign; // Simplified for display
+            const trTotalRaw = trPrint + trStakes + feeSetup + feeDesign; 
             const trFinal = Math.max(trTotalRaw, 100);
             const trUnit = trFinal / tier.q;
-            
             const discDisplay = tier.d > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.d*100).toFixed(0)}%</span>` : "";
-            
-            rowsHtml += `<tr>
-                <td class="pr-4 py-1 text-gray-500">${tier.q}${discDisplay}</td>
-                <td class="pr-4 py-1 text-blue-600 font-bold">$${trUnit.toFixed(2)}</td>
-                <td class="py-1 text-green-600 font-bold">${(tier.d*100).toFixed(0)}% Off</td>
-            </tr>`;
+            rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}${discDisplay}</td><td class="pr-4 py-1 text-blue-600 font-bold">$${trUnit.toFixed(2)}</td><td class="py-1 text-green-600 font-bold">${(tier.d*100).toFixed(0)}% Off</td></tr>`;
         });
         document.getElementById('discount-rows').innerHTML = rowsHtml;
 
-        // Retail UI
+        // UI RETAIL
         const fmt = (n) => "$" + n.toFixed(2);
         const pct = (n) => (n * 100).toFixed(1) + "%";
         const fmtTime = (h) => { const mins = Math.round(h*60); return h >= 1 ? h.toFixed(1)+"h" : mins+"m"; };
@@ -508,29 +418,18 @@
         document.getElementById('total-price').innerText = fmt(price);
         document.getElementById('ret-setup').innerText = fmt(feeSetup);
 
-        if(retailStakes > 0) { document.getElementById('row-ret-stakes').classList.remove('hidden'); document.getElementById('ret-stakes').innerText = fmt(retailStakes); }
-        else document.getElementById('row-ret-stakes').classList.add('hidden');
-
-        if(retailGrom > 0) { document.getElementById('row-ret-grom').classList.remove('hidden'); document.getElementById('ret-grom').innerText = fmt(retailGrom); document.getElementById('lbl-grom-qty').innerText = gromCount; }
-        else document.getElementById('row-ret-grom').classList.add('hidden');
-
-        if(retailGloss > 0) { document.getElementById('row-ret-gloss').classList.remove('hidden'); document.getElementById('ret-gloss').innerText = fmt(retailGloss); }
-        else document.getElementById('row-ret-gloss').classList.add('hidden');
-
-        if(retailContour > 0) { document.getElementById('row-ret-contour').classList.remove('hidden'); document.getElementById('ret-contour').innerText = fmt(retailContour); }
-        else document.getElementById('row-ret-contour').classList.add('hidden');
-
-        if(feeDesign > 0) { document.getElementById('row-ret-design').classList.remove('hidden'); document.getElementById('ret-design').innerText = fmt(feeDesign); }
-        else document.getElementById('row-ret-design').classList.add('hidden');
+        if(retailStakes > 0) { document.getElementById('row-ret-stakes').classList.remove('hidden'); document.getElementById('ret-stakes').innerText = fmt(retailStakes); } else document.getElementById('row-ret-stakes').classList.add('hidden');
+        if(retailGrom > 0) { document.getElementById('row-ret-grom').classList.remove('hidden'); document.getElementById('ret-grom').innerText = fmt(retailGrom); document.getElementById('lbl-grom-qty').innerText = gromCount; } else document.getElementById('row-ret-grom').classList.add('hidden');
+        if(retailGloss > 0) { document.getElementById('row-ret-gloss').classList.remove('hidden'); document.getElementById('ret-gloss').innerText = fmt(retailGloss); } else document.getElementById('row-ret-gloss').classList.add('hidden');
+        if(retailContour > 0) { document.getElementById('row-ret-contour').classList.remove('hidden'); document.getElementById('ret-contour').innerText = fmt(retailContour); } else document.getElementById('row-ret-contour').classList.add('hidden');
+        if(feeDesign > 0) { document.getElementById('row-ret-design').classList.remove('hidden'); document.getElementById('ret-design').innerText = fmt(feeDesign); } else document.getElementById('row-ret-design').classList.add('hidden');
 
         // --- 2. IN-HOUSE COST ---
         const isDirect = (mat === '4mm');
         let matCostSqFt = isDirect ? (11.99/32) : (36.36/32);
-        
         if(backend.Cost_Sheet_4mm) matCostSqFt = (isDirect ? parseFloat(backend.Cost_Sheet_4mm) : parseFloat(backend.Cost_Sheet_10mm)) / 32;
         
         const costMat = totalSqFt * matCostSqFt * 1.1;
-        
         let costInk = 0, costVinyl = 0, costLam = 0;
 
         if(isDirect) {
@@ -563,7 +462,7 @@
 
         let speed = parseFloat(backend.Speed_Flatbed_4mm || 25);
         if(!isDirect) speed = parseFloat(backend.Speed_Roll_Print || 150);
-        
+
         const feedLen = h/12;
         const runTime = (feedLen * qty * sides) / speed;
         const costMach = runTime * rateMach;
@@ -582,19 +481,15 @@
 
         if(costStakes > 0) { document.getElementById('row-cost-stake').classList.remove('hidden'); document.getElementById('cost-stake-val').innerText = fmt(costStakes); } else document.getElementById('row-cost-stake').classList.add('hidden');
         if(costGrommets > 0) { document.getElementById('row-cost-grom').classList.remove('hidden'); document.getElementById('cost-grom-val').innerText = fmt(costGrommets); } else document.getElementById('row-cost-grom').classList.add('hidden');
-
         if(timeDesign > 0) { document.getElementById('row-lab-design').classList.remove('hidden'); document.getElementById('time-design').innerText = fmtTime(timeDesign); document.getElementById('cost-lab-design').innerText = fmt(costDesign); } else document.getElementById('row-lab-design').classList.add('hidden');
 
         document.getElementById('time-setup').innerText = fmtTime(timeSetup);
         document.getElementById('cost-lab-setup').innerText = fmt(costSetup);
-        
         document.getElementById('lbl-mach-name').innerText = isDirect ? 'HP R1000' : 'HP 300';
         document.getElementById('time-machine').innerText = fmtTime(runTime);
         document.getElementById('cost-machine').innerText = fmt(costMach);
-        
         document.getElementById('time-op').innerText = fmtTime(opTime);
         document.getElementById('cost-lab-op').innerText = fmt(costOp);
-        
         document.getElementById('cost-total').innerText = fmt(totalCost);
         document.getElementById('profit-inhouse').innerText = fmt(prof);
         if(price>0) document.getElementById('margin-inhouse').innerText = pct(prof/price);
@@ -602,10 +497,9 @@
         // --- 3. VENDED COST ---
         const sheetYield = Math.floor(4608 / (w*h)) || 1;
         const sheetsNeeded = Math.ceil(qty / sheetYield);
-        
         let tier = 'T1'; // 1-9
-        if(sheetsNeeded >= 10) tier = 'T2'; 
-        if(sheetsNeeded > 50) tier = 'T3'; 
+        if(sheetsNeeded >= 10) tier = 'T2';
+        if(sheetsNeeded > 50) tier = 'T3';
 
         const vKey = `S365_${mat}_${sides===1?'SS':'DS'}_${tier}`;
         const vendRateSheet = parseFloat(backend[vKey] || 44);
@@ -639,15 +533,6 @@
             if (sheetsNeeded >= parseFloat(backend.Ship_T2_Freight_Trigger || 22)) { vendShip = freightCost; shipTier = "Freight"; }
             else { vendShip = parseFloat(backend.Ship_T2_Rate || 15); shipTier = "T2"; }
         }
-        else if (maxDim <= parseFloat(backend.Ship_T3_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T3_Max_Short || 36)) {
-            if (sheetsNeeded >= parseFloat(backend.Ship_T3_Freight_Trigger || 22)) { vendShip = freightCost; shipTier = "Freight"; }
-            else { vendShip = parseFloat(backend.Ship_T3_Rate || 35); shipTier = "T3"; }
-        }
-        else if (maxDim <= parseFloat(backend.Ship_T4_Max_Long || 48) && minDim <= parseFloat(backend.Ship_T4_Max_Short || 48)) {
-            if (sheetsNeeded >= parseFloat(backend.Ship_T4_Freight_Trigger || 10)) { vendShip = freightCost; shipTier = "Freight"; }
-            else if (sheetsNeeded >= parseFloat(backend.Ship_T4_High_Qty || 6)) { vendShip = parseFloat(backend.Ship_T4_Rate_High || 75); shipTier = "T4 (High)"; }
-            else { vendShip = parseFloat(backend.Ship_T4_Rate_Low || 50); shipTier = "T4 (Low)"; }
-        }
         else {
             if (sheetsNeeded >= parseFloat(backend.Ship_T5_Freight_Trigger || 10)) { vendShip = freightCost; shipTier = "Freight"; }
             else { vendShip = parseFloat(backend.Ship_T5_Rate_Low || 75); shipTier = "T5"; }
@@ -670,16 +555,17 @@
         if(prof < 0 && profVend < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
         else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
 
+        // JOB DESCRIPTION
         const sideTxt = sides === 1 ? "Single-Sided" : "Double-Sided";
         const finishTxt = [];
         if(stakeType !== 'None') finishTxt.push(stakeType + " Stakes");
         if(gromMode !== 'None') finishTxt.push("Grommets ("+gromMode+")");
         if(isGloss) finishTxt.push("Gloss Finish");
         if(isContour) finishTxt.push("Contour Cut");
+
         const desc = `(x${qty}) ${w}" x ${h}" ${mat} Coroplast Signs. ${sideTxt} Print. ${finishTxt.length > 0 ? finishTxt.join(', ') : 'No Hardware'}.`;
         document.getElementById('job-desc').value = desc;
     }
 </script>
 </body>
 </html>
-
