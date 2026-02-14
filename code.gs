@@ -294,3 +294,5 @@ function handleAuth(pinInput) {
 function returnJSON(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+
+
