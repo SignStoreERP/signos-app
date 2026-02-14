@@ -1,87 +1,173 @@
 // ==========================================
-// SignOS API v5.0 (Dual Master Architecture)
+// SignOS API v5.2.1 (Dual Master + Archiver)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ ONLY)
-// Connects to 'SignOS_Backend' for Pricing, Staff, and Configs
 const DATA_SS_ID = "1wiaj5rU5J2kv1SobfyysMFynDOsli4Nb6pDvIf3L9_Y";
 
 // MASTER 2: The Log Backend (WRITE ONLY)
-// Connects to 'SignOS_Logs' for writing access logs
 const LOG_SS_ID = "1LqSV-byNLOdu_GVyasvFmwyaW8TkyvW4F78u6_gaqzk";
+
+// ARCHIVE: SignOS_Archives Folder
+const ARCHIVE_FOLDER_ID = "18MBPWajHdF4TNQ0g8Iz1n1-GT3nBrMj4";
 
 function doGet(e) {
   const params = e.parameter;
 
-  // ----------------------------------------
-  // LOGGING INTERCEPTOR (Write to Log Master)
-  // ----------------------------------------
-  // We log asynchronously so we don't slow down the fetch significantly.
-  // We check if 'ip' exists to verify it's a valid request worth logging.
+  // 1. LOGGING INTERCEPTOR (Async)
   if (params.ip) {
     logActivity(params);
   }
 
-  // ----------------------------------------
-  // ROUTING (Read from Data Master)
-  // ----------------------------------------
+  // 2. ROUTING
+  if (params.req === "auth") return handleAuth(params.pin);
+  if (params.req === "table") return fetchTable(params.tab);
 
-  // 1. Auth Request (Gateway)
-  // Usage: ?req=auth&pin=123456
-  if (params.req === "auth") {
-    return handleAuth(params.pin);
-  }
+  // NEW: Manual Archive Trigger (Non-Destructive)
+  // Usage: ?req=manual_archive&pin=YOUR_ADMIN_PIN
+  if (params.req === "manual_archive") return manualExport(params.pin);
 
-  // 2. Table Request (Menu/Cart)
-  // Usage: ?req=table&tab=SYS_Modules
-  if (params.req === "table") {
-    return fetchTable(params.tab);
-  }
-
-  // 3. Default: Config Request (Calculators)
-  // Usage: ?tab=PROD_Yard_Signs
+  // Default: Config Request
   return fetchConfig(params.tab || "PROD_Yard_Signs");
 }
 
 /**
  * WRITER: Log Activity to SignOS_Logs
- * Appends: [Timestamp, IP, ReqType, Tab/Target, RawParams]
  */
 function logActivity(p) {
   try {
     const ss = SpreadsheetApp.openById(LOG_SS_ID);
-    // Ensure this tab exists in your SignOS_Logs sheet!
     const sheet = ss.getSheetByName("SYS_Access_Logs");
-   
     if (sheet) {
       const ts = new Date();
-      // Log structure: Time, IP, User (if avail), Role (if avail), Action, Target, Meta
-      // We map the incoming params to these columns carefully
-      const user = p.user || "GUEST";
-      const role = p.role || "N/A";
-      const action = p.req || "config_fetch"; // Default action
-      const target = p.tab || "N/A";
-     
       sheet.appendRow([
         ts,
         p.ip || "UNKNOWN",
-        user,
-        role,
-        action,
-        target,
-        JSON.stringify(p) // Meta column stores everything else
+        p.user || "GUEST",
+        p.role || "N/A",
+        p.req || "config_fetch",
+        p.tab || "N/A",
+        JSON.stringify(p)
       ]);
     }
   } catch (err) {
-    // Fail silently. We do NOT want to break the user's login
-    // just because the log sheet is busy or the ID is wrong.
     console.error("Logging Failed:", err);
   }
 }
 
 /**
+ * ARCHIVER (AUTOMATED): Unload Logs to Drive
+ * - Runs via Nightly Trigger
+ * - DELETES archived rows from the sheet to keep it fast
+ */
+function archiveDailyLogs() {
+  processArchive(true); // true = delete rows after saving
+}
+
+/**
+ * ARCHIVER (MANUAL): Export without deleting
+ * - Triggered via URL for testing
+ */
+function manualExport(pin) {
+  // 1. Security Check (Admin Only)
+  const auth = handleAuth(pin);
+  const authObj = JSON.parse(auth.getContent());
+
+  if (authObj.status !== "success" || authObj.role !== "ADMIN") {
+    return returnJSON({ status: "error", message: "Unauthorized: Admins Only" });
+  }
+
+  // 2. Run Archive (False = Do not delete rows)
+  const result = processArchive(false);
+  return returnJSON(result);
+}
+
+/**
+ * CORE ARCHIVE LOGIC
+ * Handles formatting and saving to Drive
+ */
+function processArchive(isDestructive) {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const logSheet = ss.getSheetByName("SYS_Access_Logs");
+
+    // Check for Index Sheet
+    let indexSheet = ss.getSheetByName("SYS_Archive_Index");
+    if (!indexSheet) {
+      indexSheet = ss.insertSheet("SYS_Archive_Index");
+      indexSheet.appendRow(["Archive_Date", "File_Name", "Drive_Link", "Row_Count", "Type"]);
+      indexSheet.getRange(1, 1, 1, 5).setFontWeight("bold");
+    }
+
+    const lastRow = logSheet.getLastRow();
+
+    // Safety: If no data (just header or empty), exit gracefully
+    if (lastRow < 2) {
+      return { status: "skipped", message: "Log sheet is empty." };
+    }
+
+    // Get Data
+    const dataRange = logSheet.getRange(2, 1, lastRow - 1, logSheet.getLastColumn());
+    const data = dataRange.getValues();
+
+    // Format Text File (Pipe Delimited for readability)
+    let fileContent = "Timestamp | IP_Address | User | Role | Action | Target | Meta_Data\n";
+    fileContent += "================================================================================\n";
+
+    data.forEach(row => {
+      // Format the date to be readable
+      const dateCell = new Date(row[0]);
+      const dateStr = Utilities.formatDate(dateCell, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+
+      // Construct Row
+      const cleanRow = [
+        dateStr,
+        row[1], // IP
+        row[2], // User
+        row[3], // Role
+        row[4], // Action
+        row[5], // Target
+        row[6]  // Meta (JSON)
+      ].join(" | ");
+
+      fileContent += cleanRow + "\n";
+    });
+
+    // Create Filename
+    const today = new Date();
+    const dateStamp = Utilities.formatDate(today, Session.getScriptTimeZone(), "yyyy-MM-dd_HHmm");
+    const prefix = isDestructive ? "AUTO_ARCHIVE" : "MANUAL_EXPORT";
+    const fileName = `SignOS_Log_${prefix}_${dateStamp}.txt`;
+
+    // Save to Drive
+    const folder = DriveApp.getFolderById(ARCHIVE_FOLDER_ID);
+    const file = folder.createFile(fileName, fileContent);
+
+    // Log to Index
+    indexSheet.appendRow([
+      new Date(),
+      fileName,
+      file.getUrl(),
+      data.length,
+      prefix
+    ]);
+
+    // Clean Up (Only if Automated)
+    if (isDestructive) {
+      logSheet.deleteRows(2, lastRow - 1);
+      return { status: "success", type: "AUTO", rows_archived: data.length, url: file.getUrl() };
+    } else {
+      return { status: "success", type: "MANUAL", rows_copied: data.length, url: file.getUrl() };
+    }
+
+  } catch (e) {
+    console.error("Archive Failed:", e.toString());
+    return { status: "error", message: e.toString() };
+  }
+}
+
+/**
  * READER: Fetch Table Data
- * targeted at DATA_SS_ID (SignOS_Backend)
  */
 function fetchTable(tabName) {
   try {
@@ -91,24 +177,18 @@ function fetchTable(tabName) {
 
     const range = sheet.getDataRange();
     const values = range.getValues();
-
     if (values.length < 2) return returnJSON([]);
 
     const headers = values[0];
     const rows = values.slice(1);
-
     const result = rows.map(row => {
       let obj = {};
       headers.forEach((header, index) => {
-        if(header && String(header).trim() !== "") {
-          obj[header] = row[index];
-        }
+        if(header && String(header).trim() !== "") obj[header] = row[index];
       });
       return obj;
     });
-
     return returnJSON(result);
-
   } catch (err) {
     return returnJSON({ error: "Table Error: " + err.toString() });
   }
@@ -116,73 +196,84 @@ function fetchTable(tabName) {
 
 /**
  * READER: Fetch Config
- * targeted at DATA_SS_ID (SignOS_Backend)
  */
 function fetchConfig(tabName) {
   try {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName(tabName);
-
-    if (!sheet) {
-      return returnJSON({ error: "Tab '" + tabName + "' not found." });
-    }
+    if (!sheet) return returnJSON({ error: "Tab '" + tabName + "' not found." });
 
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return returnJSON({});
 
     const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
     const config = {};
-
     data.forEach(row => {
-      const key = row[0];  
-      const value = row[1];
-
-      if (key && key !== "") {
-        config[key] = value;
-      }
+      const key = row[0];
+      const val = row[1];
+      if (key && key !== "") config[key] = val;
     });
-
     return returnJSON(config);
-
   } catch (err) {
     return returnJSON({ error: "System Error: " + err.toString() });
   }
 }
 
 /**
- * READER: Authentication
- * targeted at DATA_SS_ID (SignOS_Backend)
+ * READER: Authentication (UPDATED: DYNAMIC COLUMN MAPPING)
+ * - Now finds columns by Header Name instead of fixed numbers.
+ * - REQUIRES headers in Row 1: "PIN", "Name", "Role", "Active" (or "Status")
  */
 function handleAuth(pinInput) {
   try {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName("Master_Staff");
-
     if (!sheet) return returnJSON({ status: "error", message: "Master_Staff missing" });
 
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return returnJSON({ status: "fail", message: "No staff data" });
 
-    // Fetch 8 columns (A through H)
-    const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+    // 1. Get All Data
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0].map(h => String(h).trim().toLowerCase()); // Normalize headers
+    const rows = data.slice(1);
+
+    // 2. Map Columns (Dynamic Finder)
+    // Adjust these strings if your headers are different (e.g. "Staff Name" vs "Name")
+    const colIdx = {
+      pin: headers.indexOf("pin"),
+      name: headers.indexOf("name"),
+      role: headers.indexOf("role"),
+      active: headers.findIndex(h => h === "active" || h === "status" || h === "enabled")
+    };
+
+    // Safety: If columns are missing, return error (helps debugging)
+    if (colIdx.pin === -1 || colIdx.name === -1) {
+      return returnJSON({ status: "error", message: "Critical columns (PIN/Name) missing in Master_Staff" });
+    }
 
     const cleanPin = String(pinInput).trim();
     let match = null;
     let accountDisabled = false;
 
-    for (let i = 0; i < data.length; i++) {
-      // Access_PIN is Column G (Index 6)
-      const rowPin = String(data[i][6]).trim();
+    // 3. Search Logic
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowPin = String(row[colIdx.pin]).trim();
 
       if (rowPin === cleanPin) {
-        // Is_Active is Column H (Index 7)
-        const activeStatus = data[i][7];
+        // Check Active Status (Default to true if column missing)
+        let isActive = true;
+        if (colIdx.active !== -1) {
+           const val = row[colIdx.active];
+           isActive = (val === true || String(val).toUpperCase() === "TRUE");
+        }
 
-        if (activeStatus === true || String(activeStatus).toUpperCase() === "TRUE") {
-          match = {
-            status: "success",
-            name: data[i][1], // First_Name (Index 1)
-            role: data[i][5]  // Access_Role (Index 5)
+        if (isActive) {
+          match = { 
+            status: "success", 
+            name: row[colIdx.name], 
+            role: (colIdx.role !== -1) ? row[colIdx.role] : "Staff" 
           };
         } else {
           accountDisabled = true;
@@ -191,25 +282,15 @@ function handleAuth(pinInput) {
       }
     }
 
-    if (match) {
-      return returnJSON(match);
-    } else if (accountDisabled) {
-      return returnJSON({ status: "fail", message: "Account Disabled" });
-    } else {
-      return returnJSON({ status: "fail", message: "Invalid PIN" });
-    }
+    if (match) return returnJSON(match);
+    else if (accountDisabled) return returnJSON({ status: "fail", message: "Account Disabled" });
+    else return returnJSON({ status: "fail", message: "Invalid PIN" });
 
   } catch (e) {
     return returnJSON({ status: "error", message: e.toString() });
   }
 }
 
-/**
- * UTILITY: JSON Formatter
- */
 function returnJSON(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
-
-
