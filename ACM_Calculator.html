@@ -3,21 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACM Calculator v5.7</title>
+    <title>ACM Calculator v5.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* CORE STYLES */
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        
         .toggle-checkbox:checked { right: 0; border-color: #68D391; }
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+        
         .side-btn.selected { background-color: #2563eb; color: white; border-color: #2563eb; }
+        
+        /* VIEW MODE LOGIC */
         .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
         .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
         .mode-prod .prod-hidden { display: none !important; }
         .mode-prod .prod-width { width: 100% !important; text-align: right; }
+        
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
+        
         .blur-section { filter: grayscale(100%) opacity(0.5); pointer-events: none; }
     </style>
     <script>
@@ -27,9 +34,9 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-<div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+<div id="main-card" class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
 
-    <!-- HEADER -->
+    <!-- 1. AUTH HEADER -->
     <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
         <div class="flex gap-3">
             <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
@@ -38,15 +45,18 @@
         <button onclick="logout()" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
     </div>
 
+    <!-- 2. PRODUCT HEADER -->
     <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
-        <a href="menu.html" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+        <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
         </a>
         <div class="text-center">
             <h2 class="text-lg font-bold" id="product-label">ACM Signs</h2>
-            <div class="flex items-center justify-center gap-2 text-[10px]">
+            <!-- CLEAN STATUS INDICATOR -->
+            <div class="flex items-center justify-center gap-2 text-[10px] mt-0.5">
                 <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span id="status-text" class="text-gray-400">CONNECTING...</span>
+                <span id="status-text" class="font-bold text-gray-400">CONNECTING...</span>
+                <span id="version-display" class="text-gray-600 font-mono hidden"></span>
             </div>
         </div>
         <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
@@ -82,7 +92,6 @@
         </div>
 
         <div class="space-y-2 border-t border-gray-100 pt-2">
-            
             <!-- SHAPE -->
             <div class="flex flex-col gap-2 p-2 bg-gray-50 border border-gray-200 rounded">
                 <div class="flex items-center justify-between">
@@ -92,7 +101,6 @@
                         <option value="Contour">Contour (CNC)</option>
                     </select>
                 </div>
-                
                 <!-- Rounded Corner Toggle (Hidden if Contour) -->
                 <div class="flex items-center justify-between border-t border-gray-200 pt-2 hidden" id="opt-rounded">
                     <span class="text-[10px] font-bold text-gray-500 pl-2">Rounded Corners?</span>
@@ -135,7 +143,7 @@
 
     <!-- METRICS -->
     <div class="border-t border-gray-200">
-        <div class="flex">
+        <div class="flex" id="tab-container">
             <button onclick="switchTab('retail')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-retail">RETAIL</button>
             <button onclick="switchTab('cost')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-cost">IN-HOUSE</button>
             <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
@@ -147,8 +155,9 @@
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Unit Price</span>
                 <div class="text-right"><span class="text-2xl font-bold text-gray-900" id="unit-price">$0.00</span></div>
             </div>
-
+            
             <div class="border-t border-gray-100 my-3"></div>
+            
             <div class="space-y-1 text-xs text-gray-600">
                 <div class="flex justify-between"><span>Base Print (<span id="lbl-mat">3mm</span>):</span><span id="ret-print" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-blue-700" id="row-ret-lam"><span>Laminate:</span><span id="ret-lam" class="font-bold">$0.00</span></div>
@@ -168,10 +177,12 @@
         <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
             <div class="space-y-2 text-xs text-gray-700">
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
+                
                 <div class="bg-yellow-100 border border-yellow-200 p-2 rounded text-[10px] mb-2">
                     <div class="flex justify-between"><span class="text-yellow-800 font-bold">OPTIMAL STOCK:</span><span id="opt-stock-size" class="font-mono font-bold text-blue-700">---</span></div>
                     <div class="flex justify-between mt-1"><span>Sheet Yield:</span><span id="opt-yield" class="font-bold">0</span></div>
                 </div>
+
                 <div class="flex justify-between"><span>Substrate Cost:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Laminate:</span> <span id="cost-lam" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Ink (HP Latex):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
@@ -181,13 +192,13 @@
                 
                 <div class="flex justify-between items-center"><span class="w-1/3">Setup:</span><span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-lab-setup" class="w-1/3 text-right font-bold">$0.00</span></div>
                 <div class="flex justify-between items-center"><span class="w-1/3">Print:</span><span id="time-run" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-run" class="w-1/3 text-right font-bold">$0.00</span></div>
-                
                 <div class="flex justify-between items-center hidden" id="row-lab-cnc"><span class="w-1/3">CNC Router:</span><span id="time-cnc" class="w-1/3 text-right text-[10px] bg-orange-100 rounded px-1">0m</span><span id="cost-cnc" class="w-1/3 text-right font-bold">$0.00</span></div>
                 <div class="flex justify-between items-center hidden" id="row-lab-shear"><span class="w-1/3">Shearing:</span><span id="time-shear" class="w-1/3 text-right text-[10px] bg-gray-200 rounded px-1">0m</span><span id="cost-shear" class="w-1/3 text-right font-bold">$0.00</span></div>
                 <div class="flex justify-between items-center hidden" id="row-lab-round"><span class="w-1/3">Rounded Cnrs:</span><span id="time-round" class="w-1/3 text-right text-[10px] bg-gray-200 rounded px-1">0m</span><span id="cost-round" class="w-1/3 text-right font-bold">$0.00</span></div>
 
                 <div class="border-t border-yellow-200 my-2 pt-1"></div>
                 <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
+                
                 <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
                     <div class="flex justify-between items-end">
                         <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
@@ -229,24 +240,40 @@
     let backend = {};
     let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
 
+    // --- STRICT SESSION SECURITY ---
     function initSession() {
         const params = new URLSearchParams(window.location.search);
         const urlMode = params.get('mode');
         const storeUser = sessionStorage.getItem('signos_user');
         const storeRole = sessionStorage.getItem('signos_role');
+
         if(storeUser) currentUser.name = storeUser;
         if(storeRole) currentUser.role = storeRole;
-        if(urlMode) currentUser.mode = urlMode;
-        else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
-        else if(currentUser.role === 'PROD') currentUser.mode = 'production';
-        else currentUser.mode = 'sales';
+
+        // STRICT ROLE ENFORCEMENT
+        if (currentUser.role === 'ADMIN') {
+            currentUser.mode = urlMode || 'dev';
+        } else if (currentUser.role === 'PROD') {
+            currentUser.mode = 'production';
+        } else {
+            currentUser.mode = 'sales';
+        }
+
         document.getElementById('auth-user').innerText = currentUser.name;
         document.getElementById('auth-role').innerText = currentUser.role;
+
         const body = document.body;
         body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
-        if(currentUser.mode === 'sales') { body.classList.add('mode-sales'); switchTab('retail'); }
-        else if (currentUser.mode === 'production') { body.classList.add('mode-prod'); switchTab('cost'); }
-        else { body.classList.add('mode-admin'); }
+        
+        if(currentUser.mode === 'sales') { 
+            body.classList.add('mode-sales'); 
+            switchTab('retail'); 
+        } else if (currentUser.mode === 'production') { 
+            body.classList.add('mode-prod'); 
+            switchTab('cost'); 
+        } else { 
+            body.classList.add('mode-admin'); 
+        }
     }
 
     function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
@@ -270,23 +297,49 @@
 
     window.onload = async function() {
         initSession();
-        toggleRounded(); 
+        toggleRounded();
+        
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
+        const vDisplay = document.getElementById("version-display");
+        
         try {
+            // 1. Fetch Backend Data
             const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
             const data = await response.json();
             if(data.error) throw new Error(data.error);
             backend = data;
-            statusText.innerText = "ONLINE";
-            statusText.classList.replace("text-gray-400", "text-green-500");
-            statusDot.classList.replace("bg-red-500", "bg-green-500");
+
+            // 2. Kill Switch Logic
+            const isLive = (backend.Is_Live === undefined) ? true : (backend.Is_Live === true || backend.Is_Live === "TRUE");
+            if (!isLive && currentUser.role !== 'ADMIN') {
+                document.getElementById('main-card').innerHTML = `
+                    <div class="p-10 text-center">
+                        <h1 class="text-xl font-black text-gray-400">MODULE OFFLINE</h1>
+                        <p class="text-xs text-gray-500 mt-2">This calculator is currently disabled by administrators.</p>
+                        <button onclick="goBack()" class="mt-6 bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs">Return to Menu</button>
+                    </div>`;
+                return;
+            }
+
+            // 3. Status & Header Update
+            const isDev = currentUser.mode === 'dev';
+            statusText.innerText = isDev ? "DEV MODE" : "ONLINE";
+            statusText.className = isDev ? "font-bold text-orange-500" : "font-bold text-green-500";
+            statusDot.className = isDev ? "w-2 h-2 rounded-full bg-orange-500" : "w-2 h-2 rounded-full bg-green-500";
             statusDot.classList.remove("animate-pulse");
+
+            // Version Display
+            const ver = isDev ? (backend.Sys_Version_Dev || 'v0.0') : (backend.Sys_Version_Live || 'v0.0');
+            vDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
+            vDisplay.classList.remove('hidden');
+
             if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
             calculate();
+
         } catch(e) {
             statusText.innerText = "OFFLINE";
-            statusText.classList.replace("text-gray-400", "text-red-500");
+            statusText.className = "font-bold text-red-500";
             document.getElementById("error-msg").innerText = e.message;
             document.getElementById("error-msg").classList.remove("hidden");
         }
@@ -295,16 +348,20 @@
     function optimizeSheet(w, h, qty, mat) {
         const sizes = [{ id: '4x8', sw: 48, sh: 96 }, { id: '5x10', sw: 60, sh: 120 }];
         if(mat === '3mm') sizes.push({ id: '4x10', sw: 48, sh: 120 });
+        
         let bestOption = { id: 'N/A', cost: Infinity, sheets: 0, yield: 0 };
+        
         sizes.forEach(stock => {
             const fit1 = Math.floor(stock.sw / w) * Math.floor(stock.sh / h);
             const fit2 = Math.floor(stock.sw / h) * Math.floor(stock.sh / w);
             const yieldPerSheet = Math.max(fit1, fit2);
+            
             if (yieldPerSheet > 0) {
                 const sheetsNeeded = Math.ceil(qty / yieldPerSheet);
                 const key = `Cost_Stock_${mat}_${stock.id}`;
                 let unitCost = parseFloat(backend[key] || 100);
                 const totalRunCost = sheetsNeeded * unitCost;
+                
                 if (totalRunCost < bestOption.cost) bestOption = { id: stock.id, cost: totalRunCost, sheets: sheetsNeeded, yield: yieldPerSheet };
             }
         });
@@ -313,8 +370,7 @@
 
     function calculate() {
         if(!backend.Item_Name) return;
-        
-        validateInputs(); // Force inputs to be > 0
+        validateInputs(); 
 
         const w = parseFloat(document.getElementById('width').value)||0;
         const h = parseFloat(document.getElementById('height').value)||0;
@@ -346,15 +402,12 @@
         let baseRate = mat === '3mm' ? parseFloat(backend.Retail_Price_3mm_Base||14) : parseFloat(backend.Retail_Price_6mm_Base||16.5);
         if(sides===2) baseRate += (mat === '3mm' ? parseFloat(backend.Retail_Adder_DS_3mm||7) : parseFloat(backend.Retail_Adder_DS_6mm||8.25));
 
-        // NO VOLUME DISCOUNTS
-        const unitRate = baseRate; 
-
+        const unitRate = baseRate;
         let retailPrint = unitRate * totalSqFt;
         let retailContour = 0;
         let retailShear = 0;
         let retailRounded = 0;
         let retailLam = 0;
-
         const rateMinute = parseFloat(backend.Retail_Rate_Minute || 1.25);
 
         // SHEAR (Square)
@@ -365,7 +418,7 @@
                 retailShear = shearMins * rateMinute;
             }
         }
-        
+
         // CONTOUR (CNC)
         if(cutType === 'Contour') {
             retailContour = retailPrint * parseFloat(backend.Retail_Adder_Contour_Pct || 0.35);
@@ -379,7 +432,6 @@
         if(hasLam) retailLam = qty * parseFloat(backend.Retail_Price_Lam || 8.00);
 
         let feeDesign = incDesign ? parseFloat(backend.Retail_Fee_Design || 45) : 0;
-        
         let setupMins = parseFloat(backend.Time_Setup_Base || 5);
         if (setupPerFile && files > 1) {
             setupMins += ((files - 1) * parseFloat(backend.Time_Setup_Add || 3));
@@ -418,22 +470,20 @@
             
             const costMatRaw = optimization.cost * parseFloat(backend.Waste_Factor || 1.2);
             document.getElementById('cost-mat').innerText = fmt(costMatRaw);
-
+            
             const costInk = totalSqFt * parseFloat(backend.Cost_Ink_Latex || 0.16) * sides;
             document.getElementById('cost-ink').innerText = fmt(costInk);
-
+            
             const costLam = hasLam ? (totalSqFt * parseFloat(backend.Cost_Lam_SqFt || 0.36)) : 0;
             document.getElementById('cost-lam').innerText = fmt(costLam);
 
-            const rateDes = parseFloat(backend.Rate_Design || 35);
             const rateOp = parseFloat(backend.Rate_Operator || 25);
             const rateShop = parseFloat(backend.Rate_Shop_Labor || 20);
             const rateCNC = parseFloat(backend.Rate_CNC_Labor || 35);
             const rateMachPrint = parseFloat(backend.Rate_Machine_Print || 45);
             const rateMachCNC = parseFloat(backend.Rate_Machine_CNC || 35);
 
-            const timeDesign = incDesign ? (15 * files)/60 : 0;
-            const timeSetup = setupMins/60; 
+            const timeSetup = setupMins/60;
             const costSetup = timeSetup * rateOp;
 
             const speedPrint = parseFloat(backend.Speed_Print_LF || 25);
@@ -441,12 +491,9 @@
             const runTime = (feedLen * qty * sides) / speedPrint;
             const costRun = runTime * rateMachPrint;
 
-            let timeCNC = 0;
-            let costCNC = 0;
-            let timeShear = 0;
-            let costShear = 0;
-            let timeRound = 0;
-            let costRound = 0;
+            let timeCNC = 0, costCNC = 0;
+            let timeShear = 0, costShear = 0;
+            let timeRound = 0, costRound = 0;
 
             if(cutType === 'Contour') {
                 const timeSetupCNC = parseFloat(backend.Time_Setup_CNC || 10)/60;
@@ -496,6 +543,7 @@
         const vKeySqFt = `S365_${mat}_${sides===1?'SS':'DS'}_SqFt`;
         const rateSqFt = parseFloat(backend[vKeySqFt] || 0);
         let vendPrint = totalSqFt * rateSqFt;
+        
         let vendExtras = 0;
         if(hasLam) vendExtras += (qty * parseFloat(backend.S365_Gloss_Rate || 4));
         if(cutType === 'Contour') vendExtras += (vendPrint * parseFloat(backend.S365_Contour_Pct || 0.1));
@@ -505,6 +553,7 @@
         const maxDim = Math.max(w,h);
         const minDim = Math.min(w,h);
         const freightCost = parseFloat(backend.Ship_Freight_Cost || 199);
+        
         let vendShip = 0;
         let shipTier = "T1";
 
@@ -530,17 +579,15 @@
         if((price-totalCost) < 0 && profVend < 0) { profitWarn.classList.remove('hidden'); profitWarn.classList.add('warn-pulse'); }
         else { profitWarn.classList.add('hidden'); profitWarn.classList.remove('warn-pulse'); }
 
-        // Updated Description Generator
+        // Description Generator
         const sideTxt = sides === 1 ? "ONE side" : "TWO sides";
         let lamTxt = "";
-        if(hasLam) {
-            lamTxt = ` and ${lamType.toLowerCase()} UV protective overlaminate`;
-        }
+        if(hasLam) lamTxt = ` and ${lamType.toLowerCase()} UV protective overlaminate`;
         
         let cutTxt = "";
         if(cutType === 'Square') cutTxt = "shear cut";
         else if(cutType === 'Contour') cutTxt = "CNC contour cut shape";
-
+        
         let extraTxt = "";
         if(isRounded) extraTxt = " with rounded corners";
 
@@ -550,5 +597,3 @@
 </script>
 </body>
 </html>
-
-
