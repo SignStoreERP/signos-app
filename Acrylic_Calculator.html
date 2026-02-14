@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acrylic Calculator v3.2</title>
+    <title>Acrylic Calculator v3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .toggle-checkbox:checked { right: 0; border-color: #68D391; }
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
-        
         .mode-sales #btn-cost, .mode-sales #btn-vend { display: none !important; }
         .mode-prod #btn-retail, .mode-prod #btn-vend { display: none !important; }
         .mode-prod .prod-hidden { display: none !important; }
         .mode-prod .prod-width { width: 100% !important; text-align: right; }
-        
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
         .blur-section { filter: grayscale(100%) opacity(0.5); pointer-events: none; }
@@ -24,9 +23,9 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-<div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+<div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200" id="main-card">
 
-    <!-- HEADER -->
+    <!-- AUTH HEADER -->
     <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
         <div class="flex gap-3">
             <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
@@ -35,15 +34,17 @@
         <button onclick="logout()" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
     </div>
 
+    <!-- PRODUCT HEADER -->
     <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
-        <a href="menu.html" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+        <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
         </a>
         <div class="text-center">
             <h2 class="text-lg font-bold" id="product-label">Acrylic Signs</h2>
-            <div class="flex items-center justify-center gap-2 text-[10px]">
+            <div class="flex items-center justify-center gap-2 text-[10px] mt-0.5">
                 <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span id="status-text" class="text-gray-400">CONNECTING...</span>
+                <span id="status-text" class="font-bold text-gray-400">CONNECTING...</span>
+                <span id="version-display" class="text-gray-600 font-mono hidden"></span>
             </div>
         </div>
         <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
@@ -54,7 +55,6 @@
 
     <!-- INPUTS -->
     <div class="p-6 space-y-4">
-        
         <div class="grid grid-cols-2 gap-4">
             <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="width" value="24" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()"></div>
             <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="height" value="18" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="calculate()"></div>
@@ -83,7 +83,6 @@
         </div>
 
         <div class="space-y-2 border-t border-gray-100 pt-2">
-            
             <!-- PAINT TOGGLE -->
             <div class="flex flex-col bg-gray-50 border border-gray-200 rounded">
                 <div class="flex items-center justify-between p-2">
@@ -159,14 +158,12 @@
                     <label for="inc-design" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
                 </div>
             </div>
-
         </div>
-
     </div>
 
     <!-- METRICS -->
     <div class="border-t border-gray-200">
-        <div class="flex">
+        <div class="flex" id="tab-container">
             <button onclick="switchTab('retail')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn active" id="btn-retail">RETAIL</button>
             <button onclick="switchTab('cost')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-cost">IN-HOUSE</button>
             <button onclick="switchTab('vend')" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 tab-btn" id="btn-vend">VENDED</button>
@@ -190,7 +187,6 @@
             </div>
 
             <div class="border-t border-gray-100 my-3"></div>
-            
             <div class="space-y-1 text-xs text-gray-600">
                 <div class="flex justify-between"><span>Base Print (<span id="lbl-mat">1/8"</span>):</span><span id="ret-print" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-indigo-700" id="row-ret-paint"><span>Paint Service:</span><span id="ret-paint" class="font-bold">$0.00</span></div>
@@ -210,19 +206,20 @@
         <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
             <div class="space-y-2 text-xs text-gray-700">
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
+                
+                <div class="bg-yellow-100 border border-yellow-200 p-2 rounded text-[9px] mb-2">
+                    <div class="flex justify-between"><span class="text-yellow-800 font-bold">OPTIMIZATION (64" BED):</span><span id="opt-yield" class="font-bold text-blue-700">0 Across</span></div>
+                    <div class="flex justify-between"><span>Linear Feed:</span><span id="opt-feed" class="font-bold">0"</span></div>
+                </div>
+
                 <div class="flex justify-between"><span>Acrylic Sheet:</span> <span id="cost-mat" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Ink (UV):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden" id="row-cost-paint"><span>Paint Materials:</span> <span id="cost-paint-mat" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden" id="row-cost-hw"><span>Hardware:</span> <span id="cost-hw" class="font-bold">$0.00</span></div>
 
                 <div class="border-t border-yellow-200 my-1 pt-1"></div>
-
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
-                <div class="bg-yellow-100 border border-yellow-200 p-2 rounded text-[9px] mb-2">
-                    <div class="flex justify-between"><span class="text-yellow-800 font-bold">OPTIMIZATION (64" BED):</span><span id="opt-yield" class="font-bold text-blue-700">0 Across</span></div>
-                    <div class="flex justify-between"><span>Linear Feed:</span><span id="opt-feed" class="font-bold">0"</span></div>
-                </div>
-
+                
                 <div class="flex justify-between items-center"><span class="w-1/3">Setup:</span><span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-lab-setup" class="w-1/3 text-right font-bold">$0.00</span></div>
                 <div class="flex justify-between items-center"><span class="w-1/3">Print (R1000):</span><span id="time-run" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-run" class="w-1/3 text-right font-bold">$0.00</span></div>
                 <div class="flex justify-between items-center hidden" id="row-lab-paint"><span class="w-1/3">Paint Booth:</span><span id="time-paint" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1">0m</span><span id="cost-lab-paint" class="w-1/3 text-right font-bold">$0.00</span></div>
@@ -230,6 +227,7 @@
 
                 <div class="border-t border-yellow-200 my-2 pt-1"></div>
                 <div class="flex justify-between text-yellow-900 font-bold text-sm"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
+                
                 <div class="mt-4 bg-white p-3 rounded border border-yellow-200 shadow-sm">
                     <div class="flex justify-between items-end">
                         <div><div class="text-[10px] uppercase font-bold text-gray-400">Net Profit</div><div class="text-xl font-bold text-green-600" id="profit-inhouse">$0.00</div></div>
@@ -244,6 +242,7 @@
             <div id="vend-paint-warn" class="hidden mb-4 p-2 bg-orange-100 border border-orange-300 text-orange-800 rounded text-xs text-center font-bold">
                 ⚠️ Service Unavailable<br><span class="text-[9px] font-normal">Vendor does not offer Custom Paint / PMS</span>
             </div>
+            
             <div class="space-y-2 text-xs text-gray-700">
                 <div class="flex justify-between"><span>Wholesale Print:</span> <span id="vend-print" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between text-indigo-800"><span>Hardware/Finish:</span> <span id="vend-extras" class="font-bold">$0.00</span></div>
@@ -260,6 +259,7 @@
         </div>
     </div>
 
+    <!-- DESCRIPTION -->
     <div class="bg-gray-50 p-4 border-t border-gray-200">
         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
         <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
@@ -268,12 +268,10 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/a/macros/signstoremacon.com/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
     const TAB_NAME = "PROD_Acrylic_Signs";
     let backend = {};
     let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
 
-    // --- EXPANDED COLOR DATABASE (70+ Colors) ---
     const SW_COLORS = [
         {code:"SW7005", name:"Pure White", hex:"#EDECE6"}, {code:"SW7006", name:"Extra White", hex:"#EEEFEA"},
         {code:"SW6258", name:"Tricorn Black", hex:"#2F2F30"}, {code:"SW7069", name:"Iron Ore", hex:"#434341"},
@@ -308,9 +306,8 @@
         if(storeUser) currentUser.name = storeUser;
         if(storeRole) currentUser.role = storeRole;
 
-        if(urlMode) currentUser.mode = urlMode;
-        else if(currentUser.role === 'ADMIN') currentUser.mode = 'admin';
-        else if(currentUser.role === 'PROD') currentUser.mode = 'production';
+        if (currentUser.role === 'ADMIN') currentUser.mode = urlMode || 'dev';
+        else if (currentUser.role === 'PROD') currentUser.mode = 'production';
         else currentUser.mode = 'sales';
 
         document.getElementById('auth-user').innerText = currentUser.name;
@@ -318,21 +315,13 @@
 
         const body = document.body;
         body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
+        
         if(currentUser.mode === 'sales') { body.classList.add('mode-sales'); switchTab('retail'); }
         else if (currentUser.mode === 'production') { body.classList.add('mode-prod'); switchTab('cost'); }
         else { body.classList.add('mode-admin'); }
     }
 
-    function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
-    function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
-
-    function switchTab(id) {
-        document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
-        document.getElementById('tab-'+id).classList.add('active');
-        document.getElementById('btn-'+id).classList.add('active');
-    }
-
+    function switchTab(id) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-'+id).classList.add('active'); }
     function toggleDiscounts() { document.getElementById('discount-table').classList.toggle('hidden'); }
     function toggleOpt(id) { document.getElementById(id).classList.toggle('hidden'); }
 
@@ -340,9 +329,7 @@
         const list = document.getElementById('sw-colors');
         SW_COLORS.forEach(c => {
             let opt = document.createElement('option');
-            opt.value = c.code;
-            opt.innerText = c.name;
-            list.appendChild(opt);
+            opt.value = c.code; opt.innerText = c.name; list.appendChild(opt);
         });
     }
 
@@ -352,13 +339,8 @@
             const swatch = document.getElementById('paint-swatch');
             const nameLabel = document.getElementById('paint-name');
             const match = SW_COLORS.find(c => c.code === code);
-            
-            if (match) {
-                swatch.value = match.hex;
-                nameLabel.innerText = match.name;
-            } else {
-                nameLabel.innerText = "Custom/Unknown";
-            }
+            if (match) { swatch.value = match.hex; nameLabel.innerText = match.name; } 
+            else { nameLabel.innerText = "Custom/Unknown"; }
         }
     }
 
@@ -367,23 +349,38 @@
         populateColors();
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
+        const vDisplay = document.getElementById("version-display");
+        
         try {
-            const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
+            // TELEMETRY
+            const response = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}&ip=${clientIP}&user=${currentUser.name}&role=${currentUser.role}&req=view_module`);
             const data = await response.json();
             if(data.error) throw new Error(data.error);
             backend = data;
-            
-            statusText.innerText = "ONLINE";
-            statusText.classList.replace("text-gray-400", "text-green-500");
-            statusDot.classList.replace("bg-red-500", "bg-green-500");
+
+            // Kill Switch
+            const isLive = (backend.Is_Live === undefined) ? true : (backend.Is_Live === true || backend.Is_Live === "TRUE");
+            if (!isLive && currentUser.role !== 'ADMIN') {
+                document.getElementById('main-card').innerHTML = `<div class="p-10 text-center"><h1 class="text-xl font-black text-gray-400">MODULE OFFLINE</h1><button onclick="goBack()" class="mt-6 bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs">Return to Menu</button></div>`;
+                return;
+            }
+
+            const isDev = currentUser.mode === 'dev';
+            statusText.innerText = isDev ? "DEV MODE" : "ONLINE";
+            statusText.className = isDev ? "font-bold text-orange-500" : "font-bold text-green-500";
+            statusDot.className = isDev ? "w-2 h-2 rounded-full bg-orange-500" : "w-2 h-2 rounded-full bg-green-500";
             statusDot.classList.remove("animate-pulse");
-            
+
+            const ver = isDev ? (backend.Sys_Version_Dev || 'v0.0') : (backend.Sys_Version_Live || 'v0.0');
+            vDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
+            vDisplay.classList.remove('hidden');
+
             if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
-            
             calculate();
+
         } catch(e) {
             statusText.innerText = "OFFLINE";
-            statusText.classList.replace("text-gray-400", "text-red-500");
+            statusText.className = "font-bold text-red-500";
             document.getElementById("error-msg").innerText = e.message;
             document.getElementById("error-msg").classList.remove("hidden");
         }
@@ -430,16 +427,10 @@
         let retailPrint = unitRate * totalSqFt;
 
         let retailPaint = 0;
-        if (hasPaint) {
-            retailPaint = (totalSqFt * parseFloat(backend.Retail_Adder_Paint_SqFt || 20)) + parseFloat(backend.Retail_Fee_Paint_Setup || 65);
-        }
+        if (hasPaint) { retailPaint = (totalSqFt * parseFloat(backend.Retail_Adder_Paint_SqFt || 20)) + parseFloat(backend.Retail_Fee_Paint_Setup || 65); }
 
         let retailPMS = 0;
-        if (hasPMS) {
-            // Logic: PMS Match usually adds a setup fee similar to Paint, plus maybe a smaller adder? 
-            // For now, mirroring Paint structure but assuming it's a specific match fee.
-            retailPMS = parseFloat(backend.Retail_Fee_Paint_Setup || 65); 
-        }
+        if (hasPMS) { retailPMS = parseFloat(backend.Retail_Fee_Paint_Setup || 65); }
 
         let retailContour = 0;
         if (isContour) retailContour = retailPrint * parseFloat(backend.Retail_Adder_Contour_Pct || 0.25);
@@ -457,7 +448,6 @@
         const minOrder = parseFloat(backend.Retail_Min_Order || 75);
         if(price < minOrder) price = minOrder;
 
-        // Retail UI
         const fmt = (n) => "$" + n.toFixed(2);
         const pct = (n) => (n * 100).toFixed(1) + "%";
         const fmtTime = (h) => { const mins = Math.round(h*60); return h >= 1 ? h.toFixed(1)+"h" : mins+"m"; };
@@ -474,7 +464,7 @@
         if(retailStandoff > 0) { document.getElementById('row-ret-standoff').classList.remove('hidden'); document.getElementById('ret-standoff').innerText = fmt(retailStandoff); } else document.getElementById('row-ret-standoff').classList.add('hidden');
         if(feeDesign > 0) { document.getElementById('row-ret-design').classList.remove('hidden'); document.getElementById('ret-design').innerText = fmt(feeDesign); } else document.getElementById('row-ret-design').classList.add('hidden');
 
-        // Discount Table Render
+        // Discount Table
         let rowsHtml = "";
         tiers.forEach(tier => {
             const trRate = baseRate * (1 - tier.d);
@@ -484,34 +474,31 @@
             const trContour = isContour ? (trPrint * parseFloat(backend.Retail_Adder_Contour_Pct||0.25)) : 0;
             const hwCount = hasStandoffs ? parseInt(document.getElementById('standoff-qty').value) : 0;
             const trHw = hasStandoffs ? (hwCount * tier.q * parseFloat(backend.Retail_Price_Standoff||8)) : 0;
-            
             const trTotalRaw = trPrint + trPaint + trPMS + trContour + trHw + feeSetup + feeDesign;
             const trFinal = Math.max(trTotalRaw, minOrder);
             const trUnit = trFinal / tier.q;
-            
             const discDisplay = tier.d > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.d*100).toFixed(0)}%</span>` : "";
-            
             rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}${discDisplay}</td><td class="pr-4 py-1 text-blue-600 font-bold">$${trUnit.toFixed(2)}</td><td class="py-1 text-green-600 font-bold">${(tier.d*100).toFixed(0)}% Off</td></tr>`;
         });
         document.getElementById('discount-rows').innerHTML = rowsHtml;
 
         // --- 2. IN-HOUSE COST (LINEAR FEED LOGIC) ---
-        const bedW = 64; 
+        const bedW = 64;
         let fitPerRow = 0;
         let feedLen = 0;
         const fit1 = Math.floor(bedW / w);
         const fit2 = Math.floor(bedW / h);
         let totalFeedInches = 0;
-        
-        if (fit1 > 0 && fit1 >= fit2) { fitPerRow = fit1; const rows = Math.ceil(qty / fitPerRow); feedLen = h; totalFeedInches = rows * feedLen; } 
+
+        if (fit1 > 0 && fit1 >= fit2) { fitPerRow = fit1; const rows = Math.ceil(qty / fitPerRow); feedLen = h; totalFeedInches = rows * feedLen; }
         else if (fit2 > 0) { fitPerRow = fit2; const rows = Math.ceil(qty / fitPerRow); feedLen = w; totalFeedInches = rows * feedLen; }
-        
+
         document.getElementById('opt-yield').innerText = fitPerRow > 0 ? `${fitPerRow} Across` : "Too Wide";
         document.getElementById('opt-feed').innerText = (totalFeedInches / 12).toFixed(1) + " ft";
 
         const sheetCost = mat === '187' ? parseFloat(backend.Cost_Sheet_187||248) : parseFloat(backend.Cost_Sheet_125||231);
         const costMat = (totalSqFt / 32) * sheetCost * parseFloat(backend.Waste_Factor || 1.2);
-        
+
         let inkRate = parseFloat(backend.Cost_Ink_CMYK || 0.16);
         if(mode !== '1st_Surf') inkRate += parseFloat(backend.Cost_Ink_White || 0.10);
         const costInk = totalSqFt * inkRate;
@@ -520,14 +507,12 @@
         let costPaintMat = 0;
         let costPaintLab = 0;
         let timePaint = 0;
-        
-        // Combine Paint and PMS logic for In-House cost (Similar process)
+
         if(hasPaint || hasPMS) {
-            // PMS Match assumes using Paint materials
             costPaintMat = totalSqFt * parseFloat(backend.Cost_Paint_SqFt || 2.50);
-            const tSetup = parseFloat(backend.Time_Paint_Setup || 20); 
-            const tSpray = totalSqFt * parseFloat(backend.Time_Paint_SqFt || 5); 
-            timePaint = (tSetup + tSpray) / 60; 
+            const tSetup = parseFloat(backend.Time_Paint_Setup || 20);
+            const tSpray = totalSqFt * parseFloat(backend.Time_Paint_SqFt || 5);
+            timePaint = (tSetup + tSpray) / 60;
             costPaintLab = timePaint * parseFloat(backend.Rate_Paint_Labor || 30);
         }
 
@@ -537,7 +522,6 @@
             costHw = hwCount * qty * parseFloat(backend.Cost_Standoff || 2.50);
         }
 
-        const rateDes = parseFloat(backend.Rate_Design || 35);
         const rateOp = parseFloat(backend.Rate_Operator || 25);
         const rateMach = parseFloat(backend.Rate_Machine || 45);
         const rateCNC = parseFloat(backend.Rate_CNC || 35);
@@ -549,7 +533,7 @@
         const runTime = (totalFeedInches / 12) / speedPrint;
         const costRun = runTime * rateMach;
 
-        const timeCNC = (qty * (isContour ? 12 : 4)) / 60; 
+        const timeCNC = (qty * (isContour ? 12 : 4)) / 60;
         const costCNC = timeCNC * rateCNC;
 
         const totalCost = costMat + costInk + costPaintMat + costHw + costSetup + costRun + costCNC + costPaintLab;
@@ -557,21 +541,16 @@
 
         document.getElementById('cost-mat').innerText = fmt(costMat);
         document.getElementById('cost-ink').innerText = fmt(costInk);
-        
         if(costPaintMat > 0) { document.getElementById('row-cost-paint').classList.remove('hidden'); document.getElementById('cost-paint-mat').innerText = fmt(costPaintMat); } else document.getElementById('row-cost-paint').classList.add('hidden');
         if(costHw > 0) { document.getElementById('row-cost-hw').classList.remove('hidden'); document.getElementById('cost-hw').innerText = fmt(costHw); } else document.getElementById('row-cost-hw').classList.add('hidden');
 
         document.getElementById('time-setup').innerText = fmtTime(timeSetup);
         document.getElementById('cost-lab-setup').innerText = fmt(costSetup);
-        
         document.getElementById('time-run').innerText = fmtTime(runTime);
         document.getElementById('cost-run').innerText = fmt(costRun);
-        
         if(timePaint > 0) { document.getElementById('row-lab-paint').classList.remove('hidden'); document.getElementById('time-paint').innerText = fmtTime(timePaint); document.getElementById('cost-lab-paint').innerText = fmt(costPaintLab); } else document.getElementById('row-lab-paint').classList.add('hidden');
-
         document.getElementById('time-cnc').innerText = fmtTime(timeCNC);
         document.getElementById('cost-cnc').innerText = fmt(costCNC);
-        
         document.getElementById('cost-total').innerText = fmt(totalCost);
         document.getElementById('profit-inhouse').innerText = fmt(prof);
         if(price>0) document.getElementById('margin-inhouse').innerText = pct(prof/price);
@@ -621,16 +600,15 @@
         if(mode === '2nd_Std') finishTxt.push("2nd Surface Print (Color+White)");
         else if(mode === '2nd_Block') finishTxt.push("2nd Surface Blockout (Day/Night)");
         else finishTxt.push("1st Surface Direct Print");
-        
+
         if(hasPaint) finishTxt.push(`Painted Background (${document.getElementById('paint-code').value || 'Custom'})`);
         if(hasPMS) finishTxt.push(`PMS Match (${document.getElementById('pms-code').value || 'TBD'})`);
         if(isContour) finishTxt.push("Contour Cut Shape");
         if(hasStandoffs) finishTxt.push(`${document.getElementById('standoff-qty').value} ${document.getElementById('standoff-col').value} Standoffs`);
-        
+
         const desc = `(x${qty}) ${w}" x ${h}" ${mat === '187' ? '3/16"' : '1/8"'} Acrylic Sign. ${finishTxt.join(". ")}.`;
         document.getElementById('job-desc').value = desc;
     }
 </script>
 </body>
 </html>
-
