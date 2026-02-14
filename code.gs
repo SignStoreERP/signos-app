@@ -1,11 +1,11 @@
 /**
- * SignOS API v4.0
+ * SignOS API v4.1 (Fixed Auth)
  * Supports: Key-Value Configs, Table Data, and Authentication
  */
 
 function doGet(e) {
   const params = e.parameter;
-  
+ 
   // 1. Auth Request (Gateway)
   // Usage: ?req=auth&pin=123456
   if (params.req === "auth") {
@@ -41,8 +41,7 @@ function fetchTable(tabName) {
 
     if (values.length < 2) return returnJSON([]); // Empty or header only
 
-    // *** THE FIX: ADD [0] TO SELECT THE FIRST ROW ***
-    const headers = values[0]; 
+    const headers = values[0];
     const rows = values.slice(1); // Rest are data
 
     // Map rows to objects based on headers
@@ -73,7 +72,7 @@ function fetchConfig(tabName) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(tabName);
-    
+   
     if (!sheet) {
       return returnJSON({ error: "Tab '" + tabName + "' not found." });
     }
@@ -88,7 +87,7 @@ function fetchConfig(tabName) {
     data.forEach(row => {
       const key = row [0];   // Column A
       const value = row[1]; // Column B
-      
+     
       // Safety check for empty keys
       if (key && key !== "") {
         config[key] = value;
@@ -103,8 +102,8 @@ function fetchConfig(tabName) {
 }
 
 /**
- * FEATURE 3: Authentication
- * Checks Master_Staff for PIN match.
+ * FEATURE 3: Authentication (FIXED)
+ * Checks Master_Staff for PIN match AND Active Status.
  */
 function handleAuth(pinInput) {
   try {
@@ -113,40 +112,43 @@ function handleAuth(pinInput) {
     
     if (!sheet) return returnJSON({ status: "error", message: "Master_Staff missing" });
 
-    // Fetch Columns A through G (7 cols)
     const lastRow = sheet.getLastRow();
-    // Safety check if sheet is empty
     if (lastRow < 2) return returnJSON({ status: "fail", message: "No staff data" });
 
-    const data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    // Fetch 8 columns (A through H)
+    // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7
+    const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
     
     const cleanPin = String(pinInput).trim();
     let match = null;
+    let accountDisabled = false;
 
     for (let i = 0; i < data.length; i++) {
-      // CORRECTED INDICES based on Source 5:
-      // Col A : Staff_ID
-      // Col B [1]: First_Name
-      // Col C [2]: Last_Name
-      // Col D [3]: Title
-      // Col E [4]: Dept_ID
-      // Col F [5]: Access_Role
-      // Col G [6]: Access_PIN
-
-      const rowPin = String(data[i][6]).trim(); // Changed from [2] to [6]
+      // FIX 1: Access_PIN is Column G (Index 6)
+      const rowPin = String(data[i][6]).trim(); 
       
       if (rowPin === cleanPin) {
-        match = {
-          status: "success",
-          name: data[i][1], // First Name (Col B)
-          role: data[i][5]  // Access Role (Col F) - Changed from [3]
-        };
-        break;
+        // FIX 2: Is_Active is Column H (Index 7)
+        const activeStatus = data[i][7];
+        
+        // Check for boolean TRUE or string "TRUE"
+        if (activeStatus === true || String(activeStatus).toUpperCase() === "TRUE") {
+          match = {
+            status: "success",
+            name: data[i][1], // FIX 3: First_Name is Col B (Index 1)
+            role: data[i][5]  // FIX 4: Access_Role is Col F (Index 5)
+          };
+        } else {
+          accountDisabled = true;
+        }
+        break; 
       }
     }
 
     if (match) {
       return returnJSON(match);
+    } else if (accountDisabled) {
+      return returnJSON({ status: "fail", message: "Account Disabled" });
     } else {
       return returnJSON({ status: "fail", message: "Invalid PIN" });
     }
@@ -155,6 +157,7 @@ function handleAuth(pinInput) {
     return returnJSON({ status: "error", message: e.toString() });
   }
 }
+
 
 /**
  * UTILITY: JSON Formatter
