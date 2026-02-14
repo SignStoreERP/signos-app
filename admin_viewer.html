@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Viewer | SignOS Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
+    <style>
+        .log-row:hover { background-color: #f9fafb; }
+        .log-auth { color: #2563eb; }
+        .log-error { color: #dc2626; font-weight: bold; background-color: #fef2f2; }
+        .log-checkout { color: #16a34a; font-weight: bold; background-color: #f0fdf4; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <!-- HEADER -->
+    <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow-lg">
+        <div class="flex items-center gap-4">
+            <h1 class="text-xl font-black tracking-tight">SignOS Log Analyzer</h1>
+            <span class="bg-gray-700 text-xs px-2 py-1 rounded text-gray-300">v1.0</span>
+        </div>
+        <div class="flex gap-4 text-xs font-bold">
+            <span class="text-gray-400">USER: <span class="text-white uppercase" id="auth-user">---</span></span>
+            <a href="#" onclick="goBack()" class="text-blue-400 hover:text-white uppercase">Exit to Menu</a>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-6 space-y-6">
+
+        <!-- CONTROLS -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                
+                <!-- Upload -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">1. Load Log File (.txt)</label>
+                    <input type="file" id="file-input" accept=".txt" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                </div>
+
+                <!-- Filters -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">2. Filter Data</label>
+                    <input type="text" id="search-box" placeholder="Search User, IP, or Action..." class="w-full border border-gray-300 rounded p-2 text-sm" onkeyup="filterLogs()">
+                </div>
+
+                <!-- Stats -->
+                <div class="text-right">
+                    <div class="text-[10px] font-bold text-gray-400 uppercase">Total Events</div>
+                    <div class="text-3xl font-black text-gray-800" id="stat-count">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-[10px] font-bold text-gray-500 uppercase border-b border-gray-200">
+                        <tr>
+                            <th class="p-3 w-32">Timestamp</th>
+                            <th class="p-3 w-32">User</th>
+                            <th class="p-3 w-24">Role</th>
+                            <th class="p-3 w-32">Action</th>
+                            <th class="p-3 w-48">Target / Module</th>
+                            <th class="p-3">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body" class="text-xs font-mono text-gray-600 divide-y divide-gray-100">
+                        <tr><td colspan="6" class="p-8 text-center text-gray-400 italic">Load a file to view logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    let logData = [];
+
+    window.onload = function() {
+        const u = sessionStorage.getItem('signos_user');
+        const r = sessionStorage.getItem('signos_role');
+        if (r !== 'ADMIN') { alert("ACCESS DENIED"); window.location.href = 'menu.html'; }
+        document.getElementById('auth-user').innerText = u;
+    };
+
+    // FILE READER
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        const file = e.target.files;
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            parseLogs(e.target.result);
+        };
+        reader.readAsText(file);
+    });
+
+    function parseLogs(text) {
+        const lines = text.split('\n');
+        logData = [];
+        
+        // Skip header lines (usually first 2)
+        let startIdx = 0;
+        if (lines.includes("Timestamp")) startIdx = 2; // Skip header + separator line
+
+        for (let i = startIdx; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            // Split by pipe " | "
+            const cols = line.split('|').map(c => c.trim());
+            
+            if (cols.length >= 6) {
+                logData.push({
+                    time: cols,
+                    ip: cols[1],
+                    user: cols[2],
+                    role: cols[3],
+                    action: cols[4],
+                    target: cols[5],
+                    raw: line.toLowerCase()
+                });
+            }
+        }
+
+        renderTable(logData);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('log-body');
+        tbody.innerHTML = '';
+        document.getElementById('stat-count').innerText = data.length;
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">No matching records found.</td></tr>';
+            return;
+        }
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = "log-row border-b border-gray-50";
+
+            // Conditional Styling
+            if (row.action === 'PRINT_ORDER') tr.classList.add('log-checkout');
+            if (row.user === 'GUEST' && row.action === 'auth') tr.classList.add('log-error'); // Failed login attempt often looks like this
+            if (row.action === 'auth' && row.role !== 'N/A') tr.classList.add('log-auth');
+
+            tr.innerHTML = `
+                <td class="p-3 whitespace-nowrap text-gray-400">${row.time}</td>
+                <td class="p-3 font-bold text-gray-800">${row.user}</td>
+                <td class="p-3"><span class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-bold">${row.role}</span></td>
+                <td class="p-3 font-bold uppercase">${row.action}</td>
+                <td class="p-3 text-gray-500">${row.target}</td>
+                <td class="p-3 text-gray-400 font-mono text-[10px]">${row.ip}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterLogs() {
+        const query = document.getElementById('search-box').value.toLowerCase();
+        const filtered = logData.filter(row => row.raw.includes(query));
+        renderTable(filtered);
+    }
+</script>
+
+</body>
+</html>
