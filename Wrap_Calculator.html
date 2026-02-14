@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wrap Calculator v5.6</title>
+    <title>Wrap Calculator v5.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
     <style>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
         .tab-content { display: none; }
@@ -13,19 +14,13 @@
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
         .warn-pulse { animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
-        
-        /* View Mode Logic */
         .mode-prod .prod-hidden { display: none !important; }
         .mode-prod .prod-width { width: 100% !important; text-align: right; }
     </style>
-    <script>
-        const user = sessionStorage.getItem('signos_user');
-        if (!user) window.location.href = 'index.html';
-    </script>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-<div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+<div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200" id="main-card">
 
     <!-- 1. AUTH HEADER -->
     <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
@@ -33,19 +28,20 @@
             <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
             <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
         </div>
-        <button onclick="sessionStorage.clear(); window.location.href='index.html'" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
+        <button onclick="logout()" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
     </div>
 
     <!-- 2. PRODUCT HEADER -->
     <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
-        <a href="menu.html" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+        <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
         </a>
         <div class="text-center">
             <h2 class="text-lg font-bold" id="product-label">Vehicle Wraps</h2>
-            <div class="flex items-center justify-center gap-2 text-[10px]">
+            <div class="flex items-center justify-center gap-2 text-[10px] mt-0.5">
                 <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span id="status-text" class="text-gray-400">CONNECTING...</span>
+                <span id="status-text" class="font-bold text-gray-400">CONNECTING...</span>
+                <span id="version-display" class="text-gray-600 font-mono hidden"></span>
             </div>
         </div>
         <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
@@ -57,7 +53,6 @@
 
     <!-- INPUTS -->
     <div class="p-6 space-y-4">
-        
         <!-- Vehicle Info -->
         <div class="grid grid-cols-3 gap-2">
             <input type="text" id="veh-year" placeholder="Year" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="calculate()">
@@ -65,7 +60,7 @@
             <input type="text" id="veh-model" placeholder="Model" class="w-full border p-1 rounded text-xs font-bold bg-gray-50 text-center" oninput="calculate()">
         </div>
 
-        <!-- Graphic Areas (Optimized Layout) -->
+        <!-- Graphic Areas -->
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Graphic Areas</label>
             <div class="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
@@ -86,18 +81,12 @@
             </div>
         </div>
 
-        <!-- Production Panel Table (Formatted) -->
+        <!-- Production Panel Table -->
         <div id="prod-panel-container" class="hidden">
-            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Production Panels (54" Media / 1" Overlap)</label>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Production Panels (54" Media)</label>
             <div class="bg-blue-50 border border-blue-100 rounded p-2">
                 <table class="w-full text-[10px] table-fixed">
-                    <thead class="text-blue-400 uppercase font-bold text-left">
-                        <tr>
-                            <th class="w-1/3">Area</th>
-                            <th class="w-1/3 text-center">Size</th>
-                            <th class="w-1/3 text-right">Panels</th>
-                        </tr>
-                    </thead>
+                    <thead class="text-blue-400 uppercase font-bold text-left"><tr><th class="w-1/3">Area</th><th class="w-1/3 text-center">Size</th><th class="w-1/3 text-right">Panels</th></tr></thead>
                     <tbody id="prod-panel-body" class="text-blue-900 font-mono"></tbody>
                 </table>
             </div>
@@ -105,7 +94,6 @@
 
         <!-- Settings Grid -->
         <div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
-            
             <!-- Install Required -->
             <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
                 <span class="text-[10px] font-bold text-gray-700">Install Required?</span>
@@ -142,7 +130,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- METRICS TABS -->
@@ -159,16 +146,13 @@
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Quote</span>
                 <span class="text-3xl font-black text-blue-600" id="total-price">$0.00</span>
             </div>
-            
             <div class="space-y-1 text-xs text-gray-600 border-t border-gray-100 pt-2">
                 <div class="flex justify-between" id="row-ret-wrap"><span>Wrap Vinyl (<span id="qty-wrap">0</span> sqft):</span><span id="ret-wrap" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-blue-600" id="row-ret-perf"><span>Window Perf (<span id="qty-perf">0</span> sqft):</span><span id="ret-perf" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between hidden text-orange-600" id="row-ret-decal"><span>Decals (<span id="qty-decal">0</span> sqft):</span><span id="ret-decal" class="font-bold">$0.00</span></div>
-                
                 <div class="flex justify-between hidden text-red-600" id="row-ret-removal"><span>Graphic Removal:</span><span id="ret-removal" class="font-bold">$0.00</span></div>
-
-                <div class="border-t border-dashed border-gray-200 my-1"></div>
                 
+                <div class="border-t border-dashed border-gray-200 my-1"></div>
                 <div class="flex justify-between" id="row-ret-install"><span>Installation:</span><span id="ret-install" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Setup Fee:</span><span id="ret-setup" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between text-purple-700" id="row-ret-design"><span>Design Fee:</span><span id="ret-design" class="font-bold">$0.00</span></div>
@@ -178,84 +162,32 @@
         <!-- TAB 2: IN-HOUSE COST -->
         <div id="tab-cost" class="tab-content bg-yellow-50 p-6">
             <div class="space-y-1 text-xs text-gray-700">
-                
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Materials</h4>
                 <div class="flex justify-between"><span>Vinyl Media:</span> <span id="cost-vinyl" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Laminate:</span> <span id="cost-lam" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Ink (Latex):</span> <span id="cost-ink" class="font-bold">$0.00</span></div>
 
                 <div class="border-t border-yellow-200 my-1 pt-1"></div>
-
                 <h4 class="font-bold text-yellow-800 uppercase text-[10px] mb-1">Production Labor</h4>
                 
-                <div class="flex justify-between items-center text-purple-800 hidden" id="row-cost-design">
-                    <span class="w-1/3">Design:</span>
-                    <span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-design" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1">
-                    <span class="w-1/3">Printer Setup:</span>
-                    <span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-setup-print" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1">
-                    <span class="w-1/3">Printing:</span>
-                    <span id="time-print" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-print" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1">
-                    <span class="w-1/3">Lamination:</span>
-                    <span id="time-lam" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-lam-lab" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1 hidden" id="row-weed">
-                    <span class="w-1/3">Weeding:</span>
-                    <span id="time-weed" class="w-1/3 text-right text-[10px] bg-green-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-weed" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1 hidden" id="row-mask">
-                    <span class="w-1/3">Masking:</span>
-                    <span id="time-mask" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-mask" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1">
-                    <span class="w-1/3">Trimming:</span>
-                    <span id="time-thru" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-thru" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1">
-                    <span class="w-1/3">Vehicle Prep:</span>
-                    <span id="time-prep" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-prep" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1 hidden" id="row-cost-install">
-                    <span class="w-1/3">Installation:</span>
-                    <span id="time-install" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-install" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center mt-1 text-red-700 hidden" id="row-cost-removal">
-                    <span class="w-1/3">Removal:</span>
-                    <span id="time-removal" class="w-1/3 text-right text-[10px] bg-red-100 rounded px-1 prod-width">0m</span>
-                    <span id="cost-removal" class="w-1/3 text-right font-bold prod-hidden">$0.00</span>
-                </div>
+                <div class="flex justify-between items-center text-purple-800 hidden" id="row-cost-design"><span class="w-1/3">Design:</span><span id="time-design" class="w-1/3 text-right text-[10px] bg-purple-100 rounded px-1 prod-width">0m</span><span id="cost-design" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                <div class="flex justify-between items-center mt-1"><span class="w-1/3">Printer Setup:</span><span id="time-setup" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span><span id="cost-setup-print" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                <div class="flex justify-between items-center mt-1"><span class="w-1/3">Printing:</span><span id="time-print" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span><span id="cost-print" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                <div class="flex justify-between items-center mt-1"><span class="w-1/3">Lamination:</span><span id="time-lam" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span><span id="cost-lam-lab" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                
+                <div class="flex justify-between items-center mt-1 hidden" id="row-weed"><span class="w-1/3">Weeding:</span><span id="time-weed" class="w-1/3 text-right text-[10px] bg-green-100 rounded px-1 prod-width">0m</span><span id="cost-weed" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                <div class="flex justify-between items-center mt-1 hidden" id="row-mask"><span class="w-1/3">Masking:</span><span id="time-mask" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span><span id="cost-mask" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                <div class="flex justify-between items-center mt-1"><span class="w-1/3">Trimming:</span><span id="time-thru" class="w-1/3 text-right text-[10px] bg-yellow-100 rounded px-1 prod-width">0m</span><span id="cost-thru" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                <div class="flex justify-between items-center mt-1"><span class="w-1/3">Vehicle Prep:</span><span id="time-prep" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1 prod-width">0m</span><span id="cost-prep" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                
+                <div class="flex justify-between items-center mt-1 hidden" id="row-cost-install"><span class="w-1/3">Installation:</span><span id="time-install" class="w-1/3 text-right text-[10px] bg-blue-100 rounded px-1 prod-width">0m</span><span id="cost-install" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
+                <div class="flex justify-between items-center mt-1 text-red-700 hidden" id="row-cost-removal"><span class="w-1/3">Removal:</span><span id="time-removal" class="w-1/3 text-right text-[10px] bg-red-100 rounded px-1 prod-width">0m</span><span id="cost-removal" class="w-1/3 text-right font-bold prod-hidden">$0.00</span></div>
 
                 <div class="border-t-2 border-yellow-300 my-2 pt-1"></div>
                 <div class="flex justify-between text-yellow-900 font-bold text-sm prod-hidden"><span>Total Cost:</span> <span id="cost-total">$0.00</span></div>
                 
                 <div class="mt-2 bg-white p-2 rounded border border-yellow-200 prod-hidden">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</span>
-                        <span class="font-bold text-green-600" id="profit-inhouse">$0.00</span>
-                    </div>
+                    <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</span><span class="font-bold text-green-600" id="profit-inhouse">$0.00</span></div>
                 </div>
             </div>
         </div>
@@ -266,7 +198,6 @@
                 <div class="flex justify-between"><span>Wrap Print:</span> <span id="vend-wrap" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Window Perf:</span> <span id="vend-perf" class="font-bold">$0.00</span></div>
                 <div class="flex justify-between"><span>Decals:</span> <span id="vend-decal" class="font-bold">$0.00</span></div>
-                
                 <div class="border-t border-dashed border-indigo-200 my-1"></div>
                 <div class="flex justify-between"><span>Shipping:</span> <span id="vend-ship" class="font-bold">$0.00</span></div>
                 
@@ -278,16 +209,12 @@
 
                 <div class="border-t-2 border-indigo-300 my-2 pt-1"></div>
                 <div class="flex justify-between text-indigo-900 font-bold text-sm"><span>Total Project:</span> <span id="vend-total">$0.00</span></div>
-
+                
                 <div class="mt-2 bg-white p-2 rounded border border-indigo-200">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</span>
-                        <span class="font-bold text-green-600" id="profit-vend">$0.00</span>
-                    </div>
+                    <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-gray-400 uppercase">Net Profit</span><span class="font-bold text-green-600" id="profit-vend">$0.00</span></div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- DESCRIPTION -->
@@ -295,54 +222,61 @@
         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
         <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-28 text-gray-600 font-mono outline-none" readonly></textarea>
     </div>
-
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/a/macros/signstoremacon.com/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
     const TAB_NAME = "PROD_Vehicle_Wraps";
     let backend = {};
     let sectionCount = 0;
+    let currentUser = { name: "Guest", role: "VIEW", mode: "sales" };
 
-    // --- AUTH ---
-    document.getElementById('auth-user').innerText = sessionStorage.getItem('signos_user') || 'Guest';
-    document.getElementById('auth-role').innerText = sessionStorage.getItem('signos_role') || '---';
+    function initSession() {
+        const params = new URLSearchParams(window.location.search);
+        const urlMode = params.get('mode');
+        const storeUser = sessionStorage.getItem('signos_user');
+        const storeRole = sessionStorage.getItem('signos_role');
 
-    // --- SECTION LOGIC (Gemini Optimized) ---
+        if(storeUser) currentUser.name = storeUser;
+        if(storeRole) currentUser.role = storeRole;
+
+        if (currentUser.role === 'ADMIN') currentUser.mode = urlMode || 'dev';
+        else if (currentUser.role === 'PROD') currentUser.mode = 'production';
+        else currentUser.mode = 'sales';
+
+        document.getElementById('auth-user').innerText = currentUser.name;
+        document.getElementById('auth-role').innerText = currentUser.role;
+
+        const body = document.body;
+        body.classList.remove('mode-sales', 'mode-prod', 'mode-admin');
+        
+        if(currentUser.mode === 'sales') { body.classList.add('mode-sales'); switchTab('retail'); }
+        else if (currentUser.mode === 'production') { body.classList.add('mode-prod'); switchTab('cost'); }
+        else { body.classList.add('mode-admin'); }
+    }
+
+    function goBack() { window.location.href = `menu.html?mode=${currentUser.mode}`; }
+    function switchTab(id) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('btn-'+id).classList.add('active'); }
+
+    // --- SECTION LOGIC ---
     window.addSection = function() {
         sectionCount++;
         const tbody = document.getElementById('section-list');
         const tr = document.createElement('tr');
-        // Added 'bg-white' and alignment classes, removed cell padding via child inputs
         tr.className = "section-row group align-top text-[10px] bg-white hover:bg-gray-50 transition-colors";
         tr.id = `sec-${sectionCount}`;
         tr.innerHTML = `
             <td><input type="text" class="sec-name w-full border border-gray-300 px-1 py-0.5 rounded text-[10px] font-bold text-gray-700 text-left h-6 box-border" placeholder="Name" oninput="calculate()"></td>
             <td>
                 <select class="sec-type w-full border border-gray-300 px-0.5 py-0.5 rounded text-[10px] font-bold text-gray-700 h-6 bg-white box-border" onchange="toggleOpt(this); calculate()">
-                    <option value="Wrap">Wrap</option>
-                    <option value="Perf">Perf</option>
-                    <option value="Decal">Decal</option>
+                    <option value="Wrap">Wrap</option><option value="Perf">Perf</option><option value="Decal">Decal</option>
                 </select>
-                <!-- Perf Option -->
-                <div class="mt-1 hidden perf-opt">
-                    <label class="flex items-center justify-center gap-1 text-blue-600">
-                        <input type="checkbox" class="sec-inc" onchange="calculate()"> Incl.
-                    </label>
-                </div>
-                <!-- Decal Option -->
-                <div class="mt-1 hidden complex-opt">
-                    <label class="flex items-center justify-center gap-1 text-orange-600">
-                        <input type="checkbox" class="sec-complex" onchange="calculate()"> Cplx
-                    </label>
-                </div>
+                <div class="mt-1 hidden perf-opt"><label class="flex items-center justify-center gap-1 text-blue-600"><input type="checkbox" class="sec-inc" onchange="calculate()"> Incl.</label></div>
+                <div class="mt-1 hidden complex-opt"><label class="flex items-center justify-center gap-1 text-orange-600"><input type="checkbox" class="sec-complex" onchange="calculate()"> Cplx</label></div>
             </td>
             <td><input type="number" class="sec-qty w-full border border-gray-300 px-0 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border" value="1" oninput="calculate()"></td>
             <td><input type="number" class="sec-w w-full border border-gray-300 px-0 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border" placeholder="W" oninput="calculate()"></td>
             <td><input type="number" class="sec-h w-full border border-gray-300 px-0 py-0.5 rounded text-[10px] font-bold text-gray-700 text-center h-6 box-border" placeholder="H" oninput="calculate()"></td>
-            <td class="text-center">
-                <button onclick="removeSection(${sectionCount})" class="text-gray-300 hover:text-red-500 font-bold text-lg leading-none">×</button>
-            </td>
+            <td class="text-center"><button onclick="removeSection(${sectionCount})" class="text-gray-300 hover:text-red-500 font-bold text-lg leading-none">×</button></td>
         `;
         tbody.appendChild(tr);
     };
@@ -351,70 +285,64 @@
         const row = select.closest('tr');
         const optCplx = row.querySelector('.complex-opt');
         const optPerf = row.querySelector('.perf-opt');
-        
-        optCplx.classList.add('hidden');
-        optPerf.classList.add('hidden');
-        row.querySelector('.sec-complex').checked = false;
-        row.querySelector('.sec-inc').checked = false; 
-
+        optCplx.classList.add('hidden'); optPerf.classList.add('hidden');
+        row.querySelector('.sec-complex').checked = false; row.querySelector('.sec-inc').checked = false;
         if(select.value === 'Decal') optCplx.classList.remove('hidden');
         if(select.value === 'Perf') optPerf.classList.remove('hidden');
     };
 
-    window.removeSection = function(id) {
-        const el = document.getElementById(`sec-${id}`);
-        if(el) el.remove();
-        calculate();
-    };
+    window.removeSection = function(id) { const el = document.getElementById(`sec-${id}`); if(el) el.remove(); calculate(); };
+    window.toggleInstall = function() { const hasInstall = document.getElementById('has-install').checked; const opt = document.getElementById('opt-install-diff'); if(hasInstall) opt.classList.remove('hidden'); else opt.classList.add('hidden'); };
 
-    window.toggleInstall = function() {
-        const hasInstall = document.getElementById('has-install').checked;
-        const opt = document.getElementById('opt-install-diff');
-        if(hasInstall) opt.classList.remove('hidden'); else opt.classList.add('hidden');
-    }
-
-    // --- STANDARD SETUP ---
+    // --- SETUP ---
     window.onload = async function() {
-        addSection(); // Default row
+        initSession();
+        addSection();
         const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+        const vDisplay = document.getElementById("version-display");
+
         try {
-            const res = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}`);
+            // TELEMETRY
+            const res = await fetch(`${SCRIPT_URL}?tab=${TAB_NAME}&ip=${clientIP}&user=${currentUser.name}&role=${currentUser.role}&req=view_module`);
             const data = await res.json();
             if(data.error) throw new Error(data.error);
             backend = data;
-            
-            statusText.innerText = "ONLINE";
-            statusText.classList.replace("text-gray-400", "text-green-500");
-            document.getElementById("status-dot").classList.replace("bg-red-500", "bg-green-500");
-            document.getElementById("status-dot").classList.remove("animate-pulse");
-            
+
+            // Kill Switch
+            const isLive = (backend.Is_Live === undefined) ? true : (backend.Is_Live === true || backend.Is_Live === "TRUE");
+            if (!isLive && currentUser.role !== 'ADMIN') {
+                document.getElementById('main-card').innerHTML = `<div class="p-10 text-center"><h1 class="text-xl font-black text-gray-400">MODULE OFFLINE</h1><button onclick="goBack()" class="mt-6 bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs">Return to Menu</button></div>`;
+                return;
+            }
+
+            const isDev = currentUser.mode === 'dev';
+            statusText.innerText = isDev ? "DEV MODE" : "ONLINE";
+            statusText.className = isDev ? "font-bold text-orange-500" : "font-bold text-green-500";
+            statusDot.className = isDev ? "w-2 h-2 rounded-full bg-orange-500" : "w-2 h-2 rounded-full bg-green-500";
+            statusDot.classList.remove("animate-pulse");
+
+            const ver = isDev ? (backend.Sys_Version_Dev || 'v0.0') : (backend.Sys_Version_Live || 'v0.0');
+            vDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
+            vDisplay.classList.remove('hidden');
+
+            if(backend.Item_Name) document.getElementById("product-label").innerText = backend.Item_Name;
             calculate();
-        } catch(e) { 
-            console.error(e);
+
+        } catch(e) {
             statusText.innerText = "OFFLINE";
-            statusText.classList.replace("text-gray-400", "text-red-500");
-            document.getElementById("error-msg").innerText = "Connection Failed: " + e.message;
+            statusText.className = "font-bold text-red-500";
+            document.getElementById("error-msg").innerText = e.message;
             document.getElementById("error-msg").classList.remove("hidden");
         }
-    };
-
-    window.switchTab = function(id) {
-        document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
-        document.getElementById(`tab-${id}`).classList.add('active');
-        document.getElementById(`btn-${id}`).classList.add('active');
     };
 
     // --- CALCULATION ENGINE ---
     window.calculate = function() {
         if(!backend.Item_Name) return;
 
-        let sqftWrap = 0, sqftPerf = 0, sqftDecal = 0;
-        let retailWrap = 0, retailPerf = 0, retailDecal = 0;
-        let totalWeedingTimeMins = 0;
-        
-        let qtyDecalTotal = 0;
-        const panelLog = []; 
+        let sqftWrap=0, sqftPerf=0, sqftDecal=0, retailWrap=0, retailPerf=0, retailDecal=0, totalWeedingTimeMins=0, qtyDecalTotal=0;
+        const panelLog = [];
 
         // 1. ITERATE ROWS
         document.querySelectorAll('.section-row').forEach(row => {
@@ -423,34 +351,31 @@
             const qty = parseFloat(row.querySelector('.sec-qty').value) || 1;
             const w = parseFloat(row.querySelector('.sec-w').value) || 0;
             const h = parseFloat(row.querySelector('.sec-h').value) || 0;
-            
             const isComplex = row.querySelector('.sec-complex').checked;
             const isIncluded = row.querySelector('.sec-inc').checked;
-            
+
             const areaSqFt = (w * h) / 144;
             const totalSqFt = areaSqFt * qty;
 
             const rateWrap = parseFloat(backend.Retail_Price_Wrap_SqFt || 15);
             const ratePerf = parseFloat(backend.Retail_Price_Perf_SqFt || 12);
             let rateDecal = parseFloat(backend.Retail_Price_Decal_SqFt || 14);
-            if(isComplex) rateDecal += 5; 
+            if(isComplex) rateDecal += 5;
 
-            if(type === 'Wrap') { 
-                sqftWrap += totalSqFt; 
+            if(type === 'Wrap') {
+                sqftWrap += totalSqFt;
                 retailWrap += (totalSqFt * rateWrap);
                 const panels = Math.ceil(w / 53);
                 panelLog.push({name, size: `${w}x${h}`, panels: panels * qty});
             }
-            if(type === 'Perf') { 
-                sqftPerf += totalSqFt; 
-                if(!isIncluded) retailPerf += (totalSqFt * ratePerf); 
+            if(type === 'Perf') {
+                sqftPerf += totalSqFt;
+                if(!isIncluded) retailPerf += (totalSqFt * ratePerf);
             }
-            if(type === 'Decal') { 
-                sqftDecal += totalSqFt; 
+            if(type === 'Decal') {
+                sqftDecal += totalSqFt;
                 qtyDecalTotal += qty;
-                retailDecal += (totalSqFt * rateDecal); 
-                
-                // WEEDING CALCULATION
+                retailDecal += (totalSqFt * rateDecal);
                 const weedRate = isComplex ? (parseFloat(backend.Time_Weed_Complex || 8)) : (parseFloat(backend.Time_Weed_Simple || 2));
                 totalWeedingTimeMins += (totalSqFt * weedRate);
             }
@@ -473,69 +398,50 @@
         const diff = document.getElementById('install-diff').value;
         const rateInstall = diff === 'Simple' ? parseFloat(backend.Retail_Price_Install_Simple || 5) : (parseFloat(backend.Retail_Price_Install_Simple || 5) * 1.5);
         const totalSqFt = sqftWrap + sqftPerf + sqftDecal;
-        
         const retailInstall = hasInstall ? (totalSqFt * rateInstall) : 0;
         const feeSetup = parseFloat(backend.Retail_Fee_Setup || 25);
-        const feeDesign = document.getElementById('inc-design').checked ? (parseFloat(backend.Retail_Rate_Design_Cplx || 85) * 2) : 0; 
-
+        const feeDesign = document.getElementById('inc-design').checked ? (parseFloat(backend.Retail_Rate_Design_Cplx || 85) * 2) : 0;
         const hasRemoval = document.getElementById('has-removal').checked;
-        const retailRemoval = hasRemoval ? 300 : 0; 
+        const retailRemoval = hasRemoval ? 300 : 0;
 
         const totalQuote = retailWrap + retailPerf + retailDecal + retailInstall + feeSetup + feeDesign + retailRemoval;
 
         // UI RETAIL
         const fmt = (n) => "$" + n.toFixed(2);
-        const fmtTime = (h) => { 
-            const mins = Math.round(h*60); 
-            if(mins < 60) return mins + "m";
-            return h.toFixed(1) + "h";
-        };
+        const fmtTime = (h) => { const mins = Math.round(h*60); if(mins < 60) return mins + "m"; return h.toFixed(1) + "h"; };
 
         document.getElementById('total-price').innerText = fmt(totalQuote);
-        
         document.getElementById('ret-wrap').innerText = fmt(retailWrap);
         document.getElementById('qty-wrap').innerText = sqftWrap.toFixed(1);
-        
         document.getElementById('ret-perf').innerText = fmt(retailPerf);
         document.getElementById('qty-perf').innerText = sqftPerf.toFixed(1);
         document.getElementById('row-ret-perf').classList.toggle('hidden', sqftPerf === 0);
-        
         document.getElementById('ret-decal').innerText = fmt(retailDecal);
         document.getElementById('qty-decal').innerText = sqftDecal.toFixed(1);
         document.getElementById('row-ret-decal').classList.toggle('hidden', sqftDecal === 0);
-
         document.getElementById('ret-install').innerText = fmt(retailInstall);
         document.getElementById('row-ret-install').classList.toggle('hidden', !hasInstall);
-        
         document.getElementById('ret-removal').innerText = fmt(retailRemoval);
         document.getElementById('row-ret-removal').classList.toggle('hidden', !hasRemoval);
-
         document.getElementById('ret-setup').innerText = fmt(feeSetup);
         document.getElementById('ret-design').innerText = fmt(feeDesign);
         document.getElementById('row-ret-design').classList.toggle('hidden', feeDesign === 0);
 
         // 4. IN-HOUSE COST
         const waste = parseFloat(backend.Waste_Factor || 1.2);
-        
         const costMatWrap = sqftWrap * parseFloat(backend.Cost_Vinyl_Cast || 2.10) * waste;
-        const costMatPerf = sqftPerf * parseFloat(backend.Cost_Vinyl_Perf || 0.65) * waste; 
-        const costMatDecal = sqftDecal * parseFloat(backend.Cost_Vin_Cal || 0.65) * waste; 
-        
+        const costMatPerf = sqftPerf * parseFloat(backend.Cost_Vinyl_Perf || 0.65) * waste;
+        const costMatDecal = sqftDecal * parseFloat(backend.Cost_Vin_Cal || 0.65) * waste;
         const costLamWrap = sqftWrap * parseFloat(backend.Cost_Lam_Cast || 0.95) * waste;
-        const costLamPerf = sqftPerf * parseFloat(backend.Cost_Lam_Perf || 0.25) * waste; 
+        const costLamPerf = sqftPerf * parseFloat(backend.Cost_Lam_Perf || 0.25) * waste;
         const costLamDecal = sqftDecal * parseFloat(backend.Cost_Lam_Cal || 0.25) * waste;
         const costInk = totalSqFt * parseFloat(backend.Cost_Ink_Latex || 0.16);
 
-        // Labor Time
         const rateOp = parseFloat(backend.Rate_Operator || 25);
         const rateInstallInternal = parseFloat(backend.Rate_Install_Lead || 40);
-        
         const timePrint = totalSqFt / parseFloat(backend.Speed_Print_Roll || 150);
         const timeLam = totalSqFt / parseFloat(backend.Speed_Lam_Roll || 300);
-        
-        // Weeding is now calculated per row (totalWeedingTimeMins)
-        const timeWeed = totalWeedingTimeMins / 60; 
-        
+        const timeWeed = totalWeedingTimeMins / 60;
         const timeMask = sqftDecal * parseFloat(backend.Time_Mask_SqFt || 1) / 60;
         const timeThru = totalSqFt / 200;
         const timePrep = hasInstall ? (totalSqFt / 50) : 0;
@@ -543,9 +449,8 @@
         const timeInstall = hasInstall ? (totalSqFt / speedInstall) : 0;
         const timeRemoval = hasRemoval ? 2.0 : 0;
 
-        // Costs
-        const cDesign = feeDesign > 0 ? (2 * rateOp) : 0; 
-        const cSetup = (parseFloat(backend.Retail_Fee_Setup || 25) / 60) * rateOp; 
+        const cDesign = feeDesign > 0 ? (2 * rateOp) : 0;
+        const cSetup = (parseFloat(backend.Retail_Fee_Setup || 25) / 60) * rateOp;
         const cPrint = timePrint * rateOp;
         const cLam = timeLam * rateOp;
         const cWeed = timeWeed * rateOp;
@@ -553,50 +458,39 @@
         const cThru = timeThru * rateOp;
         const cPrep = timePrep * rateInstallInternal;
         const cInstall = timeInstall * rateInstallInternal;
-        const cRemoval = timeRemoval * rateInstallInternal; 
+        const cRemoval = timeRemoval * rateInstallInternal;
 
         const totalInternal = costMatWrap + costMatPerf + costMatDecal + costLamWrap + costLamPerf + costLamDecal + costInk + cDesign + cSetup + cPrint + cLam + cWeed + cMask + cThru + cPrep + cInstall + cRemoval;
 
-        // UI IN-HOUSE (STANDARDIZED)
+        // UI IN-HOUSE
         document.getElementById('cost-vinyl').innerText = fmt(costMatWrap + costMatPerf + costMatDecal);
         document.getElementById('cost-lam').innerText = fmt(costLamWrap + costLamPerf + costLamDecal);
         document.getElementById('cost-ink').innerText = fmt(costInk);
-        
         document.getElementById('time-design').innerText = fmtTime(feeDesign > 0 ? 2 : 0);
         document.getElementById('cost-design').innerText = fmt(cDesign);
         document.getElementById('row-cost-design').classList.toggle('hidden', cDesign === 0);
-        
         document.getElementById('time-setup').innerText = fmtTime(25/60);
         document.getElementById('cost-setup-print').innerText = fmt(cSetup);
-        
         document.getElementById('time-print').innerText = fmtTime(timePrint);
         document.getElementById('cost-print').innerText = fmt(cPrint);
-        
         document.getElementById('time-lam').innerText = fmtTime(timeLam);
         document.getElementById('cost-lam-lab').innerText = fmt(cLam);
-        
         document.getElementById('row-weed').classList.toggle('hidden', cWeed === 0);
         document.getElementById('time-weed').innerText = fmtTime(timeWeed);
         document.getElementById('cost-weed').innerText = fmt(cWeed);
-        
         document.getElementById('row-mask').classList.toggle('hidden', cMask === 0);
         document.getElementById('time-mask').innerText = fmtTime(timeMask);
         document.getElementById('cost-mask').innerText = fmt(cMask);
-        
         document.getElementById('time-thru').innerText = fmtTime(timeThru);
         document.getElementById('cost-thru').innerText = fmt(cThru);
-        
         document.getElementById('time-prep').innerText = fmtTime(timePrep);
         document.getElementById('cost-prep').innerText = fmt(cPrep);
-        
         document.getElementById('row-cost-install').classList.toggle('hidden', !hasInstall);
         document.getElementById('time-install').innerText = fmtTime(timeInstall);
         document.getElementById('cost-install').innerText = fmt(cInstall);
-        
         document.getElementById('row-cost-removal').classList.toggle('hidden', !hasRemoval);
         document.getElementById('time-removal').innerText = fmtTime(timeRemoval);
         document.getElementById('cost-removal').innerText = fmt(cRemoval);
-
         document.getElementById('cost-total').innerText = fmt(totalInternal);
         document.getElementById('profit-inhouse').innerText = fmt(totalQuote - totalInternal);
 
@@ -608,11 +502,10 @@
         const vendWrap = sqftWrap * s365WrapRate;
         const vendPerf = sqftPerf * s365PerfRate;
         const vendDecal = sqftDecal * s365DecalRate;
-
         const freightTrig = parseFloat(backend.S365_Ship_Freight_Trigger || 1000);
         const vendShip = totalSqFt >= freightTrig ? 199 : 10;
 
-        const totalVendProject = vendWrap + vendPerf + vendDecal + vendShip + cInstall + cPrep + cRemoval + cDesign; 
+        const totalVendProject = vendWrap + vendPerf + vendDecal + vendShip + cInstall + cPrep + cRemoval + cDesign;
 
         document.getElementById('vend-wrap').innerText = fmt(vendWrap);
         document.getElementById('vend-perf').innerText = fmt(vendPerf);
@@ -620,11 +513,8 @@
         document.getElementById('vend-ship').innerText = fmt(vendShip);
         document.getElementById('vend-sub').innerText = fmt(vendWrap+vendPerf+vendDecal+vendShip);
         document.getElementById('vend-install').innerText = fmt(cInstall + cPrep);
-        
-        // Vended Removal Line
         document.getElementById('row-vend-removal').classList.toggle('hidden', !hasRemoval);
         document.getElementById('vend-removal').innerText = fmt(cRemoval);
-
         document.getElementById('vend-total').innerText = fmt(totalVendProject);
         document.getElementById('profit-vend').innerText = fmt(totalQuote - totalVendProject);
 
@@ -635,12 +525,11 @@
         if(profIn < 0 && profVe < 0) { warn.classList.remove('hidden'); warn.classList.add('warn-pulse'); }
         else { warn.classList.add('hidden'); }
 
-        // DESCRIPTION GENERATOR (Updated with Year/Make/Model)
+        // DESCRIPTION GENERATOR
         const year = document.getElementById('veh-year').value.trim();
         const make = document.getElementById('veh-make').value.trim();
         const model = document.getElementById('veh-model').value.trim();
         let vehPrefix = "";
-        
         if(year && make && model) vehPrefix = `[${year}] [${make}] [${model}] - `;
         else if (make && model) vehPrefix = `[${make}] [${model}] - `;
 
@@ -651,10 +540,8 @@
         if (sqftDecal > 0) descLines.push(`(x${qtyDecalTotal}) ${sqftDecal.toFixed(1)}sqft contour cut decal`);
         if (hasRemoval) descLines.push("Vehicle graphic removal");
         if (hasInstall) descLines.push("Vehicle wrap graphics installation");
-        
         document.getElementById('job-desc').value = descLines.join('\n');
     };
 </script>
 </body>
 </html>
-
