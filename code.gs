@@ -41,8 +41,8 @@ function fetchTable(tabName) {
 
     if (values.length < 2) return returnJSON([]); // Empty or header only
 
-    // *** FIX IS HERE: Select ONLY the first row (Index 0) as headers ***
-    const headers = values; 
+    // *** THE FIX: ADD [0] TO SELECT THE FIRST ROW ***
+    const headers = values[0]; 
     const rows = values.slice(1); // Rest are data
 
     // Map rows to objects based on headers
