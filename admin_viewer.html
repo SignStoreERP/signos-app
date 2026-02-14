@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Viewer v2.1 | SignOS Admin</title>
+    <title>Log Viewer v2.2 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -137,6 +137,7 @@
             data.forEach(file => {
                 const item = document.createElement('div');
                 item.className = "archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition";
+                
                 const d = new Date(file.date);
                 const dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const typeBadge = file.type === 'MANUAL_EXPORT' ? '<span class="text-[9px] text-orange-500 font-bold ml-1">MANUAL</span>' : '';
@@ -155,12 +156,14 @@
     async function loadCloudFile(fileId, fileName, domElement) {
         document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
         domElement.classList.add('active');
+        
         document.getElementById('current-file-name').innerText = fileName;
         document.getElementById('loader').classList.remove('hidden');
 
         try {
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${fileId}`);
             const data = await response.json();
+
             if(data.status === 'success') parseLogs(data.content);
             else alert("Error reading file: " + data.message);
         } catch(e) { alert("Network Error: " + e.message); } 
@@ -177,9 +180,10 @@
             const line = lines[i].trim();
             if (!line) continue;
             const cols = line.split('|').map(c => c.trim());
+            
             if (cols.length >= 6) {
                 rawData.push({
-                    time: cols,
+                    time: cols, // FIXED: Map to first column specifically
                     ip: cols[1],
                     user: cols[2],
                     role: cols[3],
@@ -190,31 +194,29 @@
             }
         }
         
-        // Reset Logic
-        displayData = [...rawData]; // Clone
-        clearFilter(false); // Reset search box but don't re-render yet
-        sortData('time'); // Default Sort & Render
+        displayData = [...rawData]; 
+        clearFilter(false); 
+        sortData('time'); 
     }
 
     // --- 3. INTERACTIVE LOGIC ---
     function sortData(key) {
-        // Toggle direction
         if (currentSort.key === key) {
             currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
         } else {
             currentSort.key = key;
-            currentSort.dir = 'asc'; // Default new sort to asc
-            if(key === 'time') currentSort.dir = 'desc'; // Exception for time
+            currentSort.dir = 'asc'; 
+            if(key === 'time') currentSort.dir = 'desc'; 
         }
 
-        // Visual Indicators
         document.querySelectorAll('.sort-header span').forEach(el => el.innerText = '');
         document.getElementById('sort-'+key).innerText = currentSort.dir === 'asc' ? '▲' : '▼';
 
-        // Sort
         displayData.sort((a, b) => {
-            let valA = a[key].toLowerCase();
-            let valB = b[key].toLowerCase();
+            // Safety Check: Force to string before lowercase to prevent crashes
+            let valA = String(a[key] || "").toLowerCase();
+            let valB = String(b[key] || "").toLowerCase();
+            
             if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
             if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
             return 0;
@@ -242,17 +244,8 @@
             displayData = rawData.filter(row => row.raw.includes(query));
         }
         
-        // Re-apply current sort after filtering
-        const key = currentSort.key;
-        displayData.sort((a, b) => {
-            let valA = a[key].toLowerCase();
-            let valB = b[key].toLowerCase();
-            if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
-            if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-        renderTable();
+        // Re-apply sort
+        sortData(currentSort.key); 
     }
 
     function renderTable() {
@@ -273,7 +266,6 @@
             if (row.user === 'GUEST' && row.action === 'auth') tr.classList.add('log-error');
             if (row.action === 'auth' && row.role !== 'N/A') tr.classList.add('log-auth');
 
-            // Interactive Cells
             const cell = (val) => `<span class="clickable-cell" onclick="setFilter('${val}')">${val}</span>`;
 
             tr.innerHTML = `
