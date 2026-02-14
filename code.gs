@@ -1,18 +1,38 @@
-/**
- * SignOS API v4.1 (Fixed Auth)
- * Supports: Key-Value Configs, Table Data, and Authentication
- */
+// ==========================================
+// SignOS API v5.0 (Dual Master Architecture)
+// ==========================================
+
+// MASTER 1: The Data Backend (READ ONLY)
+// Connects to 'SignOS_Backend' for Pricing, Staff, and Configs
+const DATA_SS_ID = "1wiaj5rU5J2kv1SobfyysMFynDOsli4Nb6pDvIf3L9_Y";
+
+// MASTER 2: The Log Backend (WRITE ONLY)
+// Connects to 'SignOS_Logs' for writing access logs
+const LOG_SS_ID = "1LqSV-byNLOdu_GVyasvFmwyaW8TkyvW4F78u6_gaqzk";
 
 function doGet(e) {
   const params = e.parameter;
- 
+
+  // ----------------------------------------
+  // LOGGING INTERCEPTOR (Write to Log Master)
+  // ----------------------------------------
+  // We log asynchronously so we don't slow down the fetch significantly.
+  // We check if 'ip' exists to verify it's a valid request worth logging.
+  if (params.ip) {
+    logActivity(params);
+  }
+
+  // ----------------------------------------
+  // ROUTING (Read from Data Master)
+  // ----------------------------------------
+
   // 1. Auth Request (Gateway)
   // Usage: ?req=auth&pin=123456
   if (params.req === "auth") {
     return handleAuth(params.pin);
   }
 
-  // 2. Table Request (New Feature for Menu/Cart)
+  // 2. Table Request (Menu/Cart)
   // Usage: ?req=table&tab=SYS_Modules
   if (params.req === "table") {
     return fetchTable(params.tab);
@@ -20,35 +40,66 @@ function doGet(e) {
 
   // 3. Default: Config Request (Calculators)
   // Usage: ?tab=PROD_Yard_Signs
-  // Fallback to Yard Signs if no tab specified
   return fetchConfig(params.tab || "PROD_Yard_Signs");
 }
 
 /**
- * FEATURE 1: Fetch Table Data (New)
- * Reads a sheet as a database table. Row 1 = Headers.
- * Returns: Array of Objects [{header: value}, ...]
+ * WRITER: Log Activity to SignOS_Logs
+ * Appends: [Timestamp, IP, ReqType, Tab/Target, RawParams]
+ */
+function logActivity(p) {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    // Ensure this tab exists in your SignOS_Logs sheet!
+    const sheet = ss.getSheetByName("SYS_Access_Logs");
+   
+    if (sheet) {
+      const ts = new Date();
+      // Log structure: Time, IP, User (if avail), Role (if avail), Action, Target, Meta
+      // We map the incoming params to these columns carefully
+      const user = p.user || "GUEST";
+      const role = p.role || "N/A";
+      const action = p.req || "config_fetch"; // Default action
+      const target = p.tab || "N/A";
+     
+      sheet.appendRow([
+        ts,
+        p.ip || "UNKNOWN",
+        user,
+        role,
+        action,
+        target,
+        JSON.stringify(p) // Meta column stores everything else
+      ]);
+    }
+  } catch (err) {
+    // Fail silently. We do NOT want to break the user's login
+    // just because the log sheet is busy or the ID is wrong.
+    console.error("Logging Failed:", err);
+  }
+}
+
+/**
+ * READER: Fetch Table Data
+ * targeted at DATA_SS_ID (SignOS_Backend)
  */
 function fetchTable(tabName) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName(tabName);
     if (!sheet) return returnJSON({ error: `Tab '${tabName}' not found` });
 
-    // Get all data
     const range = sheet.getDataRange();
     const values = range.getValues();
 
-    if (values.length < 2) return returnJSON([]); // Empty or header only
+    if (values.length < 2) return returnJSON([]);
 
     const headers = values[0];
-    const rows = values.slice(1); // Rest are data
+    const rows = values.slice(1);
 
-    // Map rows to objects based on headers
     const result = rows.map(row => {
       let obj = {};
       headers.forEach((header, index) => {
-        // Only include if header is not empty string
         if(header && String(header).trim() !== "") {
           obj[header] = row[index];
         }
@@ -64,15 +115,14 @@ function fetchTable(tabName) {
 }
 
 /**
- * FEATURE 2: Fetch Config (Standard)
- * Reads Columns A & B as Key-Value pairs.
- * Returns: Single Object { Key: Value }
+ * READER: Fetch Config
+ * targeted at DATA_SS_ID (SignOS_Backend)
  */
 function fetchConfig(tabName) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName(tabName);
-   
+
     if (!sheet) {
       return returnJSON({ error: "Tab '" + tabName + "' not found." });
     }
@@ -80,15 +130,13 @@ function fetchConfig(tabName) {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return returnJSON({});
 
-    // Fetch only columns A (Key) and B (Value) starting at Row 2
     const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
     const config = {};
 
     data.forEach(row => {
-      const key = row [0];   // Column A
-      const value = row[1]; // Column B
-     
-      // Safety check for empty keys
+      const key = row[0];  
+      const value = row[1];
+
       if (key && key !== "") {
         config[key] = value;
       }
@@ -102,46 +150,44 @@ function fetchConfig(tabName) {
 }
 
 /**
- * FEATURE 3: Authentication (FIXED)
- * Checks Master_Staff for PIN match AND Active Status.
+ * READER: Authentication
+ * targeted at DATA_SS_ID (SignOS_Backend)
  */
 function handleAuth(pinInput) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName("Master_Staff");
-    
+
     if (!sheet) return returnJSON({ status: "error", message: "Master_Staff missing" });
 
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return returnJSON({ status: "fail", message: "No staff data" });
 
     // Fetch 8 columns (A through H)
-    // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7
     const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
-    
+
     const cleanPin = String(pinInput).trim();
     let match = null;
     let accountDisabled = false;
 
     for (let i = 0; i < data.length; i++) {
-      // FIX 1: Access_PIN is Column G (Index 6)
-      const rowPin = String(data[i][6]).trim(); 
-      
+      // Access_PIN is Column G (Index 6)
+      const rowPin = String(data[i][6]).trim();
+
       if (rowPin === cleanPin) {
-        // FIX 2: Is_Active is Column H (Index 7)
+        // Is_Active is Column H (Index 7)
         const activeStatus = data[i][7];
-        
-        // Check for boolean TRUE or string "TRUE"
+
         if (activeStatus === true || String(activeStatus).toUpperCase() === "TRUE") {
           match = {
             status: "success",
-            name: data[i][1], // FIX 3: First_Name is Col B (Index 1)
-            role: data[i][5]  // FIX 4: Access_Role is Col F (Index 5)
+            name: data[i][1], // First_Name (Index 1)
+            role: data[i][5]  // Access_Role (Index 5)
           };
         } else {
           accountDisabled = true;
         }
-        break; 
+        break;
       }
     }
 
@@ -158,12 +204,12 @@ function handleAuth(pinInput) {
   }
 }
 
-
 /**
  * UTILITY: JSON Formatter
- * Adds standard headers for CORS and content type.
  */
 function returnJSON(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+
