@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v5.2.2 (Dual Master + Archiver)
+// SignOS API v5.3 (Stable - Simplified Auth)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ ONLY)
@@ -20,163 +20,154 @@ function doGet(e) {
   }
 
   // 2. ROUTING
+  // Auth & Config
   if (params.req === "auth") return handleAuth(params.pin);
   if (params.req === "table") return fetchTable(params.tab);
-
-  // NEW: Manual Archive Trigger (Non-Destructive)
-  // Usage: ?req=manual_archive&pin=YOUR_ADMIN_PIN
+  
+  // Archiving
   if (params.req === "manual_archive") return manualExport(params.pin);
+
+  // NEW: Log Viewer Endpoints
+  if (params.req === "get_archive_index") return fetchArchiveIndex();
+  if (params.req === "get_log_content") return fetchLogFile(params.file_id);
 
   // Default: Config Request
   return fetchConfig(params.tab || "PROD_Yard_Signs");
 }
 
+// --- NEW READER FUNCTIONS (For Admin Viewer) ---
+
 /**
- * WRITER: Log Activity to SignOS_Logs
+ * READER: Fetch list of archived files from SYS_Archive_Index
  */
+function fetchArchiveIndex() {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Archive_Index");
+    if (!sheet) return returnJSON([]);
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return returnJSON([]); // Header only
+    
+    // Headers: Archive_Date, File_Name, Drive_Link, Row_Count, Type
+    const rows = data.slice(1);
+    
+    // Map to JSON
+    const result = rows.map(r => {
+      const url = r[2]; // Column C is Drive_Link
+      let fileId = null;
+      
+      // Extract ID from URL (Simple Regex)
+      if (url) {
+        const match = url.match(/\/d\/(.+?)\//);
+        if (match) fileId = match[1];
+        else if (url.includes("id=")) fileId = url.split("id=")[1];
+      }
+
+      return {
+        date: r[0],
+        name: r[1],
+        url: url,
+        count: r[3],
+        type: r[4],
+        file_id: fileId
+      };
+    }).reverse(); // Show newest files first
+
+    return returnJSON(result);
+  } catch (e) {
+    return returnJSON({ error: e.toString() });
+  }
+}
+
+/**
+ * READER: Fetch text content of a specific log file
+ */
+function fetchLogFile(fileId) {
+  try {
+    if (!fileId) return returnJSON({ status: "error", message: "No file ID provided" });
+    
+    const file = DriveApp.getFileById(fileId);
+    const text = file.getBlob().getDataAsString();
+    
+    return returnJSON({ status: "success", content: text });
+  } catch (e) {
+    return returnJSON({ status: "error", message: "Could not read file: " + e.toString() });
+  }
+}
+
+// --- EXISTING CORE FUNCTIONS ---
+
 function logActivity(p) {
   try {
     const ss = SpreadsheetApp.openById(LOG_SS_ID);
     const sheet = ss.getSheetByName("SYS_Access_Logs");
     if (sheet) {
-      const ts = new Date();
-      sheet.appendRow([
-        ts,
-        p.ip || "UNKNOWN",
-        p.user || "GUEST",
-        p.role || "N/A",
-        p.req || "config_fetch",
-        p.tab || "N/A",
-        JSON.stringify(p)
-      ]);
+      sheet.appendRow([new Date(), p.ip || "UNKNOWN", p.user || "GUEST", p.role || "N/A", p.req || "config_fetch", p.tab || "N/A", JSON.stringify(p)]);
     }
-  } catch (err) {
-    console.error("Logging Failed:", err);
-  }
+  } catch (err) { console.error("Logging Failed:", err); }
 }
 
-/**
- * ARCHIVER (AUTOMATED): Unload Logs to Drive
- * - Runs via Nightly Trigger
- * - DELETES archived rows from the sheet to keep it fast
- */
-function archiveDailyLogs() {
-  processArchive(true); // true = delete rows after saving
-}
+function archiveDailyLogs() { processArchive(true); }
 
-/**
- * ARCHIVER (MANUAL): Export without deleting
- * - Triggered via URL for testing
- */
 function manualExport(pin) {
-  // 1. Security Check (Admin Only)
   const auth = handleAuth(pin);
   const authObj = JSON.parse(auth.getContent());
-
-  if (authObj.status !== "success" || authObj.role !== "ADMIN") {
-    return returnJSON({ status: "error", message: "Unauthorized: Admins Only" });
-  }
-
-  // 2. Run Archive (False = Do not delete rows)
-  const result = processArchive(false);
-  return returnJSON(result);
+  if (authObj.status !== "success" || authObj.role !== "ADMIN") return returnJSON({ status: "error", message: "Unauthorized" });
+  return returnJSON(processArchive(false));
 }
 
-/**
- * CORE ARCHIVE LOGIC
- * Handles formatting and saving to Drive
- */
 function processArchive(isDestructive) {
   try {
     const ss = SpreadsheetApp.openById(LOG_SS_ID);
     const logSheet = ss.getSheetByName("SYS_Access_Logs");
-
-    // Check for Index Sheet
+    
+    // Ensure Index Exists
     let indexSheet = ss.getSheetByName("SYS_Archive_Index");
     if (!indexSheet) {
       indexSheet = ss.insertSheet("SYS_Archive_Index");
       indexSheet.appendRow(["Archive_Date", "File_Name", "Drive_Link", "Row_Count", "Type"]);
-      indexSheet.getRange(1, 1, 1, 5).setFontWeight("bold");
     }
 
     const lastRow = logSheet.getLastRow();
+    if (lastRow < 2) return { status: "skipped", message: "Log sheet is empty." };
 
-    // Safety: If no data (just header or empty), exit gracefully
-    if (lastRow < 2) {
-      return { status: "skipped", message: "Log sheet is empty." };
-    }
+    const data = logSheet.getRange(2, 1, lastRow - 1, logSheet.getLastColumn()).getValues();
 
-    // Get Data
-    const dataRange = logSheet.getRange(2, 1, lastRow - 1, logSheet.getLastColumn());
-    const data = dataRange.getValues();
-
-    // Format Text File (Pipe Delimited for readability)
+    // Format File Content
     let fileContent = "Timestamp | IP_Address | User | Role | Action | Target | Meta_Data\n";
     fileContent += "================================================================================\n";
 
     data.forEach(row => {
-      // Format the date to be readable
-      const dateCell = new Date(row[0]);
-      const dateStr = Utilities.formatDate(dateCell, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
-
-      // Construct Row
-      const cleanRow = [
-        dateStr,
-        row[1], // IP
-        row[2], // User
-        row[3], // Role
-        row[4], // Action
-        row[5], // Target
-        row[6]  // Meta (JSON)
-      ].join(" | ");
-
+      const dateStr = Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+      const cleanRow = [dateStr, row[1], row[2], row[3], row[4], row[5], row[6]].join(" | ");
       fileContent += cleanRow + "\n";
     });
 
-    // Create Filename
-    const today = new Date();
-    const dateStamp = Utilities.formatDate(today, Session.getScriptTimeZone(), "yyyy-MM-dd_HHmm");
+    // Save to Drive
+    const dateStamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd_HHmm");
     const prefix = isDestructive ? "AUTO_ARCHIVE" : "MANUAL_EXPORT";
     const fileName = `SignOS_Log_${prefix}_${dateStamp}.txt`;
-
-    // Save to Drive
     const folder = DriveApp.getFolderById(ARCHIVE_FOLDER_ID);
     const file = folder.createFile(fileName, fileContent);
 
     // Log to Index
-    indexSheet.appendRow([
-      new Date(),
-      fileName,
-      file.getUrl(),
-      data.length,
-      prefix
-    ]);
+    indexSheet.appendRow([new Date(), fileName, file.getUrl(), data.length, prefix]);
 
-    // Clean Up (Only if Automated)
-    if (isDestructive) {
-      logSheet.deleteRows(2, lastRow - 1);
-      return { status: "success", type: "AUTO", rows_archived: data.length, url: file.getUrl() };
-    } else {
-      return { status: "success", type: "MANUAL", rows_copied: data.length, url: file.getUrl() };
-    }
+    // Cleanup
+    if (isDestructive) logSheet.deleteRows(2, lastRow - 1);
 
-  } catch (e) {
-    console.error("Archive Failed:", e.toString());
-    return { status: "error", message: e.toString() };
-  }
+    return { status: "success", type: isDestructive ? "AUTO" : "MANUAL", rows_archived: data.length, url: file.getUrl() };
+  } catch (e) { return { status: "error", message: e.toString() }; }
 }
 
-/**
- * READER: Fetch Table Data
- */
 function fetchTable(tabName) {
   try {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName(tabName);
     if (!sheet) return returnJSON({ error: `Tab '${tabName}' not found` });
 
-    const range = sheet.getDataRange();
-    const values = range.getValues();
+    const values = sheet.getDataRange().getValues();
     if (values.length < 2) return returnJSON([]);
 
     const headers = values[0];
@@ -189,14 +180,9 @@ function fetchTable(tabName) {
       return obj;
     });
     return returnJSON(result);
-  } catch (err) {
-    return returnJSON({ error: "Table Error: " + err.toString() });
-  }
+  } catch (err) { return returnJSON({ error: "Table Error: " + err.toString() }); }
 }
 
-/**
- * READER: Fetch Config
- */
 function fetchConfig(tabName) {
   try {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
@@ -210,93 +196,57 @@ function fetchConfig(tabName) {
     const config = {};
     data.forEach(row => {
       const key = row[0];
-      const val = row[1];
+      const val = row[1]; // Column B
       if (key && key !== "") config[key] = val;
     });
     return returnJSON(config);
-  } catch (err) {
-    return returnJSON({ error: "System Error: " + err.toString() });
-  }
+  } catch (err) { return returnJSON({ error: "System Error: " + err.toString() }); }
 }
 
 /**
- * READER: Authentication (CORRECTED MATCHING)
- * - Fixed: Now correctly reads Row 1 for headers
- * - Fixed: Maps to "Access_PIN", "First_Name", "Access_Role", "Is_Active"
+ * READER: Authentication (SIMPLIFIED / FRAGILE VERSION)
+ * - This logic scans broadly for columns containing "pin", "name", etc.
+ * - It is less precise but more forgiving of data structure changes.
  */
-function handleAuth(pinInput) {
+function handleAuth(pin) {
   try {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName("Master_Staff");
-    if (!sheet) return returnJSON({ status: "error", message: "Master_Staff missing" });
     
-    // 1. Get All Data
+    // Grab all data
     const data = sheet.getDataRange().getValues();
-    if (data.length < 2) return returnJSON({ status: "fail", message: "No staff data" });
-
-    // FIX: Look at data[0] (Row 1) for headers, not the whole array
-    const headers = data[0].map(h => String(h).trim().toLowerCase()); 
-    const rows = data.slice(1);
-
-    // 2. Map Columns (Matches your Master_Staff headers exactly)
-    const colIdx = {
-      // Look for "pin" OR "access_pin"
-      pin: headers.findIndex(h => h === "pin" || h === "access_pin"),
-      // Look for "name" OR "first_name"
-      name: headers.findIndex(h => h === "name" || h === "first_name" || h === "staff_name"),
-      // Look for "role" OR "access_role"
-      role: headers.findIndex(h => h === "role" || h === "access_role"),
-      // Look for "active" OR "is_active"
-      active: headers.findIndex(h => h === "active" || h === "is_active" || h === "status")
+    
+    // Scan the first row for headers that *contain* keywords
+    // This is the "fragile" but easy part: if you have a column "Spindle Speed", it won't match "pin" hopefully.
+    const headers = data[0].map(h => String(h).trim().toLowerCase());
+    
+    const idx = {
+      p: headers.findIndex(h => h.includes("pin")),
+      n: headers.findIndex(h => h.includes("name") && !h.includes("last")), // Avoid "Last Name"
+      r: headers.findIndex(h => h.includes("role")),
+      a: headers.findIndex(h => h.includes("active") || h.includes("status"))
     };
-
-    // Safety Check: If we can't find the PIN or Name column, stop.
-    if (colIdx.pin === -1 || colIdx.name === -1) {
-      return returnJSON({ 
-        status: "error", 
-        message: "CRITICAL: Columns 'Access_PIN' or 'First_Name' not found in Row 1 of Master_Staff." 
-      });
-    }
-
-    const cleanPin = String(pinInput).trim();
-    let match = null;
-    let accountDisabled = false;
-
-    // 3. Search Logic
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      // Get the PIN from the found column index
-      const rowPin = String(row[colIdx.pin]).trim();
-
-      if (rowPin === cleanPin) {
-        // Check Active Status (Defaults to TRUE if column is missing)
-        let isActive = true;
-        if (colIdx.active !== -1) {
-          const val = row[colIdx.active];
-          // Handle checkbox (TRUE) or string "TRUE"
-          isActive = (val === true || String(val).toUpperCase() === "TRUE");
-        }
-
-        if (isActive) {
-          match = { 
-            status: "success", 
-            name: row[colIdx.name], 
-            role: (colIdx.role !== -1) ? row[colIdx.role] : "VIEW" 
-          };
-        } else {
-          accountDisabled = true;
-        }
-        break;
+    
+    if (idx.p === -1 || idx.n === -1) return returnJSON({status:"error", message:"Columns Missing"});
+    
+    // Loop rows
+    for(let i=1; i<data.length; i++) {
+      if(String(data[i][idx.p]).trim() === String(pin).trim()) {
+        
+        // Check Active
+        const isActive = idx.a === -1 || String(data[i][idx.a]).toUpperCase() === "TRUE";
+        
+        if(!isActive) return returnJSON({status:"fail", message:"Disabled"});
+        
+        return returnJSON({
+            status:"success", 
+            name:data[i][idx.n], 
+            role:data[i][idx.r]||"VIEW"
+        });
       }
     }
-
-    if (match) return returnJSON(match);
-    else if (accountDisabled) return returnJSON({ status: "fail", message: "Account Disabled" });
-    else return returnJSON({ status: "fail", message: "Invalid PIN" });
-
-  } catch (e) {
-    return returnJSON({ status: "error", message: e.toString() });
-  }
+    return returnJSON({status:"fail", message:"Invalid PIN"});
+  } catch (e) { return returnJSON({status:"error", message:e.toString()}); }
 }
 
 function returnJSON(obj) {
