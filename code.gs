@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v5.2.1 (Dual Master + Archiver)
+// SignOS API v5.2.2 (Dual Master + Archiver)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ ONLY)
@@ -220,36 +220,42 @@ function fetchConfig(tabName) {
 }
 
 /**
- * READER: Authentication (UPDATED: DYNAMIC COLUMN MAPPING)
- * - Now finds columns by Header Name instead of fixed numbers.
- * - REQUIRES headers in Row 1: "PIN", "Name", "Role", "Active" (or "Status")
+ * READER: Authentication (CORRECTED MATCHING)
+ * - Fixed: Now correctly reads Row 1 for headers
+ * - Fixed: Maps to "Access_PIN", "First_Name", "Access_Role", "Is_Active"
  */
 function handleAuth(pinInput) {
   try {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName("Master_Staff");
     if (!sheet) return returnJSON({ status: "error", message: "Master_Staff missing" });
-
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return returnJSON({ status: "fail", message: "No staff data" });
-
+    
     // 1. Get All Data
     const data = sheet.getDataRange().getValues();
-    const headers = data[0].map(h => String(h).trim().toLowerCase()); // Normalize headers
+    if (data.length < 2) return returnJSON({ status: "fail", message: "No staff data" });
+
+    // FIX: Look at data[0] (Row 1) for headers, not the whole array
+    const headers = data[0].map(h => String(h).trim().toLowerCase()); 
     const rows = data.slice(1);
 
-    // 2. Map Columns (Dynamic Finder)
-    // Adjust these strings if your headers are different (e.g. "Staff Name" vs "Name")
+    // 2. Map Columns (Matches your Master_Staff headers exactly)
     const colIdx = {
-      pin: headers.indexOf("pin"),
-      name: headers.indexOf("name"),
-      role: headers.indexOf("role"),
-      active: headers.findIndex(h => h === "active" || h === "status" || h === "enabled")
+      // Look for "pin" OR "access_pin"
+      pin: headers.findIndex(h => h === "pin" || h === "access_pin"),
+      // Look for "name" OR "first_name"
+      name: headers.findIndex(h => h === "name" || h === "first_name" || h === "staff_name"),
+      // Look for "role" OR "access_role"
+      role: headers.findIndex(h => h === "role" || h === "access_role"),
+      // Look for "active" OR "is_active"
+      active: headers.findIndex(h => h === "active" || h === "is_active" || h === "status")
     };
 
-    // Safety: If columns are missing, return error (helps debugging)
+    // Safety Check: If we can't find the PIN or Name column, stop.
     if (colIdx.pin === -1 || colIdx.name === -1) {
-      return returnJSON({ status: "error", message: "Critical columns (PIN/Name) missing in Master_Staff" });
+      return returnJSON({ 
+        status: "error", 
+        message: "CRITICAL: Columns 'Access_PIN' or 'First_Name' not found in Row 1 of Master_Staff." 
+      });
     }
 
     const cleanPin = String(pinInput).trim();
@@ -259,21 +265,23 @@ function handleAuth(pinInput) {
     // 3. Search Logic
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
+      // Get the PIN from the found column index
       const rowPin = String(row[colIdx.pin]).trim();
 
       if (rowPin === cleanPin) {
-        // Check Active Status (Default to true if column missing)
+        // Check Active Status (Defaults to TRUE if column is missing)
         let isActive = true;
         if (colIdx.active !== -1) {
-           const val = row[colIdx.active];
-           isActive = (val === true || String(val).toUpperCase() === "TRUE");
+          const val = row[colIdx.active];
+          // Handle checkbox (TRUE) or string "TRUE"
+          isActive = (val === true || String(val).toUpperCase() === "TRUE");
         }
 
         if (isActive) {
           match = { 
             status: "success", 
             name: row[colIdx.name], 
-            role: (colIdx.role !== -1) ? row[colIdx.role] : "Staff" 
+            role: (colIdx.role !== -1) ? row[colIdx.role] : "VIEW" 
           };
         } else {
           accountDisabled = true;
@@ -294,5 +302,3 @@ function handleAuth(pinInput) {
 function returnJSON(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
-
-
