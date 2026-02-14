@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Viewer v2.0 | SignOS Admin</title>
+    <title>Log Viewer v2.1 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -12,6 +12,12 @@
         .log-error { color: #dc2626; font-weight: bold; background-color: #fef2f2; }
         .log-checkout { color: #16a34a; font-weight: bold; background-color: #f0fdf4; }
         .archive-item.active { background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1e40af; }
+        
+        /* Interactive Elements */
+        .clickable-cell { cursor: pointer; transition: color 0.1s; }
+        .clickable-cell:hover { text-decoration: underline; color: #2563eb; }
+        .sort-header { cursor: pointer; user-select: none; }
+        .sort-header:hover { background-color: #e5e7eb; color: #1f2937; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col h-screen overflow-hidden">
@@ -39,8 +45,7 @@
                 <button onclick="loadArchiveList()" class="text-[10px] text-blue-500 hover:underline">↻ Refresh List</button>
             </div>
             <div id="archive-list" class="flex-1 overflow-y-auto p-2 space-y-1">
-                <!-- Items Injected Here -->
-                <div class="text-center py-8 text-gray-400 text-xs italic">Loading...</div>
+                <div class="text-center py-8 text-gray-400 text-xs italic">Connecting to Drive...</div>
             </div>
             <!-- Manual Upload Fallback -->
             <div class="p-3 border-t border-gray-200 bg-gray-50">
@@ -56,9 +61,10 @@
             
             <!-- TOOLBAR -->
             <div class="bg-white border-b border-gray-200 p-3 flex justify-between items-center shrink-0">
-                <div class="flex items-center gap-2 w-1/3">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <input type="text" id="search-box" placeholder="Filter logs (User, Action, IP)..." class="w-full text-sm border-none outline-none font-medium text-gray-600 placeholder-gray-300" onkeyup="filterLogs()">
+                <div class="flex items-center gap-2 w-1/3 relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" id="search-box" placeholder="Filter logs (Click any cell below to filter)..." class="w-full text-sm border bg-gray-50 rounded pl-9 p-2 font-medium text-gray-700 outline-none focus:bg-white focus:border-blue-400 transition" onkeyup="filterLogs()">
+                    <button onclick="clearFilter()" class="absolute right-2 top-2 text-gray-400 hover:text-red-500 font-bold" title="Clear Filters">×</button>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right">
@@ -78,12 +84,12 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-[10px] font-bold text-gray-500 uppercase border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th class="p-3 w-32 bg-gray-50">Timestamp</th>
-                                <th class="p-3 w-32 bg-gray-50">User</th>
-                                <th class="p-3 w-24 bg-gray-50">Role</th>
-                                <th class="p-3 w-32 bg-gray-50">Action</th>
-                                <th class="p-3 w-48 bg-gray-50">Target</th>
-                                <th class="p-3 bg-gray-50">IP / Meta</th>
+                                <th class="p-3 w-40 sort-header" onclick="sortData('time')">Timestamp <span id="sort-time">▼</span></th>
+                                <th class="p-3 w-32 sort-header" onclick="sortData('user')">User <span id="sort-user"></span></th>
+                                <th class="p-3 w-24 sort-header" onclick="sortData('role')">Role <span id="sort-role"></span></th>
+                                <th class="p-3 w-32 sort-header" onclick="sortData('action')">Action <span id="sort-action"></span></th>
+                                <th class="p-3 w-48 sort-header" onclick="sortData('target')">Target / Module <span id="sort-target"></span></th>
+                                <th class="p-3 sort-header" onclick="sortData('ip')">IP Address <span id="sort-ip"></span></th>
                             </tr>
                         </thead>
                         <tbody id="log-body" class="text-xs font-mono text-gray-600 divide-y divide-gray-100">
@@ -104,18 +110,19 @@
     </div>
 
 <script>
-    let logData = [];
+    let rawData = [];      // The full dataset from the file
+    let displayData = [];  // The currently filtered/sorted dataset
+    let currentSort = { key: 'time', dir: 'desc' };
 
     window.onload = function() {
         const u = sessionStorage.getItem('signos_user');
         const r = sessionStorage.getItem('signos_role');
         if (r !== 'ADMIN') { alert("ACCESS DENIED"); window.location.href = 'menu.html'; }
         document.getElementById('auth-user').innerText = u;
-        
         loadArchiveList();
     };
 
-    // 1. FETCH LIST FROM API
+    // --- 1. CLOUD CONNECT ---
     async function loadArchiveList() {
         const list = document.getElementById('archive-list');
         list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto"></div></div>';
@@ -125,80 +132,56 @@
             const data = await response.json();
 
             list.innerHTML = "";
-            if (!data || data.length === 0) {
-                list.innerHTML = '<div class="text-center py-4 text-xs text-gray-400">No Archives Found</div>';
-                return;
-            }
+            if (!data || data.length === 0) { list.innerHTML = '<div class="text-center py-4 text-xs text-gray-400">No Archives Found</div>'; return; }
 
             data.forEach(file => {
                 const item = document.createElement('div');
                 item.className = "archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition";
-                
-                // Format Date for display
                 const d = new Date(file.date);
                 const dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const typeBadge = file.type === 'MANUAL_EXPORT' ? '<span class="text-[9px] text-orange-500 font-bold ml-1">MANUAL</span>' : '';
 
                 item.innerHTML = `
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] font-bold text-gray-500">${dateStr}</span>
-                        ${typeBadge}
-                    </div>
+                    <div class="flex justify-between items-center mb-1"><span class="text-[10px] font-bold text-gray-500">${dateStr}</span>${typeBadge}</div>
                     <div class="text-xs font-bold text-gray-800 truncate" title="${file.name}">${file.name}</div>
                     <div class="text-[9px] text-gray-400 mt-0.5">${file.count} events</div>
                 `;
-                
                 item.onclick = () => loadCloudFile(file.file_id, file.name, item);
                 list.appendChild(item);
             });
-
-        } catch (e) {
-            list.innerHTML = `<div class="text-red-500 text-xs p-2">Error: ${e.message}</div>`;
-        }
+        } catch (e) { list.innerHTML = `<div class="text-red-500 text-xs p-2">Error: ${e.message}</div>`; }
     }
 
-    // 2. FETCH FILE CONTENT
     async function loadCloudFile(fileId, fileName, domElement) {
-        // Highlight active
         document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
         domElement.classList.add('active');
-        
         document.getElementById('current-file-name').innerText = fileName;
         document.getElementById('loader').classList.remove('hidden');
 
         try {
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${fileId}`);
             const data = await response.json();
-
-            if(data.status === 'success') {
-                parseLogs(data.content);
-            } else {
-                alert("Error reading file: " + data.message);
-            }
-        } catch(e) {
-            alert("Network Error: " + e.message);
-        } finally {
-            document.getElementById('loader').classList.add('hidden');
-        }
+            if(data.status === 'success') parseLogs(data.content);
+            else alert("Error reading file: " + data.message);
+        } catch(e) { alert("Network Error: " + e.message); } 
+        finally { document.getElementById('loader').classList.add('hidden'); }
     }
 
-    // 3. PARSE & RENDER (Shared Logic)
+    // --- 2. DATA PROCESSING ---
     function parseLogs(text) {
         const lines = text.split('\n');
-        logData = [];
-        let startIdx = 0;
-        if (lines.includes("Timestamp")) startIdx = 2; // Skip headers
+        rawData = [];
+        let startIdx = lines.includes("Timestamp") ? 2 : 0;
 
         for (let i = startIdx; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
             const cols = line.split('|').map(c => c.trim());
-            
             if (cols.length >= 6) {
-                logData.push({
+                rawData.push({
                     time: cols,
-                    ip: cols[2],
-                    user: cols[1],
+                    ip: cols[1],
+                    user: cols[2],
                     role: cols[3],
                     action: cols[4],
                     target: cols[5],
@@ -206,42 +189,103 @@
                 });
             }
         }
-        renderTable(logData);
+        
+        // Reset Logic
+        displayData = [...rawData]; // Clone
+        clearFilter(false); // Reset search box but don't re-render yet
+        sortData('time'); // Default Sort & Render
     }
 
-    function renderTable(data) {
-        const tbody = document.getElementById('log-body');
-        tbody.innerHTML = '';
-        document.getElementById('stat-count').innerText = data.length;
-
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">File is empty or invalid format.</td></tr>';
-            return;
+    // --- 3. INTERACTIVE LOGIC ---
+    function sortData(key) {
+        // Toggle direction
+        if (currentSort.key === key) {
+            currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.key = key;
+            currentSort.dir = 'asc'; // Default new sort to asc
+            if(key === 'time') currentSort.dir = 'desc'; // Exception for time
         }
 
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.className = "log-row border-b border-gray-50";
-            if (row.action === 'PRINT_ORDER') tr.classList.add('log-checkout');
-            if (row.user === 'GUEST' && row.action === 'auth') tr.classList.add('log-error');
-            if (row.action === 'auth' && row.role !== 'N/A') tr.classList.add('log-auth');
+        // Visual Indicators
+        document.querySelectorAll('.sort-header span').forEach(el => el.innerText = '');
+        document.getElementById('sort-'+key).innerText = currentSort.dir === 'asc' ? '▲' : '▼';
 
-            tr.innerHTML = `
-                <td class="p-3 whitespace-nowrap text-gray-400 font-mono text-[10px]">${row.time}</td>
-                <td class="p-3 font-bold text-gray-800">${row.user}</td>
-                <td class="p-3"><span class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-bold">${row.role}</span></td>
-                <td class="p-3 font-bold uppercase text-xs">${row.action}</td>
-                <td class="p-3 text-gray-500 text-xs">${row.target}</td>
-                <td class="p-3 text-gray-400 font-mono text-[10px]">${row.ip}</td>
-            `;
-            tbody.appendChild(tr);
+        // Sort
+        displayData.sort((a, b) => {
+            let valA = a[key].toLowerCase();
+            let valB = b[key].toLowerCase();
+            if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
+            return 0;
         });
+
+        renderTable();
+    }
+
+    function setFilter(value) {
+        document.getElementById('search-box').value = value;
+        filterLogs();
+    }
+
+    function clearFilter(shouldRender = true) {
+        document.getElementById('search-box').value = "";
+        if(shouldRender) filterLogs();
     }
 
     function filterLogs() {
         const query = document.getElementById('search-box').value.toLowerCase();
-        const filtered = logData.filter(row => row.raw.includes(query));
-        renderTable(filtered);
+        
+        if (!query) {
+            displayData = [...rawData];
+        } else {
+            displayData = rawData.filter(row => row.raw.includes(query));
+        }
+        
+        // Re-apply current sort after filtering
+        const key = currentSort.key;
+        displayData.sort((a, b) => {
+            let valA = a[key].toLowerCase();
+            let valB = b[key].toLowerCase();
+            if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('log-body');
+        tbody.innerHTML = '';
+        document.getElementById('stat-count').innerText = displayData.length;
+
+        if (displayData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No matching records.</td></tr>';
+            return;
+        }
+
+        displayData.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = "log-row border-b border-gray-50";
+            
+            if (row.action === 'PRINT_ORDER') tr.classList.add('log-checkout');
+            if (row.user === 'GUEST' && row.action === 'auth') tr.classList.add('log-error');
+            if (row.action === 'auth' && row.role !== 'N/A') tr.classList.add('log-auth');
+
+            // Interactive Cells
+            const cell = (val) => `<span class="clickable-cell" onclick="setFilter('${val}')">${val}</span>`;
+
+            tr.innerHTML = `
+                <td class="p-3 whitespace-nowrap text-gray-400 font-mono text-[10px]">${row.time}</td>
+                <td class="p-3 font-bold text-gray-800">${cell(row.user)}</td>
+                <td class="p-3"><span class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-bold clickable-cell" onclick="setFilter('${row.role}')">${row.role}</span></td>
+                <td class="p-3 font-bold uppercase text-xs">${cell(row.action)}</td>
+                <td class="p-3 text-gray-500 text-xs">${cell(row.target)}</td>
+                <td class="p-3 text-gray-400 font-mono text-[10px]">${cell(row.ip)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 
     // Local Upload Handler
@@ -254,5 +298,6 @@
         reader.readAsText(file);
     });
 </script>
+
 </body>
 </html>
