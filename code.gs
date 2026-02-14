@@ -114,20 +114,31 @@ function handleAuth(pinInput) {
 
     // Fetch Columns A through G (7 cols)
     const lastRow = sheet.getLastRow();
+    // Safety check if sheet is empty
+    if (lastRow < 2) return returnJSON({ status: "fail", message: "No staff data" });
+
     const data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
     
     const cleanPin = String(pinInput).trim();
     let match = null;
 
     for (let i = 0; i < data.length; i++) {
-      // Column G (Index 6) is the PIN
-      const rowPin = String(data[i][2]).trim();
+      // CORRECTED INDICES based on Source 5:
+      // Col A : Staff_ID
+      // Col B [1]: First_Name
+      // Col C [2]: Last_Name
+      // Col D [3]: Title
+      // Col E [4]: Dept_ID
+      // Col F [5]: Access_Role
+      // Col G [6]: Access_PIN
+
+      const rowPin = String(data[i][6]).trim(); // Changed from [2] to [6]
       
       if (rowPin === cleanPin) {
         match = {
           status: "success",
-          name: data[i][1], // First Name (Col B / Index 1)
-          role: data[i][3]  // Access Role (Col F / Index 5)
+          name: data[i][1], // First Name (Col B)
+          role: data[i][5]  // Access Role (Col F) - Changed from [3]
         };
         break;
       }
