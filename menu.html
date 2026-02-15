@@ -120,109 +120,133 @@
 
     </div>
 
-    <script>
-        const ICON_STYLES = {
-            blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
-            purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white",
-            slate: "bg-slate-50 text-slate-600 group-hover:bg-slate-600 group-hover:text-white",
-            teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white",
-            indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
-            pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white",
-            yellow: "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white",
-            gray: "bg-gray-100 text-gray-600 group-hover:bg-gray-600 group-hover:text-white"
-        };
+<script>
+    // 1. SAFETY VALVE: Case-Insensitive Data Finder
+    function val(obj, key) {
+        if (!obj) return "";
+        return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
+    }
 
-        window.onload = async function() {
-            const user = sessionStorage.getItem('signos_user');
-            const role = sessionStorage.getItem('signos_role');
+    const ICON_STYLES = {
+        blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
+        green: "bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white",
+        purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white",
+        red: "bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white",
+        orange: "bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white",
+        slate: "bg-slate-50 text-slate-600 group-hover:bg-slate-600 group-hover:text-white",
+        teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white",
+        indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
+        pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white",
+        yellow: "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white",
+        gray: "bg-gray-100 text-gray-600 group-hover:bg-gray-600 group-hover:text-white"
+    };
 
-            document.getElementById('auth-user').innerText = user;
-            document.getElementById('auth-role').innerText = role;
+    window.onload = async function() {
+        // Auth Logic
+        const user = sessionStorage.getItem('signos_user');
+        const role = sessionStorage.getItem('signos_role');
+        
+        if (!user) {
+            // Redirect if not logged in (Optional: Remove if testing locally)
+            // window.location.href = 'index.html'; 
+        }
 
-            // SUPER USER LOGIC
-            if (role === 'ADMIN') {
-                document.getElementById('admin-workflow').classList.remove('hidden');
-                
-                const badge = document.getElementById('sys-badge');
-                badge.classList.remove('bg-gray-100', 'text-gray-800');
-                badge.classList.add('bg-orange-100', 'text-orange-800', 'border-orange-200');
-                
-                document.getElementById('sys-dot').classList.replace('bg-green-500', 'bg-orange-500');
-                document.getElementById('sys-ver').innerText = "System v4.2 (DEV ACCESS)";
-            }
+        document.getElementById('auth-user').innerText = user || 'GUEST';
+        document.getElementById('auth-role').innerText = role || 'VIEW';
 
-            try {
-                // TELEMETRY UPDATE: Pass IP and User info to log the Dashboard Load
-                const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP}&user=${user}&role=${role}&action=menu_load`);
-                const modules = await response.json();
-                
-                if (modules.error) throw new Error(modules.error);
-                
-                renderMenu(modules, role);
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
+        if (role === 'ADMIN') {
+            document.getElementById('admin-workflow').classList.remove('hidden');
+            const badge = document.getElementById('sys-badge');
+            badge.classList.remove('bg-gray-100', 'text-gray-600');
+            badge.classList.add('bg-blue-600', 'text-white');
+            badge.innerText = "ADMIN CONSOLE";
+        }
 
-            } catch (err) {
-                document.getElementById('loader').innerHTML = `<div class="text-red-500 font-bold">⚠️ Connection Failed</div><p class="text-xs text-gray-400 mt-2">${err.message}</p>`;
-            }
-        };
+        // Fetch Modules
+        try {
+            const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP}`);
+            const data = await response.json();
+            renderMenu(data, role);
+        } catch (e) {
+            console.error("Menu Load Error:", e);
+            document.getElementById('app-grid').innerHTML = `<div class="p-4 text-red-500">Error loading menu: ${e.message}</div>`;
+        }
+    };
 
-        function renderMenu(modules, role) {
-            const container = document.getElementById('app-container');
-            container.innerHTML = '';
+    function renderMenu(modules, role) {
+        const container = document.getElementById('app-grid');
+        container.innerHTML = "";
+
+        // Group by Category
+        const categories = {};
+        
+        modules.forEach(mod => {
+            const cat = val(mod, 'Category') || 'Uncategorized';
+            if (!categories[cat]) categories[cat] = [];
+            categories[cat].push(mod);
+        });
+
+        // Render Groups
+        for (const [catName, mods] of Object.entries(categories)) {
+            const section = document.createElement('section');
+            section.innerHTML = `<h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">${catName}</h2>`;
             
-            const categories = {};
-            modules.forEach(mod => {
-                const isLive = (mod.Is_Live === true || String(mod.Is_Live).toUpperCase() === 'TRUE');
+            const grid = document.createElement('div');
+            grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8";
+
+            mods.forEach(mod => {
+                // Safe Data Access
+                const isLive = (val(mod, 'Is_Live') === true || String(val(mod, 'Is_Live')).toUpperCase() === 'TRUE');
+                const displayName = val(mod, 'Display_Name');
+                const fileLink = val(mod, 'File_Link');
+                const devVer = val(mod, 'Dev_Ver');
+                const liveVer = val(mod, 'Live_Ver');
+                const icon = val(mod, 'Icon');
+
+                let targetMode = (role === 'PROD') ? 'production' : (role === 'ADMIN' ? 'dev' : 'sales');
+                let targetVer = (role === 'ADMIN') ? (devVer || liveVer) : liveVer;
+
+                // Hide non-live items for non-admins
                 if (!isLive && role !== 'ADMIN') return;
 
-                const cat = mod.Category || "Other Modules";
-                if (!categories[cat]) categories[cat] = [];
-                categories[cat].push(mod);
-            });
+                const link = document.createElement('a');
+                link.href = `${fileLink}?mode=${targetMode}`;
+                link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
 
-            for (const [catName, mods] of Object.entries(categories)) {
-                const section = document.createElement('section');
-                section.innerHTML = `<h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">${catName}</h2>`;
+                const iconKey = (icon || 'blue').toLowerCase();
+                const iconClass = ICON_STYLES[iconKey] || ICON_STYLES['blue'];
+                const verBg = role === 'ADMIN' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500';
                 
-                const grid = document.createElement('div');
-                grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4";
+                // Draft Badge Logic
+                const draftBadge = (!isLive && role === 'ADMIN') ? 
+                    `<div class="absolute top-2 right-2 text-[9px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded border border-gray-200">DRAFT</div>` : '';
 
-                mods.forEach(mod => {
-                    const isLive = (mod.Is_Live === true || String(mod.Is_Live).toUpperCase() === 'TRUE');
-                    let targetMode = (role === 'PROD') ? 'production' : (role === 'ADMIN' ? 'dev' : 'sales');
-                    let targetVer = (role === 'ADMIN') ? (mod.Dev_Ver || mod.Live_Ver) : mod.Live_Ver;
-                    
-                    const link = document.createElement('a');
-                    link.href = `${mod.File_Link}?mode=${targetMode}`;
-                    link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
-                    
-                    const iconKey = (mod.Icon || 'blue').toLowerCase();
-                    const iconClass = ICON_STYLES[iconKey] || ICON_STYLES['blue'];
-                    
-                    const verBg = role === 'ADMIN' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500';
-                    const draftBadge = (!isLive && role === 'ADMIN') ? `<div class="absolute top-2 right-2 text-[9px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded border border-gray-200">DRAFT</div>` : '';
-
-                    link.innerHTML = `
-                        ${draftBadge}
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-lg flex items-center justify-center transition ${iconClass}">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-900 group-hover:text-blue-600 text-sm">${mod.Display_Name}</h3>
-                                <span class="text-[10px] ${verBg} px-1.5 py-0.5 rounded font-mono">${targetVer}</span>
+                link.innerHTML = `
+                    ${draftBadge}
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center transition ${iconClass}">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition">${displayName}</h3>
+                            <div class="mt-1 flex items-center gap-2">
+                                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${verBg}">${targetVer || 'v0.0'}</span>
                             </div>
                         </div>
-                    `;
-                    grid.appendChild(link);
-                });
-                section.appendChild(grid);
-                container.appendChild(section);
-            }
+                    </div>
+                `;
+                grid.appendChild(link);
+            });
+
+            section.appendChild(grid);
+            container.appendChild(section);
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
+
+
 
 
