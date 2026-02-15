@@ -431,63 +431,62 @@ function doPost(e) {
 }
 
 // ==========================================
-// UTILITY: BACKFILL VERSIONS FROM GITHUB (FIXED)
+// UTILITY: BACKFILL VERSIONS FROM GITHUB (FIXED v2)
 // ==========================================
 
 function syncVersionsFromGitHub() {
   const ss = SpreadsheetApp.openById(DATA_SS_ID);
   const sheet = ss.getSheetByName("SYS_Modules");
   
-  // 1. Get Data (Range: A1:H)
-  // Col C (Index 2) = File_Link
-  // Col D (Index 3) = Live_Ver (Column 4 in Sheets)
-  // Col E (Index 4) = Dev_Ver (Column 5 in Sheets)
+  // Get all data (Rows are 0-indexed in JS)
   const data = sheet.getDataRange().getValues();
   
-  // Repo Config
+  // Repo Configuration
   const repoOwner = "SignStoreERP";
   const devRepo = "signos-app"; 
   const liveRepo = "signos-live"; 
   
   Logger.log("Starting Sync...");
 
-  // 2. Loop Rows (Skip Header)
+  // Loop through rows (Start at 1 to skip Header)
   for (let i = 1; i < data.length; i++) {
-    const fileName = data[i][1]; // <--- FIXED: Target Column C explicitly
+    
+    // --- CRITICAL FIX: Target Column C (Index 2) ---
+    const fileName = data[i][1]; 
     
     if (fileName && fileName.toString().endsWith(".html")) {
       
-      // --- A. SYNC DEV VERSION ---
+      // --- A. SYNC DEV VERSION (Column E / Index 5) ---
       try {
         const devUrl = `https://raw.githubusercontent.com/${repoOwner}/${devRepo}/main/${fileName}`;
         const devHtml = UrlFetchApp.fetch(devUrl).getContentText();
         
-        // Regex to find <title>... v21.8 ...</title>
+        // Find <title>... v21.8 ...</title>
         const devMatch = devHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
         
         if (devMatch && devMatch[2]) {
-          // Update Column E (Dev_Ver) -> Row i+1
+          // Update Column E (Dev_Ver). Row is i+1 because sheet is 1-based.
           sheet.getRange(i + 1, 5).setValue(devMatch[2]);
           Logger.log(`[DEV] Updated ${fileName} to ${devMatch[2]}`);
         }
       } catch (e) {
-        Logger.log(`[DEV] Failed ${fileName}: ${e.message}`);
+        Logger.log(`[DEV] Skipped ${fileName}: ${e.message}`);
       }
 
-      // --- B. SYNC LIVE VERSION ---
-      // (Only runs if you have set up the 'signos-live' repo)
+      // --- B. SYNC LIVE VERSION (Column D / Index 4) ---
+      // (This attempts to pull from your new Live repo)
       try {
         const liveUrl = `https://raw.githubusercontent.com/${repoOwner}/${liveRepo}/main/${fileName}`;
         const liveHtml = UrlFetchApp.fetch(liveUrl).getContentText();
         const liveMatch = liveHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
         
         if (liveMatch && liveMatch[2]) {
-          // Update Column D (Live_Ver) -> Row i+1
+          // Update Column D (Live_Ver)
           sheet.getRange(i + 1, 4).setValue(liveMatch[2]);
           Logger.log(`[LIVE] Updated ${fileName} to ${liveMatch[2]}`);
         }
       } catch (e) {
-        // Silent fail for Live (file might not exist there yet)
+        // Silent fail if file doesn't exist in Live yet
       }
     }
   }
