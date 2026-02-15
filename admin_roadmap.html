@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Roadmap v2.8 | SignOS</title>
+    <title>Dev Roadmap v2.9 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     
@@ -237,86 +237,49 @@
         renderBoard(filtered);
     }
 
-// Add this to the top of your script block
-    function val(obj, key) {
-        if (!obj) return "";
-        return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
-    }
-
-    // Replace the existing renderBoard function with this:
     function renderBoard(data) {
-        const cols = {
-            pending: document.getElementById('col-pending'),
-            progress: document.getElementById('col-progress'),
-            done: document.getElementById('col-done')
-        };
-
-        // Clear columns
+        const cols = { pending: document.getElementById('col-pending'), progress: document.getElementById('col-progress'), done: document.getElementById('col-done') };
         Object.values(cols).forEach(el => el.innerHTML = "");
-
-        let counts = { pending: 0, progress: 0, done: 0 };
+        let counts = { pending:0, progress:0, done:0 };
 
         data.forEach(item => {
-            // Safe Access using val()
             const id = val(item, 'ID');
-            if (!id) {
-                console.warn("Skipping item without ID:", item);
-                return;
-            }
-
-            const title = val(item, 'Title');
-            const desc = val(item, 'Description');
-            const prio = val(item, 'Priority');
-            const cat = val(item, 'Category');
-            const statusRaw = val(item, 'Status'); // Pending, In Progress, Complete
-            const target = val(item, 'Target_Env') || 'APP';
-            const user = val(item, 'User') || 'Sys';
-
-            // Map status to column keys
-            let statusKey = 'pending';
-            if (statusRaw === 'In Progress') statusKey = 'progress';
-            if (statusRaw === 'Complete') statusKey = 'done';
-
-            // Styling Logic
+            if(!id) return;
+            const card = document.createElement('div');
+            const prio = val(item, 'Priority'); const cat = val(item, 'Category');
             let borderClass = prio === 'High' ? 'card-high' : (prio === 'Low' ? 'card-low' : 'card-med');
             let catColor = cat === 'Bug' ? "bg-red-100 text-red-800" : (cat === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
-            const targetBadge = target === 'LIVE' ? 
-                '<span class="text-[8px] bg-green-100 text-green-800 px-1 rounded border border-green-200">LIVE</span>' : 
-                '<span class="text-[8px] bg-orange-100 text-orange-800 px-1 rounded border border-orange-200">APP</span>';
+            
+            const target = val(item, 'Target_Env') || 'APP';
+            const targetBadge = target === 'LIVE' 
+                ? '<span class="text-[8px] bg-green-100 text-green-800 px-1 rounded border border-green-200">LIVE</span>' 
+                : '<span class="text-[8px] bg-orange-100 text-orange-800 px-1 rounded border border-orange-200">APP</span>';
 
-            const card = document.createElement('div');
-            card.className = `bg-white p-3 rounded shadow-sm border border-gray-200 ${borderClass} draggable-card group relative hover:shadow-md transition`;
-            card.draggable = true;
+            card.className = `draggable-card bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-grab ${borderClass} border-l-4 group relative`;
+            card.draggable = true; card.id = `card-${id}`;
             card.ondragstart = (e) => drag(e, id);
-            card.onclick = () => openTicket(item);
+            card.onclick = (e) => { if(!card.classList.contains('dragging')) openTicket(id); };
 
             card.innerHTML = `
-                <div class="flex justify-between items-start mb-1">
-                    <span class="text-[10px] font-bold text-gray-400 font-mono">#${id}</span>
+                <div class="flex justify-between items-start mb-2">
                     <div class="flex gap-1">
+                        <span class="text-[9px] font-bold uppercase ${catColor} px-1.5 py-0.5 rounded">${cat}</span>
                         ${targetBadge}
-                        <span class="text-[9px] font-bold px-1.5 rounded uppercase tracking-wider ${catColor}">${cat}</span>
                     </div>
+                    <span class="text-[9px] text-gray-400 group-hover:text-blue-500">View →</span>
                 </div>
-                <h4 class="text-xs font-bold text-gray-800 leading-snug mb-1">${title}</h4>
-                <p class="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">${desc}</p>
-                <div class="mt-2 flex justify-between items-center">
-                    <div class="flex -space-x-1">
-                        <div class="w-4 h-4 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[8px] font-bold text-gray-500" title="${user}">
-                            ${user.charAt(0)}
-                        </div>
-                    </div>
-                    <div class="opacity-0 group-hover:opacity-100 transition text-[9px] font-bold text-blue-500">Edit →</div>
-                </div>
-            `;
+                <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1 pointer-events-none">${val(item, 'Title')}</h3>
+                <p class="text-xs text-gray-500 line-clamp-2 pointer-events-none">${val(item, 'Description')}</p>
+                <div class="mt-2 pt-2 border-t border-gray-50 flex justify-between items-center pointer-events-none">
+                    <div class="flex flex-col"><span class="text-[9px] font-bold text-gray-400 uppercase">${val(item, 'User')}</span><span class="text-[8px] text-gray-300">${new Date(val(item, 'Timestamp')).toLocaleDateString()}</span></div>
+                    <span class="text-[9px] font-mono text-gray-300">${id}</span>
+                </div>`;
 
-            if (cols[statusKey]) {
-                cols[statusKey].appendChild(card);
-                counts[statusKey]++;
-            }
+            const status = String(val(item, 'Status')).toLowerCase().trim();
+            if(status.includes('progress') || status.includes('doing')) { cols.progress.appendChild(card); counts.progress++; }
+            else if(status.includes('complete') || status.includes('done')) { cols.done.appendChild(card); counts.done++; }
+            else { cols.pending.appendChild(card); counts.pending++; }
         });
-
-        // Update Headers
         document.getElementById('count-pending').innerText = counts.pending;
         document.getElementById('count-progress').innerText = counts.progress;
         document.getElementById('count-done').innerText = counts.done;
@@ -371,7 +334,6 @@
         } catch(e) { alert("Error: " + e.message); closeTicket(); }
     }
     function closeTicket() { document.getElementById('ticket-modal').classList.add('hidden'); document.body.classList.remove('modal-active'); }
-    
     async function postUpdate() {
         const msg = document.getElementById('t-comment').value;
         const newStatus = document.getElementById('t-new-status').value;
@@ -385,15 +347,8 @@
             if(newStatus) { const item = allRoadmapData.find(i => val(i,'ID') === currentTicketId); if(item) item.Status = newStatus; applyFilters(); }
         } catch(e) { alert("Post failed"); }
     }
-    
     async function submitItem() {
-        const title = document.getElementById('inp-title').value; 
-        const desc = document.getElementById('inp-desc').value; 
-        const prio = document.getElementById('inp-prio').value; 
-        const cat = document.querySelector('input[name="cat"]:checked').value; 
-        const target = document.querySelector('input[name="target"]:checked').value;
-        const btn = document.getElementById('btn-submit');
-        
+        const title = document.getElementById('inp-title').value; const desc = document.getElementById('inp-desc').value; const prio = document.getElementById('inp-prio').value; const cat = document.querySelector('input[name="cat"]:checked').value; const target = document.querySelector('input[name="target"]:checked').value; const btn = document.getElementById('btn-submit');
         if(!title) { alert("Title Required"); return; } btn.disabled = true;
         try {
             const res = await fetch(`${SCRIPT_URL}?req=add_roadmap&user=${user}&title=${encodeURIComponent(title)}&desc=${encodeURIComponent(desc)}&prio=${prio}&cat=${cat}&target=${target}`);
@@ -410,7 +365,10 @@
             try {
                 const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Changelog&ip=${clientIP}&user=${user}`);
                 const data = await response.json();
-                if(!data || data.length === 0) { list.innerHTML = '<div class="text-center p-10 text-gray-400 italic text-xs">No history found.</div>'; return; }
+                if(!data || data.length === 0) {
+                    list.innerHTML = '<div class="text-center p-10 text-gray-400 italic text-xs">No history found.</div>';
+                    return;
+                }
                 data.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
                 list.innerHTML = data.map((row, index) => {
                     const d = new Date(row.Timestamp);
@@ -418,20 +376,30 @@
                     const msg = row.Message.replace(/(RMP_[A-Za-z0-9_]+)/g, '<span class="bg-yellow-100 text-yellow-800 px-1 rounded font-bold border border-yellow-200">$1</span>');
                     return `
                         <div class="timeline-item relative pl-8 pb-6">
-                            <div class="timeline-line absolute left-0 top-0 bottom-0 w-8 flex justify-center"><div class="w-2.5 h-2.5 rounded-full bg-blue-400 border-2 border-white shadow mt-3 z-10"></div></div>
+                            <div class="timeline-line absolute left-0 top-0 bottom-0 w-8 flex justify-center">
+                                <div class="w-2.5 h-2.5 rounded-full bg-blue-400 border-2 border-white shadow mt-3 z-10"></div>
+                            </div>
                             <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition group relative">
                                 <div class="flex justify-between items-start mb-2">
-                                    <div class="flex flex-col"><span class="text-[10px] font-black text-gray-900 uppercase">${row.Author}</span><span class="text-[9px] font-mono text-gray-400">${dateStr}</span></div>
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] font-black text-gray-900 uppercase">${row.Author}</span>
+                                        <span class="text-[9px] font-mono text-gray-400">${dateStr}</span>
+                                    </div>
                                     <span class="text-[9px] font-mono text-gray-400 bg-gray-100 px-1.5 rounded border border-gray-200">#${row['Commit Hash']}</span>
                                 </div>
                                 <p class="text-xs text-gray-700 font-medium leading-relaxed">${msg}</p>
                                 <div class="mt-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <a href="${row['GitHub Link']}" target="_blank" class="text-[10px] font-bold text-blue-500 hover:text-blue-700 uppercase flex items-center gap-1">View Code ↗</a>
+                                    <a href="${row['GitHub Link']}" target="_blank" class="text-[10px] font-bold text-blue-500 hover:text-blue-700 uppercase flex items-center gap-1">
+                                        View Code ↗
+                                    </a>
                                 </div>
                             </div>
-                        </div>`;
+                        </div>
+                    `;
                 }).join('');
-            } catch (e) { list.innerHTML = `<div class="p-4 text-red-500 text-xs text-center border border-red-200 bg-red-50 rounded">Error: ${e.message}</div>`; }
+            } catch (e) {
+                list.innerHTML = `<div class="p-4 text-red-500 text-xs text-center border border-red-200 bg-red-50 rounded">Error loading history: ${e.message}</div>`;
+            }
         }
     }
 </script>
