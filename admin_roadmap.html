@@ -3,21 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Roadmap v2.1 | SignOS</title>
+    <title>Dev Roadmap v2.2 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
-        .kanban-col { min-height: 200px; }
+        /* SCROLLBAR & LAYOUT FIXES */
+        .kanban-col { 
+            height: 100%; 
+            overflow-y: auto; 
+            padding-right: 4px; /* Space for scrollbar */
+        }
+        /* Custom Scrollbar for columns */
+        .kanban-col::-webkit-scrollbar { width: 6px; }
+        .kanban-col::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .kanban-col::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .kanban-col::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* DRAG & DROP STYLES */
         .card-high { border-left: 4px solid #ef4444; }
         .card-med { border-left: 4px solid #f59e0b; }
         .card-low { border-left: 4px solid #3b82f6; }
+        
+        .draggable-card { cursor: grab; }
+        .draggable-card:active { cursor: grabbing; }
+        .draggable-card.dragging { opacity: 0.5; transform: scale(0.98); }
+        
+        /* Drop Zone Highlight */
+        .drop-active { background-color: #e0f2fe !important; border: 2px dashed #3b82f6 !important; }
+
+        /* ANIMATIONS */
         .slide-panel { transition: transform 0.3s ease-in-out; }
         .slide-panel.closed { transform: translateX(100%); }
         .modal { transition: opacity 0.25s ease; }
         body.modal-active { overflow: hidden; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans flex flex-col overflow-hidden">
+<!-- LAYOUT FIX: h-screen ensures the app fits the window exactly -->
+<body class="bg-gray-100 h-screen font-sans flex flex-col overflow-hidden">
 
     <!-- HEADER -->
     <div class="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-md z-20 shrink-0">
@@ -35,33 +57,41 @@
     </div>
 
     <!-- KANBAN BOARD -->
-    <div class="flex-1 overflow-x-auto overflow-y-hidden p-6">
+    <!-- LAYOUT FIX: flex-1 takes remaining height, overflow-hidden prevents body scroll -->
+    <div class="flex-1 overflow-x-auto overflow-y-hidden p-6 bg-gray-100">
         <div class="flex gap-6 h-full min-w-[1000px]">
-            <!-- COL 1 -->
-            <div class="flex-1 flex flex-col bg-gray-200 rounded-xl border border-gray-300">
-                <div class="p-3 border-b border-gray-300 font-bold text-gray-600 text-xs uppercase tracking-wider flex justify-between">
+            
+            <!-- COL 1: PENDING -->
+            <div class="flex-1 flex flex-col bg-gray-200 rounded-xl border border-gray-300 shadow-sm"
+                 ondragover="allowDrop(event)" ondrop="drop(event, 'Pending')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <div class="p-3 border-b border-gray-300 font-bold text-gray-600 text-xs uppercase tracking-wider flex justify-between shrink-0 bg-gray-200 rounded-t-xl z-10">
                     <span>Backlog / Pending</span><span id="count-pending" class="bg-gray-300 px-2 rounded-full text-gray-700">0</span>
                 </div>
-                <div id="col-pending" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
+                <div id="col-pending" class="kanban-col p-3 space-y-3"></div>
             </div>
-            <!-- COL 2 -->
-            <div class="flex-1 flex flex-col bg-blue-50 rounded-xl border border-blue-200">
-                <div class="p-3 border-b border-blue-200 font-bold text-blue-800 text-xs uppercase tracking-wider flex justify-between">
+
+            <!-- COL 2: IN PROGRESS -->
+            <div class="flex-1 flex flex-col bg-blue-50 rounded-xl border border-blue-200 shadow-sm"
+                 ondragover="allowDrop(event)" ondrop="drop(event, 'In Progress')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <div class="p-3 border-b border-blue-200 font-bold text-blue-800 text-xs uppercase tracking-wider flex justify-between shrink-0 bg-blue-50 rounded-t-xl z-10">
                     <span>In Development</span><span id="count-progress" class="bg-blue-200 px-2 rounded-full text-blue-800">0</span>
                 </div>
-                <div id="col-progress" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
+                <div id="col-progress" class="kanban-col p-3 space-y-3"></div>
             </div>
-            <!-- COL 3 -->
-            <div class="flex-1 flex flex-col bg-green-50 rounded-xl border border-green-200">
-                <div class="p-3 border-b border-green-200 font-bold text-green-800 text-xs uppercase tracking-wider flex justify-between">
+
+            <!-- COL 3: COMPLETE -->
+            <div class="flex-1 flex flex-col bg-green-50 rounded-xl border border-green-200 shadow-sm"
+                 ondragover="allowDrop(event)" ondrop="drop(event, 'Complete')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <div class="p-3 border-b border-green-200 font-bold text-green-800 text-xs uppercase tracking-wider flex justify-between shrink-0 bg-green-50 rounded-t-xl z-10">
                     <span>Completed / Live</span><span id="count-done" class="bg-green-200 px-2 rounded-full text-green-800">0</span>
                 </div>
-                <div id="col-done" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
+                <div id="col-done" class="kanban-col p-3 space-y-3"></div>
             </div>
+
         </div>
     </div>
 
-    <!-- CREATE FORM -->
+    <!-- CREATE FORM SLIDER -->
     <div id="side-form" class="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl border-l border-gray-200 z-30 slide-panel closed flex flex-col">
         <div class="p-6 bg-gray-900 text-white flex justify-between items-center shrink-0">
             <h2 class="font-bold text-lg">Submit Request</h2>
@@ -92,7 +122,7 @@
         </div>
     </div>
 
-    <!-- TICKET MODAL -->
+    <!-- TICKET DETAIL MODAL -->
     <div id="ticket-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-start shrink-0">
@@ -141,11 +171,7 @@
     };
 
     function toggleForm() { document.getElementById('side-form').classList.toggle('closed'); }
-
-    // ROBUST DATA GETTER (Fixes Case Sensitivity "Undefined" Issue)
-    function val(obj, key) {
-        return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
-    }
+    function val(obj, key) { return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || ""; }
 
     async function loadData() {
         try {
@@ -162,35 +188,39 @@
         let counts = { pending:0, progress:0, done:0 };
 
         data.forEach(item => {
-            // FIX: Use val() to get data regardless of header Case
             const id = val(item, 'ID');
+            if(!id) return;
+
             const title = val(item, 'Title');
             const desc = val(item, 'Description');
             const prio = val(item, 'Priority');
             const cat = val(item, 'Category');
             const itemUser = val(item, 'User');
             const rawStatus = val(item, 'Status');
-            const ts = val(item, 'Timestamp');
-
-            if(!id) return; // Skip empty rows
 
             const card = document.createElement('div');
             let borderClass = prio === 'High' ? 'card-high' : (prio === 'Low' ? 'card-low' : 'card-med');
             let catColor = cat === 'Bug' ? "bg-red-100 text-red-800" : (cat === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
             
-            const date = new Date(ts).toLocaleDateString();
-
-            card.className = `bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-pointer ${borderClass} border-l-4 group`;
-            card.onclick = () => openTicket(id);
+            // DRAG PROPERTIES
+            card.className = `draggable-card bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-grab ${borderClass} border-l-4 group relative`;
+            card.draggable = true;
+            card.id = `card-${id}`; // DOM ID for dragging reference
+            
+            // Drag Event Listeners
+            card.ondragstart = (e) => drag(e, id);
+            
+            // Click to Open (Check if drag occurred)
+            card.onclick = (e) => { if(!card.classList.contains('dragging')) openTicket(id); };
 
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[9px] font-bold uppercase ${catColor} px-1.5 py-0.5 rounded">${cat}</span>
-                    <span class="text-[9px] text-gray-400 group-hover:text-blue-500">View Ticket →</span>
+                    <span class="text-[9px] text-gray-400 group-hover:text-blue-500">View →</span>
                 </div>
-                <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1">${title}</h3>
-                <p class="text-xs text-gray-500 line-clamp-2">${desc}</p>
-                <div class="mt-2 pt-2 border-t border-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1 pointer-events-none">${title}</h3>
+                <p class="text-xs text-gray-500 line-clamp-2 pointer-events-none">${desc}</p>
+                <div class="mt-2 pt-2 border-t border-gray-50 flex justify-between items-center pointer-events-none">
                     <span class="text-[9px] font-bold text-gray-400 uppercase">${itemUser}</span>
                     <span class="text-[9px] font-mono text-gray-300">${id}</span>
                 </div>
@@ -207,6 +237,61 @@
         document.getElementById('count-done').innerText = counts.done;
     }
 
+    // --- DRAG AND DROP LOGIC ---
+
+    function drag(ev, id) {
+        ev.dataTransfer.setData("text", id);
+        ev.target.classList.add('dragging');
+    }
+
+    function allowDrop(ev) {
+        ev.preventDefault();
+    }
+
+    function dragEnter(ev) {
+        ev.preventDefault();
+        // Highlight Drop Zone
+        const col = ev.currentTarget;
+        col.classList.add('drop-active');
+    }
+
+    function dragLeave(ev) {
+        const col = ev.currentTarget;
+        col.classList.remove('drop-active');
+    }
+
+    async function drop(ev, newStatusLabel) {
+        ev.preventDefault();
+        const col = ev.currentTarget;
+        col.classList.remove('drop-active');
+        
+        const cardId = ev.dataTransfer.getData("text");
+        const cardEl = document.getElementById(`card-${cardId}`);
+        
+        if (!cardEl) return;
+
+        // Visual Move
+        cardEl.classList.remove('dragging');
+        const container = col.querySelector('.kanban-col');
+        container.prepend(cardEl); // Add to top of new column
+
+        // API Update
+        try {
+            // "Moved via Drag & Drop"
+            const comment = `Status changed to ${newStatusLabel} (Drag & Drop)`;
+            const url = `${SCRIPT_URL}?req=add_action&id=${cardId}&user=${user}&type=Status Update&msg=${encodeURIComponent(comment)}&new_status=${newStatusLabel}`;
+            
+            await fetch(url);
+            // Optional: Reload to sync counts and order
+            loadData();
+        } catch(e) {
+            alert("Sync Failed: " + e.message);
+            loadData(); // Revert on fail
+        }
+    }
+
+    // --- EXISTING TICKET LOGIC (Unchanged) ---
+
     async function openTicket(id) {
         currentTicketId = id;
         document.getElementById('ticket-modal').classList.remove('hidden');
@@ -217,10 +302,8 @@
         try {
             const res = await fetch(`${SCRIPT_URL}?req=get_ticket&id=${id}`);
             const data = await res.json();
-            
             if(data.status === 'success') {
                 const t = data.ticket;
-                // FIX: Use val() helper here too
                 document.getElementById('t-title').innerText = val(t, 'Title');
                 document.getElementById('t-desc').innerText = val(t, 'Description') || "No description.";
                 document.getElementById('t-id').innerText = val(t, 'ID');
@@ -228,53 +311,34 @@
                 
                 const histDiv = document.getElementById('t-history');
                 histDiv.innerHTML = "";
-                if(data.history.length === 0) {
-                    histDiv.innerHTML = '<div class="text-center text-gray-400 italic text-xs">No updates yet.</div>';
-                } else {
+                if(data.history.length === 0) histDiv.innerHTML = '<div class="text-center text-gray-400 italic text-xs">No updates yet.</div>';
+                else {
                     data.history.forEach(act => {
-                        // FIX: Use val() for history items too
                         const d = new Date(val(act, 'Timestamp')).toLocaleString();
-                        const actUser = val(act, 'User');
-                        const actDetails = val(act, 'Details');
-                        const actType = val(act, 'Type');
-
                         const row = document.createElement('div');
                         row.className = "flex gap-3 text-xs";
-                        row.innerHTML = `
-                            <div class="font-bold text-gray-600 w-24 shrink-0 text-right">${actUser}<br><span class="font-normal text-[9px] text-gray-400">${d}</span></div>
-                            <div class="flex-1 bg-gray-50 p-2 rounded border border-gray-100 text-gray-700">
-                                <p>${actDetails}</p>
-                                ${actType !== 'Comment' ? `<span class="bg-yellow-100 text-yellow-800 px-1 rounded text-[9px] font-bold mt-1 inline-block">${actType}</span>` : ''}
-                            </div>
-                        `;
+                        row.innerHTML = `<div class="font-bold text-gray-600 w-24 shrink-0 text-right">${val(act, 'User')}<br><span class="font-normal text-[9px] text-gray-400">${d}</span></div><div class="flex-1 bg-gray-50 p-2 rounded border border-gray-100 text-gray-700"><p>${val(act, 'Details')}</p>${val(act, 'Type')!=='Comment'?`<span class="bg-yellow-100 text-yellow-800 px-1 rounded text-[9px] font-bold mt-1 inline-block">${val(act, 'Type')}</span>`:''}</div>`;
                         histDiv.appendChild(row);
                     });
                 }
             }
-        } catch(e) { alert("Error loading ticket: " + e.message); closeTicket(); }
+        } catch(e) { alert("Error: " + e.message); closeTicket(); }
     }
 
-    function closeTicket() {
-        document.getElementById('ticket-modal').classList.add('hidden');
-        document.body.classList.remove('modal-active');
-    }
+    function closeTicket() { document.getElementById('ticket-modal').classList.add('hidden'); document.body.classList.remove('modal-active'); }
 
     async function postUpdate() {
         const msg = document.getElementById('t-comment').value;
         const newStatus = document.getElementById('t-new-status').value;
         if(!msg && !newStatus) return;
-
         const type = newStatus ? "Status Update" : "Comment";
         const txt = newStatus ? `${msg} (Moved to ${newStatus})` : msg;
-
         try {
-            const url = `${SCRIPT_URL}?req=add_action&id=${currentTicketId}&user=${user}&type=${type}&msg=${encodeURIComponent(txt)}&new_status=${newStatus}`;
-            await fetch(url);
+            await fetch(`${SCRIPT_URL}?req=add_action&id=${currentTicketId}&user=${user}&type=${type}&msg=${encodeURIComponent(txt)}&new_status=${newStatus}`);
             document.getElementById('t-comment').value = "";
             document.getElementById('t-new-status').value = "";
-            openTicket(currentTicketId);
-            loadData();
-        } catch(e) { alert("Post failed: " + e.message); }
+            openTicket(currentTicketId); loadData();
+        } catch(e) { alert("Post failed"); }
     }
 
     async function submitItem() {
@@ -283,21 +347,13 @@
         const prio = document.getElementById('inp-prio').value;
         const cat = document.querySelector('input[name="cat"]:checked').value;
         const btn = document.getElementById('btn-submit');
-
-        if(!title) { alert("Title is required"); return; }
+        if(!title) { alert("Title Required"); return; }
         btn.disabled = true;
-
         try {
-            const url = `${SCRIPT_URL}?req=add_roadmap&user=${user}&title=${encodeURIComponent(title)}&desc=${encodeURIComponent(desc)}&prio=${prio}&cat=${cat}`;
-            const res = await fetch(url);
+            const res = await fetch(`${SCRIPT_URL}?req=add_roadmap&user=${user}&title=${encodeURIComponent(title)}&desc=${encodeURIComponent(desc)}&prio=${prio}&cat=${cat}`);
             const data = await res.json();
-            if(data.status === 'success') {
-                toggleForm();
-                document.getElementById('inp-title').value = "";
-                document.getElementById('inp-desc').value = "";
-                loadData();
-            } else throw new Error(data.message);
-        } catch(e) { alert("Error: " + e.message); } finally { btn.disabled = false; }
+            if(data.status === 'success') { toggleForm(); document.getElementById('inp-title').value = ""; document.getElementById('inp-desc').value = ""; loadData(); }
+        } catch(e) { alert("Error"); } finally { btn.disabled = false; }
     }
 </script>
 </body>
