@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Activity v1.3 | SignOS</title>
+    <title>System Activity v1.4 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -87,11 +87,12 @@
             document.getElementById('stat-total').innerText = data.length;
             const authors = [...new Set(data.map(i => val(i, 'Author')))].join(", ");
             document.getElementById('stat-authors').innerText = authors;
-
+            
             // Sort: Newest First
             data.sort((a, b) => new Date(val(b, 'Timestamp')) - new Date(val(a, 'Timestamp')));
-
-            const latest = data[0];
+            
+            // Fix "Invalid Date": Use first item in array
+            const latest = data; 
             if (latest) {
                 const ts = val(latest, 'Timestamp');
                 if (ts) {
@@ -119,28 +120,36 @@
             const msg = val(row, 'Message');
             const hash = val(row, 'Commit Hash');
             const link = val(row, 'GitHub Link');
-            const env = val(row, 'Environment') || "DEV"; 
+            const env = val(row, 'Environment') || "DEV";
 
             const d = new Date(ts);
             const dateStr = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
             const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
+            
             // Twin-Engine Badge Logic
             const isLive = env === 'LIVE';
             const badgeColor = isLive ? "bg-green-100 text-green-800 border-green-200" : "bg-orange-100 text-orange-800 border-orange-200";
             const icon = isLive ? "🚀" : "🛠️";
             const borderColor = isLive ? "border-green-500 shadow-green-100" : "border-blue-100";
 
+            // Highlight Ticket IDs (e.g., RMP_OPS_01)
+            const fmtMsg = msg.replace(/(RMP_[A-Za-z0-9_]+)/g, '<span class="bg-yellow-100 text-yellow-800 px-1 rounded font-bold border border-yellow-200 text-[10px] ml-1">$1</span>');
+
             const item = document.createElement('div');
-            item.className = "relative pl-8 timeline-item";
+            item.className = "timeline-item relative pl-12 py-2";
+            
             item.innerHTML = `
+                <!-- Vertical Line -->
                 <div class="timeline-line"></div>
-                <div class="absolute left-0 top-0 mt-1">
-                    <div class="w-10 h-10 rounded-full bg-white border-4 ${borderColor} flex items-center justify-center text-lg shadow-sm z-10 relative">
-                        ${icon}
+                
+                <!-- Icon Badge -->
+                <div class="absolute left-0 top-3 w-12 flex justify-center z-10">
+                    <div class="w-10 h-10 bg-white border-2 ${borderColor} rounded-full flex items-center justify-center shadow-sm">
+                        <span class="text-lg">${icon}</span>
                     </div>
                 </div>
 
+                <!-- Content Card -->
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition group">
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex items-center gap-2">
@@ -152,7 +161,7 @@
                         </div>
                     </div>
                     
-                    <p class="text-sm text-gray-700 font-medium leading-relaxed">${msg}</p>
+                    <p class="text-sm text-gray-700 font-medium leading-relaxed">${fmtMsg}</p>
                     
                     <div class="mt-3 flex justify-between items-center border-t border-gray-50 pt-2">
                         <span class="text-[9px] font-mono text-gray-400 bg-gray-50 px-1 rounded">#${hash}</span>
@@ -164,8 +173,5 @@
         });
     }
 </script>
-
 </body>
 </html>
-
-
