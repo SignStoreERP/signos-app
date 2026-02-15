@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Roadmap | SignOS</title>
+    <title>Dev Roadmap v2.0 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -13,6 +13,9 @@
         .card-low { border-left: 4px solid #3b82f6; }
         .slide-panel { transition: transform 0.3s ease-in-out; }
         .slide-panel.closed { transform: translateX(100%); }
+        /* Modal Transitions */
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow: hidden; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col overflow-hidden">
@@ -35,44 +38,36 @@
     <!-- KANBAN BOARD -->
     <div class="flex-1 overflow-x-auto overflow-y-hidden p-6">
         <div class="flex gap-6 h-full min-w-[1000px]">
-            
-            <!-- COLUMN 1: PENDING -->
+            <!-- COL 1: PENDING -->
             <div class="flex-1 flex flex-col bg-gray-200 rounded-xl border border-gray-300">
                 <div class="p-3 border-b border-gray-300 font-bold text-gray-600 text-xs uppercase tracking-wider flex justify-between">
-                    <span>Backlog / Pending</span>
-                    <span id="count-pending" class="bg-gray-300 px-2 rounded-full text-gray-700">0</span>
+                    <span>Backlog / Pending</span><span id="count-pending" class="bg-gray-300 px-2 rounded-full text-gray-700">0</span>
                 </div>
                 <div id="col-pending" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
             </div>
-
-            <!-- COLUMN 2: IN PROGRESS -->
+            <!-- COL 2: IN PROGRESS -->
             <div class="flex-1 flex flex-col bg-blue-50 rounded-xl border border-blue-200">
                 <div class="p-3 border-b border-blue-200 font-bold text-blue-800 text-xs uppercase tracking-wider flex justify-between">
-                    <span>In Development</span>
-                    <span id="count-progress" class="bg-blue-200 px-2 rounded-full text-blue-800">0</span>
+                    <span>In Development</span><span id="count-progress" class="bg-blue-200 px-2 rounded-full text-blue-800">0</span>
                 </div>
                 <div id="col-progress" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
             </div>
-
-            <!-- COLUMN 3: COMPLETE -->
+            <!-- COL 3: COMPLETE -->
             <div class="flex-1 flex flex-col bg-green-50 rounded-xl border border-green-200">
                 <div class="p-3 border-b border-green-200 font-bold text-green-800 text-xs uppercase tracking-wider flex justify-between">
-                    <span>Completed / Live</span>
-                    <span id="count-done" class="bg-green-200 px-2 rounded-full text-green-800">0</span>
+                    <span>Completed / Live</span><span id="count-done" class="bg-green-200 px-2 rounded-full text-green-800">0</span>
                 </div>
                 <div id="col-done" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
             </div>
-
         </div>
     </div>
 
-    <!-- SIDE PANEL (ADD ITEM) -->
+    <!-- CREATE ITEM SLIDER -->
     <div id="side-form" class="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl border-l border-gray-200 z-30 slide-panel closed flex flex-col">
         <div class="p-6 bg-gray-900 text-white flex justify-between items-center shrink-0">
             <h2 class="font-bold text-lg">Submit Request</h2>
             <button onclick="toggleForm()" class="text-gray-400 hover:text-white text-xl">×</button>
         </div>
-        
         <div class="p-6 space-y-4 flex-1 overflow-y-auto">
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
@@ -82,7 +77,6 @@
                     <label class="cursor-pointer"><input type="radio" name="cat" value="Goal" class="peer sr-only"><div class="text-center text-xs border rounded p-2 peer-checked:bg-purple-600 peer-checked:text-white hover:bg-gray-50 font-bold">Goal</div></label>
                 </div>
             </div>
-
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Priority</label>
                 <select id="inp-prio" class="w-full border p-2 rounded text-sm bg-white">
@@ -91,31 +85,67 @@
                     <option value="High">High - Critical / Rush</option>
                 </select>
             </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
-                <input type="text" id="inp-title" class="w-full border p-2 rounded text-sm font-bold" placeholder="Short summary...">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
-                <textarea id="inp-desc" class="w-full border p-2 rounded text-sm h-32" placeholder="Details, steps to reproduce, or acceptance criteria..."></textarea>
-            </div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label><input type="text" id="inp-title" class="w-full border p-2 rounded text-sm font-bold" placeholder="Short summary..."></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label><textarea id="inp-desc" class="w-full border p-2 rounded text-sm h-32" placeholder="Details..."></textarea></div>
         </div>
-
         <div class="p-6 border-t border-gray-200 bg-gray-50 shrink-0">
-            <button onclick="submitItem()" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded shadow transition flex items-center justify-center gap-2">
-                <span>SUBMIT ITEM</span>
-                <div id="loader" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            </button>
+            <button onclick="submitItem()" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded shadow transition flex items-center justify-center gap-2"><span>SUBMIT ITEM</span></button>
+        </div>
+    </div>
+
+    <!-- TICKET DETAIL MODAL -->
+    <div id="ticket-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-start shrink-0">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span id="t-id" class="text-[9px] font-bold bg-gray-200 text-gray-600 px-1.5 rounded border border-gray-300">ID</span>
+                        <span id="t-cat" class="text-[9px] font-bold uppercase tracking-wide">CAT</span>
+                    </div>
+                    <h2 id="t-title" class="text-xl font-black text-gray-900 leading-tight">Ticket Title</h2>
+                </div>
+                <button onclick="closeTicket()" class="text-gray-400 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            
+            <!-- Modal Body (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- Main Desc -->
+                <div>
+                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-1">Description</h4>
+                    <p id="t-desc" class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-100"></p>
+                </div>
+                <!-- History Feed -->
+                <div>
+                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Activity History</h4>
+                    <div id="t-history" class="space-y-3">
+                        <!-- Dynamic Comments Go Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer (Action) -->
+            <div class="bg-gray-100 px-6 py-4 border-t border-gray-200 shrink-0">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Add Update / Change Status</label>
+                <div class="flex gap-2">
+                    <select id="t-new-status" class="bg-white border border-gray-300 text-xs font-bold rounded px-2 py-2 w-32">
+                        <option value="">No Change</option>
+                        <option value="Pending">Move: Pending</option>
+                        <option value="In Progress">Move: Doing</option>
+                        <option value="Complete">Move: Done</option>
+                    </select>
+                    <input type="text" id="t-comment" placeholder="Add a note or comment..." class="flex-1 border border-gray-300 rounded px-3 text-sm focus:border-blue-500 outline-none">
+                    <button onclick="postUpdate()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 rounded text-xs">POST</button>
+                </div>
+            </div>
         </div>
     </div>
 
 <script>
     const user = sessionStorage.getItem('signos_user') || 'Guest';
+    let currentTicketId = null;
 
     window.onload = function() {
-        // Init Security & Telemetry via signos-core.js implicitly
         if(sessionStorage.getItem('signos_role') !== 'ADMIN') {
             alert("Developer Access Only");
             window.location.href = 'menu.html';
@@ -123,111 +153,152 @@
         loadData();
     };
 
-    function toggleForm() {
-        document.getElementById('side-form').classList.toggle('closed');
-    }
+    function toggleForm() { document.getElementById('side-form').classList.toggle('closed'); }
 
+    // --- BOARD LOGIC ---
     async function loadData() {
         try {
-            // READ from Backend (SYS_Roadmap)
             const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&ip=${clientIP}&user=${user}`);
             const data = await response.json();
-            
             if(data.error) throw new Error(data.error);
             renderBoard(data);
-
-        } catch(e) {
-            console.error(e); // Silent fail or show toast
-        }
+        } catch(e) { console.error(e); }
     }
 
     function renderBoard(data) {
-        // Clear Columns
-        const pending = document.getElementById('col-pending');
-        const progress = document.getElementById('col-progress');
-        const done = document.getElementById('col-done');
-        pending.innerHTML = ""; progress.innerHTML = ""; done.innerHTML = "";
-
-        let cP=0, cI=0, cD=0;
+        const cols = { pending: document.getElementById('col-pending'), progress: document.getElementById('col-progress'), done: document.getElementById('col-done') };
+        Object.values(cols).forEach(el => el.innerHTML = "");
+        let counts = { pending:0, progress:0, done:0 };
 
         data.forEach(item => {
             const card = document.createElement('div');
-            // Priority Color
-            let borderClass = 'card-med';
-            if(item.Priority === 'High') borderClass = 'card-high';
-            if(item.Priority === 'Low') borderClass = 'card-low';
+            let borderClass = item.Priority === 'High' ? 'card-high' : (item.Priority === 'Low' ? 'card-low' : 'card-med');
+            let catColor = item.Category === 'Bug' ? "bg-red-100 text-red-800" : (item.Category === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
+            
+            card.className = `bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-pointer ${borderClass} border-l-4 group`;
+            card.onclick = () => openTicket(item.ID); // NEW: Click opens modal
 
-            // Category Badge
-            let catColor = "bg-gray-100 text-gray-600";
-            if(item.Category === 'Bug') catColor = "bg-red-100 text-red-800";
-            if(item.Category === 'Feature') catColor = "bg-blue-100 text-blue-800";
-            if(item.Category === 'Goal') catColor = "bg-purple-100 text-purple-800";
-
-            // Date Format
-            const date = new Date(item.Timestamp).toLocaleDateString();
-
-            card.className = `bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-default ${borderClass} border-l-4`;
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[9px] font-bold uppercase ${catColor} px-1.5 py-0.5 rounded">${item.Category}</span>
-                    <span class="text-[9px] text-gray-400">${date}</span>
+                    <span class="text-[9px] text-gray-400 group-hover:text-blue-500">View Ticket →</span>
                 </div>
                 <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1">${item.Title}</h3>
-                <p class="text-xs text-gray-500 line-clamp-3">${item.Description}</p>
-                <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">${item.User}</span>
-                    <span class="text-[9px] font-bold text-gray-400 bg-gray-100 px-1 rounded border">${item.ID}</span>
+                <p class="text-xs text-gray-500 line-clamp-2">${item.Description}</p>
+                <div class="mt-2 pt-2 border-t border-gray-50 flex justify-between items-center">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase">${item.User}</span>
+                    <span class="text-[9px] font-mono text-gray-300">${item.ID}</span>
                 </div>
             `;
 
-            // Sort into columns based on Backend Status
-            // Note: Standardize strings to avoid casing issues
             const status = String(item.Status).toLowerCase().trim();
-            if(status.includes('progress')) { progress.appendChild(card); cI++; }
-            else if(status.includes('complete') || status.includes('done')) { done.appendChild(card); cD++; }
-            else { pending.appendChild(card); cP++; }
+            if(status.includes('progress')) { cols.progress.appendChild(card); counts.progress++; }
+            else if(status.includes('complete') || status.includes('done')) { cols.done.appendChild(card); counts.done++; }
+            else { cols.pending.appendChild(card); counts.pending++; }
         });
 
-        // Update Counts
-        document.getElementById('count-pending').innerText = cP;
-        document.getElementById('count-progress').innerText = cI;
-        document.getElementById('count-done').innerText = cD;
+        document.getElementById('count-pending').innerText = counts.pending;
+        document.getElementById('count-progress').innerText = counts.progress;
+        document.getElementById('count-done').innerText = counts.done;
     }
 
+    // --- TICKET MODAL LOGIC ---
+    async function openTicket(id) {
+        currentTicketId = id;
+        document.getElementById('ticket-modal').classList.remove('hidden');
+        document.body.classList.add('modal-active');
+        
+        // Loader State
+        document.getElementById('t-title').innerText = "Loading...";
+        document.getElementById('t-history').innerHTML = '<div class="text-center text-gray-400 text-xs py-4">Fetching details...</div>';
+
+        try {
+            const res = await fetch(`${SCRIPT_URL}?req=get_ticket&id=${id}`);
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                const t = data.ticket;
+                document.getElementById('t-title').innerText = t.Title;
+                document.getElementById('t-desc').innerText = t.Description || "No description.";
+                document.getElementById('t-id').innerText = t.ID;
+                document.getElementById('t-cat').innerText = t.Category;
+                
+                // Render History
+                const histDiv = document.getElementById('t-history');
+                histDiv.innerHTML = "";
+                if(data.history.length === 0) {
+                    histDiv.innerHTML = '<div class="text-center text-gray-400 italic text-xs">No updates yet.</div>';
+                } else {
+                    data.history.forEach(act => {
+                        const d = new Date(act.Timestamp).toLocaleString();
+                        const row = document.createElement('div');
+                        row.className = "flex gap-3 text-xs";
+                        row.innerHTML = `
+                            <div class="font-bold text-gray-600 w-24 shrink-0 text-right">${act.User}<br><span class="font-normal text-[9px] text-gray-400">${d}</span></div>
+                            <div class="flex-1 bg-gray-50 p-2 rounded border border-gray-100 text-gray-700">
+                                <p>${act.Details}</p>
+                                ${act.Type !== 'Comment' ? `<span class="bg-yellow-100 text-yellow-800 px-1 rounded text-[9px] font-bold mt-1 inline-block">${act.Type}</span>` : ''}
+                            </div>
+                        `;
+                        histDiv.appendChild(row);
+                    });
+                }
+            }
+        } catch(e) { alert("Error loading ticket: " + e.message); closeTicket(); }
+    }
+
+    function closeTicket() {
+        document.getElementById('ticket-modal').classList.add('hidden');
+        document.body.classList.remove('modal-active');
+    }
+
+    async function postUpdate() {
+        const msg = document.getElementById('t-comment').value;
+        const newStatus = document.getElementById('t-new-status').value;
+        
+        if(!msg && !newStatus) return; // Don't post empty
+
+        // Optimistic UI update could go here, but let's just wait for reload
+        const type = newStatus ? "Status Update" : "Comment";
+        const txt = newStatus ? `${msg} (Moved to ${newStatus})` : msg;
+
+        try {
+            const url = `${SCRIPT_URL}?req=add_action&id=${currentTicketId}&user=${user}&type=${type}&msg=${encodeURIComponent(txt)}&new_status=${newStatus}`;
+            await fetch(url);
+            
+            // Clear inputs
+            document.getElementById('t-comment').value = "";
+            document.getElementById('t-new-status').value = "";
+            
+            // Refresh Both
+            openTicket(currentTicketId); // Refresh modal history
+            loadData(); // Refresh background board (in case status changed)
+            
+        } catch(e) { alert("Post failed: " + e.message); }
+    }
+
+    // --- CREATE NEW ITEM ---
     async function submitItem() {
         const title = document.getElementById('inp-title').value;
         const desc = document.getElementById('inp-desc').value;
         const prio = document.getElementById('inp-prio').value;
         const cat = document.querySelector('input[name="cat"]:checked').value;
         const btn = document.getElementById('btn-submit');
-        const loader = document.getElementById('loader');
 
         if(!title) { alert("Title is required"); return; }
-
         btn.disabled = true;
-        loader.classList.remove('hidden');
 
         try {
             const url = `${SCRIPT_URL}?req=add_roadmap&user=${user}&title=${encodeURIComponent(title)}&desc=${encodeURIComponent(desc)}&prio=${prio}&cat=${cat}`;
-            const response = await fetch(url);
-            const res = await response.json();
-
-            if(res.status === 'success') {
+            const res = await fetch(url);
+            const data = await res.json();
+            if(data.status === 'success') {
                 toggleForm();
-                // Clear Form
                 document.getElementById('inp-title').value = "";
                 document.getElementById('inp-desc').value = "";
-                // Refresh Board
                 loadData();
-            } else {
-                throw new Error(res.message);
-            }
-        } catch(e) {
-            alert("Error: " + e.message);
-        } finally {
-            btn.disabled = false;
-            loader.classList.add('hidden');
-        }
+            } else throw new Error(data.message);
+        } catch(e) { alert("Error: " + e.message); } finally { btn.disabled = false; }
     }
 </script>
 
