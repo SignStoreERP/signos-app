@@ -13,25 +13,19 @@ const ARCHIVE_FOLDER_ID = "18MBPWajHdF4TNQ0g8Iz1n1-GT3nBrMj4";
 
 function doGet(e) {
   const params = e.parameter;
+  if (params.ip) logActivity(params);
 
-  // 1. LOGGING INTERCEPTOR (Async)
-  if (params.ip) {
-    logActivity(params);
-  }
-
-  // 2. ROUTING
-  // Auth & Config
+  // ... existing routes ...
   if (params.req === "auth") return handleAuth(params.pin);
-  if (params.req === "table") return fetchTable(params.tab);
+  if (params.req === "table") return fetchTable(params.tab); // This will read the Roadmap
   
-  // Archiving
-  if (params.req === "manual_archive") return manualExport(params.pin);
+  // NEW: Add Roadmap Item
+  if (params.req === "add_roadmap") return addRoadmapItem(params);
 
-  // NEW: Log Viewer Endpoints
+  // ... existing routes ...
   if (params.req === "get_archive_index") return fetchArchiveIndex();
   if (params.req === "get_log_content") return fetchLogFile(params.file_id);
-
-  // Default: Config Request
+  
   return fetchConfig(params.tab || "PROD_Yard_Signs");
 }
 
@@ -252,3 +246,5 @@ function handleAuth(pin) {
 function returnJSON(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+
+
