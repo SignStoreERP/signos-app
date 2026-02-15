@@ -237,53 +237,82 @@
         renderBoard(filtered);
     }
 
-    function renderBoard(data) {
-        const cols = { pending: document.getElementById('col-pending'), progress: document.getElementById('col-progress'), done: document.getElementById('col-done') };
-        Object.values(cols).forEach(el => el.innerHTML = "");
-        let counts = { pending:0, progress:0, done:0 };
+function renderBoard(data) {
+    const cols = {
+        pending: document.getElementById('col-pending'),
+        progress: document.getElementById('col-progress'),
+        done: document.getElementById('col-done')
+    };
 
-        data.forEach(item => {
-            const id = val(item, 'ID');
-            if(!id) return;
-            const card = document.createElement('div');
-            const prio = val(item, 'Priority'); const cat = val(item, 'Category');
-            let borderClass = prio === 'High' ? 'card-high' : (prio === 'Low' ? 'card-low' : 'card-med');
-            let catColor = cat === 'Bug' ? "bg-red-100 text-red-800" : (cat === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
-            
-            const target = val(item, 'Target_Env') || 'APP';
-            const targetBadge = target === 'LIVE' 
-                ? '<span class="text-[8px] bg-green-100 text-green-800 px-1 rounded border border-green-200">LIVE</span>' 
-                : '<span class="text-[8px] bg-orange-100 text-orange-800 px-1 rounded border border-orange-200">APP</span>';
+    // Clear columns
+    Object.values(cols).forEach(el => el.innerHTML = "");
 
-            card.className = `draggable-card bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-grab ${borderClass} border-l-4 group relative`;
-            card.draggable = true; card.id = `card-${id}`;
-            card.ondragstart = (e) => drag(e, id);
-            card.onclick = (e) => { if(!card.classList.contains('dragging')) openTicket(id); };
+    let counts = { pending: 0, progress: 0, done: 0 };
 
-            card.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <div class="flex gap-1">
-                        <span class="text-[9px] font-bold uppercase ${catColor} px-1.5 py-0.5 rounded">${cat}</span>
-                        ${targetBadge}
-                    </div>
-                    <span class="text-[9px] text-gray-400 group-hover:text-blue-500">View →</span>
+    data.forEach(item => {
+        // Use val() to safely find ID, id, or Id
+        const id = val(item, 'ID');
+        if (!id) {
+            console.warn("Skipping item without ID:", item);
+            return;
+        }
+
+        const title = val(item, 'Title');
+        const desc = val(item, 'Description');
+        const prio = val(item, 'Priority');
+        const cat = val(item, 'Category');
+        const statusRaw = val(item, 'Status'); // Pending, In Progress, Complete
+        const target = val(item, 'Target_Env') || 'APP';
+
+        // Map status to column keys
+        let statusKey = 'pending';
+        if (statusRaw === 'In Progress') statusKey = 'progress';
+        if (statusRaw === 'Complete') statusKey = 'done';
+
+        // Styling Logic
+        let borderClass = prio === 'High' ? 'card-high' : (prio === 'Low' ? 'card-low' : 'card-med');
+        let catColor = cat === 'Bug' ? "bg-red-100 text-red-800" : (cat === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
+        const targetBadge = target === 'LIVE' ? 
+            '<span class="text-[8px] bg-green-100 text-green-800 px-1 rounded border border-green-200">LIVE</span>' : 
+            '<span class="text-[8px] bg-orange-100 text-orange-800 px-1 rounded border border-orange-200">APP</span>';
+
+        const card = document.createElement('div');
+        card.className = `bg-white p-3 rounded shadow-sm border border-gray-200 ${borderClass} draggable-card group relative hover:shadow-md transition`;
+        card.draggable = true;
+        card.ondragstart = (e) => drag(e, id);
+        card.onclick = () => openTicket(item);
+
+        card.innerHTML = `
+            <div class="flex justify-between items-start mb-1">
+                <span class="text-[10px] font-bold text-gray-400 font-mono">#${id}</span>
+                <div class="flex gap-1">
+                    ${targetBadge}
+                    <span class="text-[9px] font-bold px-1.5 rounded uppercase tracking-wider ${catColor}">${cat}</span>
                 </div>
-                <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1 pointer-events-none">${val(item, 'Title')}</h3>
-                <p class="text-xs text-gray-500 line-clamp-2 pointer-events-none">${val(item, 'Description')}</p>
-                <div class="mt-2 pt-2 border-t border-gray-50 flex justify-between items-center pointer-events-none">
-                    <div class="flex flex-col"><span class="text-[9px] font-bold text-gray-400 uppercase">${val(item, 'User')}</span><span class="text-[8px] text-gray-300">${new Date(val(item, 'Timestamp')).toLocaleDateString()}</span></div>
-                    <span class="text-[9px] font-mono text-gray-300">${id}</span>
-                </div>`;
+            </div>
+            <h4 class="text-xs font-bold text-gray-800 leading-snug mb-1">${title}</h4>
+            <p class="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">${desc}</p>
+            <div class="mt-2 flex justify-between items-center">
+                <div class="flex -space-x-1">
+                    <div class="w-4 h-4 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[8px] font-bold text-gray-500" title="${val(item, 'User')}">
+                        ${val(item, 'User').charAt(0)}
+                    </div>
+                </div>
+                <div class="opacity-0 group-hover:opacity-100 transition text-[9px] font-bold text-blue-500">Edit →</div>
+            </div>
+        `;
 
-            const status = String(val(item, 'Status')).toLowerCase().trim();
-            if(status.includes('progress') || status.includes('doing')) { cols.progress.appendChild(card); counts.progress++; }
-            else if(status.includes('complete') || status.includes('done')) { cols.done.appendChild(card); counts.done++; }
-            else { cols.pending.appendChild(card); counts.pending++; }
-        });
-        document.getElementById('count-pending').innerText = counts.pending;
-        document.getElementById('count-progress').innerText = counts.progress;
-        document.getElementById('count-done').innerText = counts.done;
-    }
+        if (cols[statusKey]) {
+            cols[statusKey].appendChild(card);
+            counts[statusKey]++;
+        }
+    });
+
+    // Update Headers
+    document.getElementById('count-pending').innerText = counts.pending;
+    document.getElementById('count-progress').innerText = counts.progress;
+    document.getElementById('count-done').innerText = counts.done;
+}
 
     function drag(ev, id) { ev.dataTransfer.setData("text", id); ev.target.classList.add('dragging'); }
     function allowDrop(ev) { ev.preventDefault(); }
