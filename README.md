@@ -1,5 +1,3 @@
-File 1: signos-app (Development Repository)
-Target: The "Master Manual" for developers/admins.
 # 🛠️ SignOS: The "Serverless" Sign Shop ERP
 
 **Status:** v3.5 (Dev/Staging)  
