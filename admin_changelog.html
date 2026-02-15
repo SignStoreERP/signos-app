@@ -67,10 +67,9 @@
 
     function goBack() { window.history.back(); }
 
-    // HELPER: Case-insensitive property fetcher
+    // SAFETY VALVE
     function val(obj, key) {
         if (!obj) return "";
-        // Checks Key, KEY, and key to find data
         return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
     }
 
@@ -84,7 +83,7 @@
                 return;
             }
 
-            // Stats Logic (Using val helper)
+            // Stats Logic
             document.getElementById('stat-total').innerText = data.length;
             const authors = [...new Set(data.map(i => val(i, 'Author')))].join(", ");
             document.getElementById('stat-authors').innerText = authors;
@@ -114,13 +113,13 @@
         container.innerHTML = "";
 
         rows.forEach(row => {
-            // Use val() for all data access
+            // SAFE DATA EXTRACTION
             const ts = val(row, 'Timestamp');
             const author = val(row, 'Author');
             const msg = val(row, 'Message');
             const hash = val(row, 'Commit Hash');
             const link = val(row, 'GitHub Link');
-            const env = val(row, 'Environment') || "DEV"; // Default to DEV if missing
+            const env = val(row, 'Environment') || "DEV"; 
 
             const d = new Date(ts);
             const dateStr = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -165,5 +164,8 @@
         });
     }
 </script>
+
 </body>
 </html>
+
+
