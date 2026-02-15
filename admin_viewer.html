@@ -233,7 +233,7 @@
         let startIdx = 0;
         
         // FIXED: Check the FIRST LINE (Header) specifically
-        if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2; // Skip Header + Divider line
+        if (lines.length > 0 && lines[0].startsWith("Timestamp")) startIdx = 2; // Skip Header + Divider line
 
         for (let i = startIdx; i < lines.length; i++) {
             const line = lines[i].trim();
