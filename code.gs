@@ -429,3 +429,67 @@ function doPost(e) {
     return returnJSON({ status: "error", message: err.toString() });
   }
 }
+
+// ==========================================
+// UTILITY: BACKFILL VERSIONS FROM GITHUB
+// ==========================================
+
+function syncVersionsFromGitHub() {
+  const ss = SpreadsheetApp.openById(DATA_SS_ID);
+  const sheet = ss.getSheetByName("SYS_Modules");
+  
+  // 1. Get the list of modules (Skip header)
+  // Data Range: [Module_ID, Display_Name, File_Link, Live_Ver, Dev_Ver, Is_Live...]
+  const data = sheet.getDataRange().getValues();
+  const repoOwner = "SignStoreERP";
+  
+  // Define your Repos
+  const devRepo = "signos-app"; 
+  const liveRepo = "signos-live"; // Assumes you created this per RMP_OPS_09
+  
+  Logger.log("Starting Version Sync...");
+
+  // 2. Loop through every row
+  for (let i = 1; i < data.length; i++) {
+    const fileName = data[i][1]; // Column C: File_Link (e.g., "YardSign_Calculator.html")
+    
+    // Only process .html files
+    if (fileName && fileName.endsWith(".html")) {
+      
+      // --- FETCH DEV VERSION ---
+      try {
+        const devUrl = `https://raw.githubusercontent.com/${repoOwner}/${devRepo}/main/${fileName}`;
+        const devHtml = UrlFetchApp.fetch(devUrl).getContentText();
+        const devMatch = devHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
+        
+        if (devMatch && devMatch[2]) {
+          // Update Dev_Ver (Column E is Index 5 in Sheet, i+1 for Row)
+          sheet.getRange(i + 1, 5).setValue(devMatch[2]);
+          Logger.log(`Updated ${fileName} [DEV]: ${devMatch[2]}`);
+        }
+      } catch (e) {
+        Logger.log(`Skipped [DEV] ${fileName}: File not found or Repo Private.`);
+      }
+
+      // --- FETCH LIVE VERSION (Optional) ---
+      // Uncomment this block if you have populated your Live Repo
+      /*
+      try {
+        const liveUrl = `https://raw.githubusercontent.com/${repoOwner}/${liveRepo}/main/${fileName}`;
+        const liveHtml = UrlFetchApp.fetch(liveUrl).getContentText();
+        const liveMatch = liveHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
+        
+        if (liveMatch && liveMatch[2]) {
+          // Update Live_Ver (Column D is Index 4)
+          sheet.getRange(i + 1, 4).setValue(liveMatch[2]);
+          Logger.log(`Updated ${fileName} [LIVE]: ${liveMatch[2]}`);
+        }
+      } catch (e) {
+        // Quiet fail for Live if file doesn't exist there yet
+      }
+      */
+    }
+  }
+  
+  Logger.log("Sync Complete.");
+}
