@@ -1,11 +1,12 @@
-// SignOS Core System v1.0
+// SignOS Core System v1.1
 // Handles: IP Telemetry, Host Tracking, Session Security, and Global Navigation
 
-const SCRIPT_URL = "https://script.google.com/a/macros/signstoremacon.com/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
+// UPDATED: Global Web App URL (Consumer Access)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
 
 // 1. GLOBAL TELEMETRY (Runs on Load)
 let clientIP = "Unknown";
-const currentHost = window.location.hostname; // CAPTURES "github.io" or "zublinsystems.com"
+const currentHost = window.location.hostname;
 
 fetch('https://api.ipify.org?format=json')
     .then(r => r.json())
@@ -19,18 +20,16 @@ if (!window.location.pathname.includes('index.html')) {
     if (!user) window.location.href = 'index.html';
 }
 
-// 3. GLOBAL LOGOUT (With Telemetry)
+// 3. GLOBAL LOGOUT
 function logout() {
     const u = sessionStorage.getItem('signos_user');
-    // Fire "Goodbye" beacon with Host and IP info
     fetch(`${SCRIPT_URL}?req=log_event&action=LOGOUT&user=${u}&ip=${clientIP}&host=${currentHost}`, {mode: 'no-cors'});
-    
     sessionStorage.clear();
     window.location.href = 'index.html';
 }
 
 // 4. NAVIGATION
 function goBack() {
-    const mode = sessionStorage.getItem('signos_mode') || 'sales'; // We need to standardize storing 'mode'
+    const mode = sessionStorage.getItem('signos_mode') || 'sales';
     window.location.href = `menu.html?mode=${mode}`;
 }
