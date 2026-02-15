@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Viewer v2.3 | SignOS Admin</title>
+    <title>Log Viewer v2.5 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -93,7 +93,6 @@
             </div>
 
             <!-- SCROLLABLE TABLE CONTAINER -->
-            <!-- Note: overflow-auto here enables both horizontal and vertical scrolling for the table area -->
             <div class="flex-1 overflow-auto p-4 custom-scroll">
                 <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden inline-block min-w-full align-middle">
                     <table class="min-w-full text-left border-collapse">
@@ -232,13 +231,13 @@
             // Expected format: Date | IP | User | Role | Action | Target | Meta
             if (cols.length >= 6) {
                 rawData.push({
-                    time: cols,
+                    time: cols, // <--- FIXED: Now explicitly targets first column only
                     ip: cols[1],
                     user: cols[2],
                     role: cols[3],
                     action: cols[4],
                     target: cols[5],
-                    meta: cols[6] || "{}", // Capture the Full Log Message (Meta)
+                    meta: cols[6] || "{}", 
                     raw: line.toLowerCase()
                 });
             }
