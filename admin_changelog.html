@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Activity | SignOS</title>
+    <title>System Activity v1.1 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -40,7 +40,7 @@
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                 <div class="text-xs font-bold text-gray-400 uppercase">Last Update</div>
-                <div class="text-lg font-bold text-blue-600" id="stat-last">---</div>
+                <div class="text-sm font-bold text-blue-600 mt-1" id="stat-last">---</div>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                 <div class="text-xs font-bold text-gray-400 uppercase">Active Contributors</div>
@@ -69,7 +69,6 @@
 
     async function loadHistory() {
         try {
-            // Fetch directly from SYS_Changelog via API
             const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Changelog&ip=${clientIP}`);
             const data = await response.json();
 
@@ -86,9 +85,16 @@
             // Sort: Newest First
             data.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
             
-            // Set Last Update Text
-            const lastDate = new Date(data.Timestamp);
-            document.getElementById('stat-last').innerText = lastDate.toLocaleDateString();
+            // --- FIX START ---
+            // We use data because 'data' is the whole list
+            const latest = data; 
+            if (latest && latest.Timestamp) {
+                const d = new Date(latest.Timestamp);
+                // Shows: "2/20/2026, 2:30 PM"
+                const niceDate = d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                document.getElementById('stat-last').innerText = niceDate;
+            }
+            // --- FIX END ---
 
             renderTimeline(data);
 
@@ -147,3 +153,5 @@
 </script>
 </body>
 </html>
+
+
