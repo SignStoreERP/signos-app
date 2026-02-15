@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.4 (Twin-Engine & Roadmap)
+// SignOS API v6.5 (Twin-Engine & Roadmap Fixes)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -76,11 +76,12 @@ function getTicketDetails(ticketId) {
     if(!parentSheet || !childSheet) return returnJSON({ error: "Missing DB Tabs" });
 
     const pData = parentSheet.getDataRange().getValues();
-    const pHeaders = pData; // Assuming Row 1 is header
+    const pHeaders = pData[0]; // Row 1 is header
     let parentObj = null;
 
+    // FIX: Targeting Column A (Index 0) specifically
     for(let i=1; i<pData.length; i++) {
-      if(String(pData[i]) === String(ticketId)) { // ID is usually Col A (Index 0)
+      if(String(pData[i][0]) === String(ticketId)) { 
         parentObj = {};
         pHeaders.forEach((h, idx) => parentObj[h] = pData[i][idx]);
         break;
@@ -90,11 +91,12 @@ function getTicketDetails(ticketId) {
     if(!parentObj) return returnJSON({ error: "Ticket not found" });
 
     const cData = childSheet.getDataRange().getValues();
-    const cHeaders = cData;
+    const cHeaders = cData[0];
     const history = [];
 
+    // Action Sheet: Column B (Index 1) is Parent_ID
     for(let i=1; i<cData.length; i++) {
-      if(String(cData[i][1]) === String(ticketId)) { // Parent_ID is Col B (Index 1)
+      if(String(cData[i][1]) === String(ticketId)) { 
         let action = {};
         cHeaders.forEach((h, idx) => action[h] = cData[i][idx]);
         history.push(action);
@@ -126,10 +128,12 @@ function addTicketAction(p) {
       p.msg || ""
     ]);
 
+    // Update Status in Parent Sheet if provided
     if(p.new_status && p.new_status !== "") {
       const pData = parentSheet.getDataRange().getValues();
       for(let i=1; i<pData.length; i++) {
-        if(String(pData[i]) === String(p.id)) { // ID is Col A
+        // FIX: Targeting Column A (Index 0) specifically
+        if(String(pData[i][0]) === String(p.id)) { 
           parentSheet.getRange(i+1, 8).setValue(p.new_status); // Col H (8) is Status
           break;
         }
@@ -154,7 +158,7 @@ function fetchTable(tabName) {
     const values = sheet.getDataRange().getValues();
     if (values.length < 2) return returnJSON([]);
 
-    const headers = values;
+    const headers = values[0];
     const rows = values.slice(1);
     const result = rows.map(row => {
       let obj = {};
@@ -179,7 +183,7 @@ function fetchConfig(tabName) {
 
     const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
     const config = {};
-    data.forEach(row => { const key = row; const val = row[1]; if (key && key !== "") config[key] = val; });
+    data.forEach(row => { const key = row[0]; const val = row[1]; if (key && key !== "") config[key] = val; });
 
     return returnJSON(config);
   } catch (err) { return returnJSON({ error: "System Error: " + err.toString() }); }
@@ -191,7 +195,7 @@ function handleAuth(pin) {
     const sheet = ss.getSheetByName("Master_Staff");
     const data = sheet.getDataRange().getValues();
     
-    const headers = data.map(h => String(h).trim().toLowerCase());
+    const headers = data[0].map(h => String(h).trim().toLowerCase());
     const idx = {
       p: headers.findIndex(h => h.includes("pin")),
       n: headers.findIndex(h => h.includes("name") && !h.includes("last")),
@@ -228,7 +232,7 @@ function fetchArchiveIndex() {
       const url = r[2];
       let fileId = null;
       if (url) { const match = url.match(/\/d\/(.+?)\//); if (match) fileId = match[1]; else if (url.includes("id=")) fileId = url.split("id=")[1]; }
-      return { date: r, name: r[1], url: url, count: r[3], type: r[4], file_id: fileId };
+      return { date: r[0], name: r[1], url: url, count: r[3], type: r[4], file_id: fileId };
     }).reverse();
     return returnJSON(result);
   } catch (e) { return returnJSON({ error: e.toString() }); }
@@ -272,7 +276,7 @@ function processArchive(isDestructive) {
     const data = logSheet.getRange(2, 1, lastRow - 1, logSheet.getLastColumn()).getValues();
     let fileContent = "Timestamp | IP_Address | User | Role | Action | Target | Meta_Data\n================================================================================\n";
     data.forEach(row => {
-      const dateStr = Utilities.formatDate(new Date(row), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+      const dateStr = Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
       const cleanRow = [dateStr, row[1], row[2], row[3], row[4], row[5], row[6]].join(" | ");
       fileContent += cleanRow + "\n";
     });
@@ -369,7 +373,7 @@ function doPost(e) {
       // 5. ROADMAP LINKING
       const ticketMatch = msg.match(/(RMP_[A-Za-z0-9_]+)/);
       if (ticketMatch && actionSheet) {
-        const ticketId = ticketMatch;
+        const ticketId = ticketMatch[0]; // Fix: Regex match returns array
         const actionId = "GIT_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
         
         actionSheet.appendRow([
