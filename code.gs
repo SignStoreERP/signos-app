@@ -76,11 +76,11 @@ function getTicketDetails(ticketId) {
     if(!parentSheet || !childSheet) return returnJSON({ error: "Missing DB Tabs" });
 
     const pData = parentSheet.getDataRange().getValues();
-    const pHeaders = pData;
+    const pHeaders = pData; // Assuming Row 1 is header
     let parentObj = null;
 
     for(let i=1; i<pData.length; i++) {
-      if(String(pData[i]) === String(ticketId)) {
+      if(String(pData[i]) === String(ticketId)) { // ID is usually Col A (Index 0)
         parentObj = {};
         pHeaders.forEach((h, idx) => parentObj[h] = pData[i][idx]);
         break;
@@ -94,7 +94,7 @@ function getTicketDetails(ticketId) {
     const history = [];
 
     for(let i=1; i<cData.length; i++) {
-      if(String(cData[i][1]) === String(ticketId)) {
+      if(String(cData[i][1]) === String(ticketId)) { // Parent_ID is Col B (Index 1)
         let action = {};
         cHeaders.forEach((h, idx) => action[h] = cData[i][idx]);
         history.push(action);
@@ -129,8 +129,8 @@ function addTicketAction(p) {
     if(p.new_status && p.new_status !== "") {
       const pData = parentSheet.getDataRange().getValues();
       for(let i=1; i<pData.length; i++) {
-        if(String(pData[i]) === String(p.id)) {
-          parentSheet.getRange(i+1, 8).setValue(p.new_status); // Col 8 is Status
+        if(String(pData[i]) === String(p.id)) { // ID is Col A
+          parentSheet.getRange(i+1, 8).setValue(p.new_status); // Col H (8) is Status
           break;
         }
       }
@@ -302,6 +302,8 @@ function doPost(e) {
   try {
     const jsonString = e.postData.contents;
     const payload = JSON.parse(jsonString);
+    
+    // 1. Verify Payload
     if (!payload.commits) return returnJSON({status: "ignored"});
 
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
@@ -309,14 +311,14 @@ function doPost(e) {
     const moduleSheet = ss.getSheetByName("SYS_Modules");
     const actionSheet = ss.getSheetByName("SYS_Roadmap_Actions");
 
-    // DETECT TWIN ENGINE
+    // 2. Detect Environment (Twin-Engine Logic)
     const repoName = payload.repository.name.toLowerCase();
-    let envTag = "DEV";
-    let verColIndex = 5; // Col E (Dev_Ver)
+    let envTag = "DEV"; 
+    let verColIndex = 5; // Column E (Dev_Ver)
     
     if (repoName.includes("live") || repoName.includes("prod")) {
         envTag = "LIVE";
-        verColIndex = 4; // Col D (Live_Ver)
+        verColIndex = 4; // Column D (Live_Ver)
     }
 
     const commits = payload.commits;
@@ -333,12 +335,14 @@ function doPost(e) {
       const allFiles = [...added, ...modified];
       const fileCount = allFiles.length + (c.removed ? c.removed.length : 0);
 
-      // AUTO-VERSIONING
+      // 3. AUTO-VERSIONING ENGINE
       allFiles.forEach(fileName => {
         if (fileName.endsWith(".html")) {
            try {
+             // Construct Raw URL (Public)
              const rawUrl = `https://raw.githubusercontent.com/${payload.repository.full_name}/${payload.ref.split('/').pop()}/${fileName}`;
              const htmlContent = UrlFetchApp.fetch(rawUrl).getContentText();
+             
              const verMatch = htmlContent.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
              
              if (verMatch && verMatch[1]) {
@@ -352,28 +356,41 @@ function doPost(e) {
                  }
                }
              }
-           } catch (err) { console.error("Parse Error: " + fileName); }
+           } catch (err) {
+             console.error("Failed to parse version for " + fileName + ": " + err.toString());
+           }
         }
       });
 
-      // LOGGING
-      // Col G (Index 7) is Environment
+      // 4. LOGGING
+      // Columns: Timestamp, Author, Hash, Message, Files, Link, Environment
       logSheet.appendRow([ts, author, hash, msg, fileCount, url, envTag]);
 
-      // TICKET LINKING
+      // 5. ROADMAP LINKING
       const ticketMatch = msg.match(/(RMP_[A-Za-z0-9_]+)/);
       if (ticketMatch && actionSheet) {
         const ticketId = ticketMatch;
         const actionId = "GIT_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
-        actionSheet.appendRow([actionId, ticketId, ts, `GitHub (${envTag})`, "Code Commit", `Commit by ${author}: ${msg} (${url})`]);
+        
+        actionSheet.appendRow([
+          actionId,
+          ticketId,
+          ts,
+          `GitHub (${envTag})`, 
+          "Code Commit", 
+          `Commit by ${author}: ${msg} (${url})`
+        ]);
       }
     });
 
     return returnJSON({ status: "success" });
-  } catch (err) { return returnJSON({ status: "error", message: err.toString() }); }
+
+  } catch (err) {
+    return returnJSON({ status: "error", message: err.toString() });
+  }
 }
 
-// UTILITY: BACKFILL VERSIONS
+// UTILITY: BACKFILL VERSIONS FROM GITHUB
 function syncVersionsFromGitHub() {
   const ss = SpreadsheetApp.openById(DATA_SS_ID);
   const sheet = ss.getSheetByName("SYS_Modules");
@@ -385,30 +402,31 @@ function syncVersionsFromGitHub() {
   Logger.log("Starting Sync...");
 
   for (let i = 1; i < data.length; i++) {
-    const fileName = data[i][2]; // Col C
+    const fileName = data[i][2]; // Fixed: Column C is Index 2
     
     if (fileName && fileName.toString().endsWith(".html")) {
-      // Sync Dev
+      
+      // SYNC DEV
       try {
         const devUrl = `https://raw.githubusercontent.com/${repoOwner}/${devRepo}/main/${fileName}`;
         const devHtml = UrlFetchApp.fetch(devUrl).getContentText();
         const devMatch = devHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
         if (devMatch && devMatch[1]) {
-          sheet.getRange(i + 1, 5).setValue(devMatch[1]);
+          sheet.getRange(i + 1, 5).setValue(devMatch[1]); // Col E
           Logger.log(`[DEV] Updated ${fileName} to ${devMatch[1]}`);
         }
-      } catch (e) {}
+      } catch (e) { Logger.log(`[DEV] Miss: ${fileName}`); }
 
-      // Sync Live
+      // SYNC LIVE
       try {
         const liveUrl = `https://raw.githubusercontent.com/${repoOwner}/${liveRepo}/main/${fileName}`;
         const liveHtml = UrlFetchApp.fetch(liveUrl).getContentText();
         const liveMatch = liveHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
         if (liveMatch && liveMatch[1]) {
-          sheet.getRange(i + 1, 4).setValue(liveMatch[1]);
+          sheet.getRange(i + 1, 4).setValue(liveMatch[1]); // Col D
           Logger.log(`[LIVE] Updated ${fileName} to ${liveMatch[1]}`);
         }
-      } catch (e) {}
+      } catch (e) { Logger.log(`[LIVE] Miss: ${fileName}`); }
     }
   }
   Logger.log("Sync Complete.");
