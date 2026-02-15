@@ -243,8 +243,42 @@ function handleAuth(pin) {
   } catch (e) { return returnJSON({status:"error", message:e.toString()}); }
 }
 
+/**
+ * WRITER: Add Item to Roadmap (Simple Append)
+ * Maps strictly to: ID, TIMESTAMP, USER, CATEGORY, PRIORITY, TITLE, DESCRIPTION, STATUS
+ */
+function addRoadmapItem(p) {
+  try {
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Roadmap");
+    
+    // Fail fast if tab doesn't exist
+    if (!sheet) return returnJSON({ status: "error", message: "Tab 'SYS_Roadmap' not found" });
+
+    // Generate simple ID (e.g., RMP_1024_1530)
+    const timeStamp = new Date();
+    const id = "RMP_" + Utilities.formatDate(timeStamp, Session.getScriptTimeZone(), "MMdd_HHmmss");
+
+    // EXACT COLUMN ORDER:
+    // 1: ID, 2: TIMESTAMP, 3: USER, 4: CATEGORY, 5: PRIORITY, 6: TITLE, 7: DESCRIPTION, 8: STATUS
+    sheet.appendRow([
+      id,
+      timeStamp,
+      p.user || "Guest",
+      p.cat || "Feature",
+      p.prio || "Med",
+      p.title || "Untitled",
+      p.desc || "",
+      "Pending" // Default status is always Pending
+    ]);
+
+    return returnJSON({ status: "success", id: id });
+
+  } catch (e) {
+    return returnJSON({ status: "error", message: "Roadmap Error: " + e.toString() });
+  }
+}
+
 function returnJSON(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
-
-
