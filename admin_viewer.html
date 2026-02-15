@@ -191,7 +191,6 @@
     window.onload = function() {
         const u = sessionStorage.getItem('signos_user');
         const r = sessionStorage.getItem('signos_role');
-        // Optional: Add role redirection here if needed
         document.getElementById('auth-user').innerText = u || "GUEST";
         loadArchiveList();
     };
@@ -220,6 +219,7 @@
     }
 
     async function loadCloudFile(fileId, fileName, domElement) {
+        // Highlight active file
         document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
         if(domElement) domElement.classList.add('active');
         
@@ -239,31 +239,36 @@
     function parseLogs(text) {
         const lines = text.split('\n');
         rawData = [];
-        let startIdx = 0;
         
-        // BUG FIX 1: Access the first line [0] before checking startsWith
-        if (lines.length > 0 && lines[0].startsWith("Timestamp")) startIdx = 1; 
+        // --- 1. DETECT HEADER & SKIP ---
+        // The .txt file has a header line and a separator line "======".
+        // We check line 0. If it starts with "Timestamp", we skip to line 2.
+        let startIdx = 0;
+        if (lines.length > 0 && lines[0].startsWith("Timestamp")) startIdx = 2;
 
         for (let i = startIdx; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
-            
-            // BUG FIX 3: Split by comma (CSV) instead of pipe, but respect the JSON
-            // Simple split for the first few known columns
-            const tempCols = line.split(',');
-            
-            if (tempCols.length >= 6) {
-                // Reconstruct JSON column (it might have contained commas)
-                const metaRaw = line.substring(line.indexOf('{'), line.lastIndexOf('}') + 1);
-                
+
+            // --- 2. SPLIT BY PIPE (|) NOT COMMA ---
+            const cols = line.split('|').map(c => c.trim());
+
+            // Ensure we have enough columns (Timestamp | IP | User | Role | Action | Target | Meta)
+            if (cols.length >= 6) {
+                // Determine format of Action for display (e.g., 'auth' -> 'AUTH')
+                const actionDisplay = cols[4] ? cols[4].toUpperCase() : "---";
+
+                // Re-join the meta column in case the JSON itself contained a pipe
+                const metaRaw = cols.slice(6).join('|') || "{}";
+
                 rawData.push({
-                    time: tempCols[0], // BUG FIX 2: Grab specific column, not the whole array
-                    ip: tempCols[1],
-                    user: tempCols[2],
-                    role: tempCols[3],
-                    action: tempCols[4],
-                    target: tempCols[5],
-                    meta: metaRaw || "{}",
+                    time: cols[0],   // 1st Column
+                    ip: cols[1],     // 2nd Column
+                    user: cols[2],   // 3rd Column
+                    role: cols[3],   // 4th Column
+                    action: actionDisplay, // 5th Column (Cleaned)
+                    target: cols[5], // 6th Column
+                    meta: metaRaw,   // Rest of the line
                     raw: line.toLowerCase()
                 });
             }
@@ -328,8 +333,10 @@
     function sortData(key) {
         if (currentSort.key === key) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
         else { currentSort.key = key; currentSort.dir = 'asc'; if(key === 'time') currentSort.dir = 'desc'; }
+        
         document.querySelectorAll('.sort-header span').forEach(el => el.innerText = '');
         document.getElementById('sort-'+key).innerText = currentSort.dir === 'asc' ? '▲' : '▼';
+        
         displayData.sort((a, b) => {
             let valA = String(a[key] || "").toLowerCase();
             let valB = String(b[key] || "").toLowerCase();
@@ -344,16 +351,37 @@
         const tbody = document.getElementById('log-body');
         tbody.innerHTML = '';
         document.getElementById('stat-count').innerText = displayData.length;
-        if (displayData.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No matching logs found.</td></tr>'; return; }
+        
+        if (displayData.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No matching logs found.</td></tr>'; 
+            return; 
+        }
+
         displayData.forEach(row => {
             const tr = document.createElement('tr');
             tr.className = "log-row border-b border-gray-50";
             tr.onclick = () => openModal(row);
-            if (row.action === 'PRINT_ORDER') tr.classList.add('log-checkout');
-            if (row.user === 'GUEST' && row.action === 'auth') tr.classList.add('log-error');
-            if (row.action === 'auth' && row.role !== 'N/A') tr.classList.add('log-auth');
+
+            // --- 3. IMPROVED STYLING LOGIC ---
+            if (row.action.includes('ORDER')) tr.classList.add('log-checkout');
+            if (row.user === 'GUEST' && row.action.includes('AUTH')) tr.classList.add('log-error');
+            if (row.action.includes('AUTH') && row.role !== 'N/A') tr.classList.add('log-auth');
+
             const cell = (val) => `<span class="hover:text-blue-600 font-medium">${val}</span>`;
-            tr.innerHTML = `<td class="p-3 whitespace-nowrap text-gray-500 font-mono text-[10px]">${row.time}</td><td class="p-3 font-bold text-gray-800 text-xs whitespace-nowrap">${cell(row.user)}</td><td class="p-3 text-xs whitespace-nowrap"><span class="bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600">${row.role}</span></td><td class="p-3 font-bold uppercase text-xs whitespace-nowrap">${cell(row.action)}</td><td class="p-3 text-gray-500 text-xs whitespace-nowrap">${cell(row.target)}</td><td class="p-3 text-gray-400 font-mono text-[10px] whitespace-nowrap">${cell(row.ip)}</td><td class="p-3 text-gray-400 font-mono text-[9px] truncate max-w-xs hover:text-gray-600 transition">${row.meta}</td>`;
+            
+            // Clean up Meta for Table (Shorten it)
+            let metaShort = row.meta;
+            if(metaShort.length > 50) metaShort = metaShort.substring(0, 47) + "...";
+
+            tr.innerHTML = `
+                <td class="p-3 whitespace-nowrap text-gray-500 font-mono text-[10px]">${row.time}</td>
+                <td class="p-3 font-bold text-gray-800 text-xs whitespace-nowrap">${cell(row.user)}</td>
+                <td class="p-3 text-xs whitespace-nowrap"><span class="bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600">${row.role}</span></td>
+                <td class="p-3 font-bold text-xs whitespace-nowrap"><span class="text-blue-600">${row.action}</span></td>
+                <td class="p-3 text-gray-500 text-xs whitespace-nowrap">${cell(row.target)}</td>
+                <td class="p-3 text-gray-400 font-mono text-[10px] whitespace-nowrap">${cell(row.ip)}</td>
+                <td class="p-3 text-gray-400 font-mono text-[9px] truncate max-w-xs hover:text-gray-600 transition" title='${row.meta}'>${metaShort}</td>
+            `;
             tbody.appendChild(tr);
         });
     }
@@ -365,12 +393,25 @@
         document.getElementById('m-role').innerText = row.role;
         document.getElementById('m-action').innerText = row.action;
         document.getElementById('m-target').innerText = row.target;
-        try { const metaObj = JSON.parse(row.meta); document.getElementById('m-meta').innerText = JSON.stringify(metaObj, null, 2); } catch(e) { document.getElementById('m-meta').innerText = row.meta; }
+        
+        // Pretty Print JSON in Modal
+        try { 
+            const metaObj = JSON.parse(row.meta); 
+            document.getElementById('m-meta').innerText = JSON.stringify(metaObj, null, 2); 
+        } catch(e) { 
+            document.getElementById('m-meta').innerText = row.meta; 
+        }
+        
         document.getElementById('detail-modal').classList.remove('hidden');
         document.body.classList.add('modal-active');
     }
-    function closeModal() { document.getElementById('detail-modal').classList.add('hidden'); document.body.classList.remove('modal-active'); }
     
+    function closeModal() { 
+        document.getElementById('detail-modal').classList.add('hidden'); 
+        document.body.classList.remove('modal-active'); 
+    }
+    
+    // Local File Loader
     document.getElementById('file-input').addEventListener('change', function(e) { 
         const file = e.target.files; if (!file) return; 
         const nameEl = document.getElementById('current-file-name');
