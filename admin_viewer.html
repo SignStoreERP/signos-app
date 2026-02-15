@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Viewer v2.9 | SignOS Admin</title>
+    <title>Log Viewer v2.10 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Core Link Required -->
     <script src="signos-core.js"></script>
@@ -84,8 +84,18 @@
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         <input type="text" id="filter-search" placeholder="Deep Search Logs..." class="w-full text-sm border bg-gray-50 rounded pl-9 p-2 font-medium text-gray-700 outline-none focus:bg-white focus:border-blue-400 transition" onkeyup="applyFilters()">
                     </div>
+                    
                     <div class="flex items-center gap-4">
+                        <!-- RESTORED MISSING ELEMENT -->
+                        <div class="text-right hidden sm:block">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase">Loaded File</p>
+                            <p class="text-xs font-bold text-gray-800 truncate max-w-[150px]" id="current-file-name">None Selected</p>
+                        </div>
+                        
+                        <div class="h-8 w-px bg-gray-200 mx-2"></div>
+
                         <button onclick="resetFilters()" class="text-[10px] text-red-400 hover:text-red-600 font-bold underline">Reset All Filters</button>
+                        
                         <div class="text-right border-l pl-4 border-gray-200">
                             <p class="text-[10px] font-bold text-gray-400 uppercase">Visible Events</p>
                             <p class="text-xl font-black text-blue-600 leading-none" id="stat-count">0</p>
@@ -187,7 +197,6 @@
         const list = document.getElementById('archive-list');
         list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto"></div></div>';
         try {
-            // Uses global SCRIPT_URL from signos-core.js
             const response = await fetch(`${SCRIPT_URL}?req=get_archive_index`);
             const data = await response.json();
             list.innerHTML = "";
@@ -208,7 +217,11 @@
     async function loadCloudFile(fileId, fileName, domElement) {
         document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
         domElement.classList.add('active');
-        document.getElementById('current-file-name').innerText = fileName;
+        
+        // This ID exists now, so this will no longer throw an error
+        const nameEl = document.getElementById('current-file-name');
+        if(nameEl) nameEl.innerText = fileName;
+
         document.getElementById('loader').classList.remove('hidden');
         try {
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${fileId}`);
@@ -224,8 +237,8 @@
         rawData = [];
         let startIdx = 0;
         
-        // FIXED: Header Detection Logic
-        if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2; // Skip Header + Divider
+        if (lines.length > 0 && lines.includes("Timestamp")) startIdx = 2; // Exact match fallback
+        if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2; // StartsWith match
 
         for (let i = startIdx; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -233,7 +246,7 @@
             const cols = line.split('|').map(c => c.trim());
             if (cols.length >= 6) {
                 rawData.push({
-                    time: cols, // <--- FIXED: Explicitly grab index 0 (Date)
+                    time: cols, 
                     ip: cols[1],
                     user: cols[2],
                     role: cols[3],
@@ -285,7 +298,7 @@
         document.getElementById('filter-search').value = "";
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
         if(shouldRender) applyFilters();
-        else applyFilters(); // Always render on load
+        else applyFilters(); 
     }
 
     function applyFilters() {
@@ -357,7 +370,9 @@
     // Local File Support
     document.getElementById('file-input').addEventListener('change', function(e) { 
         const file = e.target.files; if (!file) return; 
-        document.getElementById('current-file-name').innerText = "Local: " + file.name; 
+        const nameEl = document.getElementById('current-file-name');
+        if(nameEl) nameEl.innerText = "Local: " + file.name;
+        
         const reader = new FileReader(); 
         reader.onload = (e) => parseLogs(e.target.result); 
         reader.readAsText(file); 
