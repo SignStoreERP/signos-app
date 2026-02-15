@@ -3,34 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Roadmap v2.2 | SignOS</title>
+    <title>Dev Roadmap v2.3 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
-        /* SCROLLBAR & LAYOUT FIXES */
-        .kanban-col { 
-            height: 100%; 
-            overflow-y: auto; 
-            padding-right: 4px; /* Space for scrollbar */
-        }
-        /* Custom Scrollbar for columns */
+        /* SCROLLBAR & LAYOUT */
+        .kanban-col { height: 100%; overflow-y: auto; padding-right: 4px; }
         .kanban-col::-webkit-scrollbar { width: 6px; }
         .kanban-col::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         .kanban-col::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .kanban-col::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* DRAG & DROP STYLES */
+        /* CARDS & DRAG */
         .card-high { border-left: 4px solid #ef4444; }
         .card-med { border-left: 4px solid #f59e0b; }
         .card-low { border-left: 4px solid #3b82f6; }
-        
         .draggable-card { cursor: grab; }
         .draggable-card:active { cursor: grabbing; }
         .draggable-card.dragging { opacity: 0.5; transform: scale(0.98); }
-        
-        /* Drop Zone Highlight */
         .drop-active { background-color: #e0f2fe !important; border: 2px dashed #3b82f6 !important; }
 
+        /* FILTER BUTTONS */
+        .filter-btn { @apply border border-gray-300 bg-white text-gray-500 text-[10px] uppercase font-bold px-2 py-1 rounded cursor-pointer transition hover:bg-gray-50; }
+        .filter-btn.active { @apply bg-blue-600 text-white border-blue-600 hover:bg-blue-700; }
+        
         /* ANIMATIONS */
         .slide-panel { transition: transform 0.3s ease-in-out; }
         .slide-panel.closed { transform: translateX(100%); }
@@ -38,11 +34,10 @@
         body.modal-active { overflow: hidden; }
     </style>
 </head>
-<!-- LAYOUT FIX: h-screen ensures the app fits the window exactly -->
 <body class="bg-gray-100 h-screen font-sans flex flex-col overflow-hidden">
 
     <!-- HEADER -->
-    <div class="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-md z-20 shrink-0">
+    <div class="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-md z-30 shrink-0">
         <div class="flex items-center gap-3">
             <h1 class="text-lg font-black tracking-tight">SignOS Roadmap</h1>
             <span class="bg-purple-600 text-[10px] font-bold px-2 py-0.5 rounded text-white">LIVE TRACKER</span>
@@ -56,21 +51,63 @@
         </div>
     </div>
 
+    <!-- FILTER BAR (NEW) -->
+    <div class="bg-white border-b border-gray-200 p-3 shadow-sm z-20 shrink-0 flex flex-col gap-2">
+        <!-- Top Row: Search & Date -->
+        <div class="flex items-center gap-4">
+            <div class="relative flex-1 max-w-sm">
+                <svg class="w-4 h-4 absolute left-2 top-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" id="filter-search" placeholder="Search items..." class="w-full border border-gray-300 pl-8 pr-2 py-1 rounded text-sm bg-gray-50 focus:bg-white focus:border-blue-500 outline-none" onkeyup="applyFilters()">
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold text-gray-400 uppercase">Date Range:</span>
+                <input type="date" id="date-start" class="border border-gray-300 rounded text-xs px-2 py-1" onchange="applyFilters()">
+                <span class="text-gray-400">-</span>
+                <input type="date" id="date-end" class="border border-gray-300 rounded text-xs px-2 py-1" onchange="applyFilters()">
+            </div>
+            <div class="flex-1 text-right">
+                <button onclick="resetFilters()" class="text-[10px] text-red-400 hover:text-red-600 font-bold underline">Reset Filters</button>
+            </div>
+        </div>
+        <!-- Bottom Row: Dynamic Toggles -->
+        <div class="flex gap-6 items-center overflow-x-auto pb-1">
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[9px] font-bold text-gray-400 uppercase">Users:</span>
+                <div id="filter-users" class="flex gap-1"></div>
+            </div>
+            <div class="w-px h-4 bg-gray-300 shrink-0"></div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[9px] font-bold text-gray-400 uppercase">Type:</span>
+                <div class="flex gap-1">
+                    <button class="filter-btn" onclick="toggleFilter('cat', 'Feature')">Feature</button>
+                    <button class="filter-btn" onclick="toggleFilter('cat', 'Bug')">Bug</button>
+                    <button class="filter-btn" onclick="toggleFilter('cat', 'Goal')">Goal</button>
+                </div>
+            </div>
+            <div class="w-px h-4 bg-gray-300 shrink-0"></div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[9px] font-bold text-gray-400 uppercase">Priority:</span>
+                <div class="flex gap-1">
+                    <button class="filter-btn" onclick="toggleFilter('prio', 'High')">High</button>
+                    <button class="filter-btn" onclick="toggleFilter('prio', 'Med')">Med</button>
+                    <button class="filter-btn" onclick="toggleFilter('prio', 'Low')">Low</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- KANBAN BOARD -->
-    <!-- LAYOUT FIX: flex-1 takes remaining height, overflow-hidden prevents body scroll -->
     <div class="flex-1 overflow-x-auto overflow-y-hidden p-6 bg-gray-100">
         <div class="flex gap-6 h-full min-w-[1000px]">
-            
-            <!-- COL 1: PENDING -->
-            <div class="flex-1 flex flex-col bg-gray-200 rounded-xl border border-gray-300 shadow-sm"
+            <!-- PENDING -->
+            <div class="flex-1 flex flex-col bg-gray-200 rounded-xl border border-gray-300 shadow-sm" 
                  ondragover="allowDrop(event)" ondrop="drop(event, 'Pending')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
                 <div class="p-3 border-b border-gray-300 font-bold text-gray-600 text-xs uppercase tracking-wider flex justify-between shrink-0 bg-gray-200 rounded-t-xl z-10">
                     <span>Backlog / Pending</span><span id="count-pending" class="bg-gray-300 px-2 rounded-full text-gray-700">0</span>
                 </div>
                 <div id="col-pending" class="kanban-col p-3 space-y-3"></div>
             </div>
-
-            <!-- COL 2: IN PROGRESS -->
+            <!-- DOING -->
             <div class="flex-1 flex flex-col bg-blue-50 rounded-xl border border-blue-200 shadow-sm"
                  ondragover="allowDrop(event)" ondrop="drop(event, 'In Progress')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
                 <div class="p-3 border-b border-blue-200 font-bold text-blue-800 text-xs uppercase tracking-wider flex justify-between shrink-0 bg-blue-50 rounded-t-xl z-10">
@@ -78,8 +115,7 @@
                 </div>
                 <div id="col-progress" class="kanban-col p-3 space-y-3"></div>
             </div>
-
-            <!-- COL 3: COMPLETE -->
+            <!-- DONE -->
             <div class="flex-1 flex flex-col bg-green-50 rounded-xl border border-green-200 shadow-sm"
                  ondragover="allowDrop(event)" ondrop="drop(event, 'Complete')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
                 <div class="p-3 border-b border-green-200 font-bold text-green-800 text-xs uppercase tracking-wider flex justify-between shrink-0 bg-green-50 rounded-t-xl z-10">
@@ -87,15 +123,14 @@
                 </div>
                 <div id="col-done" class="kanban-col p-3 space-y-3"></div>
             </div>
-
         </div>
     </div>
 
-    <!-- CREATE FORM SLIDER -->
+    <!-- SIDE FORM & MODAL (Hidden) -->
+    <!-- Create Form -->
     <div id="side-form" class="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl border-l border-gray-200 z-30 slide-panel closed flex flex-col">
         <div class="p-6 bg-gray-900 text-white flex justify-between items-center shrink-0">
-            <h2 class="font-bold text-lg">Submit Request</h2>
-            <button onclick="toggleForm()" class="text-gray-400 hover:text-white text-xl">×</button>
+            <h2 class="font-bold text-lg">Submit Request</h2><button onclick="toggleForm()" class="text-gray-400 hover:text-white text-xl">×</button>
         </div>
         <div class="p-6 space-y-4 flex-1 overflow-y-auto">
             <div>
@@ -108,52 +143,32 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Priority</label>
-                <select id="inp-prio" class="w-full border p-2 rounded text-sm bg-white">
-                    <option value="Low">Low - Whenever</option>
-                    <option value="Med" selected>Medium - Normal</option>
-                    <option value="High">High - Critical / Rush</option>
-                </select>
+                <select id="inp-prio" class="w-full border p-2 rounded text-sm bg-white"><option value="Low">Low</option><option value="Med" selected>Medium</option><option value="High">High</option></select>
             </div>
-            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label><input type="text" id="inp-title" class="w-full border p-2 rounded text-sm font-bold" placeholder="Short summary..."></div>
-            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label><textarea id="inp-desc" class="w-full border p-2 rounded text-sm h-32" placeholder="Details..."></textarea></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label><input type="text" id="inp-title" class="w-full border p-2 rounded text-sm font-bold"></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label><textarea id="inp-desc" class="w-full border p-2 rounded text-sm h-32"></textarea></div>
         </div>
-        <div class="p-6 border-t border-gray-200 bg-gray-50 shrink-0">
-            <button onclick="submitItem()" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded shadow transition flex items-center justify-center gap-2"><span>SUBMIT ITEM</span></button>
-        </div>
+        <div class="p-6 border-t border-gray-200 bg-gray-50 shrink-0"><button onclick="submitItem()" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded shadow transition">SUBMIT ITEM</button></div>
     </div>
 
-    <!-- TICKET DETAIL MODAL -->
+    <!-- Ticket Modal -->
     <div id="ticket-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-start shrink-0">
                 <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span id="t-id" class="text-[9px] font-bold bg-gray-200 text-gray-600 px-1.5 rounded border border-gray-300 font-mono">ID</span>
-                        <span id="t-cat" class="text-[9px] font-bold uppercase tracking-wide">CAT</span>
-                    </div>
+                    <div class="flex items-center gap-2 mb-1"><span id="t-id" class="text-[9px] font-bold bg-gray-200 text-gray-600 px-1.5 rounded border border-gray-300 font-mono">ID</span><span id="t-cat" class="text-[9px] font-bold uppercase tracking-wide">CAT</span></div>
                     <h2 id="t-title" class="text-xl font-black text-gray-900 leading-tight">Ticket Title</h2>
                 </div>
                 <button onclick="closeTicket()" class="text-gray-400 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
             </div>
             <div class="flex-1 overflow-y-auto p-6 space-y-6">
-                <div>
-                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-1">Description</h4>
-                    <p id="t-desc" class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-100"></p>
-                </div>
-                <div>
-                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Activity History</h4>
-                    <div id="t-history" class="space-y-3"></div>
-                </div>
+                <div><h4 class="text-xs font-bold text-gray-400 uppercase mb-1">Description</h4><p id="t-desc" class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-100"></p></div>
+                <div><h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Activity History</h4><div id="t-history" class="space-y-3"></div></div>
             </div>
             <div class="bg-gray-100 px-6 py-4 border-t border-gray-200 shrink-0">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Add Update / Change Status</label>
                 <div class="flex gap-2">
-                    <select id="t-new-status" class="bg-white border border-gray-300 text-xs font-bold rounded px-2 py-2 w-32">
-                        <option value="">No Change</option>
-                        <option value="Pending">Move: Pending</option>
-                        <option value="In Progress">Move: Doing</option>
-                        <option value="Complete">Move: Done</option>
-                    </select>
+                    <select id="t-new-status" class="bg-white border border-gray-300 text-xs font-bold rounded px-2 py-2 w-32"><option value="">No Change</option><option value="Pending">Move: Pending</option><option value="In Progress">Move: Doing</option><option value="Complete">Move: Done</option></select>
                     <input type="text" id="t-comment" placeholder="Add a note..." class="flex-1 border border-gray-300 rounded px-3 text-sm focus:border-blue-500 outline-none">
                     <button onclick="postUpdate()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 rounded text-xs">POST</button>
                 </div>
@@ -164,6 +179,8 @@
 <script>
     const user = sessionStorage.getItem('signos_user') || 'Guest';
     let currentTicketId = null;
+    let allRoadmapData = [];
+    let activeFilters = { users: [], cats: [], prios: [] };
 
     window.onload = function() {
         if(sessionStorage.getItem('signos_role') !== 'ADMIN') { alert("Access Denied"); window.location.href = 'menu.html'; }
@@ -173,15 +190,92 @@
     function toggleForm() { document.getElementById('side-form').classList.toggle('closed'); }
     function val(obj, key) { return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || ""; }
 
+    // --- DATA LOADING & FILTER INIT ---
     async function loadData() {
         try {
             const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&ip=${clientIP}&user=${user}`);
             const data = await response.json();
             if(data.error) throw new Error(data.error);
-            renderBoard(data);
+            
+            allRoadmapData = data;
+            initUserFilters(data);
+            applyFilters(); // Initial render
         } catch(e) { console.error(e); }
     }
 
+    function initUserFilters(data) {
+        const users = [...new Set(data.map(i => val(i, 'User')))].filter(Boolean).sort();
+        const container = document.getElementById('filter-users');
+        container.innerHTML = "";
+        
+        users.forEach(u => {
+            const btn = document.createElement('button');
+            btn.className = "filter-btn";
+            btn.innerText = u;
+            btn.onclick = () => toggleFilter('users', u);
+            container.appendChild(btn);
+        });
+    }
+
+    // --- FILTER ENGINE ---
+    function toggleFilter(type, value) {
+        const arr = activeFilters[type === 'cat' ? 'cats' : (type === 'prio' ? 'prios' : 'users')];
+        const idx = arr.indexOf(value);
+        if(idx === -1) arr.push(value); else arr.splice(idx, 1);
+        
+        // Update Buttons Visuals
+        const container = type === 'users' ? document.getElementById('filter-users') : document.body; // Scope
+        const buttons = container.querySelectorAll('.filter-btn');
+        buttons.forEach(b => {
+            if(b.innerText === value || b.innerText.includes(value)) b.classList.toggle('active');
+        });
+
+        applyFilters();
+    }
+
+    function resetFilters() {
+        activeFilters = { users: [], cats: [], prios: [] };
+        document.getElementById('filter-search').value = "";
+        document.getElementById('date-start').value = "";
+        document.getElementById('date-end').value = "";
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('filter-search').value.toLowerCase();
+        const dStart = document.getElementById('date-start').valueAsDate;
+        const dEnd = document.getElementById('date-end').valueAsDate;
+
+        const filtered = allRoadmapData.filter(item => {
+            // 1. Search
+            const txt = (val(item,'Title') + " " + val(item,'Description') + " " + val(item,'ID')).toLowerCase();
+            if(search && !txt.includes(search)) return false;
+
+            // 2. Buttons (OR Logic within groups, AND between groups)
+            // If group is empty, allow all. If not empty, item must match one of selected.
+            if(activeFilters.users.length > 0 && !activeFilters.users.includes(val(item,'User'))) return false;
+            if(activeFilters.cats.length > 0 && !activeFilters.cats.includes(val(item,'Category'))) return false;
+            if(activeFilters.prios.length > 0 && !activeFilters.prios.includes(val(item,'Priority'))) return false;
+
+            // 3. Date Range
+            if(dStart || dEnd) {
+                const itemDate = new Date(val(item, 'Timestamp'));
+                if(dStart && itemDate < dStart) return false;
+                if(dEnd) {
+                    // Set end date to end of day
+                    const endLimit = new Date(dEnd); endLimit.setHours(23,59,59);
+                    if(itemDate > endLimit) return false;
+                }
+            }
+
+            return true;
+        });
+
+        renderBoard(filtered);
+    }
+
+    // --- RENDER BOARD ---
     function renderBoard(data) {
         const cols = { pending: document.getElementById('col-pending'), progress: document.getElementById('col-progress'), done: document.getElementById('col-done') };
         Object.values(cols).forEach(el => el.innerHTML = "");
@@ -197,20 +291,17 @@
             const cat = val(item, 'Category');
             const itemUser = val(item, 'User');
             const rawStatus = val(item, 'Status');
+            const ts = val(item, 'Timestamp');
+            const dateStr = new Date(ts).toLocaleDateString();
 
             const card = document.createElement('div');
             let borderClass = prio === 'High' ? 'card-high' : (prio === 'Low' ? 'card-low' : 'card-med');
             let catColor = cat === 'Bug' ? "bg-red-100 text-red-800" : (cat === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
             
-            // DRAG PROPERTIES
             card.className = `draggable-card bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-grab ${borderClass} border-l-4 group relative`;
             card.draggable = true;
-            card.id = `card-${id}`; // DOM ID for dragging reference
-            
-            // Drag Event Listeners
+            card.id = `card-${id}`;
             card.ondragstart = (e) => drag(e, id);
-            
-            // Click to Open (Check if drag occurred)
             card.onclick = (e) => { if(!card.classList.contains('dragging')) openTicket(id); };
 
             card.innerHTML = `
@@ -221,7 +312,10 @@
                 <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1 pointer-events-none">${title}</h3>
                 <p class="text-xs text-gray-500 line-clamp-2 pointer-events-none">${desc}</p>
                 <div class="mt-2 pt-2 border-t border-gray-50 flex justify-between items-center pointer-events-none">
-                    <span class="text-[9px] font-bold text-gray-400 uppercase">${itemUser}</span>
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase">${itemUser}</span>
+                        <span class="text-[8px] text-gray-300">${dateStr}</span>
+                    </div>
                     <span class="text-[9px] font-mono text-gray-300">${id}</span>
                 </div>
             `;
@@ -237,68 +331,35 @@
         document.getElementById('count-done').innerText = counts.done;
     }
 
-    // --- DRAG AND DROP LOGIC ---
-
-    function drag(ev, id) {
-        ev.dataTransfer.setData("text", id);
-        ev.target.classList.add('dragging');
-    }
-
-    function allowDrop(ev) {
-        ev.preventDefault();
-    }
-
-    function dragEnter(ev) {
-        ev.preventDefault();
-        // Highlight Drop Zone
-        const col = ev.currentTarget;
-        col.classList.add('drop-active');
-    }
-
-    function dragLeave(ev) {
-        const col = ev.currentTarget;
-        col.classList.remove('drop-active');
-    }
-
+    // --- DRAG & DROP (Unchanged) ---
+    function drag(ev, id) { ev.dataTransfer.setData("text", id); ev.target.classList.add('dragging'); }
+    function allowDrop(ev) { ev.preventDefault(); }
+    function dragEnter(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drop-active'); }
+    function dragLeave(ev) { ev.currentTarget.classList.remove('drop-active'); }
     async function drop(ev, newStatusLabel) {
-        ev.preventDefault();
-        const col = ev.currentTarget;
-        col.classList.remove('drop-active');
-        
+        ev.preventDefault(); ev.currentTarget.classList.remove('drop-active');
         const cardId = ev.dataTransfer.getData("text");
         const cardEl = document.getElementById(`card-${cardId}`);
-        
         if (!cardEl) return;
-
-        // Visual Move
         cardEl.classList.remove('dragging');
-        const container = col.querySelector('.kanban-col');
-        container.prepend(cardEl); // Add to top of new column
-
-        // API Update
+        ev.currentTarget.querySelector('.kanban-col').prepend(cardEl);
         try {
-            // "Moved via Drag & Drop"
             const comment = `Status changed to ${newStatusLabel} (Drag & Drop)`;
-            const url = `${SCRIPT_URL}?req=add_action&id=${cardId}&user=${user}&type=Status Update&msg=${encodeURIComponent(comment)}&new_status=${newStatusLabel}`;
-            
-            await fetch(url);
-            // Optional: Reload to sync counts and order
-            loadData();
-        } catch(e) {
-            alert("Sync Failed: " + e.message);
-            loadData(); // Revert on fail
-        }
+            await fetch(`${SCRIPT_URL}?req=add_action&id=${cardId}&user=${user}&type=Status Update&msg=${encodeURIComponent(comment)}&new_status=${newStatusLabel}`);
+            // Update local data cache to reflect status change so filters don't "reset" the card back
+            const item = allRoadmapData.find(i => val(i,'ID') === cardId);
+            if(item) item.Status = newStatusLabel; 
+            applyFilters(); 
+        } catch(e) { alert("Sync Failed: " + e.message); applyFilters(); }
     }
 
-    // --- EXISTING TICKET LOGIC (Unchanged) ---
-
+    // --- TICKET LOGIC (Unchanged) ---
     async function openTicket(id) {
         currentTicketId = id;
         document.getElementById('ticket-modal').classList.remove('hidden');
         document.body.classList.add('modal-active');
         document.getElementById('t-title').innerText = "Loading...";
         document.getElementById('t-history').innerHTML = '<div class="text-center text-gray-400 text-xs py-4">Fetching details...</div>';
-
         try {
             const res = await fetch(`${SCRIPT_URL}?req=get_ticket&id=${id}`);
             const data = await res.json();
@@ -308,7 +369,6 @@
                 document.getElementById('t-desc').innerText = val(t, 'Description') || "No description.";
                 document.getElementById('t-id').innerText = val(t, 'ID');
                 document.getElementById('t-cat').innerText = val(t, 'Category');
-                
                 const histDiv = document.getElementById('t-history');
                 histDiv.innerHTML = "";
                 if(data.history.length === 0) histDiv.innerHTML = '<div class="text-center text-gray-400 italic text-xs">No updates yet.</div>';
@@ -324,9 +384,7 @@
             }
         } catch(e) { alert("Error: " + e.message); closeTicket(); }
     }
-
     function closeTicket() { document.getElementById('ticket-modal').classList.add('hidden'); document.body.classList.remove('modal-active'); }
-
     async function postUpdate() {
         const msg = document.getElementById('t-comment').value;
         const newStatus = document.getElementById('t-new-status').value;
@@ -335,12 +393,16 @@
         const txt = newStatus ? `${msg} (Moved to ${newStatus})` : msg;
         try {
             await fetch(`${SCRIPT_URL}?req=add_action&id=${currentTicketId}&user=${user}&type=${type}&msg=${encodeURIComponent(txt)}&new_status=${newStatus}`);
-            document.getElementById('t-comment').value = "";
-            document.getElementById('t-new-status').value = "";
-            openTicket(currentTicketId); loadData();
+            document.getElementById('t-comment').value = ""; document.getElementById('t-new-status').value = "";
+            openTicket(currentTicketId);
+            // Update local cache for immediate board refresh
+            if(newStatus) {
+                const item = allRoadmapData.find(i => val(i,'ID') === currentTicketId);
+                if(item) item.Status = newStatus;
+                applyFilters();
+            }
         } catch(e) { alert("Post failed"); }
     }
-
     async function submitItem() {
         const title = document.getElementById('inp-title').value;
         const desc = document.getElementById('inp-desc').value;
