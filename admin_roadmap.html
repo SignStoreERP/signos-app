@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev Roadmap | SignOS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
+    <style>
+        .kanban-col { min-height: 200px; }
+        .card-high { border-left: 4px solid #ef4444; }
+        .card-med { border-left: 4px solid #f59e0b; }
+        .card-low { border-left: 4px solid #3b82f6; }
+        .slide-panel { transition: transform 0.3s ease-in-out; }
+        .slide-panel.closed { transform: translateX(100%); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col overflow-hidden">
+
+    <!-- HEADER -->
+    <div class="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-md z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <h1 class="text-lg font-black tracking-tight">SignOS Roadmap</h1>
+            <span class="bg-purple-600 text-[10px] font-bold px-2 py-0.5 rounded text-white">LIVE TRACKER</span>
+        </div>
+        <div class="flex gap-4 text-xs font-bold items-center">
+            <button onclick="toggleForm()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition flex items-center gap-1">
+                <span>+ New Item</span>
+            </button>
+            <span class="text-gray-600">|</span>
+            <a href="#" onclick="goBack()" class="text-gray-300 hover:text-white uppercase">Exit</a>
+        </div>
+    </div>
+
+    <!-- KANBAN BOARD -->
+    <div class="flex-1 overflow-x-auto overflow-y-hidden p-6">
+        <div class="flex gap-6 h-full min-w-[1000px]">
+            
+            <!-- COLUMN 1: PENDING -->
+            <div class="flex-1 flex flex-col bg-gray-200 rounded-xl border border-gray-300">
+                <div class="p-3 border-b border-gray-300 font-bold text-gray-600 text-xs uppercase tracking-wider flex justify-between">
+                    <span>Backlog / Pending</span>
+                    <span id="count-pending" class="bg-gray-300 px-2 rounded-full text-gray-700">0</span>
+                </div>
+                <div id="col-pending" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
+            </div>
+
+            <!-- COLUMN 2: IN PROGRESS -->
+            <div class="flex-1 flex flex-col bg-blue-50 rounded-xl border border-blue-200">
+                <div class="p-3 border-b border-blue-200 font-bold text-blue-800 text-xs uppercase tracking-wider flex justify-between">
+                    <span>In Development</span>
+                    <span id="count-progress" class="bg-blue-200 px-2 rounded-full text-blue-800">0</span>
+                </div>
+                <div id="col-progress" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
+            </div>
+
+            <!-- COLUMN 3: COMPLETE -->
+            <div class="flex-1 flex flex-col bg-green-50 rounded-xl border border-green-200">
+                <div class="p-3 border-b border-green-200 font-bold text-green-800 text-xs uppercase tracking-wider flex justify-between">
+                    <span>Completed / Live</span>
+                    <span id="count-done" class="bg-green-200 px-2 rounded-full text-green-800">0</span>
+                </div>
+                <div id="col-done" class="flex-1 overflow-y-auto p-3 space-y-3 kanban-col"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SIDE PANEL (ADD ITEM) -->
+    <div id="side-form" class="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl border-l border-gray-200 z-30 slide-panel closed flex flex-col">
+        <div class="p-6 bg-gray-900 text-white flex justify-between items-center shrink-0">
+            <h2 class="font-bold text-lg">Submit Request</h2>
+            <button onclick="toggleForm()" class="text-gray-400 hover:text-white text-xl">×</button>
+        </div>
+        
+        <div class="p-6 space-y-4 flex-1 overflow-y-auto">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="cursor-pointer"><input type="radio" name="cat" value="Feature" class="peer sr-only" checked><div class="text-center text-xs border rounded p-2 peer-checked:bg-blue-600 peer-checked:text-white hover:bg-gray-50 font-bold">Feature</div></label>
+                    <label class="cursor-pointer"><input type="radio" name="cat" value="Bug" class="peer sr-only"><div class="text-center text-xs border rounded p-2 peer-checked:bg-red-600 peer-checked:text-white hover:bg-gray-50 font-bold">Bug</div></label>
+                    <label class="cursor-pointer"><input type="radio" name="cat" value="Goal" class="peer sr-only"><div class="text-center text-xs border rounded p-2 peer-checked:bg-purple-600 peer-checked:text-white hover:bg-gray-50 font-bold">Goal</div></label>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Priority</label>
+                <select id="inp-prio" class="w-full border p-2 rounded text-sm bg-white">
+                    <option value="Low">Low - Whenever</option>
+                    <option value="Med" selected>Medium - Normal</option>
+                    <option value="High">High - Critical / Rush</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                <input type="text" id="inp-title" class="w-full border p-2 rounded text-sm font-bold" placeholder="Short summary...">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                <textarea id="inp-desc" class="w-full border p-2 rounded text-sm h-32" placeholder="Details, steps to reproduce, or acceptance criteria..."></textarea>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-gray-200 bg-gray-50 shrink-0">
+            <button onclick="submitItem()" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded shadow transition flex items-center justify-center gap-2">
+                <span>SUBMIT ITEM</span>
+                <div id="loader" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            </button>
+        </div>
+    </div>
+
+<script>
+    const user = sessionStorage.getItem('signos_user') || 'Guest';
+
+    window.onload = function() {
+        // Init Security & Telemetry via signos-core.js implicitly
+        if(sessionStorage.getItem('signos_role') !== 'ADMIN') {
+            alert("Developer Access Only");
+            window.location.href = 'menu.html';
+        }
+        loadData();
+    };
+
+    function toggleForm() {
+        document.getElementById('side-form').classList.toggle('closed');
+    }
+
+    async function loadData() {
+        try {
+            // READ from Backend (SYS_Roadmap)
+            const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&ip=${clientIP}&user=${user}`);
+            const data = await response.json();
+            
+            if(data.error) throw new Error(data.error);
+            renderBoard(data);
+
+        } catch(e) {
+            console.error(e); // Silent fail or show toast
+        }
+    }
+
+    function renderBoard(data) {
+        // Clear Columns
+        const pending = document.getElementById('col-pending');
+        const progress = document.getElementById('col-progress');
+        const done = document.getElementById('col-done');
+        pending.innerHTML = ""; progress.innerHTML = ""; done.innerHTML = "";
+
+        let cP=0, cI=0, cD=0;
+
+        data.forEach(item => {
+            const card = document.createElement('div');
+            // Priority Color
+            let borderClass = 'card-med';
+            if(item.Priority === 'High') borderClass = 'card-high';
+            if(item.Priority === 'Low') borderClass = 'card-low';
+
+            // Category Badge
+            let catColor = "bg-gray-100 text-gray-600";
+            if(item.Category === 'Bug') catColor = "bg-red-100 text-red-800";
+            if(item.Category === 'Feature') catColor = "bg-blue-100 text-blue-800";
+            if(item.Category === 'Goal') catColor = "bg-purple-100 text-purple-800";
+
+            // Date Format
+            const date = new Date(item.Timestamp).toLocaleDateString();
+
+            card.className = `bg-white p-4 rounded shadow-sm hover:shadow-md transition cursor-default ${borderClass} border-l-4`;
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[9px] font-bold uppercase ${catColor} px-1.5 py-0.5 rounded">${item.Category}</span>
+                    <span class="text-[9px] text-gray-400">${date}</span>
+                </div>
+                <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1">${item.Title}</h3>
+                <p class="text-xs text-gray-500 line-clamp-3">${item.Description}</p>
+                <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">${item.User}</span>
+                    <span class="text-[9px] font-bold text-gray-400 bg-gray-100 px-1 rounded border">${item.ID}</span>
+                </div>
+            `;
+
+            // Sort into columns based on Backend Status
+            // Note: Standardize strings to avoid casing issues
+            const status = String(item.Status).toLowerCase().trim();
+            if(status.includes('progress')) { progress.appendChild(card); cI++; }
+            else if(status.includes('complete') || status.includes('done')) { done.appendChild(card); cD++; }
+            else { pending.appendChild(card); cP++; }
+        });
+
+        // Update Counts
+        document.getElementById('count-pending').innerText = cP;
+        document.getElementById('count-progress').innerText = cI;
+        document.getElementById('count-done').innerText = cD;
+    }
+
+    async function submitItem() {
+        const title = document.getElementById('inp-title').value;
+        const desc = document.getElementById('inp-desc').value;
+        const prio = document.getElementById('inp-prio').value;
+        const cat = document.querySelector('input[name="cat"]:checked').value;
+        const btn = document.getElementById('btn-submit');
+        const loader = document.getElementById('loader');
+
+        if(!title) { alert("Title is required"); return; }
+
+        btn.disabled = true;
+        loader.classList.remove('hidden');
+
+        try {
+            const url = `${SCRIPT_URL}?req=add_roadmap&user=${user}&title=${encodeURIComponent(title)}&desc=${encodeURIComponent(desc)}&prio=${prio}&cat=${cat}`;
+            const response = await fetch(url);
+            const res = await response.json();
+
+            if(res.status === 'success') {
+                toggleForm();
+                // Clear Form
+                document.getElementById('inp-title').value = "";
+                document.getElementById('inp-desc').value = "";
+                // Refresh Board
+                loadData();
+            } else {
+                throw new Error(res.message);
+            }
+        } catch(e) {
+            alert("Error: " + e.message);
+        } finally {
+            btn.disabled = false;
+            loader.classList.add('hidden');
+        }
+    }
+</script>
+
+</body>
+</html>
