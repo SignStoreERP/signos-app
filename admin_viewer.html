@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Viewer v2.5 | SignOS Admin</title>
+    <title>Log Viewer v2.6 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -231,7 +231,7 @@
             // Expected format: Date | IP | User | Role | Action | Target | Meta
             if (cols.length >= 6) {
                 rawData.push({
-                    time: cols, // <--- FIXED: Now explicitly targets first column only
+                    time: cols, // <--- FIXED: Explicitly use Index 0 (Date) instead of full array
                     ip: cols[1],
                     user: cols[2],
                     role: cols[3],
