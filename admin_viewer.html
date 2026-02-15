@@ -191,7 +191,7 @@
     window.onload = function() {
         const u = sessionStorage.getItem('signos_user');
         const r = sessionStorage.getItem('signos_role');
-        if (r !== 'ADMIN' && r !== 'PROD') { /* Access Check */ }
+        // Optional: Add role redirection here if needed
         document.getElementById('auth-user').innerText = u || "GUEST";
         loadArchiveList();
     };
@@ -221,9 +221,11 @@
 
     async function loadCloudFile(fileId, fileName, domElement) {
         document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
-        domElement.classList.add('active');
+        if(domElement) domElement.classList.add('active');
+        
         const nameEl = document.getElementById('current-file-name');
         if(nameEl) nameEl.innerText = fileName;
+        
         document.getElementById('loader').classList.remove('hidden');
         try {
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${fileId}`);
@@ -239,22 +241,29 @@
         rawData = [];
         let startIdx = 0;
         
-        // FIXED: Using index 0 to safely check first line
-        if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2; 
+        // BUG FIX 1: Access the first line [0] before checking startsWith
+        if (lines.length > 0 && lines[0].startsWith("Timestamp")) startIdx = 1; 
 
         for (let i = startIdx; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
-            const cols = line.split('|').map(c => c.trim());
-            if (cols.length >= 6) {
+            
+            // BUG FIX 3: Split by comma (CSV) instead of pipe, but respect the JSON
+            // Simple split for the first few known columns
+            const tempCols = line.split(',');
+            
+            if (tempCols.length >= 6) {
+                // Reconstruct JSON column (it might have contained commas)
+                const metaRaw = line.substring(line.indexOf('{'), line.lastIndexOf('}') + 1);
+                
                 rawData.push({
-                    time: cols, // <--- FIXED: Grab only the first column
-                    ip: cols[1],
-                    user: cols[2],
-                    role: cols[3],
-                    action: cols[4],
-                    target: cols[5],
-                    meta: cols[6] || "{}",
+                    time: tempCols[0], // BUG FIX 2: Grab specific column, not the whole array
+                    ip: tempCols[1],
+                    user: tempCols[2],
+                    role: tempCols[3],
+                    action: tempCols[4],
+                    target: tempCols[5],
+                    meta: metaRaw || "{}",
                     raw: line.toLowerCase()
                 });
             }
@@ -371,5 +380,7 @@
         reader.readAsText(file); 
     });
 </script>
+
 </body>
 </html>
+
