@@ -237,82 +237,90 @@
         renderBoard(filtered);
     }
 
-function renderBoard(data) {
-    const cols = {
-        pending: document.getElementById('col-pending'),
-        progress: document.getElementById('col-progress'),
-        done: document.getElementById('col-done')
-    };
+// Add this to the top of your script block
+    function val(obj, key) {
+        if (!obj) return "";
+        return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
+    }
 
-    // Clear columns
-    Object.values(cols).forEach(el => el.innerHTML = "");
+    // Replace the existing renderBoard function with this:
+    function renderBoard(data) {
+        const cols = {
+            pending: document.getElementById('col-pending'),
+            progress: document.getElementById('col-progress'),
+            done: document.getElementById('col-done')
+        };
 
-    let counts = { pending: 0, progress: 0, done: 0 };
+        // Clear columns
+        Object.values(cols).forEach(el => el.innerHTML = "");
 
-    data.forEach(item => {
-        // Use val() to safely find ID, id, or Id
-        const id = val(item, 'ID');
-        if (!id) {
-            console.warn("Skipping item without ID:", item);
-            return;
-        }
+        let counts = { pending: 0, progress: 0, done: 0 };
 
-        const title = val(item, 'Title');
-        const desc = val(item, 'Description');
-        const prio = val(item, 'Priority');
-        const cat = val(item, 'Category');
-        const statusRaw = val(item, 'Status'); // Pending, In Progress, Complete
-        const target = val(item, 'Target_Env') || 'APP';
+        data.forEach(item => {
+            // Safe Access using val()
+            const id = val(item, 'ID');
+            if (!id) {
+                console.warn("Skipping item without ID:", item);
+                return;
+            }
 
-        // Map status to column keys
-        let statusKey = 'pending';
-        if (statusRaw === 'In Progress') statusKey = 'progress';
-        if (statusRaw === 'Complete') statusKey = 'done';
+            const title = val(item, 'Title');
+            const desc = val(item, 'Description');
+            const prio = val(item, 'Priority');
+            const cat = val(item, 'Category');
+            const statusRaw = val(item, 'Status'); // Pending, In Progress, Complete
+            const target = val(item, 'Target_Env') || 'APP';
+            const user = val(item, 'User') || 'Sys';
 
-        // Styling Logic
-        let borderClass = prio === 'High' ? 'card-high' : (prio === 'Low' ? 'card-low' : 'card-med');
-        let catColor = cat === 'Bug' ? "bg-red-100 text-red-800" : (cat === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
-        const targetBadge = target === 'LIVE' ? 
-            '<span class="text-[8px] bg-green-100 text-green-800 px-1 rounded border border-green-200">LIVE</span>' : 
-            '<span class="text-[8px] bg-orange-100 text-orange-800 px-1 rounded border border-orange-200">APP</span>';
+            // Map status to column keys
+            let statusKey = 'pending';
+            if (statusRaw === 'In Progress') statusKey = 'progress';
+            if (statusRaw === 'Complete') statusKey = 'done';
 
-        const card = document.createElement('div');
-        card.className = `bg-white p-3 rounded shadow-sm border border-gray-200 ${borderClass} draggable-card group relative hover:shadow-md transition`;
-        card.draggable = true;
-        card.ondragstart = (e) => drag(e, id);
-        card.onclick = () => openTicket(item);
+            // Styling Logic
+            let borderClass = prio === 'High' ? 'card-high' : (prio === 'Low' ? 'card-low' : 'card-med');
+            let catColor = cat === 'Bug' ? "bg-red-100 text-red-800" : (cat === 'Goal' ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800");
+            const targetBadge = target === 'LIVE' ? 
+                '<span class="text-[8px] bg-green-100 text-green-800 px-1 rounded border border-green-200">LIVE</span>' : 
+                '<span class="text-[8px] bg-orange-100 text-orange-800 px-1 rounded border border-orange-200">APP</span>';
 
-        card.innerHTML = `
-            <div class="flex justify-between items-start mb-1">
-                <span class="text-[10px] font-bold text-gray-400 font-mono">#${id}</span>
-                <div class="flex gap-1">
-                    ${targetBadge}
-                    <span class="text-[9px] font-bold px-1.5 rounded uppercase tracking-wider ${catColor}">${cat}</span>
-                </div>
-            </div>
-            <h4 class="text-xs font-bold text-gray-800 leading-snug mb-1">${title}</h4>
-            <p class="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">${desc}</p>
-            <div class="mt-2 flex justify-between items-center">
-                <div class="flex -space-x-1">
-                    <div class="w-4 h-4 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[8px] font-bold text-gray-500" title="${val(item, 'User')}">
-                        ${val(item, 'User').charAt(0)}
+            const card = document.createElement('div');
+            card.className = `bg-white p-3 rounded shadow-sm border border-gray-200 ${borderClass} draggable-card group relative hover:shadow-md transition`;
+            card.draggable = true;
+            card.ondragstart = (e) => drag(e, id);
+            card.onclick = () => openTicket(item);
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-[10px] font-bold text-gray-400 font-mono">#${id}</span>
+                    <div class="flex gap-1">
+                        ${targetBadge}
+                        <span class="text-[9px] font-bold px-1.5 rounded uppercase tracking-wider ${catColor}">${cat}</span>
                     </div>
                 </div>
-                <div class="opacity-0 group-hover:opacity-100 transition text-[9px] font-bold text-blue-500">Edit →</div>
-            </div>
-        `;
+                <h4 class="text-xs font-bold text-gray-800 leading-snug mb-1">${title}</h4>
+                <p class="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">${desc}</p>
+                <div class="mt-2 flex justify-between items-center">
+                    <div class="flex -space-x-1">
+                        <div class="w-4 h-4 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[8px] font-bold text-gray-500" title="${user}">
+                            ${user.charAt(0)}
+                        </div>
+                    </div>
+                    <div class="opacity-0 group-hover:opacity-100 transition text-[9px] font-bold text-blue-500">Edit →</div>
+                </div>
+            `;
 
-        if (cols[statusKey]) {
-            cols[statusKey].appendChild(card);
-            counts[statusKey]++;
-        }
-    });
+            if (cols[statusKey]) {
+                cols[statusKey].appendChild(card);
+                counts[statusKey]++;
+            }
+        });
 
-    // Update Headers
-    document.getElementById('count-pending').innerText = counts.pending;
-    document.getElementById('count-progress').innerText = counts.progress;
-    document.getElementById('count-done').innerText = counts.done;
-}
+        // Update Headers
+        document.getElementById('count-pending').innerText = counts.pending;
+        document.getElementById('count-progress').innerText = counts.progress;
+        document.getElementById('count-done').innerText = counts.done;
+    }
 
     function drag(ev, id) { ev.dataTransfer.setData("text", id); ev.target.classList.add('dragging'); }
     function allowDrop(ev) { ev.preventDefault(); }
