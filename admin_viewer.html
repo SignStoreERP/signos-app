@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Viewer v2.10 | SignOS Admin</title>
+    <title>Log Viewer v2.11 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Core Link Required -->
     <script src="signos-core.js"></script>
@@ -86,16 +86,12 @@
                     </div>
                     
                     <div class="flex items-center gap-4">
-                        <!-- RESTORED MISSING ELEMENT -->
                         <div class="text-right hidden sm:block">
                             <p class="text-[10px] font-bold text-gray-400 uppercase">Loaded File</p>
                             <p class="text-xs font-bold text-gray-800 truncate max-w-[150px]" id="current-file-name">None Selected</p>
                         </div>
-                        
                         <div class="h-8 w-px bg-gray-200 mx-2"></div>
-
                         <button onclick="resetFilters()" class="text-[10px] text-red-400 hover:text-red-600 font-bold underline">Reset All Filters</button>
-                        
                         <div class="text-right border-l pl-4 border-gray-200">
                             <p class="text-[10px] font-bold text-gray-400 uppercase">Visible Events</p>
                             <p class="text-xl font-black text-blue-600 leading-none" id="stat-count">0</p>
@@ -218,7 +214,6 @@
         document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
         domElement.classList.add('active');
         
-        // This ID exists now, so this will no longer throw an error
         const nameEl = document.getElementById('current-file-name');
         if(nameEl) nameEl.innerText = fileName;
 
@@ -237,8 +232,8 @@
         rawData = [];
         let startIdx = 0;
         
-        if (lines.length > 0 && lines.includes("Timestamp")) startIdx = 2; // Exact match fallback
-        if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2; // StartsWith match
+        // FIXED: Check the FIRST LINE (Header) specifically
+        if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2; // Skip Header + Divider line
 
         for (let i = startIdx; i < lines.length; i++) {
             const line = lines[i].trim();
