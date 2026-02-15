@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v5.5 (Roadmap & Ticketing)
+// SignOS API v5.6 (Roadmap & Ticketing)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -42,8 +42,36 @@ function doGet(e) {
 // ==========================================
 
 /**
+ * WRITER: Create New Roadmap Item (v5.6 - Improved ID)
+ */
+function addRoadmapItem(p) {
+  try {
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Roadmap");
+    if (!sheet) return returnJSON({ status: "error", message: "Tab 'SYS_Roadmap' not found" });
+
+    const ts = new Date();
+    // NEW ID FORMAT: RMP_YYYYMMDD_HHmm (e.g., RMP_20260220_1430)
+    const id = "RMP_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmm");
+
+    sheet.appendRow([
+      id,
+      ts,
+      p.user || "Guest",
+      p.cat || "Feature",
+      p.prio || "Med",
+      p.title || "Untitled",
+      p.desc || "",
+      "Pending"
+    ]);
+
+    return returnJSON({ status: "success", id: id });
+  } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
+
+/**
  * READER: Fetches a single ticket AND its history log
- * Fix: Correctly matches ID in Column A instead of scanning the whole row string.
+ * (Restored missing function definition)
  */
 function getTicketDetails(ticketId) {
   try {
@@ -89,8 +117,7 @@ function getTicketDetails(ticketId) {
 }
 
 /**
- * WRITER: Adds a comment/action AND optionally updates Parent Status
- * Fix: Correctly finds the parent row to update the status column.
+ * WRITER: Add Ticket Action (v5.6 - Improved ID & Status Sync)
  */
 function addTicketAction(p) {
   try {
@@ -101,10 +128,9 @@ function addTicketAction(p) {
     if(!actionSheet) return returnJSON({ status: "error", message: "Missing SYS_Roadmap_Actions" });
 
     const ts = new Date();
-    const actionId = "ACT_" + Date.now().toString().substr(-6);
+    // NEW ID FORMAT: ACT_YYYYMMDD_HHmmss (e.g., ACT_20260220_143005)
+    const actionId = "ACT_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
 
-    // 1. Append Action
-    // Headers: Action_ID, Parent_ID, Timestamp, User, Type, Details
     actionSheet.appendRow([
       actionId,
       p.id,
@@ -114,14 +140,13 @@ function addTicketAction(p) {
       p.msg || ""
     ]);
 
-    // 2. Update Parent Status (if requested)
+    // Update Parent Status
     if(p.new_status && p.new_status !== "") {
       const pData = parentSheet.getDataRange().getValues();
-      // Find row index of Parent ID
       for(let i=1; i<pData.length; i++) {
         // Check Column A (Index 0)
         if(String(pData[i][0]) === String(p.id)) {
-          // Column H is Status (Index 7) -> getRange is 1-based, so Column 8
+          // Column 8 is Status (Index 7)
           parentSheet.getRange(i+1, 8).setValue(p.new_status);
           break;
         }
@@ -129,36 +154,7 @@ function addTicketAction(p) {
     }
 
     return returnJSON({ status: "success" });
-
   } catch(e) { return returnJSON({ status: "error", message: e.toString() }); }
-}
-
-/**
- * WRITER: Create New Ticket
- */
-function addRoadmapItem(p) {
-  try {
-    const ss = SpreadsheetApp.openById(DATA_SS_ID);
-    const sheet = ss.getSheetByName("SYS_Roadmap");
-    if (!sheet) return returnJSON({ status: "error", message: "Tab 'SYS_Roadmap' not found" });
-    
-    const timeStamp = new Date();
-    const id = "RMP_" + Utilities.formatDate(timeStamp, Session.getScriptTimeZone(), "MMdd_HHmmss");
-    
-    // Append: ID, Timestamp, User, Category, Priority, Title, Description, Status
-    sheet.appendRow([
-      id, 
-      timeStamp, 
-      p.user||"Guest", 
-      p.cat||"Feature", 
-      p.prio||"Med", 
-      p.title||"Untitled", 
-      p.desc||"", 
-      "Pending"
-    ]);
-    
-    return returnJSON({ status: "success", id: id });
-  } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
 }
 
 // ==========================================
