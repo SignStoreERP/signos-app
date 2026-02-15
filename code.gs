@@ -51,7 +51,6 @@ function addRoadmapItem(p) {
     if (!sheet) return returnJSON({ status: "error", message: "Tab 'SYS_Roadmap' not found" });
 
     const ts = new Date();
-    // NEW ID FORMAT: RMP_YYYYMMDD_HHmm (e.g., RMP_20260220_1430)
     const id = "RMP_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmm");
 
     sheet.appendRow([
@@ -62,10 +61,12 @@ function addRoadmapItem(p) {
       p.prio || "Med",
       p.title || "Untitled",
       p.desc || "",
-      "Pending"
+      "Pending",
+      p.target || "APP" // <--- NEW: Saves "APP" or "LIVE" to Column I
     ]);
 
     return returnJSON({ status: "success", id: id });
+
   } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
 }
 
