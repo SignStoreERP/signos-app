@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Viewer v2.7 | SignOS Admin</title>
+    <title>Log Viewer v2.8 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
-    </script>
-    
-    <style type="text/tailwindcss">
-        /* SCROLLBARS */
+    <!-- Core Link Required -->
+    <script src="signos-core.js"></script>
+    <style>
         .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -18,7 +15,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* TABLE STYLES */
         .log-row { cursor: pointer; transition: background-color 0.1s; }
         .log-row:hover { background-color: #eff6ff; }
         .log-auth { color: #2563eb; }
@@ -28,32 +24,25 @@
         .sort-header { cursor: pointer; user-select: none; transition: background-color 0.1s; }
         .sort-header:hover { background-color: #e5e7eb; color: #1f2937; }
 
-        /* SMART CHIP STYLES */
         .filter-chip { @apply px-2 py-1 rounded-md text-[10px] font-bold border transition-all duration-200 uppercase tracking-wide cursor-pointer select-none whitespace-nowrap; }
-        
-        /* Chip Categories */
         .chip-user { @apply bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100; }
         .chip-user.active { @apply bg-slate-600 border-slate-600 text-white shadow-md transform scale-105; }
-
         .chip-role { @apply bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100; }
         .chip-role.active { @apply bg-blue-600 border-blue-600 text-white shadow-md transform scale-105; }
-
         .chip-action { @apply bg-purple-50 border-purple-200 text-purple-600 hover:bg-purple-100; }
         .chip-action.active { @apply bg-purple-600 border-purple-600 text-white shadow-md transform scale-105; }
-
         .chip-target { @apply bg-teal-50 border-teal-200 text-teal-600 hover:bg-teal-100; }
         .chip-target.active { @apply bg-teal-600 border-teal-600 text-white shadow-md transform scale-105; }
-
         .chip-ip { @apply bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100; }
         .chip-ip.active { @apply bg-orange-500 border-orange-500 text-white shadow-md transform scale-105; }
 
-        /* Modal */
         .modal { transition: opacity 0.25s ease; }
         body.modal-active { overflow: hidden; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col h-screen overflow-hidden">
 
+    <!-- HEADER -->
     <div class="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-lg shrink-0 z-20">
         <div class="flex items-center gap-4">
             <h1 class="text-lg font-black tracking-tight">SignOS Analyzer</h1>
@@ -66,8 +55,8 @@
         </div>
     </div>
 
+    <!-- MAIN LAYOUT -->
     <div class="flex flex-1 overflow-hidden">
-        
         <div class="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-10 shadow-lg">
             <div class="p-4 border-b border-gray-100 bg-gray-50">
                 <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Archive History</h2>
@@ -85,9 +74,7 @@
         </div>
 
         <div class="flex-1 flex flex-col bg-gray-100 min-w-0">
-            
             <div class="bg-white border-b border-gray-200 shadow-sm shrink-0 flex flex-col z-10">
-                
                 <div class="px-4 py-3 flex justify-between items-center border-b border-gray-100">
                     <div class="flex items-center gap-2 w-1/3 relative">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -101,38 +88,16 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="px-4 py-2 bg-gray-50 flex items-center gap-4 overflow-x-auto no-scrollbar whitespace-nowrap">
-                    
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[9px] font-black text-gray-400 uppercase">USER</span>
-                        <div id="filter-users" class="flex gap-1"></div>
-                    </div>
+                    <div class="flex items-center gap-2 shrink-0"><span class="text-[9px] font-black text-gray-400 uppercase">USER</span><div id="filter-users" class="flex gap-1"></div></div>
                     <div class="w-px h-6 bg-gray-300 shrink-0"></div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[9px] font-black text-blue-300 uppercase">ROLE</span>
-                        <div id="filter-roles" class="flex gap-1"></div>
-                    </div>
+                    <div class="flex items-center gap-2 shrink-0"><span class="text-[9px] font-black text-blue-300 uppercase">ROLE</span><div id="filter-roles" class="flex gap-1"></div></div>
                     <div class="w-px h-6 bg-gray-300 shrink-0"></div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[9px] font-black text-purple-300 uppercase">ACTION</span>
-                        <div id="filter-actions" class="flex gap-1"></div>
-                    </div>
+                    <div class="flex items-center gap-2 shrink-0"><span class="text-[9px] font-black text-purple-300 uppercase">ACTION</span><div id="filter-actions" class="flex gap-1"></div></div>
                     <div class="w-px h-6 bg-gray-300 shrink-0"></div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[9px] font-black text-teal-300 uppercase">TARGET</span>
-                        <div id="filter-targets" class="flex gap-1"></div>
-                    </div>
+                    <div class="flex items-center gap-2 shrink-0"><span class="text-[9px] font-black text-teal-300 uppercase">TARGET</span><div id="filter-targets" class="flex gap-1"></div></div>
                     <div class="w-px h-6 bg-gray-300 shrink-0"></div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[9px] font-black text-orange-300 uppercase">IP ADDR</span>
-                        <div id="filter-ips" class="flex gap-1"></div>
-                    </div>
-
+                    <div class="flex items-center gap-2 shrink-0"><span class="text-[9px] font-black text-orange-300 uppercase">IP ADDR</span><div id="filter-ips" class="flex gap-1"></div></div>
                 </div>
             </div>
 
@@ -159,13 +124,13 @@
         </div>
     </div>
 
+    <!-- DETAIL MODAL -->
     <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-gray-900 px-6 py-4 border-b border-gray-800 flex justify-between items-center text-white shrink-0">
                 <h2 class="font-bold text-lg">Log Entry Inspector</h2>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
             </div>
-            
             <div class="flex-1 overflow-y-auto p-6 space-y-6">
                 <div class="grid grid-cols-3 gap-4 text-sm bg-gray-50 p-4 rounded border border-gray-200">
                     <div><span class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Timestamp</span><span id="m-time" class="font-bold text-gray-900">---</span></div>
@@ -188,6 +153,7 @@
         </div>
     </div>
 
+    <!-- LOADING OVERLAY -->
     <div id="loader" class="fixed inset-0 bg-white/80 z-50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="text-center">
             <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
@@ -199,28 +165,23 @@
     let rawData = [];
     let displayData = [];
     let currentSort = { key: 'time', dir: 'desc' };
-    
-    // FILTER STATE
     let activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
 
     window.onload = function() {
         const u = sessionStorage.getItem('signos_user');
         const r = sessionStorage.getItem('signos_role');
-        // Optional: Simple Access Check
-        if (r !== 'ADMIN' && r !== 'PROD') { 
-            // alert("ACCESS DENIED"); window.location.href = 'menu.html'; 
-        }
+        if (r !== 'ADMIN' && r !== 'PROD') { /* Access Check */ }
         document.getElementById('auth-user').innerText = u || "GUEST";
         loadArchiveList();
     };
-    
+
     function goBack() { window.history.back(); }
 
-    // --- 1. DATA LOADING ---
     async function loadArchiveList() {
         const list = document.getElementById('archive-list');
         list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto"></div></div>';
         try {
+            // Inherits SCRIPT_URL from signos-core.js
             const response = await fetch(`${SCRIPT_URL}?req=get_archive_index`);
             const data = await response.json();
             list.innerHTML = "";
@@ -248,7 +209,7 @@
             const data = await response.json();
             if(data.status === 'success') parseLogs(data.content);
             else alert("Error reading file: " + data.message);
-        } catch(e) { alert("Network Error: " + e.message); } 
+        } catch(e) { alert("Network Error: " + e.message); }
         finally { document.getElementById('loader').classList.add('hidden'); }
     }
 
@@ -256,19 +217,15 @@
         const lines = text.split('\n');
         rawData = [];
         let startIdx = 0;
-        
-        // Fix Header Detection
-        if (lines.length > 0 && lines[0].includes("Timestamp")) startIdx = 2;
+        if (lines.length > 0 && lines.includes("Timestamp")) startIdx = 2;
 
         for (let i = startIdx; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
             const cols = line.split('|').map(c => c.trim());
-            
-            // Expected Format: Date | IP | User | Role | Action | Target | Meta
             if (cols.length >= 6) {
                 rawData.push({
-                    time: cols[0], // FIX: Grab only first column
+                    time: cols, 
                     ip: cols[1],
                     user: cols[2],
                     role: cols[3],
@@ -279,19 +236,13 @@
                 });
             }
         }
-        
-        // 1. Populate Filter Chips based on new data
         populateFilters(rawData);
-        
-        // 2. Clear previous filters but render new data
         resetFilters(false);
-        applyFilters(); 
+        applyFilters();
     }
 
-    // --- 2. DYNAMIC FILTERS ---
     function populateFilters(data) {
         const extract = (key) => [...new Set(data.map(i => i[key]).filter(x => x && x !== 'N/A' && x !== ''))].sort();
-        
         renderChips('filter-users', extract('user'), 'users', 'chip-user');
         renderChips('filter-roles', extract('role'), 'roles', 'chip-role');
         renderChips('filter-actions', extract('action'), 'actions', 'chip-action');
@@ -306,26 +257,16 @@
             const btn = document.createElement('button');
             btn.className = `filter-chip ${cssClass}`;
             btn.innerText = val;
-            
-            // Use closure to capture correct filterType and value
             btn.onclick = function() { toggleFilter(filterType, val, this); };
-            
             container.appendChild(btn);
         });
     }
 
     function toggleFilter(type, value, btn) {
         const arr = activeFilters[type];
-        
-        // Toggle Logic
         const idx = arr.indexOf(value);
-        if(idx === -1) { 
-            arr.push(value); 
-            btn.classList.add('active'); 
-        } else { 
-            arr.splice(idx, 1); 
-            btn.classList.remove('active'); 
-        }
+        if(idx === -1) { arr.push(value); btn.classList.add('active'); }
+        else { arr.splice(idx, 1); btn.classList.remove('active'); }
         applyFilters();
     }
 
@@ -338,32 +279,23 @@
 
     function applyFilters() {
         const search = document.getElementById('filter-search').value.toLowerCase();
-        
         displayData = rawData.filter(item => {
-            // 1. Text Search
             if (search && !item.raw.includes(search)) return false;
-            
-            // 2. Chip Filters
             if (activeFilters.users.length > 0 && !activeFilters.users.includes(item.user)) return false;
             if (activeFilters.roles.length > 0 && !activeFilters.roles.includes(item.role)) return false;
             if (activeFilters.actions.length > 0 && !activeFilters.actions.includes(item.action)) return false;
             if (activeFilters.targets.length > 0 && !activeFilters.targets.includes(item.target)) return false;
             if (activeFilters.ips.length > 0 && !activeFilters.ips.includes(item.ip)) return false;
-            
             return true;
         });
-
         sortData(currentSort.key);
     }
 
-    // --- 3. RENDERING ---
     function sortData(key) {
         if (currentSort.key === key) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
         else { currentSort.key = key; currentSort.dir = 'asc'; if(key === 'time') currentSort.dir = 'desc'; }
-
         document.querySelectorAll('.sort-header span').forEach(el => el.innerText = '');
         document.getElementById('sort-'+key).innerText = currentSort.dir === 'asc' ? '▲' : '▼';
-
         displayData.sort((a, b) => {
             let valA = String(a[key] || "").toLowerCase();
             let valB = String(b[key] || "").toLowerCase();
@@ -378,37 +310,20 @@
         const tbody = document.getElementById('log-body');
         tbody.innerHTML = '';
         document.getElementById('stat-count').innerText = displayData.length;
-
-        if (displayData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No matching logs found.</td></tr>';
-            return;
-        }
-
+        if (displayData.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No matching logs found.</td></tr>'; return; }
         displayData.forEach(row => {
             const tr = document.createElement('tr');
             tr.className = "log-row border-b border-gray-50";
             tr.onclick = () => openModal(row);
-            
             if (row.action === 'PRINT_ORDER') tr.classList.add('log-checkout');
             if (row.user === 'GUEST' && row.action === 'auth') tr.classList.add('log-error');
             if (row.action === 'auth' && row.role !== 'N/A') tr.classList.add('log-auth');
-
             const cell = (val) => `<span class="hover:text-blue-600 font-medium">${val}</span>`;
-
-            tr.innerHTML = `
-                <td class="p-3 whitespace-nowrap text-gray-500 font-mono text-[10px]">${row.time}</td>
-                <td class="p-3 font-bold text-gray-800 text-xs whitespace-nowrap">${cell(row.user)}</td>
-                <td class="p-3 text-xs whitespace-nowrap"><span class="bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600">${row.role}</span></td>
-                <td class="p-3 font-bold uppercase text-xs whitespace-nowrap">${cell(row.action)}</td>
-                <td class="p-3 text-gray-500 text-xs whitespace-nowrap">${cell(row.target)}</td>
-                <td class="p-3 text-gray-400 font-mono text-[10px] whitespace-nowrap">${cell(row.ip)}</td>
-                <td class="p-3 text-gray-400 font-mono text-[9px] truncate max-w-xs hover:text-gray-600 transition">${row.meta}</td>
-            `;
+            tr.innerHTML = `<td class="p-3 whitespace-nowrap text-gray-500 font-mono text-[10px]">${row.time}</td><td class="p-3 font-bold text-gray-800 text-xs whitespace-nowrap">${cell(row.user)}</td><td class="p-3 text-xs whitespace-nowrap"><span class="bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600">${row.role}</span></td><td class="p-3 font-bold uppercase text-xs whitespace-nowrap">${cell(row.action)}</td><td class="p-3 text-gray-500 text-xs whitespace-nowrap">${cell(row.target)}</td><td class="p-3 text-gray-400 font-mono text-[10px] whitespace-nowrap">${cell(row.ip)}</td><td class="p-3 text-gray-400 font-mono text-[9px] truncate max-w-xs hover:text-gray-600 transition">${row.meta}</td>`;
             tbody.appendChild(tr);
         });
     }
 
-    // --- MODAL & HELPERS ---
     function openModal(row) {
         document.getElementById('m-time').innerText = row.time;
         document.getElementById('m-ip').innerText = row.ip;
@@ -416,27 +331,12 @@
         document.getElementById('m-role').innerText = row.role;
         document.getElementById('m-action').innerText = row.action;
         document.getElementById('m-target').innerText = row.target;
-        try {
-            const metaObj = JSON.parse(row.meta);
-            document.getElementById('m-meta').innerText = JSON.stringify(metaObj, null, 2);
-        } catch(e) { document.getElementById('m-meta').innerText = row.meta; }
+        try { const metaObj = JSON.parse(row.meta); document.getElementById('m-meta').innerText = JSON.stringify(metaObj, null, 2); } catch(e) { document.getElementById('m-meta').innerText = row.meta; }
         document.getElementById('detail-modal').classList.remove('hidden');
         document.body.classList.add('modal-active');
     }
-    function closeModal() {
-        document.getElementById('detail-modal').classList.add('hidden');
-        document.body.classList.remove('modal-active');
-    }
-    
-    // File Handler
-    document.getElementById('file-input').addEventListener('change', function(e) {
-        const file = e.target.files;
-        if (!file) return;
-        document.getElementById('current-file-name').innerText = "Local: " + file.name;
-        const reader = new FileReader();
-        reader.onload = (e) => parseLogs(e.target.result);
-        reader.readAsText(file);
-    });
+    function closeModal() { document.getElementById('detail-modal').classList.add('hidden'); document.body.classList.remove('modal-active'); }
+    document.getElementById('file-input').addEventListener('change', function(e) { const file = e.target.files; if (!file) return; document.getElementById('current-file-name').innerText = "Local: " + file.name; const reader = new FileReader(); reader.onload = (e) => parseLogs(e.target.result); reader.readAsText(file); });
 </script>
 </body>
 </html>
