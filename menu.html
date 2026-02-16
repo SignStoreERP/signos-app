@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Menu v4.6</title>
+    <title>SignOS Menu v4.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
 </head>
@@ -102,12 +102,18 @@ window.onload = async function() {
     document.getElementById('auth-user').innerText = user || 'GUEST';
     document.getElementById('auth-role').innerText = role || 'VIEW';
 
+    // Environment Badge
+    const badge = document.getElementById('sys-badge');
+    if (IS_DEV_ENV) {
+        badge.className = "bg-orange-100 text-orange-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-orange-200";
+        badge.innerText = "DEV ENVIRONMENT";
+    } else {
+        badge.className = "bg-green-100 text-green-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-green-200";
+        badge.innerText = "PRODUCTION ONLINE";
+    }
+
     if (role === 'ADMIN') {
         document.getElementById('admin-workflow').classList.remove('hidden');
-        const badge = document.getElementById('sys-badge');
-        badge.classList.replace('bg-gray-100', 'bg-blue-600');
-        badge.classList.replace('text-gray-800', 'text-white');
-        badge.innerText = "ADMIN CONSOLE";
     }
 
     try {
@@ -145,14 +151,12 @@ function renderMenu(modules, role) {
         mods.forEach(mod => {
             const id = val(mod, 'Module_ID');
             
-            // --- SECURITY FILTER ---
-            // Hide Admin Tools from the main grid if user is not Admin
-            // (These are accessible via the top bar for Admins)
-            if ((id === 'SYS_Roadmap' || id === 'SYS_Changelog' || id === 'SYS_Log_Analyzer') && role !== 'ADMIN') return;
+            // 1. SECURITY FILTER: Hide Admin Tools from Main Grid for Non-Admins
+            if ((id === 'SYS_Roadmap' || id === 'SYS_Changelog' || id === 'SYS_Log_Analyzer' || id === 'SYS_Log_Backup') && role !== 'ADMIN') return;
 
             const isLive = (val(mod, 'Is_Live') === true || String(val(mod, 'Is_Live')).toUpperCase() === 'TRUE');
             
-            // Hide non-live items for non-admins
+            // 2. DRAFT FILTER: Hide non-live items for non-admins
             if (!isLive && role !== 'ADMIN') return;
 
             const displayName = val(mod, 'Display_Name');
@@ -160,20 +164,23 @@ function renderMenu(modules, role) {
             const devVer = val(mod, 'Dev_Ver');
             const liveVer = val(mod, 'Live_Ver');
             const iconColor = val(mod, 'Icon');
-            const iconPath = val(mod, 'Icon_Path'); // Pulls SVG path from backend
+            const iconPath = val(mod, 'Icon_Path'); 
 
+            // 3. TARGETING LOGIC (The Fix)
             let targetMode = (role === 'PROD') ? 'production' : (role === 'ADMIN' ? 'dev' : 'sales');
-            let targetVer = (role === 'ADMIN') ? (devVer || liveVer) : liveVer;
+            
+            // VERSION LOGIC: If we are in Dev Env, show Dev Ver. If Live Env, show Live Ver.
+            let targetVer = IS_DEV_ENV ? (devVer || 'v0.0') : (liveVer || 'v0.0');
 
             const link = document.createElement('a');
             link.href = `${fileLink}?mode=${targetMode}`;
             link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
 
             const colorClass = ICON_STYLES[(iconColor || 'blue').toLowerCase()] || ICON_STYLES['blue'];
-            const verBg = role === 'ADMIN' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500';
+            const verBg = IS_DEV_ENV ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500';
             const draftBadge = (!isLive && role === 'ADMIN') ? `<div class="absolute top-2 right-2 text-[9px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded border border-gray-200">DRAFT</div>` : '';
 
-            // Icon Render Logic
+            // Icon Render
             const iconHtml = iconPath 
                 ? `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="${iconPath}"></path></svg>`
                 : `<span class="text-xl font-bold">●</span>`;
@@ -187,7 +194,7 @@ function renderMenu(modules, role) {
                     <div>
                         <h3 class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition">${displayName}</h3>
                         <div class="mt-1 flex items-center gap-2">
-                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${verBg}">${targetVer || 'v0.0'}</span>
+                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${verBg}">${targetVer}</span>
                         </div>
                     </div>
                 </div>
@@ -205,4 +212,5 @@ function renderMenu(modules, role) {
 
 </body>
 </html>
+
 
