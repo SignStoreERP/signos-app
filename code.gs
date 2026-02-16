@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.15 - Update fetchTable
+// SignOS API v6.16 - (Hotfix)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -13,7 +13,7 @@ const ARCHIVE_FOLDER_ID = "18MBPWajHdF4TNQ0g8Iz1n1-GT3nBrMj4";
 
 function doGet(e) {
   const params = e.parameter;
-  
+ 
   // 1. LOGGING (Async)
   if (params.ip) logActivity(params);
 
@@ -51,8 +51,8 @@ function addRoadmapItem(p) {
     const id = "RMP_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmm");
 
     // Capture Context and Source
-    const source = p.source || "User"; 
-    const context = p.context || "General"; 
+    const source = p.source || "User";
+    const context = p.context || "General";
 
     sheet.appendRow([
       id,
@@ -77,7 +77,7 @@ function getTicketDetails(ticketId) {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const parentSheet = ss.getSheetByName("SYS_Roadmap");
     const childSheet = ss.getSheetByName("SYS_Roadmap_Actions");
-    
+   
     if(!parentSheet || !childSheet) return returnJSON({ error: "Missing DB Tabs" });
 
     const pData = parentSheet.getDataRange().getValues();
@@ -160,7 +160,7 @@ function fetchTable(tabName) {
     if (values.length < 2) return returnJSON([]);
 
     // --- BUG FIX: Select ONLY the first row (Index 0) ---
-    const headers = values[0]; 
+    const headers = values[0];
     const rows = values.slice(1);
 
     const result = rows.map(row => {
@@ -185,13 +185,21 @@ function fetchConfig(tabName) {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return returnJSON({});
 
+    // Get Col A (Key) and Col B (Value)
     const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
     const config = {};
-    data.forEach(row => { const key = row; const val = row[1]; if (key && key !== "") config[key] = val; });
+    
+    data.forEach(row => { 
+        // FIX: Explicitly target  for Key and [1] for Value
+        const key = row; 
+        const val = row[1]; 
+        if (key && String(key).trim() !== "") config[key] = val; 
+    });
 
     return returnJSON(config);
   } catch (err) { return returnJSON({ error: "System Error: " + err.toString() }); }
 }
+
 
 function handleAuth(pin) {
   try {
@@ -213,7 +221,7 @@ function handleAuth(pin) {
     // 2. Find User
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][idx.p]) === String(pin)) {
-        
+       
         // Check Active Status
         const isActive = (data[i][idx.active] === true || String(data[i][idx.active]).toUpperCase() === "TRUE");
         if (!isActive) return returnJSON({ status: "fail", message: "Account Disabled" });
@@ -255,10 +263,10 @@ function fetchArchiveIndex() {
     const result = rows.map(r => {
       const url = r[2];
       let fileId = null;
-      if (url) { 
-        const match = url.match(/\/d\/(.+?)\//); 
-        if (match) fileId = match[1]; 
-        else if (url.includes("id=")) fileId = url.split("id=")[1]; 
+      if (url) {
+        const match = url.match(/\/d\/(.+?)\//);
+        if (match) fileId = match[1];
+        else if (url.includes("id=")) fileId = url.split("id=")[1];
       }
       return { date: r, name: r[1], url: url, count: r[3], type: r[4], file_id: fileId };
     }).reverse();
@@ -292,7 +300,7 @@ function manualExport(pin) {
 
   // CHECK 2: Granular Permission
   const backupAccess = (authObj.permissions && authObj.permissions.backup) ? authObj.permissions.backup : "None";
-  
+ 
   if (backupAccess !== "Run" && backupAccess !== "Full") {
       return returnJSON({ status: "error", message: "Access Denied: Backup Permissions Required" });
   }
@@ -418,9 +426,9 @@ function doPost(e) {
       // ROADMAP LINKING
       const ticketMatch = msg.match(/(RMP_[A-Za-z0-9_]+)/);
       if (ticketMatch && actionSheet) {
-        const ticketId = ticketMatch; 
+        const ticketId = ticketMatch;
         const actionId = "GIT_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
-        
+       
         actionSheet.appendRow([
           actionId,
           ticketId,
