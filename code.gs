@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.14 (hotfix)
+// SignOS API v6.15 - Update fetchTable
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -159,7 +159,7 @@ function fetchTable(tabName) {
     const values = sheet.getDataRange().getValues();
     if (values.length < 2) return returnJSON([]);
 
-    // --- CRITICAL FIX: Add  to select the first row ---
+    // --- BUG FIX: Select ONLY the first row (Index 0) ---
     const headers = values; 
     const rows = values.slice(1);
 
