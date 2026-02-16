@@ -73,127 +73,136 @@
 
     </div>
 
-    <script>
-        // 1. SAFETY VALVE
-        function val(obj, key) {
-            if (!obj) return "";
-            return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
-        }
+<script>
+// 1. SAFETY VALVE
+function val(obj, key) {
+    if (!obj) return "";
+    return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
+}
 
-        // 2. STYLE MAP
-        const ICON_STYLES = {
-            blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
-            green: "bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white",
-            purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white",
-            red: "bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white",
-            orange: "bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white",
-            slate: "bg-slate-50 text-slate-600 group-hover:bg-slate-600 group-hover:text-white",
-            teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white",
-            indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
-            pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white",
-            yellow: "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white",
-            gray: "bg-gray-100 text-gray-600 group-hover:bg-gray-600 group-hover:text-white"
-        };
+// 2. STYLE MAP
+const ICON_STYLES = {
+    blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
+    green: "bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white",
+    purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white",
+    red: "bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white",
+    orange: "bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white",
+    slate: "bg-slate-50 text-slate-600 group-hover:bg-slate-600 group-hover:text-white",
+    teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white",
+    indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
+    pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white",
+    yellow: "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white",
+    gray: "bg-gray-100 text-gray-600 group-hover:bg-gray-600 group-hover:text-white"
+};
 
-        window.onload = async function() {
-            const user = sessionStorage.getItem('signos_user');
-            const role = sessionStorage.getItem('signos_role');
+window.onload = async function() {
+    const user = sessionStorage.getItem('signos_user');
+    const role = sessionStorage.getItem('signos_role');
 
-            document.getElementById('auth-user').innerText = user || 'GUEST';
-            document.getElementById('auth-role').innerText = role || 'VIEW';
+    document.getElementById('auth-user').innerText = user || 'GUEST';
+    document.getElementById('auth-role').innerText = role || 'VIEW';
 
-            if (role === 'ADMIN') {
-                document.getElementById('admin-workflow').classList.remove('hidden');
-                const badge = document.getElementById('sys-badge');
-                badge.classList.replace('bg-gray-100', 'bg-blue-600');
-                badge.classList.replace('text-gray-800', 'text-white');
-                badge.innerText = "ADMIN CONSOLE";
-            }
+    if (role === 'ADMIN') {
+        document.getElementById('admin-workflow').classList.remove('hidden');
+        const badge = document.getElementById('sys-badge');
+        badge.classList.replace('bg-gray-100', 'bg-blue-600');
+        badge.classList.replace('text-gray-800', 'text-white');
+        badge.innerText = "ADMIN CONSOLE";
+    }
 
-            try {
-                // Fetch data from API
-                const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP}`);
-                const data = await response.json();
-                
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                
-                renderMenu(data, role);
+    try {
+        const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP}`);
+        const data = await response.json();
+        
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('app-container').classList.remove('hidden');
+        
+        renderMenu(data, role);
 
-            } catch (e) {
-                document.getElementById('loader').innerHTML = `<div class="p-4 text-red-500 font-bold">Error: ${e.message}</div>`;
-            }
-        };
+    } catch (e) {
+        document.getElementById('loader').innerHTML = `<div class="p-4 text-red-500 font-bold">Error: ${e.message}</div>`;
+    }
+};
 
-        function renderMenu(modules, role) {
-            const container = document.getElementById('app-container');
-            container.innerHTML = "";
+function renderMenu(modules, role) {
+    const container = document.getElementById('app-container');
+    container.innerHTML = "";
 
-            // Group by Category
-            const categories = {};
-            modules.forEach(mod => {
-                const cat = val(mod, 'Category') || 'Uncategorized';
-                if (!categories[cat]) categories[cat] = [];
-                categories[cat].push(mod);
-            });
+    const categories = {};
+    modules.forEach(mod => {
+        const cat = val(mod, 'Category') || 'Uncategorized';
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push(mod);
+    });
 
-            for (const [catName, mods] of Object.entries(categories)) {
-                const section = document.createElement('section');
-                section.innerHTML = `<h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">${catName}</h2>`;
-                
-                const grid = document.createElement('div');
-                grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8";
+    for (const [catName, mods] of Object.entries(categories)) {
+        const section = document.createElement('section');
+        section.innerHTML = `<h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">${catName}</h2>`;
+        
+        const grid = document.createElement('div');
+        grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8";
 
-                mods.forEach(mod => {
-                    const isLive = (val(mod, 'Is_Live') === true || String(val(mod, 'Is_Live')).toUpperCase() === 'TRUE');
-                    const displayName = val(mod, 'Display_Name');
-                    const fileLink = val(mod, 'File_Link');
-                    const devVer = val(mod, 'Dev_Ver');
-                    const liveVer = val(mod, 'Live_Ver');
-                    const iconColor = val(mod, 'Icon'); 
-                    const iconPath = val(mod, 'Icon_Path'); // NEW: Pulls path from backend
+        mods.forEach(mod => {
+            const id = val(mod, 'Module_ID');
+            
+            // --- SECURITY FILTER ---
+            // Hide Admin Tools from the main grid if user is not Admin
+            // (These are accessible via the top bar for Admins)
+            if ((id === 'SYS_Roadmap' || id === 'SYS_Changelog' || id === 'SYS_Log_Analyzer') && role !== 'ADMIN') return;
 
-                    let targetMode = (role === 'PROD') ? 'production' : (role === 'ADMIN' ? 'dev' : 'sales');
-                    let targetVer = (role === 'ADMIN') ? (devVer || liveVer) : liveVer;
+            const isLive = (val(mod, 'Is_Live') === true || String(val(mod, 'Is_Live')).toUpperCase() === 'TRUE');
+            
+            // Hide non-live items for non-admins
+            if (!isLive && role !== 'ADMIN') return;
 
-                    // Visibility Check
-                    if (!isLive && role !== 'ADMIN') return;
+            const displayName = val(mod, 'Display_Name');
+            const fileLink = val(mod, 'File_Link');
+            const devVer = val(mod, 'Dev_Ver');
+            const liveVer = val(mod, 'Live_Ver');
+            const iconColor = val(mod, 'Icon');
+            const iconPath = val(mod, 'Icon_Path'); // Pulls SVG path from backend
 
-                    const link = document.createElement('a');
-                    link.href = `${fileLink}?mode=${targetMode}`;
-                    link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
+            let targetMode = (role === 'PROD') ? 'production' : (role === 'ADMIN' ? 'dev' : 'sales');
+            let targetVer = (role === 'ADMIN') ? (devVer || liveVer) : liveVer;
 
-                    const colorClass = ICON_STYLES[(iconColor || 'blue').toLowerCase()] || ICON_STYLES['blue'];
-                    const verBg = role === 'ADMIN' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500';
-                    const draftBadge = (!isLive && role === 'ADMIN') ? `<div class="absolute top-2 right-2 text-[9px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded border border-gray-200">DRAFT</div>` : '';
+            const link = document.createElement('a');
+            link.href = `${fileLink}?mode=${targetMode}`;
+            link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
 
-                    // Icon Logic: SVG Path vs Default Dot
-                    // This takes the path from your Google Sheet and draws it
-                    const iconHtml = iconPath 
-                        ? `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="${iconPath}"></path></svg>`
-                        : `<span class="text-xl font-bold">●</span>`;
+            const colorClass = ICON_STYLES[(iconColor || 'blue').toLowerCase()] || ICON_STYLES['blue'];
+            const verBg = role === 'ADMIN' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500';
+            const draftBadge = (!isLive && role === 'ADMIN') ? `<div class="absolute top-2 right-2 text-[9px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded border border-gray-200">DRAFT</div>` : '';
 
-                    link.innerHTML = `
-                        ${draftBadge}
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-lg flex items-center justify-center transition ${colorClass}">
-                                ${iconHtml}
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition">${displayName}</h3>
-                                <div class="mt-1 flex items-center gap-2">
-                                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${verBg}">${targetVer || 'v0.0'}</span>
-                                </div>
-                            </div>
+            // Icon Render Logic
+            const iconHtml = iconPath 
+                ? `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="${iconPath}"></path></svg>`
+                : `<span class="text-xl font-bold">●</span>`;
+
+            link.innerHTML = `
+                ${draftBadge}
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center transition ${colorClass}">
+                        ${iconHtml}
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition">${displayName}</h3>
+                        <div class="mt-1 flex items-center gap-2">
+                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${verBg}">${targetVer || 'v0.0'}</span>
                         </div>
-                    `;
-                    grid.appendChild(link);
-                });
+                    </div>
+                </div>
+            `;
+            grid.appendChild(link);
+        });
 
-                section.appendChild(grid);
-                container.appendChild(section);
-            }
+        if (grid.children.length > 0) {
+            section.appendChild(grid);
+            container.appendChild(section);
         }
-    </script>
+    }
+}
+</script>
+
 </body>
 </html>
+
