@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.13 (hotfix)
+// SignOS API v6.14 (hotfix)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -159,7 +159,7 @@ function fetchTable(tabName) {
     const values = sheet.getDataRange().getValues();
     if (values.length < 2) return returnJSON([]);
 
-    // --- BUG FIX: Target the first row (Index 0) explicitly ---
+    // --- CRITICAL FIX: Add  to select the first row ---
     const headers = values; 
     const rows = values.slice(1);
 
@@ -174,7 +174,6 @@ function fetchTable(tabName) {
     return returnJSON(result);
   } catch (err) { return returnJSON({ error: "Table Error: " + err.toString() }); }
 }
-
 
 
 function fetchConfig(tabName) {
