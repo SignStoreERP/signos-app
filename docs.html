@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS User Manual v4.0</title>
+    <title>SignOS User Manual v4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -198,9 +198,50 @@
     }
 
     function goBack() { window.history.back(); }
+
+   window.onload = async function() {
+        const u = sessionStorage.getItem('signos_user') || 'Guest';
+        const r = sessionStorage.getItem('signos_role') || 'VIEW';
+        
+        document.getElementById('view-role').innerText = r;
+
+        // Role-Based Tabs
+        if (r === 'SALES') {
+            switchTab('sales');
+            document.getElementById('btn-prod').classList.add('hidden'); 
+        } else if (r === 'PROD') {
+            switchTab('prod');
+            document.getElementById('btn-sales').classList.remove('hidden');
+        } else if (r === 'ADMIN') {
+            switchTab('admin');
+            document.getElementById('btn-admin').classList.remove('hidden');
+        }
+
+        // --- VERSION SYNC ---
+        // New logic to display correct version based on Environment
+        try {
+            const response = await fetch(`${SCRIPT_URL}?tab=SYS_Modules&ip=${clientIP}&user=${u}&role=${r}&req=table`);
+            const modules = await response.json();
+            
+            // Find Myself (SYS_Docs)
+            const myModule = modules.find(m => m.Module_ID === 'SYS_Docs' || m.File_Link === 'docs.html');
+            
+            if (myModule) {
+                const ver = IS_DEV_ENV ? (myModule.Dev_Ver || 'v0.0') : (myModule.Live_Ver || 'v0.0');
+                
+                // Update Header UI (You need to add IDs to your header elements)
+                // For now, we will inject it into the title since the DOM structure varies
+                document.title = `SignOS User Manual ${ver}`;
+                
+                // Optional: Update the "ONLINE" badge text
+                const statusText = IS_DEV_ENV ? "DEV MODE" : "ONLINE";
+                // Assuming you add ids="status-text" to the "ONLINE" span in the HTML
+            }
+        } catch(e) { console.log("Ver Check Fail"); }
+    };
+
+
 </script>
 
 </body>
 </html>
-
-
