@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Backup | SignOS Admin</title>
+    <title>Log Backup v1.1 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
 </head>
@@ -82,10 +82,11 @@
     window.onload = function() {
         const u = sessionStorage.getItem('signos_user');
         const r = sessionStorage.getItem('signos_role');
-        
-        // SECURITY GATE
-        if (r !== 'ADMIN') {
-            alert("ACCESS DENIED: Admins Only");
+
+        // STRICT SECURITY GATE
+        // Only SUPER users can access this page. 
+        if (r !== 'SUPER') {
+            alert("ACCESS DENIED: Super User Privileges Required.");
             window.location.href = 'menu.html';
             return;
         }
@@ -95,11 +96,12 @@
     };
 
     async function runExport() {
+        // ... (Keep existing runExport logic exactly as is) ...
         const pin = document.getElementById('admin-pin').value;
         const btn = document.getElementById('btn-run');
         const loader = document.getElementById('loading');
         const icon = document.getElementById('icon-run');
-        
+
         document.getElementById('result-area').classList.add('hidden');
         document.getElementById('error-area').classList.add('hidden');
 
@@ -111,7 +113,6 @@
         document.getElementById('btn-text').innerText = "PROCESSING...";
 
         try {
-            // Uses global SCRIPT_URL from signos-core.js
             const url = `${SCRIPT_URL}?req=manual_archive&pin=${pin}&ip=${clientIP}`;
             const response = await fetch(url);
             const data = await response.json();
@@ -134,5 +135,6 @@
         }
     }
 </script>
+
 </body>
 </html>
