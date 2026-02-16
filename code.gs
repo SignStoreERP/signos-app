@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.10 (Granular Permissions & Backup Fixes)
+// SignOS API v6.11 (Granular Permissions & Backup Fixes)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -196,43 +196,44 @@ function handleAuth(pin) {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName("Master_Staff");
     const data = sheet.getDataRange().getValues();
-    
-    // Normalize headers
-    const headers = data.map(h => String(h).trim().toLowerCase());
+    const headers = data[0].map(h => String(h).trim().toLowerCase());
 
+    // 1. Map Columns Dynamically
     const idx = {
-      p: headers.findIndex(h => h.includes("pin")),
-      n: headers.findIndex(h => h.includes("name") && !h.includes("last")),
-      r: headers.findIndex(h => h.includes("role")),
-      a: headers.findIndex(h => h.includes("active") || h.includes("status")),
-      // PERMISSION COLUMNS
-      rm: headers.findIndex(h => h.includes("roadmap")),
-      bk: headers.findIndex(h => h.includes("backup"))
+      n: headers.indexOf("first_name"),
+      r: headers.indexOf("access_role"),
+      p: headers.indexOf("access_pin"),
+      active: headers.indexOf("is_active"),
+      roadmap: headers.indexOf("roadmap_access"), // NEW
+      backup: headers.indexOf("backup_access")    // NEW
     };
 
-    if (idx.p === -1 || idx.n === -1) return returnJSON({status:"error", message:"Columns Missing"});
+    // 2. Find User
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idx.p]) === String(pin)) {
+        
+        // Check Active Status
+        const isActive = (data[i][idx.active] === true || String(data[i][idx.active]).toUpperCase() === "TRUE");
+        if (!isActive) return returnJSON({ status: "fail", message: "Account Disabled" });
 
-    for(let i=1; i<data.length; i++) {
-      if(String(data[i][idx.p]).trim() === String(pin).trim()) {
-        const isActive = idx.a === -1 || String(data[i][idx.a]).toUpperCase() === "TRUE";
-        if(!isActive) return returnJSON({status:"fail", message:"Disabled"});
-
-        // Construct Permission Object
-        const perms = {
-            roadmap: (idx.rm > -1) ? data[i][idx.rm] : "None",
-            backup: (idx.bk > -1) ? data[i][idx.bk] : "None"
-        };
-
-        return returnJSON({ 
-            status:"success", 
-            name:data[i][idx.n], 
-            role:data[i][idx.r]||"VIEW",
-            permissions: perms 
+        // 3. Return User Data WITH Permissions
+        return returnJSON({
+          status: "success",
+          name: data[i][idx.n],
+          role: data[i][idx.r] || "VIEW",
+          permissions: {
+            roadmap: data[i][idx.roadmap] || "None",
+            backup: data[i][idx.backup] || "None"
+          }
         });
       }
     }
-    return returnJSON({status:"fail", message:"Invalid PIN"});
-  } catch (e) { return returnJSON({status:"error", message:e.toString()}); }
+
+    return returnJSON({ status: "fail", message: "Invalid PIN" });
+
+  } catch (e) {
+    return returnJSON({ status: "error", message: e.toString() });
+  }
 }
 
 // ==========================================
@@ -473,3 +474,4 @@ function syncVersionsFromGitHub() {
   }
   Logger.log("Sync Complete.");
 }
+
