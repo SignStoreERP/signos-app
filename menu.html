@@ -119,14 +119,15 @@
         </div>
 
     </div>
-
+<!-- UPDATE: menu.html (Script Section Only) -->
 <script>
-// 1. SAFETY VALVE: Case-Insensitive Data Finder
+// 1. SAFETY VALVE
 function val(obj, key) {
     if (!obj) return "";
     return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
 }
 
+// 2. STYLE MAP
 const ICON_STYLES = {
     blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
     green: "bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white",
@@ -142,14 +143,8 @@ const ICON_STYLES = {
 };
 
 window.onload = async function() {
-    // Auth Logic
     const user = sessionStorage.getItem('signos_user');
     const role = sessionStorage.getItem('signos_role');
-
-    if (!user) {
-        // Optional: Redirect if not logged in
-        // window.location.href = 'index.html';
-    }
 
     document.getElementById('auth-user').innerText = user || 'GUEST';
     document.getElementById('auth-role').innerText = role || 'VIEW';
@@ -157,34 +152,29 @@ window.onload = async function() {
     if (role === 'ADMIN') {
         document.getElementById('admin-workflow').classList.remove('hidden');
         const badge = document.getElementById('sys-badge');
-        badge.classList.remove('bg-gray-100', 'text-gray-600');
-        badge.classList.add('bg-blue-600', 'text-white');
+        badge.classList.replace('bg-gray-100', 'bg-blue-600');
+        badge.classList.replace('text-gray-800', 'text-white');
         badge.innerText = "ADMIN CONSOLE";
     }
 
-    // Fetch Modules
     try {
         const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP}`);
         const data = await response.json();
         
-        // Hide Loader / Show Content
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('app-container').classList.remove('hidden');
         
         renderMenu(data, role);
 
     } catch (e) {
-        console.error("Menu Load Error:", e);
-        document.getElementById('loader').innerHTML = `<div class="p-4 text-red-500 font-bold">Error loading menu: ${e.message}</div>`;
+        document.getElementById('loader').innerHTML = `<div class="p-4 text-red-500 font-bold">Error: ${e.message}</div>`;
     }
 };
 
 function renderMenu(modules, role) {
-    // FIX: Changed 'app-grid' to 'app-container' to match HTML
     const container = document.getElementById('app-container');
     container.innerHTML = "";
 
-    // Group by Category
     const categories = {};
     modules.forEach(mod => {
         const cat = val(mod, 'Category') || 'Uncategorized';
@@ -192,7 +182,6 @@ function renderMenu(modules, role) {
         categories[cat].push(mod);
     });
 
-    // Render Groups
     for (const [catName, mods] of Object.entries(categories)) {
         const section = document.createElement('section');
         section.innerHTML = `<h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">${catName}</h2>`;
@@ -201,38 +190,37 @@ function renderMenu(modules, role) {
         grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8";
 
         mods.forEach(mod => {
-            // Safe Data Access
             const isLive = (val(mod, 'Is_Live') === true || String(val(mod, 'Is_Live')).toUpperCase() === 'TRUE');
             const displayName = val(mod, 'Display_Name');
             const fileLink = val(mod, 'File_Link');
             const devVer = val(mod, 'Dev_Ver');
             const liveVer = val(mod, 'Live_Ver');
-            const icon = val(mod, 'Icon');
+            const iconColor = val(mod, 'Icon'); 
+            const iconPath = val(mod, 'Icon_Path'); // NEW: Pulls path from backend
 
             let targetMode = (role === 'PROD') ? 'production' : (role === 'ADMIN' ? 'dev' : 'sales');
             let targetVer = (role === 'ADMIN') ? (devVer || liveVer) : liveVer;
 
-            // Hide non-live items for non-admins
             if (!isLive && role !== 'ADMIN') return;
 
             const link = document.createElement('a');
             link.href = `${fileLink}?mode=${targetMode}`;
             link.className = "block bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition group relative";
 
-            const iconKey = (icon || 'blue').toLowerCase();
-            const iconClass = ICON_STYLES[iconKey] || ICON_STYLES['blue'];
+            const colorClass = ICON_STYLES[(iconColor || 'blue').toLowerCase()] || ICON_STYLES['blue'];
             const verBg = role === 'ADMIN' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500';
+            const draftBadge = (!isLive && role === 'ADMIN') ? `<div class="absolute top-2 right-2 text-[9px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded border border-gray-200">DRAFT</div>` : '';
 
-            // Draft Badge Logic
-            const draftBadge = (!isLive && role === 'ADMIN') ? 
-                `<div class="absolute top-2 right-2 text-[9px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded border border-gray-200">DRAFT</div>` : '';
+            // Icon Logic: SVG Path vs Default Dot
+            const iconHtml = iconPath 
+                ? `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="${iconPath}"></path></svg>`
+                : `<span class="text-xl font-bold">●</span>`;
 
             link.innerHTML = `
                 ${draftBadge}
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center transition ${iconClass}">
-                        <!-- Simple generic icon since SVG paths vary -->
-                        <span class="text-xl font-bold">●</span>
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center transition ${colorClass}">
+                        ${iconHtml}
                     </div>
                     <div>
                         <h3 class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition">${displayName}</h3>
@@ -250,7 +238,6 @@ function renderMenu(modules, role) {
     }
 }
 </script>
-
 
 </body>
 </html>
