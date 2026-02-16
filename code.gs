@@ -201,13 +201,16 @@ function handleAuth(pin) {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName("Master_Staff");
     const data = sheet.getDataRange().getValues();
-    
-    const headers = data[0].map(h => String(h).trim().toLowerCase());
+    const headers = data.map(h => String(h).trim().toLowerCase());
+
     const idx = {
       p: headers.findIndex(h => h.includes("pin")),
       n: headers.findIndex(h => h.includes("name") && !h.includes("last")),
       r: headers.findIndex(h => h.includes("role")),
-      a: headers.findIndex(h => h.includes("active") || h.includes("status"))
+      a: headers.findIndex(h => h.includes("active") || h.includes("status")),
+      // NEW PERMISSION COLUMNS
+      rm: headers.findIndex(h => h.includes("roadmap")),
+      bk: headers.findIndex(h => h.includes("backup"))
     };
 
     if (idx.p === -1 || idx.n === -1) return returnJSON({status:"error", message:"Columns Missing"});
@@ -216,7 +219,19 @@ function handleAuth(pin) {
       if(String(data[i][idx.p]).trim() === String(pin).trim()) {
         const isActive = idx.a === -1 || String(data[i][idx.a]).toUpperCase() === "TRUE";
         if(!isActive) return returnJSON({status:"fail", message:"Disabled"});
-        return returnJSON({ status:"success", name:data[i][idx.n], role:data[i][idx.r]||"VIEW" });
+
+        // Construct Permission Object
+        const perms = {
+            roadmap: (idx.rm > -1) ? data[i][idx.rm] : "None",
+            backup: (idx.bk > -1) ? data[i][idx.bk] : "None"
+        };
+
+        return returnJSON({ 
+            status:"success", 
+            name:data[i][idx.n], 
+            role:data[i][idx.r]||"VIEW",
+            permissions: perms 
+        });
       }
     }
     return returnJSON({status:"fail", message:"Invalid PIN"});
@@ -264,14 +279,18 @@ function logActivity(p) {
 function manualExport(pin) {
   const auth = handleAuth(pin);
   const authObj = JSON.parse(auth.getContent());
-  if (authObj.status !== "success" || authObj.role !== "ADMIN") return returnJSON({ status: "error", message: "Unauthorized" });
-  return returnJSON(processArchive(false));
-}
 
-function manualExport(pin) {
-  const auth = handleAuth(pin);
-  const authObj = JSON.parse(auth.getContent());
-  if (authObj.status !== "success" || authObj.role !== "ADMIN") return returnJSON({ status: "error", message: "Unauthorized" });
+  // CHECK 1: PIN Validity
+  if (authObj.status !== "success") return returnJSON({ status: "error", message: "Invalid PIN" });
+
+  // CHECK 2: Granular Permission
+  // User must have 'Run' or 'Full' in Backup_Access column
+  const backupAccess = (authObj.permissions && authObj.permissions.backup) ? authObj.permissions.backup : "None";
+  
+  if (backupAccess !== "Run" && backupAccess !== "Full") {
+      return returnJSON({ status: "error", message: "Access Denied: Backup Permissions Required" });
+  }
+
   return returnJSON(processArchive(false));
 }
 
