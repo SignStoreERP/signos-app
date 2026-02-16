@@ -268,6 +268,25 @@ function manualExport(pin) {
   return returnJSON(processArchive(false));
 }
 
+function manualExport(pin) {
+  const auth = handleAuth(pin);
+  const authObj = JSON.parse(auth.getContent());
+  if (authObj.status !== "success" || authObj.role !== "ADMIN") return returnJSON({ status: "error", message: "Unauthorized" });
+  return returnJSON(processArchive(false));
+}
+
+// === NEW WRAPPER FOR TIME-DRIVEN TRIGGER ===
+function archiveDailyLogs() {
+  // This matches the function name in your 1:30 AM Trigger
+  console.log("Starting Auto-Archive...");
+  return processArchive(true); // true = Destructive (Clear logs after save)
+}
+// ===========================================
+
+function processArchive(isDestructive) {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+
 function processArchive(isDestructive) {
   try {
     const ss = SpreadsheetApp.openById(LOG_SS_ID);
@@ -442,5 +461,3 @@ function syncVersionsFromGitHub() {
   }
   Logger.log("Sync Complete.");
 }
-
-
