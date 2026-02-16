@@ -160,7 +160,7 @@ function fetchTable(tabName) {
     if (values.length < 2) return returnJSON([]);
 
     // --- BUG FIX: Select ONLY the first row (Index 0) ---
-    const headers = values; 
+    const headers = values[0]; 
     const rows = values.slice(1);
 
     const result = rows.map(row => {
