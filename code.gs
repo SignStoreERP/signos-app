@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.5 (Twin-Engine & Roadmap Fixes)
+// SignOS API v6.6 (Twin-Engine & Roadmap Fixes)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -50,6 +50,10 @@ function addRoadmapItem(p) {
     // ID: RMP_YYYYMMDD_HHmm
     const id = "RMP_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmm");
 
+    // NEW: Capture Context and Source
+    const source = p.source || "User"; // User, System, Internal
+    const context = p.context || "General"; // Which page they were on
+
     sheet.appendRow([
       id,
       ts,
@@ -58,14 +62,17 @@ function addRoadmapItem(p) {
       p.prio || "Med",
       p.title || "Untitled",
       p.desc || "",
-      "Pending",
-      p.target || "APP" // Saves "APP" or "LIVE" to Column I
+      "Triage", // Default Status for new user tickets
+      p.target || "APP",
+      source,   // Col J
+      context   // Col K
     ]);
 
     return returnJSON({ status: "success", id: id });
 
   } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
 }
+
 
 function getTicketDetails(ticketId) {
   try {
@@ -435,3 +442,5 @@ function syncVersionsFromGitHub() {
   }
   Logger.log("Sync Complete.");
 }
+
+
