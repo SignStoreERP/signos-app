@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Log Viewer v2.19 | SignOS Admin</title>
+    <title>Log Viewer v2.20 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_viewer.js"></script>
 
     <style>
         /* === UI OVERLAY SCROLLBARS === */
-        .custom-scroll {
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 #f1f1f1;
-        }
+        .custom-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f1f1; }
         .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -47,7 +44,7 @@
     <div class="bg-gray-900 text-white border-b border-gray-800 px-4 py-3 flex justify-between items-center shadow-lg z-30 shrink-0">
         <div>
             <h1 class="text-lg font-bold tracking-wide flex items-center gap-2">
-                <span class="text-blue-400">⚡</span> Log Viewer <span class="text-gray-500 text-xs font-normal">v2.19</span>
+                <span class="text-blue-400">⚡</span> Log Viewer <span class="text-gray-500 text-xs font-normal">v2.20</span>
             </h1>
             <div class="text-[10px] font-bold text-gray-400 mt-0.5 tracking-wider">
                 LOGGED IN AS: <span id="auth-user" class="text-blue-400">CHECKING...</span>
@@ -58,34 +55,33 @@
         </button>
     </div>
 
-    <div class="md:hidden bg-white border-b border-gray-200 px-4 py-2 flex gap-2 shrink-0 z-20 shadow-sm">
-        <button onclick="toggleFilters()" class="flex-1 bg-slate-100 text-slate-600 px-3 py-1.5 rounded text-xs font-bold border border-slate-200 active:bg-slate-200">
-            🌪️ FILTERS
-        </button>
-        <button onclick="toggleSidebar()" class="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow-sm active:bg-blue-700">
-            📂 ARCHIVES
+    <div class="md:hidden bg-white border-b border-gray-200 px-4 py-2 shrink-0 z-20 shadow-sm">
+        <button onclick="toggleFilters()" class="w-full bg-slate-50 text-slate-600 px-3 py-2 rounded text-xs font-bold border border-slate-200 active:bg-slate-200 flex justify-center items-center gap-2">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            OPEN SEARCH & FILTERS
         </button>
     </div>
 
     <div class="flex-1 flex overflow-hidden relative">
 
-        <div id="sidebar-backdrop" onclick="closeSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass transition-opacity"></div>
+        <div id="sidebar-backdrop" onclick="closeSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden glass transition-opacity backdrop-blur-sm"></div>
 
-        <div id="sidebar" class="absolute md:relative inset-y-0 left-0 w-72 bg-white border-r border-gray-200 flex flex-col z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none h-full">
+        <div id="sidebar" class="absolute md:relative inset-y-0 left-0 w-72 bg-white border-r border-gray-200 flex flex-col z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none h-full">
             <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                 <div>
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Log Archives</div>
-                    <div class="text-[10px] text-gray-400 mt-0.5">Select a file to view</div>
+                    <div class="text-xs font-bold text-gray-700 uppercase tracking-wider">Log Archives</div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">Select a data source</div>
                 </div>
-                <button onclick="closeSidebar()" class="md:hidden text-gray-400 hover:text-gray-600">✕</button>
+                <button onclick="closeSidebar()" class="md:hidden bg-gray-200 rounded-full p-1 text-gray-500 hover:text-red-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
 
             <div id="archive-list" class="flex-1 overflow-y-auto custom-scroll">
                 <div class="p-4 text-center text-gray-400 text-xs animate-pulse">Loading index...</div>
             </div>
 
-            <div class="p-4 border-t border-gray-100 bg-gray-50">
-                <label class="flex items-center justify-center w-full px-4 py-2 bg-white border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition group">
+            <div class="p-4 border-t border-gray-100 bg-gray-50 pb-20 md:pb-4"> <label class="flex items-center justify-center w-full px-4 py-2 bg-white border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition group">
                     <div class="flex flex-col items-center">
                         <span class="text-[10px] font-bold text-gray-500 group-hover:text-blue-500">📂 OPEN LOCAL FILE</span>
                     </div>
@@ -100,7 +96,7 @@
                 <div class="p-3">
                     <div class="mb-3">
                         <input type="text" id="filter-search" onkeyup="applyFilters()" placeholder="🔍 Search logs (User, IP, Action)..." 
-                            class="w-full bg-slate-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-blue-500 focus:bg-white transition">
+                            class="w-full bg-slate-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-bold text-gray-700 focus:outline-none focus:border-blue-500 focus:bg-white transition shadow-inner">
                     </div>
 
                     <div class="flex flex-nowrap gap-4 overflow-x-auto custom-scroll pb-2">
@@ -123,14 +119,13 @@
                     </div>
                 </div>
                 
-                <div class="bg-blue-50 px-4 py-1 border-t border-blue-100 flex justify-between items-center">
+                <div class="bg-blue-50 px-4 py-1 border-t border-blue-100 hidden md:flex justify-between items-center">
                     <h2 id="current-file-name" class="text-[10px] font-bold text-blue-800 uppercase tracking-wide truncate">Loading...</h2>
                     <div class="text-[10px] font-bold text-blue-600 whitespace-nowrap"><span id="stat-count">0</span> ROWS</div>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-auto custom-scroll relative bg-gray-50">
-                <table class="w-full text-left border-collapse min-w-[800px]">
+            <div class="flex-1 overflow-auto custom-scroll relative bg-gray-50 pb-20 md:pb-0"> <table class="w-full text-left border-collapse min-w-[800px]">
                     <thead class="bg-white sticky top-0 z-10 shadow-sm text-xs font-bold text-gray-500 uppercase tracking-wider">
                         <tr>
                             <th onclick="setSort('time')" class="sort-header p-3 border-b border-gray-200 whitespace-nowrap w-32">Time ▾</th>
@@ -146,6 +141,21 @@
                         </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <div onclick="toggleSidebar()" class="md:hidden fixed bottom-6 left-4 right-4 bg-gray-900 text-white rounded-full shadow-2xl z-30 flex items-center justify-between px-4 py-3 cursor-pointer border border-gray-700 active:scale-95 transition-transform">
+        <div class="flex items-center gap-3 overflow-hidden">
+            <div class="bg-blue-600 p-1.5 rounded-full shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            </div>
+            <div class="flex flex-col min-w-0">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none">Currently Viewing</span>
+                <span id="mobile-file-name" class="text-xs font-bold text-white truncate leading-tight mt-0.5">Loading...</span>
+            </div>
+        </div>
+        <div class="text-gray-400 pl-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </div>
     </div>
 
@@ -187,6 +197,8 @@
             if (isClosed) {
                 sb.classList.remove('-translate-x-full');
                 bd.classList.remove('hidden');
+                // Close filters if open to avoid clutter
+                document.getElementById('filter-panel').classList.add('hidden');
             } else {
                 closeSidebar();
             }
@@ -200,7 +212,22 @@
         function toggleFilters() {
             const fp = document.getElementById('filter-panel');
             fp.classList.toggle('hidden');
+            // Close sidebar if open
+            closeSidebar();
         }
+
+        // --- NAME SYNC OBSERVER ---
+        // Mirror the Desktop "current-file-name" text to the Mobile "mobile-file-name" text automatically
+        const targetNode = document.getElementById('current-file-name');
+        const config = { childList: true, subtree: true, characterData: true };
+
+        const callback = function(mutationsList, observer) {
+            const text = document.getElementById('current-file-name').innerText;
+            document.getElementById('mobile-file-name').innerText = text;
+        };
+
+        const observer = new MutationObserver(callback);
+        if(targetNode) observer.observe(targetNode, config);
     </script>
 
 </body>
