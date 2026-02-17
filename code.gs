@@ -191,7 +191,7 @@ function fetchConfig(tabName) {
     
     data.forEach(row => { 
         // FIX: Explicitly target  for Key and [1] for Value
-        const key = row; 
+        const key = row[0]; 
         const val = row[1]; 
         if (key && String(key).trim() !== "") config[key] = val; 
     });
