@@ -1,7 +1,6 @@
 /**
- * SignOS Log Analyzer Logic (v2.19)
- * Fixes: "Silent Failure" on load.
- * Updates: Auto-detects delimiter (Pipe vs Comma) to handle both CSV and Text logs.
+ * SignOS Log Analyzer Logic (v2.20)
+ * Fixes: ID Mismatch (log-body vs table-body) causing silent load failure.
  */
 
 let rawData = [];
@@ -13,7 +12,6 @@ let activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
 window.onload = function() {
     const u = sessionStorage.getItem('signos_user');
     
-    // Auth Check handled by core, but we update UI
     if(document.getElementById('auth-user')) {
         document.getElementById('auth-user').innerText = u || "GUEST";
     }
@@ -41,21 +39,24 @@ function goBack() { window.history.back(); }
 
 async function loadArchiveList() {
     const list = document.getElementById('archive-list');
-    list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div></div>';
+    list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto"></div></div>';
 
     try {
         const response = await fetch(`${SCRIPT_URL}?req=get_archive_index`);
         const data = await response.json();
-        
-        if (!data || data.length === 0) {
-            list.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">No archives found.</div>';
-            return;
+
+        if (!data || data.length === 0) { 
+            list.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">No archives found.</div>'; 
+            return; 
         }
 
         list.innerHTML = ""; // Clear loader
 
         data.forEach((item, index) => {
             const div = document.createElement('div');
+            // Check if it's the "LIVE" item 
+            const isLive = item.type === "LIVE" || item.name.includes("Current");
+            
             div.className = `archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition ${index === 0 ? 'active' : ''}`;
             div.onclick = () => loadLogContent(item, div);
             
@@ -71,10 +72,10 @@ async function loadArchiveList() {
         });
 
         // Auto-load the first item
-        if(data.length > 0) loadLogContent(data[0], list.firstChild);
+        if(data.length > 0) loadLogContent(data, list.firstChild);
 
-    } catch (e) {
-        list.innerHTML = `<div class="text-xs text-red-500 text-center py-4">Error loading index</div>`;
+    } catch (e) { 
+        list.innerHTML = `<div class="text-xs text-red-500 text-center py-4">Error loading index</div>`; 
     }
 }
 
@@ -82,20 +83,23 @@ async function loadLogContent(item, element) {
     // 1. Highlight UI
     document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
     if(element) element.classList.add('active');
-    
+
     document.getElementById('current-file-name').innerText = item.name;
-    document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Loading data...</td></tr>';
+    
+    // FIX 1: Correct ID is 'log-body', not 'table-body'
+    const tbody = document.getElementById('log-body');
+    if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Loading data...</td></tr>';
 
     try {
         let content = "";
-        
+
         if (item.type === "LIVE" || item.file_id === "LIVE") {
-             const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
-             const json = await res.json();
-             if(json.status === "success") {
-                 parseLiveArray(json.logs);
-                 return;
-             }
+            const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
+            const json = await res.json();
+            if(json.status === "success") {
+                parseLiveArray(json.logs);
+                return; 
+            }
         } else {
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${item.file_id}`);
             const data = await response.json();
@@ -106,7 +110,7 @@ async function loadLogContent(item, element) {
 
     } catch (e) {
         console.error(e);
-        document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Failed to load logs.</td></tr>';
+        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-400">Failed to load logs.</td></tr>';
     }
 }
 
@@ -114,14 +118,14 @@ async function loadLogContent(item, element) {
 
 function parseLiveArray(data) {
     if(!data || data.length < 2) {
-        document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No logs found.</td></tr>';
+        const tbody = document.getElementById('log-body');
+        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No logs found.</td></tr>';
         return;
     }
-    
+
     const rows = data.slice(1); // Skip Header
-    
     rawData = rows.map(r => ({
-        time: r[0] ? new Date(r[0]).toLocaleString() : "N/A",
+        time: r ? new Date(r).toLocaleString() : "N/A",
         ip: r[1],
         user: r[2],
         role: r[3],
@@ -129,7 +133,7 @@ function parseLiveArray(data) {
         target: r[5],
         meta: r[6]
     }));
-    
+
     applyFilters();
 }
 
@@ -139,45 +143,40 @@ function parseLogs(content) {
     let lines = content.split('\n').filter(l => l.trim() !== "");
 
     // 1. Remove Header (Safe Check)
-    if (lines.length > 0 && lines[0].startsWith("Timestamp")) {
+    if (lines.length > 0 && lines.startsWith("Timestamp")) {
         lines.shift();
     }
 
     if(lines.length === 0) {
-        document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Log file is empty.</td></tr>';
+        document.getElementById('log-body').innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Log file is empty.</td></tr>';
         return;
     }
 
-    // 2. DETECT DELIMITER (Fix for "Silent Failure")
-    // Check the first real line to see if it uses Pipe (|) or Comma (,)
-    const firstLine = lines[0];
+    // 2. DETECT DELIMITER 
+    const firstLine = lines;
     const separator = firstLine.includes(" | ") ? " | " : ",";
 
     // 3. Map to Objects
     rawData = lines.map(line => {
-        // Handle CSV edge case where JSON might have commas, but we only split first 6 fields
         let parts;
-        
         if (separator === ",") {
-             // Simple CSV split (Note: This is basic. Complex CSVs with quoted commas might need regex)
-             parts = line.split(",");
+            parts = line.split(",");
         } else {
-             parts = line.split(" | ");
+            parts = line.split(" | ");
         }
 
-        if (parts.length < 5) return null; // Skip malformed lines
+        if (parts.length < 5) return null; 
 
         return {
-            time: parts[0] || "N/A",
+            time: parts || "N/A",
             ip: parts[1] || "Unknown",
             user: parts[2] || "Guest",
             role: parts[3] || "N/A",
             action: parts[4] || "VIEW",
             target: parts[5] || "N/A",
-            // Join remaining parts in case Meta Data contained the delimiter
             meta: parts.slice(6).join(separator) || "{}"
         };
-    }).filter(x => x); // Remove nulls
+    }).filter(x => x);
 
     applyFilters();
 }
@@ -186,7 +185,7 @@ function parseLogs(content) {
 
 function applyFilters() {
     displayData = rawData; // Add filters here if needed
-
+    
     // Sort
     displayData.sort((a, b) => {
         const dateA = new Date(a.time);
@@ -198,11 +197,18 @@ function applyFilters() {
 }
 
 function renderTable() {
-    const tbody = document.getElementById('table-body');
+    // FIX 2: Correct ID is 'log-body'
+    const tbody = document.getElementById('log-body');
+    if(!tbody) return;
+    
     tbody.innerHTML = '';
+    
+    // Update count if element exists
+    const countEl = document.getElementById('stat-count');
+    if(countEl) countEl.innerText = displayData.length;
 
     if (displayData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No matching records found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No matching records found.</td></tr>';
         return;
     }
 
@@ -216,8 +222,8 @@ function renderTable() {
         if (row.action.includes('AUTH') && row.role !== 'N/A') tr.classList.add('log-auth');
 
         let metaShort = row.meta;
-        if(metaShort.length > 50) metaShort = metaShort.substring(0, 47) + "...";
-        
+        if(metaShort && metaShort.length > 50) metaShort = metaShort.substring(0, 47) + "...";
+
         const cell = (val) => `<span class="hover:text-blue-600 font-medium">${val}</span>`;
 
         tr.innerHTML = `
