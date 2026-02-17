@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>System Activity v2.0 | SignOS</title>
+    <title>System Activity v2.1 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -30,6 +30,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans flex flex-col">
 
+    <!-- HEADER -->
     <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center shadow-md shrink-0 sticky top-0 z-50">
         <div class="flex flex-col">
             <span class="text-[10px] uppercase text-gray-400 tracking-wider">System Activity</span>
@@ -40,8 +41,10 @@
         </a>
     </div>
 
+    <!-- MAIN FEED -->
     <div class="w-full max-w-3xl mx-auto px-4 py-6 flex-1">
 
+        <!-- DASHBOARD HEADER -->
         <div class="mb-6 flex flex-col gap-4">
             <div class="flex justify-between items-end border-b border-gray-200 pb-4">
                 <h1 class="text-2xl font-black text-gray-800 tracking-tight">Changelog</h1>
@@ -51,23 +54,24 @@
                 </div>
             </div>
 
+            <!-- COMMIT VELOCITY GRAPH -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-2">
                 <div class="flex justify-between items-end h-24 gap-2" id="activity-graph">
                     <div class="w-full text-center text-xs text-gray-400 self-center">Loading Activity...</div>
                 </div>
                 <div class="flex justify-between mt-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider" id="graph-labels">
-                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- SEARCH & FILTER -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-3">
-            
             <div class="relative">
                 <input type="text" id="inp-search" onkeyup="renderTimeline()" placeholder="Search commits, authors, or hashes..." 
                     class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 focus:outline-none focus:border-blue-500 transition">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-
+            
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-[9px] font-bold text-gray-400 uppercase ml-1">Start Date</label>
@@ -80,15 +84,19 @@
             </div>
         </div>
 
+        <!-- TWIN ENGINE TOGGLES -->
         <div class="grid grid-cols-3 gap-2 mb-8">
             <button onclick="setFilter('ALL')" id="btn-all" class="btn-filter active-all px-2 py-3 rounded-lg border bg-white text-gray-500 font-bold text-xs uppercase tracking-wide shadow-sm active:scale-95">All</button>
             <button onclick="setFilter('LIVE')" id="btn-live" class="btn-filter px-2 py-3 rounded-lg border bg-white text-gray-500 font-bold text-xs uppercase tracking-wide shadow-sm active:scale-95">Live</button>
             <button onclick="setFilter('DEV')" id="btn-dev" class="btn-filter px-2 py-3 rounded-lg border bg-white text-gray-500 font-bold text-xs uppercase tracking-wide shadow-sm active:scale-95">Dev</button>
         </div>
 
+        <!-- FEED CONTAINER -->
         <div id="loader" class="text-center py-10 text-gray-400 animate-pulse tracking-widest text-xs font-bold">FETCHING HISTORY...</div>
+        
         <div id="timeline-container" class="space-y-6 pb-12 relative"></div>
 
+        <!-- PAGINATION -->
         <button id="btn-load-more" onclick="loadMore()" class="hidden w-full bg-gray-200 text-gray-600 font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-gray-300 active:scale-95 transition mb-12">
             Load Older Items
         </button>
@@ -110,6 +118,7 @@
     window.onload = async function() {
         const user = sessionStorage.getItem('signos_user');
         if (!user) { window.location.href = 'index.html'; return; }
+        
         document.getElementById('auth-user').innerText = user;
 
         try {
@@ -117,6 +126,7 @@
             const json = await response.json();
             
             if (json.error) throw new Error(json.error);
+
             allData = json.reverse(); // Newest first
             
             document.getElementById('loader').classList.add('hidden');
@@ -124,20 +134,26 @@
             renderTimeline();
 
         } catch (e) {
-            document.getElementById('loader').innerText = "FAILED TO LOAD HISTORY";
-            document.getElementById('loader').classList.add('text-red-500');
+            const loader = document.getElementById('loader');
+            loader.innerText = "FAILED TO LOAD HISTORY: " + e.message;
+            loader.classList.remove('text-gray-400', 'animate-pulse');
+            loader.classList.add('text-red-500');
+            console.error(e);
         }
     };
 
     // --- FILTER LOGIC ---
     function setFilter(mode) {
         currentFilter = mode;
+        
         document.querySelectorAll('.btn-filter').forEach(b => {
             b.className = "btn-filter px-2 py-3 rounded-lg border bg-white text-gray-500 font-bold text-xs uppercase tracking-wide shadow-sm active:scale-95";
         });
+
         const activeClass = mode === 'ALL' ? 'active-all' : (mode === 'LIVE' ? 'active-live' : 'active-dev');
         document.getElementById('btn-' + mode.toLowerCase()).classList.add(activeClass);
         document.getElementById('btn-' + mode.toLowerCase()).classList.remove('bg-white', 'text-gray-500');
+
         renderTimeline();
     }
 
@@ -150,6 +166,7 @@
     function renderGraph() {
         const graphContainer = document.getElementById('activity-graph');
         const labelContainer = document.getElementById('graph-labels');
+        
         graphContainer.innerHTML = "";
         labelContainer.innerHTML = "";
 
@@ -158,16 +175,26 @@
         for(let i=6; i>=0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            days.push(d.toISOString().split('T')[0]);
+            try {
+                days.push(d.toISOString().split('T'));
+            } catch(e) { continue; }
         }
 
         // 2. Count Commits per Day
         const counts = {};
         let maxVal = 0;
+        
         days.forEach(day => counts[day] = 0);
 
         allData.forEach(row => {
-            const date = new Date(val(row, 'Timestamp')).toISOString().split('T')[0];
+            // FIX: Safety Check for Invalid Dates
+            const rawTime = val(row, 'Timestamp');
+            if (!rawTime) return;
+            
+            const dObj = new Date(rawTime);
+            if (isNaN(dObj.getTime())) return; 
+            
+            const date = dObj.toISOString().split('T');
             if (counts[date] !== undefined) counts[date]++;
         });
 
@@ -180,7 +207,7 @@
             const count = counts[day];
             const heightPct = (count / maxVal) * 100;
             const barColor = count > 0 ? "bg-blue-500" : "bg-gray-100";
-            
+
             // Bar
             const barWrapper = document.createElement('div');
             barWrapper.className = "flex-1 flex flex-col justify-end relative group cursor-default";
@@ -193,12 +220,10 @@
             graphContainer.appendChild(barWrapper);
 
             // Label (Day of Week)
-            const dObj = new Date(day); // Fix timezone offset in label if needed
-            // Simple hack to ensure correct day name regardless of UTC/Local shift
             const dParts = day.split('-');
-            const localDate = new Date(dParts[0], dParts[1]-1, dParts[2]); 
-            
+            const localDate = new Date(dParts, dParts[1]-1, dParts[2]);
             const dayName = localDate.toLocaleDateString('en-US', { weekday: 'narrow' });
+            
             const labelDiv = document.createElement('div');
             labelDiv.className = "flex-1 text-center";
             labelDiv.innerText = dayName;
@@ -211,7 +236,7 @@
         const container = document.getElementById('timeline-container');
         const loadBtn = document.getElementById('btn-load-more');
         const statCount = document.getElementById('stat-count');
-        
+
         // Inputs
         const searchTxt = document.getElementById('inp-search').value.toLowerCase();
         const dateStart = document.getElementById('date-start').value;
@@ -221,7 +246,7 @@
 
         // 1. FILTERING
         const filtered = allData.filter(row => {
-            // Env
+            // Env Check
             const env = val(row, 'Environment') || "DEV";
             if (currentFilter !== 'ALL' && env !== currentFilter) return false;
 
@@ -229,10 +254,18 @@
             const msg = val(row, 'Message').toLowerCase();
             const auth = val(row, 'Author').toLowerCase();
             const hash = val(row, 'Commit Hash').toLowerCase();
+            
             if (searchTxt && !msg.includes(searchTxt) && !auth.includes(searchTxt) && !hash.includes(searchTxt)) return false;
 
-            // Date Range
-            const rowDate = new Date(val(row, 'Timestamp')).toISOString().split('T')[0];
+            // Date Range (Safe Check)
+            const rawTime = val(row, 'Timestamp');
+            if (!rawTime) return false;
+            
+            const dObj = new Date(rawTime);
+            if (isNaN(dObj.getTime())) return false; 
+
+            const rowDate = dObj.toISOString().split('T');
+
             if (dateStart && rowDate < dateStart) return false;
             if (dateEnd && rowDate > dateEnd) return false;
 
@@ -250,6 +283,7 @@
 
         // 2. PAGINATION
         const slicedData = filtered.slice(0, visibleCount);
+        
         if (visibleCount >= filtered.length) loadBtn.classList.add('hidden');
         else loadBtn.classList.remove('hidden');
 
@@ -260,7 +294,7 @@
             const rawMsg = val(row, 'Message');
             const hash = val(row, 'Commit Hash').substring(0,7);
             const link = val(row, 'GitHub Link');
-            const env = val(row, 'Environment') || "DEV";
+            const env = val(row, 'Environment') || "DEV"; 
 
             const d = new Date(ts);
             const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -272,7 +306,7 @@
             const iconBg = isLive ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-500";
 
             // Clean Message
-            let fmtMsg = rawMsg.replace(/\(https:\/\/github\.com.*?\)/g, ""); 
+            let fmtMsg = rawMsg.replace(/\(https:\/\/github\.com.*?\)/g, "");
             if (fmtMsg.length > 200) fmtMsg = fmtMsg.substring(0, 200) + "...";
 
             const item = document.createElement('div');
@@ -282,7 +316,6 @@
                 <div class="absolute left-0 top-0 w-10 h-10 rounded-full border-4 border-gray-50 shadow-sm flex items-center justify-center z-10 ${iconBg}">
                     <span class="text-sm">${icon}</span>
                 </div>
-
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-blue-400 transition group active:scale-[0.99] duration-100">
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex flex-col">
@@ -291,13 +324,11 @@
                         </div>
                         <span class="text-[9px] font-bold px-2 py-1 rounded border ${badgeColor}">${env}</span>
                     </div>
-
                     <p class="text-sm text-gray-600 leading-snug font-medium mb-3">${fmtMsg}</p>
-
                     <div class="flex justify-between items-center border-t border-gray-100 pt-3 mt-1">
                         <span class="font-mono text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">#${hash}</span>
                         <a href="${link}" target="_blank" class="flex items-center gap-1 text-[10px] font-bold text-blue-500 uppercase tracking-wide hover:text-blue-700">
-                            Code 
+                            Code
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                         </a>
                     </div>
