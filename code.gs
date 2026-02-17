@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.16 - (Hotfix)
+// SignOS API v6.17 - (formatDate fix)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -333,7 +333,8 @@ function processArchive(isDestructive) {
     let fileContent = "Timestamp | IP_Address | User | Role | Action | Target | Meta_Data\n================================================================================\n";
 
     data.forEach(row => {
-      const dateStr = Utilities.formatDate(new Date(row), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+      // Change 'row' to 'row[0]'
+const dateStr = Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
       const cleanRow = [dateStr, row[1], row[2], row[3], row[4], row[5], row[6]].join(" | ");
       fileContent += cleanRow + "\n";
     });
@@ -484,3 +485,5 @@ function syncVersionsFromGitHub() {
   }
   Logger.log("Sync Complete.");
 }
+
+
