@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Menu v5.7</title>
+    <title>SignOS Menu v5.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
 </head>
@@ -260,6 +260,30 @@ function renderMenu(data, role) {
             container.appendChild(section);
         }
     }
+
+// --- 4. FETCH MENU DATA (The Missing Link) ---
+    try {
+        // Call the API to get the table of modules
+        const response = await fetch(`${SCRIPT_URL}?tab=SYS_Modules&ip=${clientIP}&user=${user}&role=${role}&req=table`);
+        const data = await response.json();
+
+        // Safety Check: Ensure data is an array
+        if (data.error) throw new Error(data.error);
+        if (!Array.isArray(data)) throw new Error("Invalid Data Format");
+
+        // Hide Loader / Show Menu
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('menu-container').classList.remove('hidden');
+
+        // Render the Grid
+        renderMenu(data, role);
+
+    } catch (e) {
+        document.getElementById('loader').innerText = "CONNECTION FAILED: " + e.message;
+        document.getElementById('loader').classList.add('text-red-500', 'font-bold');
+        console.error("Menu Load Error:", e);
+    }
+
 }
 </script>
 </body>
