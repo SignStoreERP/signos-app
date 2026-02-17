@@ -1,7 +1,7 @@
 /**
- * SignOS Log Analyzer Logic (v2.18)
- * Fixes: "lines.startsWith" crash. 
- * Logic: Arrays don't have .startsWith(), only strings do. Changed to lines[0].startsWith().
+ * SignOS Log Analyzer Logic (v2.19)
+ * Fixes: "Silent Failure" on load.
+ * Updates: Auto-detects delimiter (Pipe vs Comma) to handle both CSV and Text logs.
  */
 
 let rawData = [];
@@ -56,9 +56,6 @@ async function loadArchiveList() {
 
         data.forEach((item, index) => {
             const div = document.createElement('div');
-            // Check if it's the "LIVE" item (usually first, or marked specially)
-            const isLive = item.type === "LIVE" || item.name.includes("Current"); 
-            
             div.className = `archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition ${index === 0 ? 'active' : ''}`;
             div.onclick = () => loadLogContent(item, div);
             
@@ -73,7 +70,7 @@ async function loadArchiveList() {
             list.appendChild(div);
         });
 
-        // Auto-load the first item (usually Live or latest)
+        // Auto-load the first item
         if(data.length > 0) loadLogContent(data[0], list.firstChild);
 
     } catch (e) {
@@ -90,11 +87,9 @@ async function loadLogContent(item, element) {
     document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Loading data...</td></tr>';
 
     try {
-        // Handle Live Logs vs Archive Files
         let content = "";
         
         if (item.type === "LIVE" || item.file_id === "LIVE") {
-             // Fetch Live JSON directly
              const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
              const json = await res.json();
              if(json.status === "success") {
@@ -102,7 +97,6 @@ async function loadLogContent(item, element) {
                  return;
              }
         } else {
-            // Fetch Text File
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${item.file_id}`);
             const data = await response.json();
             content = data.content;
@@ -112,31 +106,29 @@ async function loadLogContent(item, element) {
 
     } catch (e) {
         console.error(e);
-        alert("Failed to load log file.");
+        document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Failed to load logs.</td></tr>';
     }
 }
 
 // --- PARSING ENGINE ---
 
 function parseLiveArray(data) {
-    // Handles array data from Google Sheet (Live) directly
-    if(!data || data.length < 2) return;
+    if(!data || data.length < 2) {
+        document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No logs found.</td></tr>';
+        return;
+    }
     
-    // Skip Header Row (Index 0)
-    const rows = data.slice(1); 
+    const rows = data.slice(1); // Skip Header
     
-    rawData = rows.map(r => {
-        // Map Columns: Timestamp(0), IP(1), User(2), Role(3), Action(4), Target(5), Meta(6)
-        return {
-            time: r[0] ? new Date(r[0]).toLocaleString() : "N/A",
-            ip: r[1],
-            user: r[2],
-            role: r[3],
-            action: r[4],
-            target: r[5],
-            meta: r[6]
-        };
-    });
+    rawData = rows.map(r => ({
+        time: r[0] ? new Date(r[0]).toLocaleString() : "N/A",
+        ip: r[1],
+        user: r[2],
+        role: r[3],
+        action: r[4],
+        target: r[5],
+        meta: r[6]
+    }));
     
     applyFilters();
 }
@@ -144,18 +136,35 @@ function parseLiveArray(data) {
 function parseLogs(content) {
     if (!content) return;
 
-    // 1. Split into lines
     let lines = content.split('\n').filter(l => l.trim() !== "");
 
-    // 2. Remove Header if present
-    // --- BUG FIX v2.18: Added [0] to target the string, not the array ---
+    // 1. Remove Header (Safe Check)
     if (lines.length > 0 && lines[0].startsWith("Timestamp")) {
-        lines.shift(); // Remove first line
+        lines.shift();
     }
+
+    if(lines.length === 0) {
+        document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Log file is empty.</td></tr>';
+        return;
+    }
+
+    // 2. DETECT DELIMITER (Fix for "Silent Failure")
+    // Check the first real line to see if it uses Pipe (|) or Comma (,)
+    const firstLine = lines[0];
+    const separator = firstLine.includes(" | ") ? " | " : ",";
 
     // 3. Map to Objects
     rawData = lines.map(line => {
-        const parts = line.split(" | ");
+        // Handle CSV edge case where JSON might have commas, but we only split first 6 fields
+        let parts;
+        
+        if (separator === ",") {
+             // Simple CSV split (Note: This is basic. Complex CSVs with quoted commas might need regex)
+             parts = line.split(",");
+        } else {
+             parts = line.split(" | ");
+        }
+
         if (parts.length < 5) return null; // Skip malformed lines
 
         return {
@@ -165,7 +174,8 @@ function parseLogs(content) {
             role: parts[3] || "N/A",
             action: parts[4] || "VIEW",
             target: parts[5] || "N/A",
-            meta: parts[6] || "{}"
+            // Join remaining parts in case Meta Data contained the delimiter
+            meta: parts.slice(6).join(separator) || "{}"
         };
     }).filter(x => x); // Remove nulls
 
@@ -175,13 +185,9 @@ function parseLogs(content) {
 // --- FILTERING & SORTING ---
 
 function applyFilters() {
-    // 1. Filter
-    displayData = rawData.filter(row => {
-        // Placeholder for future complex filters
-        return true; 
-    });
+    displayData = rawData; // Add filters here if needed
 
-    // 2. Sort
+    // Sort
     displayData.sort((a, b) => {
         const dateA = new Date(a.time);
         const dateB = new Date(b.time);
@@ -195,17 +201,20 @@ function renderTable() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '';
 
+    if (displayData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No matching records found.</td></tr>';
+        return;
+    }
+
     displayData.forEach(row => {
         const tr = document.createElement('tr');
         tr.className = "log-row border-b border-gray-50";
         tr.onclick = () => openModal(row);
 
-        // Styling based on action type
         if (row.action.includes('ORDER') || row.action.includes('SUBMIT')) tr.classList.add('log-checkout');
         if (row.user === 'GUEST' && row.action.includes('AUTH')) tr.classList.add('log-error');
         if (row.action.includes('AUTH') && row.role !== 'N/A') tr.classList.add('log-auth');
 
-        // Text Truncation
         let metaShort = row.meta;
         if(metaShort.length > 50) metaShort = metaShort.substring(0, 47) + "...";
         
