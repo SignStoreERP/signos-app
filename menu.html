@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Menu v5.4</title>
+    <title>SignOS Menu v5.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
 </head>
@@ -57,12 +57,13 @@
                     </div>
                 </a>
 
-                <a href="admin_backup.html" class="group bg-slate-800 p-4 rounded-lg shadow-sm hover:shadow-md transition border-l-4 border-green-500 cursor-pointer">
-                    <div class="flex justify-between items-start">
-                        <div><h3 class="font-bold text-white text-sm">Backup</h3><p class="text-slate-400 text-[10px] mt-1 group-hover:text-green-300">Manual Data Export</p></div>
-                        <span class="text-lg">💾</span>
-                    </div>
-                </a>
+<a id="btn-backup" href="admin_backup.html" class="group bg-slate-800 p-4 rounded-lg shadow-sm hover:shadow-md transition border-l-4 border-green-500 cursor-pointer">
+    <div class="flex justify-between items-start">
+        <div><h3 class="font-bold text-white text-sm">Backup</h3><p class="text-slate-400 text-[10px] mt-1 group-hover:text-green-300">Manual Data Export</p></div>
+        <span class="text-lg">💾</span>
+    </div>
+</a>
+
 
                 <a href="admin_changelog.html" class="group bg-slate-800 p-4 rounded-lg shadow-sm hover:shadow-md transition border-l-4 border-purple-500 cursor-pointer">
                     <div class="flex justify-between items-start">
@@ -114,26 +115,26 @@ window.onload = async function() {
         envEl.innerHTML = `<span class="text-green-600 font-bold">● LIVE SYSTEM</span> | <span class="text-gray-400">${clientIP}</span>`;
     }
 
-    // Admin/Super Visibility
+   // Admin/Super Visibility
     if (role === 'ADMIN' || role === 'SUPER') {
+        // 1. Show the Toolbar Container
         document.getElementById('admin-workflow').classList.remove('hidden');
+
+        // 2. Show Super Badge (Visual only)
         if (role === 'SUPER') document.getElementById('super-badge').classList.remove('hidden');
-    }
 
-    // Load Modules
-    try {
-        const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP}&user=${user}`);
-        const data = await response.json();
-        
-        document.getElementById('loader').classList.add('hidden');
-        document.getElementById('menu-container').classList.remove('hidden');
-        
-        renderMenu(data, role);
+        // 3. Granular Permission Check: Backup Button
+        // Retrieve permissions saved during login
+        const perms = JSON.parse(sessionStorage.getItem('signos_perms') || '{}');
+        const btnBackup = document.getElementById('btn-backup');
 
-    } catch (e) {
-        document.getElementById('loader').innerHTML = `<div class="p-4 text-red-500 font-bold">Error: ${e.message}</div>`;
+        // Hide Backup button if NOT Super AND NOT authorized
+        // Logic: If role is SUPER, they see it. 
+        // If role is ADMIN, they only see it if backend Backup_Access is 'Run' or 'Full'.
+        if (role !== 'SUPER' && perms.backup !== 'Run' && perms.backup !== 'Full') {
+            btnBackup.classList.add('hidden');
+        }
     }
-};
 
 function renderMenu(data, role) {
     const container = document.getElementById('menu-container');
