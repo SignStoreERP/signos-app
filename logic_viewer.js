@@ -1,7 +1,7 @@
 /**
- * SignOS Log Analyzer Logic (v2.21)
- * Fixes: ID Mismatch (log-body vs table-body).
- * Result: Logs should now render correctly.
+ * SignOS Log Analyzer Logic (v2.22)
+ * Fixes: "ID Agnostic" - Checks for 'table-body' OR 'log-body' to prevent null crashes.
+ * Includes: Auto-detect Delimiter (Pipe vs Comma) from v2.19.
  */
 
 let rawData = [];
@@ -9,10 +9,19 @@ let displayData = [];
 let currentSort = { key: 'time', dir: 'desc' };
 let activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
 
+// --- HELPER: FIND TABLE BODY ---
+function getTableBody() {
+    // Tries to find the table body regardless of ID naming confusion
+    const el = document.getElementById('table-body') || document.getElementById('log-body');
+    if (!el) console.error("CRITICAL ERROR: Table Body ID not found (looked for 'table-body' and 'log-body')");
+    return el;
+}
+
 // --- INIT ---
 window.onload = function() {
     const u = sessionStorage.getItem('signos_user');
     
+    // Auth Check handled by core, but we update UI
     if(document.getElementById('auth-user')) {
         document.getElementById('auth-user').innerText = u || "GUEST";
     }
@@ -34,29 +43,29 @@ window.onload = function() {
     loadArchiveList();
 };
 
-function goBack() { window.location.href = 'menu.html'; }
+function goBack() { window.history.back(); }
 
 // --- API FETCHING ---
 
 async function loadArchiveList() {
     const list = document.getElementById('archive-list');
-    list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto"></div></div>';
+    if(!list) return; // Safety
+    list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div></div>';
 
     try {
         const response = await fetch(`${SCRIPT_URL}?req=get_archive_index`);
         const data = await response.json();
-
-        if (!data || data.length === 0) { 
-            list.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">No archives found.</div>'; 
-            return; 
+        
+        if (!data || data.length === 0) {
+            list.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">No archives found.</div>';
+            return;
         }
 
         list.innerHTML = ""; // Clear loader
 
         data.forEach((item, index) => {
             const div = document.createElement('div');
-            // Check if it's the "LIVE" item 
-            const isLive = item.type === "LIVE" || item.name.includes("Current");
+            const isLive = item.type === "LIVE" || (item.name && item.name.includes("Current"));
             
             div.className = `archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition ${index === 0 ? 'active' : ''}`;
             div.onclick = () => loadLogContent(item, div);
@@ -73,10 +82,10 @@ async function loadArchiveList() {
         });
 
         // Auto-load the first item
-        if(data.length > 0) loadLogContent(data, list.firstChild);
+        if(data.length > 0) loadLogContent(data[0], list.firstChild);
 
-    } catch (e) { 
-        list.innerHTML = `<div class="text-xs text-red-500 text-center py-4">Error loading index</div>`; 
+    } catch (e) {
+        list.innerHTML = `<div class="text-xs text-red-500 text-center py-4">Error loading index</div>`;
     }
 }
 
@@ -84,23 +93,22 @@ async function loadLogContent(item, element) {
     // 1. Highlight UI
     document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
     if(element) element.classList.add('active');
-
+    
     document.getElementById('current-file-name').innerText = item.name;
     
-    // FIX: Use 'log-body' instead of 'table-body'
-    const tbody = document.getElementById('log-body');
+    const tbody = getTableBody();
     if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Loading data...</td></tr>';
 
     try {
         let content = "";
-
+        
         if (item.type === "LIVE" || item.file_id === "LIVE") {
-            const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
-            const json = await res.json();
-            if(json.status === "success") {
-                parseLiveArray(json.logs);
-                return; 
-            }
+             const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
+             const json = await res.json();
+             if(json.status === "success") {
+                 parseLiveArray(json.logs);
+                 return;
+             }
         } else {
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${item.file_id}`);
             const data = await response.json();
@@ -118,15 +126,16 @@ async function loadLogContent(item, element) {
 // --- PARSING ENGINE ---
 
 function parseLiveArray(data) {
+    const tbody = getTableBody();
     if(!data || data.length < 2) {
-        const tbody = document.getElementById('log-body');
         if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No logs found.</td></tr>';
         return;
     }
-
+    
     const rows = data.slice(1); // Skip Header
+    
     rawData = rows.map(r => ({
-        time: r ? new Date(r).toLocaleString() : "N/A",
+        time: r[0] ? new Date(r[0]).toLocaleString() : "N/A",
         ip: r[1],
         user: r[2],
         role: r[3],
@@ -134,7 +143,7 @@ function parseLiveArray(data) {
         target: r[5],
         meta: r[6]
     }));
-
+    
     applyFilters();
 }
 
@@ -144,33 +153,33 @@ function parseLogs(content) {
     let lines = content.split('\n').filter(l => l.trim() !== "");
 
     // 1. Remove Header (Safe Check)
-    if (lines.length > 0 && lines.startsWith("Timestamp")) {
+    if (lines.length > 0 && lines[0].startsWith("Timestamp")) {
         lines.shift();
     }
 
+    const tbody = getTableBody();
     if(lines.length === 0) {
-        const tbody = document.getElementById('log-body');
         if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Log file is empty.</td></tr>';
         return;
     }
 
-    // 2. DETECT DELIMITER 
-    const firstLine = lines;
+    // 2. DETECT DELIMITER (Pipe vs Comma)
+    const firstLine = lines[0];
     const separator = firstLine.includes(" | ") ? " | " : ",";
 
     // 3. Map to Objects
     rawData = lines.map(line => {
         let parts;
         if (separator === ",") {
-            parts = line.split(",");
+             parts = line.split(",");
         } else {
-            parts = line.split(" | ");
+             parts = line.split(" | ");
         }
 
-        if (parts.length < 5) return null; 
+        if (parts.length < 5) return null;
 
         return {
-            time: parts || "N/A",
+            time: parts[0] || "N/A",
             ip: parts[1] || "Unknown",
             user: parts[2] || "Guest",
             role: parts[3] || "N/A",
@@ -178,7 +187,7 @@ function parseLogs(content) {
             target: parts[5] || "N/A",
             meta: parts.slice(6).join(separator) || "{}"
         };
-    }).filter(x => x);
+    }).filter(x => x); 
 
     applyFilters();
 }
@@ -187,12 +196,6 @@ function parseLogs(content) {
 
 function applyFilters() {
     displayData = rawData; 
-    
-    // Simple filter check (can be expanded)
-    const search = document.getElementById('filter-search').value.toLowerCase();
-    if (search) {
-        displayData = displayData.filter(item => JSON.stringify(item).toLowerCase().includes(search));
-    }
 
     // Sort
     displayData.sort((a, b) => {
@@ -205,15 +208,10 @@ function applyFilters() {
 }
 
 function renderTable() {
-    // FIX: Use 'log-body'
-    const tbody = document.getElementById('log-body');
+    const tbody = getTableBody();
     if(!tbody) return;
     
     tbody.innerHTML = '';
-    
-    // Update count if element exists
-    const countEl = document.getElementById('stat-count');
-    if(countEl) countEl.innerText = displayData.length;
 
     if (displayData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No matching records found.</td></tr>';
@@ -231,7 +229,7 @@ function renderTable() {
 
         let metaShort = row.meta;
         if(metaShort && metaShort.length > 50) metaShort = metaShort.substring(0, 47) + "...";
-
+        
         const cell = (val) => `<span class="hover:text-blue-600 font-medium">${val}</span>`;
 
         tr.innerHTML = `
@@ -250,25 +248,29 @@ function renderTable() {
 // --- MODAL LOGIC ---
 
 function openModal(row) {
-    document.getElementById('m-time').innerText = row.time;
-    document.getElementById('m-ip').innerText = row.ip;
-    document.getElementById('m-user').innerText = row.user;
-    document.getElementById('m-role').innerText = row.role;
-    document.getElementById('m-action').innerText = row.action;
-    document.getElementById('m-target').innerText = row.target;
+    if(document.getElementById('m-time')) document.getElementById('m-time').innerText = row.time;
+    if(document.getElementById('m-ip')) document.getElementById('m-ip').innerText = row.ip;
+    if(document.getElementById('m-user')) document.getElementById('m-user').innerText = row.user;
+    if(document.getElementById('m-role')) document.getElementById('m-role').innerText = row.role;
+    if(document.getElementById('m-action')) document.getElementById('m-action').innerText = row.action;
+    if(document.getElementById('m-target')) document.getElementById('m-target').innerText = row.target;
 
     try {
         const metaObj = JSON.parse(row.meta);
-        document.getElementById('m-meta').innerText = JSON.stringify(metaObj, null, 2);
+        if(document.getElementById('m-meta')) document.getElementById('m-meta').innerText = JSON.stringify(metaObj, null, 2);
     } catch(e) {
-        document.getElementById('m-meta').innerText = row.meta;
+        if(document.getElementById('m-meta')) document.getElementById('m-meta').innerText = row.meta;
     }
 
-    document.getElementById('detail-modal').classList.remove('hidden');
-    document.body.classList.add('modal-active');
+    const modal = document.getElementById('detail-modal');
+    if(modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('modal-active');
+    }
 }
 
 function closeModal() {
-    document.getElementById('detail-modal').classList.add('hidden');
+    const modal = document.getElementById('detail-modal');
+    if(modal) modal.classList.add('hidden');
     document.body.classList.remove('modal-active');
 }
