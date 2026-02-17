@@ -3,35 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Log Viewer v2.18 | SignOS Admin</title>
+    <title>Log Viewer v2.19 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_viewer.js"></script>
 
     <style>
-        /* === UI OVERLAY SCROLLBARS (Mobile Friendly) === */
+        /* === UI OVERLAY SCROLLBARS === */
         .custom-scroll {
-            scrollbar-width: thin; /* Firefox */
+            scrollbar-width: thin;
             scrollbar-color: #cbd5e1 #f1f1f1;
         }
+        .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Webkit (Chrome/Safari) Styling */
-        .custom-scroll::-webkit-scrollbar { 
-            height: 8px; 
-            width: 8px; 
-        }
-        .custom-scroll::-webkit-scrollbar-track { 
-            background: #f8fafc; 
-            border-top: 1px solid #e2e8f0;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb { 
-            background-color: #94a3b8; 
-            border-radius: 20px; 
-            border: 2px solid #f8fafc; /* Padding effect */
-        }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { 
-            background-color: #64748b; 
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         .log-row { cursor: pointer; transition: background-color 0.1s; }
         .log-row:hover { background-color: #eff6ff; }
@@ -55,27 +44,26 @@
 </head>
 <body class="bg-gray-100 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
 
-    <div class="bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center sticky top-0 z-30 shadow-sm shrink-0">
+    <div class="bg-gray-900 text-white border-b border-gray-800 px-4 py-3 flex justify-between items-center shadow-lg z-30 shrink-0">
         <div>
-            <h1 class="text-lg md:text-xl font-black text-gray-800 tracking-tight flex items-center gap-2">
-                <span class="text-blue-600">⚡</span> Log Viewer <span class="text-gray-300 font-normal text-sm">v2.18</span>
+            <h1 class="text-lg font-bold tracking-wide flex items-center gap-2">
+                <span class="text-blue-400">⚡</span> Log Viewer <span class="text-gray-500 text-xs font-normal">v2.19</span>
             </h1>
-            <div class="text-[10px] md:text-xs font-bold text-gray-400 mt-0.5 tracking-wide">
-                <span class="text-blue-600" id="auth-user">CHECKING...</span> 
-                <span class="hidden md:inline"><span class="mx-1">|</span> SYSTEM ADMIN</span>
+            <div class="text-[10px] font-bold text-gray-400 mt-0.5 tracking-wider">
+                LOGGED IN AS: <span id="auth-user" class="text-blue-400">CHECKING...</span>
             </div>
         </div>
-        <button onclick="window.location.href='menu.html'" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs font-bold transition flex items-center gap-1">
-            <span>EXIT</span>
+        <button onclick="window.location.href='menu.html'" class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-bold border border-gray-700 transition">
+            EXIT
         </button>
     </div>
 
-    <div class="md:hidden bg-slate-50 border-b border-gray-200 px-4 py-2 flex gap-2 shrink-0 z-20">
-        <button onclick="toggleSidebar()" class="flex-1 bg-white text-blue-600 px-3 py-1.5 rounded border border-blue-200 text-xs font-bold shadow-sm active:bg-blue-50">
-            📂 ARCHIVES
+    <div class="md:hidden bg-white border-b border-gray-200 px-4 py-2 flex gap-2 shrink-0 z-20 shadow-sm">
+        <button onclick="toggleFilters()" class="flex-1 bg-slate-100 text-slate-600 px-3 py-1.5 rounded text-xs font-bold border border-slate-200 active:bg-slate-200">
+            🌪️ FILTERS
         </button>
-        <button onclick="toggleFilters()" class="flex-1 bg-white text-slate-600 px-3 py-1.5 rounded border border-slate-300 text-xs font-bold shadow-sm active:bg-slate-50">
-            🌪️ FILTERS & SEARCH
+        <button onclick="toggleSidebar()" class="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow-sm active:bg-blue-700">
+            📂 ARCHIVES
         </button>
     </div>
 
@@ -84,16 +72,19 @@
         <div id="sidebar-backdrop" onclick="closeSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass transition-opacity"></div>
 
         <div id="sidebar" class="absolute md:relative inset-y-0 left-0 w-72 bg-white border-r border-gray-200 flex flex-col z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none h-full">
-            
-            <div class="p-3 border-b border-gray-100 bg-gray-50/50">
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Select Log File</div>
+            <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Log Archives</div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">Select a file to view</div>
+                </div>
+                <button onclick="closeSidebar()" class="md:hidden text-gray-400 hover:text-gray-600">✕</button>
             </div>
 
             <div id="archive-list" class="flex-1 overflow-y-auto custom-scroll">
                 <div class="p-4 text-center text-gray-400 text-xs animate-pulse">Loading index...</div>
             </div>
 
-            <div class="p-3 border-t border-gray-100 bg-gray-50">
+            <div class="p-4 border-t border-gray-100 bg-gray-50">
                 <label class="flex items-center justify-center w-full px-4 py-2 bg-white border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition group">
                     <div class="flex flex-col items-center">
                         <span class="text-[10px] font-bold text-gray-500 group-hover:text-blue-500">📂 OPEN LOCAL FILE</span>
@@ -107,12 +98,9 @@
             
             <div id="filter-panel" class="hidden md:block border-b border-gray-200 bg-white shadow-sm z-20">
                 <div class="p-3">
-                    <div class="relative mb-3">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        </span>
-                        <input type="text" id="filter-search" onkeyup="applyFilters()" placeholder="Search logs (User, Action, IP...)" 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs font-bold text-gray-700 focus:outline-none focus:border-blue-500 focus:bg-white transition shadow-inner">
+                    <div class="mb-3">
+                        <input type="text" id="filter-search" onkeyup="applyFilters()" placeholder="🔍 Search logs (User, IP, Action)..." 
+                            class="w-full bg-slate-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-blue-500 focus:bg-white transition">
                     </div>
 
                     <div class="flex flex-nowrap gap-4 overflow-x-auto custom-scroll pb-2">
@@ -142,7 +130,8 @@
             </div>
 
             <div class="flex-1 overflow-auto custom-scroll relative bg-gray-50">
-                <table class="w-full text-left border-collapse min-w-[800px]"> <thead class="bg-white sticky top-0 z-10 shadow-sm text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <table class="w-full text-left border-collapse min-w-[800px]">
+                    <thead class="bg-white sticky top-0 z-10 shadow-sm text-xs font-bold text-gray-500 uppercase tracking-wider">
                         <tr>
                             <th onclick="setSort('time')" class="sort-header p-3 border-b border-gray-200 whitespace-nowrap w-32">Time ▾</th>
                             <th onclick="setSort('user')" class="sort-header p-3 border-b border-gray-200 w-24">User</th>
