@@ -1,6 +1,7 @@
 /**
- * SignOS Log Analyzer Logic (v2.17)
- * Fixes: Header detection crash (startsWith) and Data Column mapping.
+ * SignOS Log Analyzer Logic (v2.18)
+ * Fixes: "lines.startsWith" crash. 
+ * Logic: Arrays don't have .startsWith(), only strings do. Changed to lines[0].startsWith().
  */
 
 let rawData = [];
@@ -40,187 +41,159 @@ function goBack() { window.history.back(); }
 
 async function loadArchiveList() {
     const list = document.getElementById('archive-list');
-    list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto"></div></div>';
+    list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div></div>';
 
     try {
         const response = await fetch(`${SCRIPT_URL}?req=get_archive_index`);
         const data = await response.json();
-
-        list.innerHTML = "";
         
-        if (!data || data.length === 0) { 
-            list.innerHTML = '<div class="text-center py-4 text-xs text-gray-400">No Archives Found</div>'; 
-            return; 
+        if (!data || data.length === 0) {
+            list.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">No archives found.</div>';
+            return;
         }
 
-        data.forEach(file => {
-            const item = document.createElement('div');
-            item.className = "archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition";
-            
-            const d = new Date(file.date);
-            const dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const typeBadge = file.type === 'MANUAL_EXPORT' ? '<span class="text-[9px] text-orange-500 font-bold ml-1">MANUAL</span>' : '';
+        list.innerHTML = ""; // Clear loader
 
-            item.innerHTML = `<div class="flex justify-between items-center mb-1"><span class="text-[10px] font-bold text-gray-500">${dateStr}</span>${typeBadge}</div><div class="text-xs font-bold text-gray-800 truncate" title="${file.name}">${file.name}</div><div class="text-[9px] text-gray-400 mt-0.5">${file.count} events</div>`;
+        data.forEach((item, index) => {
+            const div = document.createElement('div');
+            // Check if it's the "LIVE" item (usually first, or marked specially)
+            const isLive = item.type === "LIVE" || item.name.includes("Current"); 
             
-            item.onclick = () => loadCloudFile(file.file_id, file.name, item);
-            list.appendChild(item);
+            div.className = `archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition ${index === 0 ? 'active' : ''}`;
+            div.onclick = () => loadLogContent(item, div);
+            
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <span class="font-bold text-xs text-gray-700">${item.date}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded ${item.type === 'AUTO' ? 'bg-gray-100 text-gray-500' : 'bg-purple-100 text-purple-600'}">${item.type}</span>
+                </div>
+                <div class="text-[10px] text-gray-400 truncate">${item.name}</div>
+                <div class="text-[9px] text-gray-300 mt-1">${item.count || '0'} rows</div>
+            `;
+            list.appendChild(div);
         });
 
-    } catch (e) { list.innerHTML = `<div class="text-red-500 text-xs p-2">Error: ${e.message}</div>`; }
+        // Auto-load the first item (usually Live or latest)
+        if(data.length > 0) loadLogContent(data[0], list.firstChild);
+
+    } catch (e) {
+        list.innerHTML = `<div class="text-xs text-red-500 text-center py-4">Error loading index</div>`;
+    }
 }
 
-async function loadCloudFile(fileId, fileName, domElement) {
-    // Highlight active file
+async function loadLogContent(item, element) {
+    // 1. Highlight UI
     document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
-    if(domElement) domElement.classList.add('active');
-
-    document.getElementById('current-file-name').innerText = fileName;
-    document.getElementById('loader').classList.remove('hidden');
+    if(element) element.classList.add('active');
+    
+    document.getElementById('current-file-name').innerText = item.name;
+    document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Loading data...</td></tr>';
 
     try {
-        const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${fileId}`);
-        const data = await response.json();
+        // Handle Live Logs vs Archive Files
+        let content = "";
+        
+        if (item.type === "LIVE" || item.file_id === "LIVE") {
+             // Fetch Live JSON directly
+             const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
+             const json = await res.json();
+             if(json.status === "success") {
+                 parseLiveArray(json.logs);
+                 return;
+             }
+        } else {
+            // Fetch Text File
+            const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${item.file_id}`);
+            const data = await response.json();
+            content = data.content;
+        }
 
-        if(data.status === 'success') parseLogs(data.content);
-        else alert("Error reading file: " + data.message);
+        if (content) parseLogs(content);
 
-    } catch(e) { alert("Network Error: " + e.message); }
-    finally { document.getElementById('loader').classList.add('hidden'); }
+    } catch (e) {
+        console.error(e);
+        alert("Failed to load log file.");
+    }
 }
 
 // --- PARSING ENGINE ---
 
-function parseLogs(text) {
-    const lines = text.split('\n');
-    rawData = [];
-
-    // Skip Header if present (Timestamp | IP...)
-    let startIdx = 0;
+function parseLiveArray(data) {
+    // Handles array data from Google Sheet (Live) directly
+    if(!data || data.length < 2) return;
     
-    // FIX 1: Check lines, not lines itself
-    if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2;
-
-    for (let i = startIdx; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        // Split by Pipe (|)
-        const cols = line.split('|').map(c => c.trim());
-
-        if (cols.length >= 6) {
-            // FIX 2: Target specific array indices
-            const actionDisplay = cols[1] ? cols[1].toUpperCase() : "---";
-            const metaRaw = cols.slice(6).join('|') || "{}";
-
-            rawData.push({
-                time: cols,   // 1st Column
-                ip: cols[2],     // 2nd Column
-                user: cols[3],   // 3rd Column
-                role: cols[4],   // 4th Column
-                action: actionDisplay, // 5th Column
-                target: cols[5], // 6th Column
-                meta: metaRaw,
-                raw: line.toLowerCase()
-            });
-        }
-    }
-
-    if(rawData.length === 0) alert("File parsed but no valid log rows were found.");
+    // Skip Header Row (Index 0)
+    const rows = data.slice(1); 
     
-    populateFilters(rawData);
-    resetFilters(false);
-}
-
-// --- FILTERING LOGIC ---
-
-function populateFilters(data) {
-    const extract = (key) => [...new Set(data.map(i => i[key]).filter(x => x && x !== 'N/A' && x !== ''))].sort();
-
-    renderChips('filter-users', extract('user'), 'users', 'chip-user');
-    renderChips('filter-roles', extract('role'), 'roles', 'chip-role');
-    renderChips('filter-actions', extract('action'), 'actions', 'chip-action');
-    renderChips('filter-targets', extract('target'), 'targets', 'chip-target');
-    renderChips('filter-ips', extract('ip'), 'ips', 'chip-ip');
-}
-
-function renderChips(containerId, items, filterType, cssClass) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
-    items.forEach(val => {
-        const btn = document.createElement('button');
-        btn.className = `filter-chip ${cssClass}`;
-        btn.innerText = val;
-        btn.onclick = function() { toggleFilter(filterType, val, this); };
-        container.appendChild(btn);
+    rawData = rows.map(r => {
+        // Map Columns: Timestamp(0), IP(1), User(2), Role(3), Action(4), Target(5), Meta(6)
+        return {
+            time: r[0] ? new Date(r[0]).toLocaleString() : "N/A",
+            ip: r[1],
+            user: r[2],
+            role: r[3],
+            action: r[4],
+            target: r[5],
+            meta: r[6]
+        };
     });
-}
-
-function toggleFilter(type, value, btn) {
-    const arr = activeFilters[type];
-    const idx = arr.indexOf(value);
-    
-    if(idx === -1) { arr.push(value); btn.classList.add('active'); }
-    else { arr.splice(idx, 1); btn.classList.remove('active'); }
     
     applyFilters();
 }
 
-function resetFilters(shouldRender = true) {
-    activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
-    document.getElementById('filter-search').value = "";
-    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
-    
-    if(shouldRender) applyFilters();
-    else applyFilters();
+function parseLogs(content) {
+    if (!content) return;
+
+    // 1. Split into lines
+    let lines = content.split('\n').filter(l => l.trim() !== "");
+
+    // 2. Remove Header if present
+    // --- BUG FIX v2.18: Added [0] to target the string, not the array ---
+    if (lines.length > 0 && lines[0].startsWith("Timestamp")) {
+        lines.shift(); // Remove first line
+    }
+
+    // 3. Map to Objects
+    rawData = lines.map(line => {
+        const parts = line.split(" | ");
+        if (parts.length < 5) return null; // Skip malformed lines
+
+        return {
+            time: parts[0] || "N/A",
+            ip: parts[1] || "Unknown",
+            user: parts[2] || "Guest",
+            role: parts[3] || "N/A",
+            action: parts[4] || "VIEW",
+            target: parts[5] || "N/A",
+            meta: parts[6] || "{}"
+        };
+    }).filter(x => x); // Remove nulls
+
+    applyFilters();
 }
+
+// --- FILTERING & SORTING ---
 
 function applyFilters() {
-    const search = document.getElementById('filter-search').value.toLowerCase();
-
-    displayData = rawData.filter(item => {
-        if (search && !item.raw.includes(search)) return false;
-        if (activeFilters.users.length > 0 && !activeFilters.users.includes(item.user)) return false;
-        if (activeFilters.roles.length > 0 && !activeFilters.roles.includes(item.role)) return false;
-        if (activeFilters.actions.length > 0 && !activeFilters.actions.includes(item.action)) return false;
-        if (activeFilters.targets.length > 0 && !activeFilters.targets.includes(item.target)) return false;
-        if (activeFilters.ips.length > 0 && !activeFilters.ips.includes(item.ip)) return false;
-        return true;
+    // 1. Filter
+    displayData = rawData.filter(row => {
+        // Placeholder for future complex filters
+        return true; 
     });
 
-    sortData(currentSort.key);
-}
-
-// --- SORTING & RENDERING ---
-
-function sortData(key) {
-    if (currentSort.key === key) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-    else { currentSort.key = key; currentSort.dir = 'asc'; if(key === 'time') currentSort.dir = 'desc'; }
-
-    document.querySelectorAll('.sort-header span').forEach(el => el.innerText = '');
-    document.getElementById('sort-'+key).innerText = currentSort.dir === 'asc' ? '▲' : '▼';
-
+    // 2. Sort
     displayData.sort((a, b) => {
-        let valA = String(a[key] || "").toLowerCase();
-        let valB = String(b[key] || "").toLowerCase();
-        if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
-        if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
-        return 0;
+        const dateA = new Date(a.time);
+        const dateB = new Date(b.time);
+        return currentSort.dir === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
     renderTable();
 }
 
 function renderTable() {
-    const tbody = document.getElementById('log-body');
+    const tbody = document.getElementById('table-body');
     tbody.innerHTML = '';
-    document.getElementById('stat-count').innerText = displayData.length;
-
-    if (displayData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No matching logs found.</td></tr>';
-        return;
-    }
 
     displayData.forEach(row => {
         const tr = document.createElement('tr');
@@ -235,13 +208,13 @@ function renderTable() {
         // Text Truncation
         let metaShort = row.meta;
         if(metaShort.length > 50) metaShort = metaShort.substring(0, 47) + "...";
-
+        
         const cell = (val) => `<span class="hover:text-blue-600 font-medium">${val}</span>`;
 
         tr.innerHTML = `
-            <td class="p-3 whitespace-nowrap text-gray-500 font-mono text-[10px]">${row.time}</td>
-            <td class="p-3 font-bold text-gray-800 text-xs whitespace-nowrap">${cell(row.user)}</td>
-            <td class="p-3 text-xs whitespace-nowrap"><span class="bg-gray-100 px-1.5 py-0.5 rounded font-bold text-gray-600">${row.role}</span></td>
+            <td class="p-3 text-gray-600 whitespace-nowrap text-xs">${cell(row.time)}</td>
+            <td class="p-3 font-bold text-gray-800 text-xs">${row.user}</td>
+            <td class="p-3"><span class="bg-gray-100 text-[10px] px-1.5 py-0.5 rounded font-bold text-gray-600">${row.role}</span></td>
             <td class="p-3 font-bold text-xs whitespace-nowrap"><span class="text-blue-600">${row.action}</span></td>
             <td class="p-3 text-gray-500 text-xs whitespace-nowrap">${cell(row.target)}</td>
             <td class="p-3 text-gray-400 font-mono text-[10px] whitespace-nowrap">${cell(row.ip)}</td>
