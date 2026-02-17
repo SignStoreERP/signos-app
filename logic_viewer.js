@@ -1,6 +1,7 @@
 /**
- * SignOS Log Analyzer Logic (v2.20)
- * Fixes: ID Mismatch (log-body vs table-body) causing silent load failure.
+ * SignOS Log Analyzer Logic (v2.21)
+ * Fixes: ID Mismatch (log-body vs table-body).
+ * Result: Logs should now render correctly.
  */
 
 let rawData = [];
@@ -33,7 +34,7 @@ window.onload = function() {
     loadArchiveList();
 };
 
-function goBack() { window.history.back(); }
+function goBack() { window.location.href = 'menu.html'; }
 
 // --- API FETCHING ---
 
@@ -86,7 +87,7 @@ async function loadLogContent(item, element) {
 
     document.getElementById('current-file-name').innerText = item.name;
     
-    // FIX 1: Correct ID is 'log-body', not 'table-body'
+    // FIX: Use 'log-body' instead of 'table-body'
     const tbody = document.getElementById('log-body');
     if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Loading data...</td></tr>';
 
@@ -148,7 +149,8 @@ function parseLogs(content) {
     }
 
     if(lines.length === 0) {
-        document.getElementById('log-body').innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Log file is empty.</td></tr>';
+        const tbody = document.getElementById('log-body');
+        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Log file is empty.</td></tr>';
         return;
     }
 
@@ -184,8 +186,14 @@ function parseLogs(content) {
 // --- FILTERING & SORTING ---
 
 function applyFilters() {
-    displayData = rawData; // Add filters here if needed
+    displayData = rawData; 
     
+    // Simple filter check (can be expanded)
+    const search = document.getElementById('filter-search').value.toLowerCase();
+    if (search) {
+        displayData = displayData.filter(item => JSON.stringify(item).toLowerCase().includes(search));
+    }
+
     // Sort
     displayData.sort((a, b) => {
         const dateA = new Date(a.time);
@@ -197,7 +205,7 @@ function applyFilters() {
 }
 
 function renderTable() {
-    // FIX 2: Correct ID is 'log-body'
+    // FIX: Use 'log-body'
     const tbody = document.getElementById('log-body');
     if(!tbody) return;
     
