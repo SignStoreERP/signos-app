@@ -1,14 +1,15 @@
 /**
- * SignOS Log Analyzer Logic (v2.23)
- * Fixes: Parsing crash caused by "=====" separator lines in text logs.
- * Fixes: Sorting now works for ALL columns, not just Time.
- * Feature: "Scanner" - Extract unique values for filters.
+ * SignOS Log Analyzer Logic (v2.24)
+ * Fixes: Missing filters (Role, IP, Target) restored.
+ * Retains: "====" parsing fix and ID Agnostic table finding from v2.23.
  */
 
 let rawData = [];
 let displayData = [];
 let currentSort = { key: 'time', dir: 'desc' };
-let activeFilters = { users: [], roles: [], actions: [] };
+
+// 1. Initialize ALL filter categories
+let activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
 
 // --- HELPER: FIND TABLE BODY ---
 function getTableBody() {
@@ -117,7 +118,7 @@ async function loadLogContent(item, element) {
     }
 }
 
-// --- PARSING ENGINE (FIXED) ---
+// --- PARSING ENGINE ---
 
 function parseLiveArray(data) {
     const tbody = getTableBody();
@@ -147,7 +148,7 @@ function parseLogs(content) {
 
     let lines = content.split('\n').filter(l => l.trim() !== "");
 
-    // 1. FILTER GARBAGE (Fix for "====" issue)
+    // 1. FILTER GARBAGE (The "====" fix)
     lines = lines.filter(l => !l.startsWith("===="));
 
     // 2. REMOVE HEADER
@@ -161,17 +162,16 @@ function parseLogs(content) {
         return;
     }
 
-    // 3. DETECT DELIMITER (Pipe vs Comma)
-    // We check the first DATA line now, which is safe because we removed "===="
+    // 3. DETECT DELIMITER
     const firstLine = lines[0];
     const separator = firstLine.includes(" | ") ? " | " : ",";
 
     rawData = lines.map(line => {
         let parts;
         if (separator === ",") {
-             parts = line.split(","); // Basic CSV
+             parts = line.split(",");
         } else {
-             parts = line.split(" | "); // Pipe format
+             parts = line.split(" | ");
         }
 
         if (parts.length < 5) return null;
@@ -191,20 +191,22 @@ function parseLogs(content) {
     applyFilters();
 }
 
-// --- SCANNER & FILTERS ---
+// --- SCANNER & FILTERS (UPDATED) ---
 
 function populateFilters() {
-    // Extracts unique values to allow user sorting/filtering
     const getUnique = (key) => [...new Set(rawData.map(item => item[key]))].sort();
 
+    // 2. Added calls for Role, Target, and IP
     renderFilterChips('filter-users', getUnique('user'), 'users');
+    renderFilterChips('filter-roles', getUnique('role'), 'roles'); // NEW
     renderFilterChips('filter-actions', getUnique('action'), 'actions');
-    // Add more if your HTML has containers for them
+    renderFilterChips('filter-targets', getUnique('target'), 'targets'); // NEW
+    renderFilterChips('filter-ips', getUnique('ip'), 'ips'); // NEW
 }
 
 function renderFilterChips(containerId, values, filterKey) {
     const container = document.getElementById(containerId);
-    if (!container) return; // HTML element might not exist, which is fine
+    if (!container) return; 
 
     container.innerHTML = '';
     values.forEach(val => {
@@ -213,7 +215,6 @@ function renderFilterChips(containerId, values, filterKey) {
         btn.className = "filter-chip bg-slate-50 border border-slate-200 text-slate-600 px-2 py-1 rounded text-[10px] font-bold mr-2 mb-2 hover:bg-blue-50";
         
         btn.onclick = () => {
-            // Toggle Filter Logic
             const idx = activeFilters[filterKey].indexOf(val);
             if (idx > -1) {
                 activeFilters[filterKey].splice(idx, 1);
@@ -243,24 +244,25 @@ function setSort(key) {
 }
 
 function applyFilters() {
-    // 1. Filter Data
+    // 3. Updated Filter Logic to check ALL categories
     displayData = rawData.filter(row => {
         const matchUser = activeFilters.users.length === 0 || activeFilters.users.includes(row.user);
+        const matchRole = activeFilters.roles.length === 0 || activeFilters.roles.includes(row.role); // NEW
         const matchAction = activeFilters.actions.length === 0 || activeFilters.actions.includes(row.action);
-        return matchUser && matchAction;
+        const matchTarget = activeFilters.targets.length === 0 || activeFilters.targets.includes(row.target); // NEW
+        const matchIp = activeFilters.ips.length === 0 || activeFilters.ips.includes(row.ip); // NEW
+        
+        return matchUser && matchRole && matchAction && matchTarget && matchIp;
     });
 
-    // 2. Sort Data (Fixed to support ALL columns)
     displayData.sort((a, b) => {
         let valA = a[currentSort.key];
         let valB = b[currentSort.key];
 
-        // Handle Dates
         if (currentSort.key === 'time') {
             valA = new Date(valA);
             valB = new Date(valB);
         } else {
-            // Handle Strings (Case Insensitive)
             valA = String(valA).toLowerCase();
             valB = String(valB).toLowerCase();
         }
