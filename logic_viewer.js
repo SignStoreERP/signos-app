@@ -1,36 +1,33 @@
 /**
- * SignOS Log Analyzer Logic (v2.22)
- * Fixes: "ID Agnostic" - Checks for 'table-body' OR 'log-body' to prevent null crashes.
- * Includes: Auto-detect Delimiter (Pipe vs Comma) from v2.19.
+ * SignOS Log Analyzer Logic (v2.23)
+ * Fixes: Parsing crash caused by "=====" separator lines in text logs.
+ * Fixes: Sorting now works for ALL columns, not just Time.
+ * Feature: "Scanner" - Extract unique values for filters.
  */
 
 let rawData = [];
 let displayData = [];
 let currentSort = { key: 'time', dir: 'desc' };
-let activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
+let activeFilters = { users: [], roles: [], actions: [] };
 
 // --- HELPER: FIND TABLE BODY ---
 function getTableBody() {
-    // Tries to find the table body regardless of ID naming confusion
-    const el = document.getElementById('table-body') || document.getElementById('log-body');
-    if (!el) console.error("CRITICAL ERROR: Table Body ID not found (looked for 'table-body' and 'log-body')");
-    return el;
+    return document.getElementById('table-body') || document.getElementById('log-body');
 }
 
 // --- INIT ---
 window.onload = function() {
     const u = sessionStorage.getItem('signos_user');
     
-    // Auth Check handled by core, but we update UI
     if(document.getElementById('auth-user')) {
         document.getElementById('auth-user').innerText = u || "GUEST";
     }
     
-    // Load local file listener
+    // Local File Loader
     const fileInput = document.getElementById('file-input');
     if(fileInput) {
         fileInput.addEventListener('change', function(e) {
-            const file = e.target.files; 
+            const file = e.target.files[0]; 
             if (!file) return;
             
             document.getElementById('current-file-name').innerText = "Local: " + file.name;
@@ -49,7 +46,8 @@ function goBack() { window.history.back(); }
 
 async function loadArchiveList() {
     const list = document.getElementById('archive-list');
-    if(!list) return; // Safety
+    if(!list) return;
+    
     list.innerHTML = '<div class="text-center py-4"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div></div>';
 
     try {
@@ -61,12 +59,10 @@ async function loadArchiveList() {
             return;
         }
 
-        list.innerHTML = ""; // Clear loader
+        list.innerHTML = ""; 
 
         data.forEach((item, index) => {
             const div = document.createElement('div');
-            const isLive = item.type === "LIVE" || (item.name && item.name.includes("Current"));
-            
             div.className = `archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition ${index === 0 ? 'active' : ''}`;
             div.onclick = () => loadLogContent(item, div);
             
@@ -81,7 +77,6 @@ async function loadArchiveList() {
             list.appendChild(div);
         });
 
-        // Auto-load the first item
         if(data.length > 0) loadLogContent(data[0], list.firstChild);
 
     } catch (e) {
@@ -90,7 +85,6 @@ async function loadArchiveList() {
 }
 
 async function loadLogContent(item, element) {
-    // 1. Highlight UI
     document.querySelectorAll('.archive-item').forEach(el => el.classList.remove('active'));
     if(element) element.classList.add('active');
     
@@ -102,7 +96,7 @@ async function loadLogContent(item, element) {
     try {
         let content = "";
         
-        if (item.type === "LIVE" || item.file_id === "LIVE") {
+        if (item.type === "LIVE" || (item.file_id && item.file_id === "LIVE")) {
              const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
              const json = await res.json();
              if(json.status === "success") {
@@ -123,7 +117,7 @@ async function loadLogContent(item, element) {
     }
 }
 
-// --- PARSING ENGINE ---
+// --- PARSING ENGINE (FIXED) ---
 
 function parseLiveArray(data) {
     const tbody = getTableBody();
@@ -132,7 +126,7 @@ function parseLiveArray(data) {
         return;
     }
     
-    const rows = data.slice(1); // Skip Header
+    const rows = data.slice(1); 
     
     rawData = rows.map(r => ({
         time: r[0] ? new Date(r[0]).toLocaleString() : "N/A",
@@ -144,6 +138,7 @@ function parseLiveArray(data) {
         meta: r[6]
     }));
     
+    populateFilters();
     applyFilters();
 }
 
@@ -152,7 +147,10 @@ function parseLogs(content) {
 
     let lines = content.split('\n').filter(l => l.trim() !== "");
 
-    // 1. Remove Header (Safe Check)
+    // 1. FILTER GARBAGE (Fix for "====" issue)
+    lines = lines.filter(l => !l.startsWith("===="));
+
+    // 2. REMOVE HEADER
     if (lines.length > 0 && lines[0].startsWith("Timestamp")) {
         lines.shift();
     }
@@ -163,17 +161,17 @@ function parseLogs(content) {
         return;
     }
 
-    // 2. DETECT DELIMITER (Pipe vs Comma)
+    // 3. DETECT DELIMITER (Pipe vs Comma)
+    // We check the first DATA line now, which is safe because we removed "===="
     const firstLine = lines[0];
     const separator = firstLine.includes(" | ") ? " | " : ",";
 
-    // 3. Map to Objects
     rawData = lines.map(line => {
         let parts;
         if (separator === ",") {
-             parts = line.split(",");
+             parts = line.split(","); // Basic CSV
         } else {
-             parts = line.split(" | ");
+             parts = line.split(" | "); // Pipe format
         }
 
         if (parts.length < 5) return null;
@@ -189,19 +187,87 @@ function parseLogs(content) {
         };
     }).filter(x => x); 
 
+    populateFilters();
     applyFilters();
 }
 
-// --- FILTERING & SORTING ---
+// --- SCANNER & FILTERS ---
+
+function populateFilters() {
+    // Extracts unique values to allow user sorting/filtering
+    const getUnique = (key) => [...new Set(rawData.map(item => item[key]))].sort();
+
+    renderFilterChips('filter-users', getUnique('user'), 'users');
+    renderFilterChips('filter-actions', getUnique('action'), 'actions');
+    // Add more if your HTML has containers for them
+}
+
+function renderFilterChips(containerId, values, filterKey) {
+    const container = document.getElementById(containerId);
+    if (!container) return; // HTML element might not exist, which is fine
+
+    container.innerHTML = '';
+    values.forEach(val => {
+        const btn = document.createElement('button');
+        btn.innerText = val;
+        btn.className = "filter-chip bg-slate-50 border border-slate-200 text-slate-600 px-2 py-1 rounded text-[10px] font-bold mr-2 mb-2 hover:bg-blue-50";
+        
+        btn.onclick = () => {
+            // Toggle Filter Logic
+            const idx = activeFilters[filterKey].indexOf(val);
+            if (idx > -1) {
+                activeFilters[filterKey].splice(idx, 1);
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-slate-50', 'text-slate-600');
+            } else {
+                activeFilters[filterKey].push(val);
+                btn.classList.remove('bg-slate-50', 'text-slate-600');
+                btn.classList.add('bg-blue-600', 'text-white');
+            }
+            applyFilters();
+        };
+        container.appendChild(btn);
+    });
+}
+
+// --- SORTING & RENDERING ---
+
+function setSort(key) {
+    if (currentSort.key === key) {
+        currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.key = key;
+        currentSort.dir = 'asc';
+    }
+    applyFilters();
+}
 
 function applyFilters() {
-    displayData = rawData; 
+    // 1. Filter Data
+    displayData = rawData.filter(row => {
+        const matchUser = activeFilters.users.length === 0 || activeFilters.users.includes(row.user);
+        const matchAction = activeFilters.actions.length === 0 || activeFilters.actions.includes(row.action);
+        return matchUser && matchAction;
+    });
 
-    // Sort
+    // 2. Sort Data (Fixed to support ALL columns)
     displayData.sort((a, b) => {
-        const dateA = new Date(a.time);
-        const dateB = new Date(b.time);
-        return currentSort.dir === 'asc' ? dateA - dateB : dateB - dateA;
+        let valA = a[currentSort.key];
+        let valB = b[currentSort.key];
+
+        // Handle Dates
+        if (currentSort.key === 'time') {
+            valA = new Date(valA);
+            valB = new Date(valB);
+        } else {
+            // Handle Strings (Case Insensitive)
+            valA = String(valA).toLowerCase();
+            valB = String(valB).toLowerCase();
+        }
+
+        if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
+        return 0;
     });
 
     renderTable();
