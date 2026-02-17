@@ -172,7 +172,7 @@ function renderMenu(data, role) {
             const permKey = envPrefix + checkRole; // e.g. "Live_SALES"
             const isAllowed = String(val(mod, permKey)).toUpperCase() === 'TRUE';
 
-            if (!isAllowed && role !== 'SUPER') return;
+           if (!isAllowed && role !== 'SUPER' && role !== 'ADMIN') return;
 
             // 3. VERSION CHECK & GHOST PROTOCOL
             const devVer = val(mod, 'Dev_Ver');
