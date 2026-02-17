@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.17 - (formatDate fix)
+// SignOS API v6.18 - (Roadmap Logic Fix)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -13,7 +13,7 @@ const ARCHIVE_FOLDER_ID = "18MBPWajHdF4TNQ0g8Iz1n1-GT3nBrMj4";
 
 function doGet(e) {
   const params = e.parameter;
- 
+
   // 1. LOGGING (Async)
   if (params.ip) logActivity(params);
 
@@ -77,16 +77,18 @@ function getTicketDetails(ticketId) {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const parentSheet = ss.getSheetByName("SYS_Roadmap");
     const childSheet = ss.getSheetByName("SYS_Roadmap_Actions");
-   
+
     if(!parentSheet || !childSheet) return returnJSON({ error: "Missing DB Tabs" });
 
     const pData = parentSheet.getDataRange().getValues();
-    const pHeaders = pData;
+    // FIX: Headers should be the first row only
+    const pHeaders = pData[0]; 
     let parentObj = null;
 
     // Target Column A (Index 0) specifically
     for(let i=1; i<pData.length; i++) {
-      if(String(pData[i]) === String(ticketId)) {
+      // FIX: Use pData[i][0] to check ID, not the whole row
+      if(String(pData[i][0]) === String(ticketId)) {
         parentObj = {};
         pHeaders.forEach((h, idx) => parentObj[h] = pData[i][idx]);
         break;
@@ -96,7 +98,8 @@ function getTicketDetails(ticketId) {
     if(!parentObj) return returnJSON({ error: "Ticket not found" });
 
     const cData = childSheet.getDataRange().getValues();
-    const cHeaders = cData;
+    // FIX: Headers should be the first row only
+    const cHeaders = cData[0];
     const history = [];
 
     // Action Sheet: Column B (Index 1) is Parent_ID
@@ -107,6 +110,9 @@ function getTicketDetails(ticketId) {
         history.push(action);
       }
     }
+    
+    // Sort History: Newest First
+    history.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
     return returnJSON({ status: "success", ticket: parentObj, history: history });
   } catch(e) { return returnJSON({ error: e.toString() }); }
@@ -136,7 +142,8 @@ function addTicketAction(p) {
     if(p.new_status && p.new_status !== "") {
       const pData = parentSheet.getDataRange().getValues();
       for(let i=1; i<pData.length; i++) {
-        if(String(pData[i]) === String(p.id)) {
+        // FIX: Use pData[i][0] to check ID
+        if(String(pData[i][0]) === String(p.id)) {
           parentSheet.getRange(i+1, 8).setValue(p.new_status); // Col H (8) is Status
           break;
         }
@@ -188,12 +195,12 @@ function fetchConfig(tabName) {
     // Get Col A (Key) and Col B (Value)
     const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
     const config = {};
-    
-    data.forEach(row => { 
-        // FIX: Explicitly target  for Key and [1] for Value
-        const key = row[0]; 
-        const val = row[1]; 
-        if (key && String(key).trim() !== "") config[key] = val; 
+
+    data.forEach(row => {
+      // FIX: Explicitly target [0] for Key and [1] for Value
+      const key = row[0];
+      const val = row[1];
+      if (key && String(key).trim() !== "") config[key] = val;
     });
 
     return returnJSON(config);
@@ -221,7 +228,7 @@ function handleAuth(pin) {
     // 2. Find User
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][idx.p]) === String(pin)) {
-       
+
         // Check Active Status
         const isActive = (data[i][idx.active] === true || String(data[i][idx.active]).toUpperCase() === "TRUE");
         if (!isActive) return returnJSON({ status: "fail", message: "Account Disabled" });
@@ -268,7 +275,7 @@ function fetchArchiveIndex() {
         if (match) fileId = match[1];
         else if (url.includes("id=")) fileId = url.split("id=")[1];
       }
-      return { date: r, name: r[1], url: url, count: r[3], type: r[4], file_id: fileId };
+      return { date: r[0], name: r[1], url: url, count: r[3], type: r[4], file_id: fileId };
     }).reverse();
 
     return returnJSON(result);
@@ -300,9 +307,9 @@ function manualExport(pin) {
 
   // CHECK 2: Granular Permission
   const backupAccess = (authObj.permissions && authObj.permissions.backup) ? authObj.permissions.backup : "None";
- 
+
   if (backupAccess !== "Run" && backupAccess !== "Full") {
-      return returnJSON({ status: "error", message: "Access Denied: Backup Permissions Required" });
+    return returnJSON({ status: "error", message: "Access Denied: Backup Permissions Required" });
   }
 
   return returnJSON(processArchive(false));
@@ -334,7 +341,7 @@ function processArchive(isDestructive) {
 
     data.forEach(row => {
       // Change 'row' to 'row[0]'
-const dateStr = Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+      const dateStr = Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
       const cleanRow = [dateStr, row[1], row[2], row[3], row[4], row[5], row[6]].join(" | ");
       fileContent += cleanRow + "\n";
     });
@@ -427,9 +434,9 @@ function doPost(e) {
       // ROADMAP LINKING
       const ticketMatch = msg.match(/(RMP_[A-Za-z0-9_]+)/);
       if (ticketMatch && actionSheet) {
-        const ticketId = ticketMatch;
+        const ticketId = ticketMatch[0]; // Fix: ticketMatch is array, take first element
         const actionId = "GIT_" + Utilities.formatDate(ts, Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
-       
+
         actionSheet.appendRow([
           actionId,
           ticketId,
@@ -485,5 +492,3 @@ function syncVersionsFromGitHub() {
   }
   Logger.log("Sync Complete.");
 }
-
-
