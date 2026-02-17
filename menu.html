@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Menu v5.6</title>
+    <title>SignOS Menu v5.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
 </head>
@@ -114,6 +114,21 @@ window.onload = async function() {
     } else {
         envEl.innerHTML = `<span class="text-green-600 font-bold">● LIVE SYSTEM</span> | <span class="text-gray-400">${clientIP}</span>`;
     }
+   // --- IP ADDRESS FIX: Watch for the async fetch to complete ---
+    const ipWatcher = setInterval(() => {
+        if (clientIP !== 'Unknown') {
+            // Re-render the badge with the correct IP
+            if (IS_DEV_ENV) {
+                envEl.innerHTML = `<span class="text-orange-600 font-bold">⚠️ DEVELOPMENT ENVIRONMENT</span> | <span class="text-gray-400">${clientIP}</span>`;
+            } else {
+                envEl.innerHTML = `<span class="text-green-600 font-bold">● LIVE SYSTEM</span> | <span class="text-gray-400">${clientIP}</span>`;
+            }
+            clearInterval(ipWatcher); // Stop watching once found
+        }
+    }, 100); // Check every 100ms
+    
+    // Stop trying after 5 seconds (in case of ad-blockers)
+    setTimeout(() => clearInterval(ipWatcher), 5000);
 
    // Admin/Super Visibility
     if (role === 'ADMIN' || role === 'SUPER') {
