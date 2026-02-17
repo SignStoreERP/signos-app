@@ -1,6 +1,6 @@
 /**
- * SignOS Log Analyzer Logic (v2.16)
- * Handles API communication, parsing, filtering, and rendering for admin_viewer.html
+ * SignOS Log Analyzer Logic (v2.17)
+ * Fixes: Header detection crash (startsWith) and Data Column mapping.
  */
 
 let rawData = [];
@@ -11,7 +11,6 @@ let activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
 // --- INIT ---
 window.onload = function() {
     const u = sessionStorage.getItem('signos_user');
-    const r = sessionStorage.getItem('signos_role');
     
     // Auth Check handled by core, but we update UI
     if(document.getElementById('auth-user')) {
@@ -35,7 +34,7 @@ window.onload = function() {
     loadArchiveList();
 };
 
-function goBack() { window.location.href = 'menu.html'; }
+function goBack() { window.history.back(); }
 
 // --- API FETCHING ---
 
@@ -99,6 +98,8 @@ function parseLogs(text) {
 
     // Skip Header if present (Timestamp | IP...)
     let startIdx = 0;
+    
+    // FIX 1: Check lines, not lines itself
     if (lines.length > 0 && lines.startsWith("Timestamp")) startIdx = 2;
 
     for (let i = startIdx; i < lines.length; i++) {
@@ -109,16 +110,17 @@ function parseLogs(text) {
         const cols = line.split('|').map(c => c.trim());
 
         if (cols.length >= 6) {
+            // FIX 2: Target specific array indices
             const actionDisplay = cols[1] ? cols[1].toUpperCase() : "---";
             const metaRaw = cols.slice(6).join('|') || "{}";
 
             rawData.push({
-                time: cols,
-                ip: cols[2],
-                user: cols[3],
-                role: cols[4],
-                action: actionDisplay,
-                target: cols[5],
+                time: cols,   // 1st Column
+                ip: cols[2],     // 2nd Column
+                user: cols[3],   // 3rd Column
+                role: cols[4],   // 4th Column
+                action: actionDisplay, // 5th Column
+                target: cols[5], // 6th Column
                 meta: metaRaw,
                 raw: line.toLowerCase()
             });
