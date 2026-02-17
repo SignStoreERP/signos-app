@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.18 - (Roadmap Logic Fix)
+// SignOS API v6.19 - (Live Logs Added)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -31,6 +31,8 @@ function doGet(e) {
   if (params.req === "manual_archive") return manualExport(params.pin);
   if (params.req === "get_archive_index") return fetchArchiveIndex();
   if (params.req === "get_log_content") return fetchLogFile(params.file_id);
+  // --- NEW: LIVE LOG FETCH ---
+  if (params.req === "get_live_logs") return fetchLiveLogs();
 
   // Default: Config Fetch
   return fetchConfig(params.tab || "PROD_Yard_Signs");
@@ -82,7 +84,7 @@ function getTicketDetails(ticketId) {
 
     const pData = parentSheet.getDataRange().getValues();
     // FIX: Headers should be the first row only
-    const pHeaders = pData[0]; 
+    const pHeaders = pData[0];
     let parentObj = null;
 
     // Target Column A (Index 0) specifically
@@ -110,7 +112,7 @@ function getTicketDetails(ticketId) {
         history.push(action);
       }
     }
-    
+
     // Sort History: Newest First
     history.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
@@ -287,6 +289,20 @@ function fetchLogFile(fileId) {
     if (!fileId) return returnJSON({ status: "error", message: "No file ID provided" });
     const file = DriveApp.getFileById(fileId);
     return returnJSON({ status: "success", content: file.getBlob().getDataAsString() });
+  } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
+
+function fetchLiveLogs() {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Access_Logs");
+    if (!sheet) return returnJSON({ status: "error", message: "Log sheet not found" });
+
+    // Get all data including headers (Row 1)
+    const data = sheet.getDataRange().getValues();
+
+    // Return raw array (Frontend will handle formatting)
+    return returnJSON({ status: "success", logs: data });
   } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
 }
 
