@@ -3,27 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yard Signs (Modular Test)</title>
+    <title>Yard Signs (Modular Test v2)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
-    <!-- IMPORT THE NEW PHYSICS ENGINE -->
     <script src="logic_yard_test.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans p-8">
 
     <div class="max-w-md mx-auto bg-white shadow-xl rounded-xl border border-gray-200 overflow-hidden">
         
-        <!-- HEADER -->
         <div class="bg-purple-900 text-white p-4 text-center">
-            <h1 class="text-xl font-black">🧪 TEST LAB: Yard Signs</h1>
-            <p class="text-[10px] uppercase opacity-75">Running on Modular Physics Engine</p>
+            <h1 class="text-xl font-black">🧪 TEST LAB: Yard Signs v2</h1>
+            <p class="text-[10px] uppercase opacity-75">Full Feature Parity Test</p>
         </div>
 
-        <!-- INPUTS -->
         <div class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <div><label class="font-bold text-xs">Qty</label><input type="number" id="qty" value="10" class="w-full border p-2 font-bold text-lg" oninput="runCalc()"></div>
-                <div><label class="font-bold text-xs">Sides</label><select id="sides" class="w-full border p-2 font-bold" onchange="runCalc()"><option value="1">Single</option><option value="2">Double</option></select></div>
+                <div><label class="font-bold text-xs">Sides</label><select id="sides" class="w-full border p-2 font-bold h-[46px]" onchange="runCalc()"><option value="1">Single</option><option value="2">Double</option></select></div>
             </div>
             
             <div><label class="font-bold text-xs">Files</label><input type="number" id="files" value="1" class="w-full border p-2 font-bold text-lg" oninput="runCalc()"></div>
@@ -32,26 +29,58 @@
                 <input type="checkbox" id="stakes" checked onchange="runCalc()"> <label class="font-bold text-xs">Include Stakes</label>
             </div>
             
-            <div class="flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-100">
-                <input type="checkbox" id="design" checked onchange="runCalc()"> <label class="font-bold text-xs text-purple-900">Include Design Fee</label>
+            <!-- FEE TOGGLES -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 bg-purple-50 rounded border border-purple-100">
+                    <span class="font-bold text-xs text-purple-900">Include Design Fee?</span>
+                    <input type="checkbox" id="design" checked onchange="runCalc()" class="w-5 h-5">
+                </div>
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
+                    <span class="font-bold text-xs text-gray-600">Charge Setup Per File?</span>
+                    <input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-5 h-5">
+                </div>
             </div>
         </div>
 
-        <!-- RESULTS (Read-Only) -->
-        <div class="bg-gray-50 p-6 border-t border-gray-200">
-            <div class="flex justify-between items-end mb-2">
-                <span class="text-xs font-bold text-gray-400">UNIT PRICE</span>
-                <span class="text-xl font-bold text-gray-800" id="ui-unit">---</span>
-            </div>
-            <div class="flex justify-between items-end mb-4">
-                <span class="text-xs font-bold text-gray-400">TOTAL</span>
-                <span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
+        <!-- RESULTS -->
+        <div class="bg-white p-6 border-t border-gray-200">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold text-gray-400 uppercase">Base Unit Price</span>
+                <span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
             </div>
 
-            <div class="border-t border-gray-200 pt-4 text-xs space-y-1 text-gray-500">
-                <div class="flex justify-between"><span>Internal Cost:</span><span class="font-bold text-gray-700" id="ui-cost">---</span></div>
-                <div class="flex justify-between"><span>Margin:</span><span class="font-bold text-green-600" id="ui-margin">---</span></div>
+            <!-- DISCOUNT TABLE -->
+            <div class="mb-4 text-right">
+                <button onclick="document.getElementById('disc-table').classList.toggle('hidden')" class="text-[10px] font-bold text-blue-600 uppercase">Show Volume Discounts ▼</button>
+                <div id="disc-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
+                    <table class="w-full text-right">
+                        <thead class="text-gray-400 text-[9px] uppercase"><tr><th class="pr-4">Qty</th><th class="pr-4">Base Sign</th><th>You Pay</th></tr></thead>
+                        <tbody id="tier-rows" class="font-bold text-gray-700"></tbody>
+                    </table>
+                </div>
             </div>
+
+            <div class="border-t border-gray-100 my-3"></div>
+
+            <!-- LINE ITEMS -->
+            <div class="space-y-1 text-xs text-gray-600">
+                <div class="flex justify-between"><span>Prints:</span><span id="ui-print" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between"><span>Stakes:</span><span id="ui-stakes" class="font-bold">$0.00</span></div>
+                <div class="border-t border-dashed border-gray-200 my-1 pt-1"></div>
+                <div class="flex justify-between text-blue-700"><span>Setup (<span id="lbl-setup">Flat</span>):</span><span id="ui-setup" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between text-purple-700" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
+            </div>
+
+            <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
+                <div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span><div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded ml-1">MIN APPLIED</div></div>
+                <span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
+            </div>
+        </div>
+
+        <!-- DESCRIPTION GENERATOR -->
+        <div class="bg-gray-50 p-4 border-t border-gray-200">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
         </div>
 
     </div>
@@ -60,8 +89,8 @@
     let backendData = {};
 
     window.onload = async function() {
-        // Fetch the TEST TAB from Backend
         try {
+            // Using the TEST tab we created
             const res = await fetch(`${SCRIPT_URL}?tab=TEST_Yard_Logic&ip=${clientIP}&user=TEST&role=ADMIN&req=view_module`);
             backendData = await res.json();
             runCalc();
@@ -78,19 +107,41 @@
             files: parseFloat(document.getElementById('files').value) || 1,
             hasStakes: document.getElementById('stakes').checked,
             incDesign: document.getElementById('design').checked,
-            setupPerFile: false // Hardcoded for test simplicity
+            setupPerFile: document.getElementById('setup-per-file').checked
         };
 
-        // 2. RUN ENGINE (Imported from logic_yard_test.js)
+        // 2. RUN ENGINE
         const result = calculateYardSign(inputs, backendData);
+        const ret = result.retail;
 
         // 3. Update UI
         const fmt = (n) => "$" + n.toFixed(2);
         
-        document.getElementById('ui-unit').innerText = fmt(result.retail.unitPrice);
-        document.getElementById('ui-total').innerText = fmt(result.retail.grandTotal);
-        document.getElementById('ui-cost').innerText = fmt(result.cost.total);
-        document.getElementById('ui-margin').innerText = (result.metrics.margin * 100).toFixed(1) + "%";
+        document.getElementById('ui-unit').innerText = ret.isCustom ? "CUSTOM" : fmt(ret.unitPrice);
+        document.getElementById('ui-total').innerText = ret.isCustom ? "CONTACT US" : fmt(ret.grandTotal);
+        
+        // Line Items
+        document.getElementById('ui-print').innerText = fmt(ret.printTotal);
+        document.getElementById('ui-stakes').innerText = fmt(ret.stakeTotal);
+        document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
+        document.getElementById('ui-design').innerText = fmt(ret.designFee);
+        
+        document.getElementById('lbl-setup').innerText = inputs.setupPerFile ? `${inputs.files} Files` : "Flat";
+        document.getElementById('row-design').classList.toggle('hidden', ret.designFee === 0);
+        document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+
+        // Discount Table
+        let rowsHtml = "";
+        ret.tiers.forEach(tier => {
+            if(tier.base === 0) return;
+            rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+</td><td class="pr-4 py-1 text-gray-400">$${tier.base.toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
+        });
+        document.getElementById('tier-rows').innerHTML = rowsHtml;
+
+        // Job Description
+        const sideTxt = inputs.sides === 1 ? "ONE" : "TWO";
+        const stakeTxt = inputs.hasStakes ? "with 10\" x 24\" wire H-frame step stakes" : "NO Stakes";
+        document.getElementById('job-desc').value = `(x${inputs.qty}) 24" x 18" 4mm Coroplast Signs with direct print latex ink on ${sideTxt} side(s) ${stakeTxt}.`;
     }
 </script>
 </body>
