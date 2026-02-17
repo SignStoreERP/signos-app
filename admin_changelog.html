@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Activity v1.4 | SignOS</title>
+    <title>System Activity v1.5 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -12,16 +12,28 @@
         .custom-scroll::-webkit-scrollbar { width: 8px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Filter Button Styles */
+        .filter-btn { opacity: 0.5; transition: all 0.2s; border: 1px solid transparent; }
+        .filter-btn:hover { opacity: 1; }
+        .filter-btn.active { opacity: 1; border-color: rgba(255,255,255,0.3); background-color: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
     <!-- HEADER -->
     <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow-md z-30 sticky top-0">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-6">
             <h1 class="text-xl font-black tracking-tight">System Activity Log</h1>
-            <span class="bg-blue-600 text-[10px] font-bold px-2 py-0.5 rounded text-white uppercase">Live Feed</span>
+            
+            <!-- NEW: Filter Toggles -->
+            <div class="flex bg-gray-800 rounded p-1 gap-1">
+                <button onclick="setFilter('ALL')" id="btn-all" class="filter-btn active text-[10px] font-bold px-3 py-1 rounded text-white uppercase">All</button>
+                <button onclick="setFilter('LIVE')" id="btn-live" class="filter-btn text-[10px] font-bold px-3 py-1 rounded text-green-400 uppercase">Live Only</button>
+                <button onclick="setFilter('DEV')" id="btn-dev" class="filter-btn text-[10px] font-bold px-3 py-1 rounded text-orange-400 uppercase">Dev Only</button>
+            </div>
         </div>
+
         <div class="flex gap-4 text-xs font-bold items-center">
             <span class="text-gray-400">USER: <span class="text-white uppercase" id="auth-user">---</span></span>
             <span class="text-gray-600">|</span>
@@ -31,7 +43,7 @@
 
     <!-- MAIN FEED -->
     <div class="max-w-4xl mx-auto w-full p-8 flex-1">
-        
+
         <!-- SUMMARY STATS -->
         <div class="grid grid-cols-3 gap-4 mb-8">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
@@ -59,6 +71,9 @@
     </div>
 
 <script>
+    let allData = [];
+    let currentFilter = 'ALL';
+
     window.onload = function() {
         const u = sessionStorage.getItem('signos_user') || 'Guest';
         document.getElementById('auth-user').innerText = u;
@@ -67,31 +82,41 @@
 
     function goBack() { window.history.back(); }
 
-    // SAFETY VALVE
     function val(obj, key) {
         if (!obj) return "";
         return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
+    }
+
+    function setFilter(mode) {
+        currentFilter = mode;
+        // Update UI
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + mode.toLowerCase()).classList.add('active');
+        // Re-render
+        renderTimeline(allData);
     }
 
     async function loadHistory() {
         try {
             const response = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Changelog&ip=${clientIP}`);
             const data = await response.json();
-
+            
             if (!data || data.length === 0) {
                 document.getElementById('feed-container').innerHTML = '<div class="text-center text-gray-400">No records found.</div>';
                 return;
             }
 
+            // Sort: Newest First
+            data.sort((a, b) => new Date(val(b, 'Timestamp')) - new Date(val(a, 'Timestamp')));
+            
+            allData = data; // Store global for filtering
+
             // Stats Logic
             document.getElementById('stat-total').innerText = data.length;
             const authors = [...new Set(data.map(i => val(i, 'Author')))].join(", ");
             document.getElementById('stat-authors').innerText = authors;
-            
-            // Sort: Newest First
-            data.sort((a, b) => new Date(val(b, 'Timestamp')) - new Date(val(a, 'Timestamp')));
-            
-            // Fix "Invalid Date": Use first item in array
+
+            // BUG FIX: Select first item of array, not the array itself
             const latest = data; 
             if (latest) {
                 const ts = val(latest, 'Timestamp');
@@ -109,47 +134,53 @@
         }
     }
 
-    function renderTimeline(rows) {
+    function renderTimeline(data) {
         const container = document.getElementById('feed-container');
         container.innerHTML = "";
 
-        rows.forEach(row => {
-            // SAFE DATA EXTRACTION
+        // FILTER LOGIC
+        const filtered = data.filter(row => {
+            const env = val(row, 'Environment') || "DEV";
+            if (currentFilter === 'ALL') return true;
+            return env === currentFilter;
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="text-center py-10 text-gray-400 text-xs uppercase">No matching commits found.</div>';
+            return;
+        }
+
+        filtered.forEach(row => {
             const ts = val(row, 'Timestamp');
             const author = val(row, 'Author');
             const msg = val(row, 'Message');
             const hash = val(row, 'Commit Hash');
             const link = val(row, 'GitHub Link');
-            const env = val(row, 'Environment') || "DEV";
+            // If backend header is missing, this defaults to DEV
+            const env = val(row, 'Environment') || "DEV"; 
 
             const d = new Date(ts);
             const dateStr = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
             const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Twin-Engine Badge Logic
+
+            // Badge Logic
             const isLive = env === 'LIVE';
             const badgeColor = isLive ? "bg-green-100 text-green-800 border-green-200" : "bg-orange-100 text-orange-800 border-orange-200";
             const icon = isLive ? "🚀" : "🛠️";
             const borderColor = isLive ? "border-green-500 shadow-green-100" : "border-blue-100";
 
-            // Highlight Ticket IDs (e.g., RMP_OPS_01)
+            // Highlight Ticket IDs
             const fmtMsg = msg.replace(/(RMP_[A-Za-z0-9_]+)/g, '<span class="bg-yellow-100 text-yellow-800 px-1 rounded font-bold border border-yellow-200 text-[10px] ml-1">$1</span>');
 
             const item = document.createElement('div');
             item.className = "timeline-item relative pl-12 py-2";
-            
             item.innerHTML = `
-                <!-- Vertical Line -->
                 <div class="timeline-line"></div>
-                
-                <!-- Icon Badge -->
                 <div class="absolute left-0 top-3 w-12 flex justify-center z-10">
                     <div class="w-10 h-10 bg-white border-2 ${borderColor} rounded-full flex items-center justify-center shadow-sm">
                         <span class="text-lg">${icon}</span>
                     </div>
                 </div>
-
-                <!-- Content Card -->
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition group">
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex items-center gap-2">
@@ -157,12 +188,10 @@
                             <span class="text-[9px] font-bold px-2 py-0.5 rounded border ${badgeColor}">${env}</span>
                         </div>
                         <div class="text-right">
-                             <span class="text-[10px] font-bold text-gray-400 block">${dateStr} • ${timeStr}</span>
+                            <span class="text-[10px] font-bold text-gray-400 block">${dateStr} • ${timeStr}</span>
                         </div>
                     </div>
-                    
                     <p class="text-sm text-gray-700 font-medium leading-relaxed">${fmtMsg}</p>
-                    
                     <div class="mt-3 flex justify-between items-center border-t border-gray-50 pt-2">
                         <span class="text-[9px] font-mono text-gray-400 bg-gray-50 px-1 rounded">#${hash}</span>
                         <a href="${link}" target="_blank" class="text-[9px] font-bold text-blue-400 hover:text-blue-600 uppercase hover:underline">View Code ↗</a>
