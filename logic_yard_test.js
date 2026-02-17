@@ -1,9 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Yard Signs
- * Decoupled from HTML. Used by Calculator AND Simulator.
- * 
- * @param {Object} inputs - { qty, sides, files, hasStakes, incDesign, setupPerFile }
- * @param {Object} data - The JSON object returned from SignOS Backend
+ * PURE PHYSICS ENGINE: Yard Signs (v2)
+ * Added granular return values for UI line items.
  */
 function calculateYardSign(inputs, data) {
     
@@ -15,7 +12,7 @@ function calculateYardSign(inputs, data) {
     // Tier Logic
     let appliedBase = baseSS;
     let i = 1;
-    const tierLog = []; // For the discount table
+    const tierLog = []; 
     
     while(data[`Tier_${i}_Qty`]) {
         const tQty = parseFloat(data[`Tier_${i}_Qty`]);
@@ -23,18 +20,21 @@ function calculateYardSign(inputs, data) {
         
         if (inputs.qty >= tQty) appliedBase = tPrice;
         
-        // Log for UI Table
-        tierLog.push({ q: tQty, p: tPrice, total: tPrice + (inputs.sides===2?adderDS:0) + (inputs.hasStakes?stakePrice:0) });
+        // Return full row price for the table (Base + Sides + Stakes)
+        const rowUnit = tPrice + (inputs.sides===2?adderDS:0) + (inputs.hasStakes?stakePrice:0);
+        tierLog.push({ q: tQty, base: tPrice, unit: rowUnit });
         i++;
     }
 
     // Custom Quote Trigger
     const isCustom = (appliedBase === 0);
 
-    // Unit Calculation
-    let unitPrice = appliedBase;
-    if (inputs.sides === 2) unitPrice += adderDS;
-    if (inputs.hasStakes) unitPrice += stakePrice;
+    // Component Calculations (Granular for Line Items)
+    const unitPrint = appliedBase + (inputs.sides === 2 ? adderDS : 0);
+    const totalPrint = unitPrint * inputs.qty;
+    
+    const unitStake = inputs.hasStakes ? stakePrice : 0;
+    const totalStake = unitStake * inputs.qty;
 
     // Fees
     const feeSetupBase = parseFloat(data.Retail_Fee_Setup || 15.00);
@@ -43,13 +43,12 @@ function calculateYardSign(inputs, data) {
     const totalSetup = inputs.setupPerFile ? (feeSetupBase * inputs.files) : feeSetupBase;
     const totalDesign = inputs.incDesign ? (feeDesignBase * inputs.files) : 0;
     
-    const productTotal = unitPrice * inputs.qty;
-    let grandTotal = productTotal + totalSetup + totalDesign;
+    const grandTotalRaw = totalPrint + totalStake + totalSetup + totalDesign;
 
     // Min Order
     const minOrder = parseFloat(data.Retail_Min_Order || 75);
-    const isMinApplied = grandTotal < minOrder;
-    if (isMinApplied) grandTotal = minOrder;
+    const grandTotal = Math.max(grandTotalRaw, minOrder);
+    const isMinApplied = grandTotalRaw < minOrder;
 
     // --- 2. COST ENGINE (IN-HOUSE) ---
     const bulkTrigger = parseFloat(data.Bulk_Qty_Trigger || 1100);
@@ -65,13 +64,13 @@ function calculateYardSign(inputs, data) {
     const totalInk = totalArea * parseFloat(data.Cost_Ink_Base || 0.16);
     
     // Stakes
-    const costStakeUnit = inputs.hasStakes ? parseFloat(data.Cost_Stake || 0.93) : 0;
-    const totalStake = costStakeUnit * inputs.qty;
+    const costStakeUnit = inputs.hasStakes ? parseFloat(data.Cost_Stake || 0.65) : 0;
+    const totalStakeCost = costStakeUnit * inputs.qty;
 
     // Production Time
     const bedCap = parseFloat(data.Printer_Bed_Capacity || 3);
     const speed = parseFloat(data.Machine_Speed_LF_Hr || 25);
-    const lfPerSet = 2.0; // 24" high / 12
+    const lfPerSet = 2.0; 
     const totalRunHrs = ((lfPerSet / bedCap / speed) * inputs.sides) * inputs.qty;
     
     const costMachine = totalRunHrs * parseFloat(data.Rate_Machine || 45);
@@ -80,13 +79,14 @@ function calculateYardSign(inputs, data) {
     const setupHrs = (parseFloat(data.Time_Setup_Base||15) + (parseFloat(data.Time_Setup_Adder||2) * inputs.files)) / 60;
     const costSetup = setupHrs * parseFloat(data.Rate_Operator || 25);
 
-    const totalCost = totalMat + totalInk + totalStake + costMachine + costOp + costSetup;
+    const totalCost = totalMat + totalInk + totalStakeCost + costMachine + costOp + costSetup;
 
-    // Return Pure Data Object
+    // Return Rich Data Object
     return {
         retail: {
-            unitPrice: unitPrice,
-            productTotal: productTotal,
+            unitPrice: (totalPrint + totalStake) / inputs.qty, // Base Unit (No Fees)
+            printTotal: totalPrint,
+            stakeTotal: totalStake,
             setupFee: totalSetup,
             designFee: totalDesign,
             grandTotal: grandTotal,
@@ -95,12 +95,7 @@ function calculateYardSign(inputs, data) {
             tiers: tierLog
         },
         cost: {
-            total: totalCost,
-            material: totalMat,
-            ink: totalInk,
-            stake: totalStake,
-            labor: costOp + costSetup,
-            machine: costMachine
+            total: totalCost
         },
         metrics: {
             margin: (grandTotal - totalCost) / grandTotal
