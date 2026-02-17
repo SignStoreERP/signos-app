@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Activity v1.5 | SignOS</title>
+    <title>System Activity v1.6 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -13,25 +13,18 @@
         .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* Filter Button Styles */
-        .filter-btn { opacity: 0.5; transition: all 0.2s; border: 1px solid transparent; }
-        .filter-btn:hover { opacity: 1; }
-        .filter-btn.active { opacity: 1; border-color: rgba(255,255,255,0.3); background-color: rgba(255,255,255,0.1); }
+        /* Active State Styles for Buttons */
+        .btn-filter.active-all { background-color: #1f2937; color: white; border-color: #1f2937; }
+        .btn-filter.active-live { background-color: #16a34a; color: white; border-color: #16a34a; }
+        .btn-filter.active-dev { background-color: #f97316; color: white; border-color: #f97316; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
     <!-- HEADER -->
     <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow-md z-30 sticky top-0">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
             <h1 class="text-xl font-black tracking-tight">System Activity Log</h1>
-            
-            <!-- NEW: Filter Toggles -->
-            <div class="flex bg-gray-800 rounded p-1 gap-1">
-                <button onclick="setFilter('ALL')" id="btn-all" class="filter-btn active text-[10px] font-bold px-3 py-1 rounded text-white uppercase">All</button>
-                <button onclick="setFilter('LIVE')" id="btn-live" class="filter-btn text-[10px] font-bold px-3 py-1 rounded text-green-400 uppercase">Live Only</button>
-                <button onclick="setFilter('DEV')" id="btn-dev" class="filter-btn text-[10px] font-bold px-3 py-1 rounded text-orange-400 uppercase">Dev Only</button>
-            </div>
         </div>
 
         <div class="flex gap-4 text-xs font-bold items-center">
@@ -44,23 +37,34 @@
     <!-- MAIN FEED -->
     <div class="max-w-4xl mx-auto w-full p-8 flex-1">
 
-        <!-- SUMMARY STATS -->
-        <div class="grid grid-cols-3 gap-4 mb-8">
+        <!-- DASHBOARD GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            
+            <!-- Card 1: Total -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                 <div class="text-xs font-bold text-gray-400 uppercase">Total Commits</div>
                 <div class="text-2xl font-black text-gray-800" id="stat-total">0</div>
             </div>
+
+            <!-- Card 2: Last Update -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                 <div class="text-xs font-bold text-gray-400 uppercase">Last Update</div>
                 <div class="text-sm font-bold text-blue-600 mt-1" id="stat-last">---</div>
             </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                <div class="text-xs font-bold text-gray-400 uppercase">Active Contributors</div>
-                <div class="text-lg font-bold text-gray-800" id="stat-authors">---</div>
+
+            <!-- Card 3: FILTER CONTROLS (Replaces Contributors) -->
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-center">
+                <div class="text-[10px] font-bold text-gray-400 uppercase mb-2 text-center">Filter Environment</div>
+                <div class="flex gap-2">
+                    <button onclick="setFilter('ALL')" id="btn-all" class="btn-filter active-all flex-1 text-[10px] font-bold py-2 rounded border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100 transition uppercase">All</button>
+                    <button onclick="setFilter('LIVE')" id="btn-live" class="btn-filter flex-1 text-[10px] font-bold py-2 rounded border border-gray-200 bg-gray-50 text-gray-500 hover:bg-green-50 hover:text-green-600 transition uppercase">Live</button>
+                    <button onclick="setFilter('DEV')" id="btn-dev" class="btn-filter flex-1 text-[10px] font-bold py-2 rounded border border-gray-200 bg-gray-50 text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition uppercase">Dev</button>
+                </div>
             </div>
+
         </div>
 
-        <!-- TIMELINE CONTAINER -->
+        <!-- TIMELINE -->
         <div id="feed-container" class="space-y-0 pb-10">
             <div class="text-center py-12">
                 <div class="inline-block w-8 h-8 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-2"></div>
@@ -87,13 +91,22 @@
         return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
     }
 
+    // FILTER LOGIC
     function setFilter(mode) {
         currentFilter = mode;
-        // Update UI
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + mode.toLowerCase()).classList.add('active');
-        // Re-render
-        renderTimeline(allData);
+        
+        // Reset Buttons
+        document.querySelectorAll('.btn-filter').forEach(b => {
+            b.className = "btn-filter flex-1 text-[10px] font-bold py-2 rounded border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100 transition uppercase";
+        });
+
+        // Activate Selected
+        const btn = document.getElementById('btn-' + mode.toLowerCase());
+        if(mode === 'ALL') btn.classList.add('active-all');
+        if(mode === 'LIVE') btn.classList.add('active-live');
+        if(mode === 'DEV') btn.classList.add('active-dev');
+
+        renderTimeline();
     }
 
     async function loadHistory() {
@@ -109,14 +122,12 @@
             // Sort: Newest First
             data.sort((a, b) => new Date(val(b, 'Timestamp')) - new Date(val(a, 'Timestamp')));
             
-            allData = data; // Store global for filtering
+            allData = data; // Save to global
 
-            // Stats Logic
+            // Update Stats
             document.getElementById('stat-total').innerText = data.length;
-            const authors = [...new Set(data.map(i => val(i, 'Author')))].join(", ");
-            document.getElementById('stat-authors').innerText = authors;
 
-            // BUG FIX: Select first item of array, not the array itself
+            // Fix "Last Update" Bug
             const latest = data; 
             if (latest) {
                 const ts = val(latest, 'Timestamp');
@@ -127,19 +138,19 @@
                 }
             }
 
-            renderTimeline(data);
+            renderTimeline();
 
         } catch (e) {
             document.getElementById('feed-container').innerHTML = `<div class="bg-red-50 text-red-500 p-4 rounded text-center text-xs font-bold">Error: ${e.message}</div>`;
         }
     }
 
-    function renderTimeline(data) {
+    function renderTimeline() {
         const container = document.getElementById('feed-container');
         container.innerHTML = "";
 
-        // FILTER LOGIC
-        const filtered = data.filter(row => {
+        // Filter Data based on selection
+        const filtered = allData.filter(row => {
             const env = val(row, 'Environment') || "DEV";
             if (currentFilter === 'ALL') return true;
             return env === currentFilter;
@@ -156,7 +167,6 @@
             const msg = val(row, 'Message');
             const hash = val(row, 'Commit Hash');
             const link = val(row, 'GitHub Link');
-            // If backend header is missing, this defaults to DEV
             const env = val(row, 'Environment') || "DEV"; 
 
             const d = new Date(ts);
