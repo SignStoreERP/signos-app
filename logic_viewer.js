@@ -1,14 +1,12 @@
 /**
- * SignOS Log Analyzer Logic (v2.24)
- * Fixes: Missing filters (Role, IP, Target) restored.
- * Retains: "====" parsing fix and ID Agnostic table finding from v2.23.
+ * SignOS Log Analyzer Logic (v2.25)
+ * Feature: Auto-loads 'Active Session' logs by default (Live Injection).
+ * Includes: Safety check for search filter to prevent crashes if UI is missing.
  */
 
 let rawData = [];
 let displayData = [];
 let currentSort = { key: 'time', dir: 'desc' };
-
-// 1. Initialize ALL filter categories
 let activeFilters = { users: [], roles: [], actions: [], targets: [], ips: [] };
 
 // --- HELPER: FIND TABLE BODY ---
@@ -53,24 +51,41 @@ async function loadArchiveList() {
 
     try {
         const response = await fetch(`${SCRIPT_URL}?req=get_archive_index`);
-        const data = await response.json();
+        let data = await response.json();
         
-        if (!data || data.length === 0) {
-            list.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">No archives found.</div>';
-            return;
-        }
+        if (!data) data = [];
+
+        // --- NEW: INJECT LIVE OPTION AT TOP ---
+        const liveItem = { 
+            date: "NOW", 
+            name: "⚡ Active Session Logs", 
+            type: "LIVE", 
+            count: "Live", 
+            file_id: "LIVE" 
+        };
+        
+        // Force Live Item to the top of the array (Index 0)
+        data.unshift(liveItem);
+        // -------------------------------
 
         list.innerHTML = ""; 
 
         data.forEach((item, index) => {
             const div = document.createElement('div');
+            // Highlight the first item (Live) by default
             div.className = `archive-item p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition ${index === 0 ? 'active' : ''}`;
+            
             div.onclick = () => loadLogContent(item, div);
             
+            // Custom badge for Live vs Archive
+            const badgeClass = item.type === 'LIVE' 
+                ? 'bg-green-100 text-green-600 border-green-200' 
+                : (item.type === 'AUTO' ? 'bg-gray-100 text-gray-500' : 'bg-purple-100 text-purple-600');
+
             div.innerHTML = `
                 <div class="flex justify-between items-center mb-1">
                     <span class="font-bold text-xs text-gray-700">${item.date}</span>
-                    <span class="text-[9px] px-1.5 py-0.5 rounded ${item.type === 'AUTO' ? 'bg-gray-100 text-gray-500' : 'bg-purple-100 text-purple-600'}">${item.type}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded border ${badgeClass}">${item.type}</span>
                 </div>
                 <div class="text-[10px] text-gray-400 truncate">${item.name}</div>
                 <div class="text-[9px] text-gray-300 mt-1">${item.count || '0'} rows</div>
@@ -78,9 +93,11 @@ async function loadArchiveList() {
             list.appendChild(div);
         });
 
+        // Auto-load the first item (which is now LIVE)
         if(data.length > 0) loadLogContent(data[0], list.firstChild);
 
     } catch (e) {
+        console.error(e);
         list.innerHTML = `<div class="text-xs text-red-500 text-center py-4">Error loading index</div>`;
     }
 }
@@ -97,6 +114,7 @@ async function loadLogContent(item, element) {
     try {
         let content = "";
         
+        // CHECK IF LIVE REQUEST
         if (item.type === "LIVE" || (item.file_id && item.file_id === "LIVE")) {
              const res = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
              const json = await res.json();
@@ -105,6 +123,7 @@ async function loadLogContent(item, element) {
                  return;
              }
         } else {
+            // ARCHIVE REQUEST
             const response = await fetch(`${SCRIPT_URL}?req=get_log_content&file_id=${item.file_id}`);
             const data = await response.json();
             content = data.content;
@@ -123,11 +142,11 @@ async function loadLogContent(item, element) {
 function parseLiveArray(data) {
     const tbody = getTableBody();
     if(!data || data.length < 2) {
-        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No logs found.</td></tr>';
+        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">No active logs found today.</td></tr>';
         return;
     }
     
-    const rows = data.slice(1); 
+    const rows = data.slice(1); // Skip Header
     
     rawData = rows.map(r => ({
         time: r[0] ? new Date(r[0]).toLocaleString() : "N/A",
@@ -148,7 +167,7 @@ function parseLogs(content) {
 
     let lines = content.split('\n').filter(l => l.trim() !== "");
 
-    // 1. FILTER GARBAGE (The "====" fix)
+    // 1. FILTER GARBAGE
     lines = lines.filter(l => !l.startsWith("===="));
 
     // 2. REMOVE HEADER
@@ -191,17 +210,16 @@ function parseLogs(content) {
     applyFilters();
 }
 
-// --- SCANNER & FILTERS (UPDATED) ---
+// --- SCANNER & FILTERS ---
 
 function populateFilters() {
     const getUnique = (key) => [...new Set(rawData.map(item => item[key]))].sort();
 
-    // 2. Added calls for Role, Target, and IP
     renderFilterChips('filter-users', getUnique('user'), 'users');
-    renderFilterChips('filter-roles', getUnique('role'), 'roles'); // NEW
+    renderFilterChips('filter-roles', getUnique('role'), 'roles');
     renderFilterChips('filter-actions', getUnique('action'), 'actions');
-    renderFilterChips('filter-targets', getUnique('target'), 'targets'); // NEW
-    renderFilterChips('filter-ips', getUnique('ip'), 'ips'); // NEW
+    renderFilterChips('filter-targets', getUnique('target'), 'targets');
+    renderFilterChips('filter-ips', getUnique('ip'), 'ips');
 }
 
 function renderFilterChips(containerId, values, filterKey) {
@@ -244,17 +262,23 @@ function setSort(key) {
 }
 
 function applyFilters() {
-    // 3. Updated Filter Logic to check ALL categories
+    // Search Filter Safety Check
+    const searchInput = document.getElementById('filter-search');
+    const search = searchInput ? searchInput.value.toLowerCase() : "";
+
     displayData = rawData.filter(row => {
         const matchUser = activeFilters.users.length === 0 || activeFilters.users.includes(row.user);
-        const matchRole = activeFilters.roles.length === 0 || activeFilters.roles.includes(row.role); // NEW
+        const matchRole = activeFilters.roles.length === 0 || activeFilters.roles.includes(row.role);
         const matchAction = activeFilters.actions.length === 0 || activeFilters.actions.includes(row.action);
-        const matchTarget = activeFilters.targets.length === 0 || activeFilters.targets.includes(row.target); // NEW
-        const matchIp = activeFilters.ips.length === 0 || activeFilters.ips.includes(row.ip); // NEW
+        const matchTarget = activeFilters.targets.length === 0 || activeFilters.targets.includes(row.target);
+        const matchIp = activeFilters.ips.length === 0 || activeFilters.ips.includes(row.ip);
         
-        return matchUser && matchRole && matchAction && matchTarget && matchIp;
+        const matchSearch = !search || JSON.stringify(row).toLowerCase().includes(search);
+        
+        return matchUser && matchRole && matchAction && matchTarget && matchIp && matchSearch;
     });
 
+    // Sort
     displayData.sort((a, b) => {
         let valA = a[currentSort.key];
         let valB = b[currentSort.key];
