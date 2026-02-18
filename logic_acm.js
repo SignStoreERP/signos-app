@@ -45,15 +45,25 @@ function calculateACM(inputs, data) {
     const grandTotalRaw = totalProduct + feeSetup + feeDesign;
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign); 
 
-    // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // Draw SVG: Heavy Black Border & Sheet Count Text
+// --- 2. COST ENGINE (VISUAL NESTING) ---
+    // UPDATED: Technical "Blueprint" Style with dedicated Title Block
     function generateSVG(layout, limitQty, stockName) {
         if (!layout) return "";
         const sw = layout.sheetW;
         const sh = layout.sheetH;
+        
+        // Styling Config (Technical Blue/Slate Theme)
+        const style = {
+            sheetFill: "#f8fafc",   // Very light slate (Paper)
+            sheetStroke: "#cbd5e1", // Light border
+            partFill: "rgba(59, 130, 246, 0.1)", // Translucent Blue
+            partStroke: "#2563eb",  // Crisp Blue Line
+            titleBarFill: "#1e293b" // Dark Slate Footer
+        };
+
         let rects = "";
         let count = 0;
-        
+
         // Loop Rows/Cols
         outerLoop:
         for (let r = 0; r < layout.rows; r++) {
@@ -64,23 +74,56 @@ function calculateACM(inputs, data) {
                 const y = r * layout.partH;
                 const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
                 
+                // Smart Labeling: Only show text if the part is big enough
+                // Using a conditional group to prevent tiny text clutter
+                const showLabel = (layout.partW > 4 && layout.partH > 4);
+
                 rects += `<g transform="translate(${x}, ${y})">
-                    <rect width="${layout.partW}" height="${layout.partH}" fill="#3b82f6" stroke="white" stroke-width="0.25" opacity="0.9" />
-                    <text x="${layout.partW/2}" y="${layout.partH/2}" font-family="sans-serif" font-size="2" fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text>
+                    <rect width="${layout.partW}" height="${layout.partH}" 
+                          fill="${style.partFill}" 
+                          stroke="${style.partStroke}" 
+                          stroke-width="0.15" />
+                    ${showLabel ? 
+                        `<text x="${layout.partW/2}" y="${layout.partH/2}" 
+                               font-family="sans-serif" font-size="1.5" 
+                               fill="${style.partStroke}" text-anchor="middle" 
+                               dominant-baseline="middle" opacity="0.8" font-weight="bold">${label}</text>` 
+                    : ''}
                 </g>`;
                 count++;
             }
         }
 
-        // Calculate Totals
+        // Calculate Stats
         const sheetsNeeded = Math.ceil(limitQty / layout.perSheet);
-        const usageText = `QTY: ${limitQty} | REQUIRES: ${sheetsNeeded} SHEET(S) OF ${stockName} (${layout.sheetW}x${layout.sheetH})`;
+        const usedArea = count * layout.partW * layout.partH;
+        const totalArea = sw * sh;
+        const wastePct = ((1 - (usedArea / totalArea)) * 100).toFixed(1);
+        
+        const usageText = `REQ: ${sheetsNeeded} SHTS | STOCK: ${stockName} (${sw}x${sh}) | YIELD: ${count}/${layout.perSheet} | WASTE: ${wastePct}%`;
 
-        // Visual: Gray Background with HEAVY BLACK BORDER (border-2 border-black)
-        return `<svg viewBox="0 0 ${sw} ${sh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full bg-gray-300 border-[3px] border-black">
+        // Footer Height Calculation (Fixed ratio for legibility)
+        const footerH = Math.max(sh * 0.08, 6); 
+        const totalH = sh + footerH;
+
+        // Draw SVG with extended ViewBox for the footer
+        return `<svg viewBox="0 0 ${sw} ${totalH}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <rect x="0" y="0" width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" />
+            
             ${rects}
-            <rect x="0" y="0" width="${sw}" height="${sh}" fill="none" stroke="black" stroke-width="1" />
-            <text x="2" y="${sh-2}" font-size="3" fill="black" font-weight="bold" font-family="monospace">${usageText}</text>
+            
+            <g transform="translate(0, ${sh})">
+                <rect width="${sw}" height="${footerH}" fill="${style.titleBarFill}" />
+                <text x="${sw/2}" y="${footerH/2}" 
+                      font-family="monospace" 
+                      font-size="${footerH * 0.4}" 
+                      fill="white" 
+                      text-anchor="middle" 
+                      dominant-baseline="middle" 
+                      letter-spacing="1">
+                      ${usageText}
+                </text>
+            </g>
         </svg>`;
     }
 
