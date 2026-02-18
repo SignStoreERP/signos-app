@@ -46,25 +46,38 @@ function calculateACM(inputs, data) {
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign); 
 
 // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // UPDATED: Technical "Blueprint" Style with dedicated Title Block
+    // UPDATED: "Sandbox" Style with Graph Grid & BoM Footer
     function generateSVG(layout, limitQty, stockName) {
         if (!layout) return "";
+        
+        // 1. Core Dimensions
         const sw = layout.sheetW;
         const sh = layout.sheetH;
         
-        // Styling Config (Technical Blue/Slate Theme)
+        // 2. Sandbox Canvas Setup (Margins & Footer)
+        // We add 5% padding around the sheet so it "floats" on the grid
+        const pad = Math.max(sw, sh) * 0.05; 
+        const footerH = Math.max(sh * 0.12, 10); // Dedicated footer area
+        
+        const canvasW = sw + (pad * 2);
+        const canvasH = sh + (pad * 2) + footerH;
+
+        // 3. Styling Configuration
         const style = {
-            sheetFill: "#f8fafc",   // Very light slate (Paper)
-            sheetStroke: "#cbd5e1", // Light border
-            partFill: "rgba(59, 130, 246, 0.1)", // Translucent Blue
-            partStroke: "#2563eb",  // Crisp Blue Line
-            titleBarFill: "#1e293b" // Dark Slate Footer
+            gridLine: "#e2e8f0",    // Light Gray Grid
+            bgFill: "#f8fafc",      // Very Light Slate Background
+            sheetFill: "#ffffff",   // White Sheet
+            sheetStroke: "#94a3b8", // Slate-400 Border
+            partFill: "rgba(59, 130, 246, 0.1)", // Blue Tint
+            partStroke: "#3b82f6",  // Blue Line
+            bomBg: "#1e293b",       // Dark Slate Footer
+            bomText: "#ffffff"      // White Text
         };
 
+        // 4. Generate Parts
         let rects = "";
         let count = 0;
 
-        // Loop Rows/Cols
         outerLoop:
         for (let r = 0; r < layout.rows; r++) {
             for (let c = 0; c < layout.cols; c++) {
@@ -74,25 +87,62 @@ function calculateACM(inputs, data) {
                 const y = r * layout.partH;
                 const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
                 
-                // Smart Labeling: Only show text if the part is big enough
-                // Using a conditional group to prevent tiny text clutter
+                // Hide label if part is too small to read
                 const showLabel = (layout.partW > 4 && layout.partH > 4);
 
                 rects += `<g transform="translate(${x}, ${y})">
                     <rect width="${layout.partW}" height="${layout.partH}" 
                           fill="${style.partFill}" 
                           stroke="${style.partStroke}" 
-                          stroke-width="0.15" />
+                          stroke-width="0.1" />
                     ${showLabel ? 
                         `<text x="${layout.partW/2}" y="${layout.partH/2}" 
                                font-family="sans-serif" font-size="1.5" 
                                fill="${style.partStroke}" text-anchor="middle" 
-                               dominant-baseline="middle" opacity="0.8" font-weight="bold">${label}</text>` 
+                               dominant-baseline="middle" opacity="0.9" font-weight="bold">${label}</text>` 
                     : ''}
                 </g>`;
                 count++;
             }
         }
+
+        // 5. Calculate BoM Data
+        const totalSheets = Math.ceil(limitQty / layout.perSheet);
+        const areaUsed = count * layout.partW * layout.partH; // Area used on THIS sheet
+        const wastePct = ((1 - (areaUsed / (sw * sh))) * 100).toFixed(1);
+        
+        const bomText = `REQ: ${totalSheets} SHEET${totalSheets > 1 ? 'S' : ''} | STOCK: ${stockName} | WASTE: ${wastePct}%`;
+
+        // 6. Return SVG
+        return `<svg viewBox="0 0 ${canvasW} ${canvasH}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; display:block;">
+            <defs>
+                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="${style.gridLine}" stroke-width="0.5"/>
+                </pattern>
+            </defs>
+            
+            <rect width="${canvasW}" height="${canvasH}" fill="${style.bgFill}" />
+            <rect width="${canvasW}" height="${canvasH}" fill="url(#grid)" />
+            
+            <g transform="translate(${pad}, ${pad})">
+                <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" />
+                ${rects}
+            </g>
+            
+            <g transform="translate(0, ${canvasH - footerH})">
+                <rect width="${canvasW}" height="${footerH}" fill="${style.bomBg}" />
+                <text x="${canvasW/2}" y="${footerH/2}" 
+                      font-family="monospace" 
+                      font-size="${footerH * 0.35}" 
+                      fill="${style.bomText}" 
+                      text-anchor="middle" 
+                      dominant-baseline="middle" 
+                      letter-spacing="1">
+                      ${bomText}
+                </text>
+            </g>
+        </svg>`;
+    }
 
         // Calculate Stats
         const sheetsNeeded = Math.ceil(limitQty / layout.perSheet);
