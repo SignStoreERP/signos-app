@@ -25,6 +25,7 @@ function doGet(e) {
   // 2. Auth & Core Tables
   if (params.req === "auth") return handleAuth(params.pin);
   if (params.req === "table") return fetchTable(params.tab);
+  if (params.req === "update_matrix") return updateMatrixValue(params);
 
   // 3. Roadmap / Ticketing
   if (params.req === "add_roadmap") return addRoadmapItem(params);
