@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cost Matrix v1.6</title>
+    <title>Cost Matrix v1.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -76,7 +76,6 @@
     let pendingChanges = {}; // Stores { "PROD_X|COST_Y": newValue }
 
     window.onload = function() {
-        // Safety Check for Header Injection
         if (typeof injectHeader === "function") {
             injectHeader("Cost Matrix");
         } else {
@@ -105,10 +104,31 @@
             renderMatrix();
             document.getElementById('loader').classList.add('hidden');
 
+            // --- FIX 1: UPDATE HEADER STATUS ---
+            const statusText = document.getElementById("status-text");
+            const statusDot = document.getElementById("status-dot");
+            if(statusText) {
+                statusText.innerText = "ONLINE";
+                statusText.className = "text-xs font-bold text-green-500";
+                if(statusDot) {
+                    statusDot.classList.remove("animate-pulse", "bg-yellow-400");
+                    statusDot.classList.add("bg-green-500");
+                }
+            }
+
         } catch(e) {
             console.error(e);
             alert("Error: " + e.message);
             document.getElementById('loader').classList.add('hidden');
+            
+            // Set Offline Status on Error
+            const statusText = document.getElementById("status-text");
+            const statusDot = document.getElementById("status-dot");
+            if(statusText) {
+                statusText.innerText = "OFFLINE";
+                statusText.className = "text-xs font-bold text-red-500";
+                if(statusDot) statusDot.classList.add("bg-red-500");
+            }
         }
     }
 
@@ -119,7 +139,6 @@
         
         if(matrix.length === 0) return;
         
-        // FIX: Look at KEYS of the FIRST ROW object (matrix[0]), NOT the array itself
         const firstRow = matrix[0]; 
         const products = Object.keys(firstRow).filter(k => k !== 'Cost_ID');
         
@@ -130,7 +149,6 @@
         });
         thead.innerHTML = headerHTML;
 
-        // Rows
         tbody.innerHTML = "";
         definitions.forEach(def => {
             const costID = def.Cost_ID;
@@ -142,10 +160,8 @@
                 defaultVal = `$${defaultVal.toFixed(2)}`;
             }
 
-            // Rich Row Header (Cost Card Logic)
             let rowHTML = `
                 <td class="p-3 sticky-col bg-white border-r border-gray-100 group min-w-[350px]">
-                    
                     <div class="flex items-center gap-2 mb-1.5">
                         <div class="font-bold text-gray-800 text-sm whitespace-nowrap">${def.Display_Name || costID}</div>
                         <div class="text-[10px] text-gray-400 font-mono select-all pt-0.5">${costID}</div>
@@ -153,14 +169,12 @@
                             ${def.Unit || '-'}
                         </div>
                     </div>
-
                     <div class="flex justify-between items-start text-[11px] text-gray-500 leading-tight">
                         <div class="mr-2">${def.Notes || 'No description available.'}</div>
                         <div class="whitespace-nowrap font-bold text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">
                             Base: ${defaultVal}
                         </div>
                     </div>
-
                 </td>`;
 
             products.forEach(prod => {
@@ -205,7 +219,6 @@
         const key = `${prod}|${cost}`;
         pendingChanges[key] = { product: prod, cost: cost, value: value };
         
-        // Visual Feedback
         const cell = document.getElementById(`cell-${key}`);
         if(cell) cell.classList.add('staged-change');
         
@@ -232,12 +245,10 @@
         btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> BACKING UP...`;
         btn.disabled = true;
         
-        // Convert object to array for API
         const payload = Object.values(pendingChanges);
         const user = sessionStorage.getItem('signos_user') || 'Admin';
 
         try {
-            // Using GET for Apps Script simplicity
             const payloadStr = encodeURIComponent(JSON.stringify(payload));
             const url = `${SCRIPT_URL}?req=commit_matrix&user=${user}&payload=${payloadStr}`;
             
@@ -246,7 +257,12 @@
 
             if(data.status === 'success') {
                 alert(`✅ Success!\n\nBackup Created: ${data.backup}\nUpdated ${data.count} values.`);
-                loadData(); // Reload to clear staging
+                
+                // --- FIX 2: RESET BUTTON STATE BEFORE RELOAD ---
+                btn.innerHTML = `<span>COMMIT & BACKUP</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>`;
+                btn.disabled = false;
+                
+                loadData(); 
             } else {
                 throw new Error(data.message);
             }
