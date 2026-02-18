@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.5)
- * Features: Smart Nesting, Responsive SVG, and Optimization.
+ * PURE PHYSICS ENGINE: ACM Signs (v2.6)
+ * Features: Smart Nesting, Black-Border Visuals, and Explicit Sheet Counting.
  */
 function calculateACM(inputs, data) {
     // --- 1. RETAIL ENGINE ---
@@ -46,15 +46,15 @@ function calculateACM(inputs, data) {
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign); 
 
     // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // Draw SVG: Responsive ViewBox
-    function generateSVG(layout, limitQty) {
+    // Draw SVG: Heavy Black Border & Sheet Count Text
+    function generateSVG(layout, limitQty, stockName) {
         if (!layout) return "";
         const sw = layout.sheetW;
         const sh = layout.sheetH;
         let rects = "";
         let count = 0;
         
-        // Loop Rows/Cols but STOP if we hit quantity limit
+        // Loop Rows/Cols
         outerLoop:
         for (let r = 0; r < layout.rows; r++) {
             for (let c = 0; c < layout.cols; c++) {
@@ -72,10 +72,15 @@ function calculateACM(inputs, data) {
             }
         }
 
-        // Added preserveAspectRatio to force fit within container
-        return `<svg viewBox="0 0 ${sw} ${sh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full bg-gray-300 border border-gray-500">
+        // Calculate Totals
+        const sheetsNeeded = Math.ceil(limitQty / layout.perSheet);
+        const usageText = `QTY: ${limitQty} | REQUIRES: ${sheetsNeeded} SHEET(S) OF ${stockName} (${layout.sheetW}x${layout.sheetH})`;
+
+        // Visual: Gray Background with HEAVY BLACK BORDER (border-2 border-black)
+        return `<svg viewBox="0 0 ${sw} ${sh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full bg-gray-300 border-[3px] border-black">
             ${rects}
-            <text x="2" y="${sh-2}" font-size="2" fill="#555" font-family="monospace">${sw}" x ${sh}" Stock | Used: ${count} / Yield: ${layout.perSheet}</text>
+            <rect x="0" y="0" width="${sw}" height="${sh}" fill="none" stroke="black" stroke-width="1" />
+            <text x="2" y="${sh-2}" font-size="3" fill="black" font-weight="bold" font-family="monospace">${usageText}</text>
         </svg>`;
     }
 
@@ -133,8 +138,8 @@ function calculateACM(inputs, data) {
     const isOversized = (Math.max(inputs.w, inputs.h) > maxLen || Math.min(inputs.w, inputs.h) > maxWid);
     if (isOversized) { optStock.name = "OVERSIZED"; optStock.cost = 0; }
     
-    // Generate SVG with Quantity Limit
-    optStock.svg = generateSVG(optStock.layout, inputs.qty);
+    // Generate SVG with Quantity Limit & Stock Name
+    optStock.svg = generateSVG(optStock.layout, inputs.qty, optStock.name);
 
     // Costing
     const waste = parseFloat(data.Waste_Factor || 1.2);
