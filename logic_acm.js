@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.4)
- * Features: Smart Nesting, "Partial Sheet" Rendering, and Optimization.
+ * PURE PHYSICS ENGINE: ACM Signs (v2.5)
+ * Features: Smart Nesting, Responsive SVG, and Optimization.
  */
 function calculateACM(inputs, data) {
     // --- 1. RETAIL ENGINE ---
@@ -46,7 +46,7 @@ function calculateACM(inputs, data) {
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign); 
 
     // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // Draw SVG: Now stops at 'inputs.qty' to show partial sheets
+    // Draw SVG: Responsive ViewBox
     function generateSVG(layout, limitQty) {
         if (!layout) return "";
         const sw = layout.sheetW;
@@ -58,7 +58,7 @@ function calculateACM(inputs, data) {
         outerLoop:
         for (let r = 0; r < layout.rows; r++) {
             for (let c = 0; c < layout.cols; c++) {
-                if (count >= limitQty) break outerLoop; // Stop drawing
+                if (count >= limitQty) break outerLoop;
 
                 const x = c * layout.partW;
                 const y = r * layout.partH;
@@ -72,8 +72,8 @@ function calculateACM(inputs, data) {
             }
         }
 
-        // Background is Gray (Stock), Blue is Parts
-        return `<svg viewBox="0 0 ${sw} ${sh}" class="w-full h-full bg-gray-300 border border-gray-500">
+        // Added preserveAspectRatio to force fit within container
+        return `<svg viewBox="0 0 ${sw} ${sh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full bg-gray-300 border border-gray-500">
             ${rects}
             <text x="2" y="${sh-2}" font-size="2" fill="#555" font-family="monospace">${sw}" x ${sh}" Stock | Used: ${count} / Yield: ${layout.perSheet}</text>
         </svg>`;
