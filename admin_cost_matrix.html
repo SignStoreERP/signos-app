@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cost Matrix v1.3</title>
+    <title>Cost Matrix v1.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -31,12 +31,7 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <div class="flex items-center gap-2 mr-4 border-r border-gray-200 pr-4">
-                    <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                    <span id="status-text" class="text-xs font-bold text-gray-400">CONNECTING...</span>
-                </div>
-
-                <div id="save-indicator" class="hidden text-xs font-bold text-green-600 flex items-center gap-1 mr-2">
+                <div id="save-indicator" class="hidden text-xs font-bold text-green-600 flex items-center gap-1 mr-4">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> SAVED
                 </div>
                 
@@ -83,15 +78,6 @@
     async function loadData() {
         document.getElementById('loader').classList.remove('hidden');
         
-        const statusText = document.getElementById("status-text");
-        const statusDot = document.getElementById("status-dot");
-
-        if(statusText) {
-            statusText.innerText = "CONNECTING...";
-            statusText.className = "text-xs font-bold text-gray-400";
-            statusDot.className = "w-2 h-2 rounded-full bg-yellow-400 animate-pulse";
-        }
-
         try {
             // Parallel Fetch: Definitions AND Matrix
             const [defRes, matRes] = await Promise.all([
@@ -111,24 +97,10 @@
             renderMatrix();
             document.getElementById('loader').classList.add('hidden');
 
-            // UPDATE HEADER TO ONLINE
-            if(statusText) {
-                statusText.innerText = "ONLINE";
-                statusText.className = "text-xs font-bold text-green-500";
-                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-                statusDot.classList.remove("animate-pulse");
-            }
-
         } catch(e) {
             console.error(e);
             alert("Error loading matrix: " + e.message);
             document.getElementById('loader').classList.add('hidden');
-            
-            if(statusText) {
-                statusText.innerText = "OFFLINE";
-                statusText.className = "text-xs font-bold text-red-500";
-                statusDot.className = "w-2 h-2 rounded-full bg-red-500";
-            }
         }
     }
 
@@ -144,7 +116,7 @@
         const firstRow = matrix[0]; 
         const products = Object.keys(firstRow).filter(k => k !== 'Cost_ID');
         
-        let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[320px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
+        let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[350px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
         products.forEach(prod => {
             const label = prod.replace('PROD_', '').replace('_', ' ');
             headerHTML += `<th class="p-4 sticky-header min-w-[100px] text-center border-l border-gray-200">${label}</th>`;
@@ -169,20 +141,27 @@
                 }
             }
 
-            // Rich Row Header (Cost Card Logic)
+            // --- UPDATED ROW HEADER LAYOUT (v1.4) ---
+            // Line 1: [Title] [SKU] [Unit]
+            // Line 2: [Description] [Base Value]
             let rowHTML = `
-                <td class="p-4 sticky-col bg-white border-r border-gray-100 group min-w-[320px]">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="font-bold text-gray-800 text-sm">${def.Display_Name || costID}</div>
-                        <div class="text-[10px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100 font-bold ml-2 shrink-0">
+                <td class="p-3 sticky-col bg-white border-r border-gray-100 group min-w-[350px]">
+                    
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <div class="font-bold text-gray-800 text-sm whitespace-nowrap">${def.Display_Name || costID}</div>
+                        <div class="text-[10px] text-gray-400 font-mono select-all pt-0.5">${costID}</div>
+                        <div class="ml-auto text-[10px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100 font-bold shrink-0">
                             ${def.Unit || '-'}
                         </div>
                     </div>
-                    <div class="text-[11px] text-gray-500 leading-tight mb-2">${def.Notes || 'No description available.'}</div>
-                    <div class="flex justify-between items-center border-t border-dashed border-gray-100 pt-2 mt-1">
-                        <div class="text-[9px] text-gray-300 font-mono group-hover:text-gray-400 transition select-all cursor-copy" title="Copy Key">${costID}</div>
-                        <div class="text-[10px] font-bold text-gray-600 bg-gray-50 px-1.5 rounded">Base: ${defaultVal}</div>
+
+                    <div class="flex justify-between items-start text-[11px] text-gray-500 leading-tight">
+                        <div class="mr-2">${def.Notes || 'No description available.'}</div>
+                        <div class="whitespace-nowrap font-bold text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">
+                            Base: ${defaultVal}
+                        </div>
                     </div>
+
                 </td>`;
 
             products.forEach(prod => {
