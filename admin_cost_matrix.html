@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cost Matrix v1.1</title>
+    <title>Cost Matrix v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -124,13 +124,17 @@
         const tbody = document.getElementById('matrix-body');
         
         // A. Build Headers (Products)
-        // Get keys from first matrix row, ignoring 'Cost_ID'
         if(matrix.length === 0) return;
-        const products = Object.keys(matrix).filter(k => k !== 'Cost_ID');
+        
+        // FIX: Look at KEYS of the FIRST ROW object, not keys of the Array itself
+        const firstRow = matrix; 
+        const products = Object.keys(firstRow).filter(k => k !== 'Cost_ID');
         
         let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[200px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
         products.forEach(prod => {
-            headerHTML += `<th class="p-4 sticky-header min-w-[100px] text-center border-l border-gray-200">${prod.replace('PROD_', '')}</th>`;
+            // Clean up header display (e.g. PROD_Yard -> Yard)
+            const label = prod.replace('PROD_', '');
+            headerHTML += `<th class="p-4 sticky-header min-w-[100px] text-center border-l border-gray-200">${label}</th>`;
         });
         thead.innerHTML = headerHTML;
 
@@ -165,6 +169,8 @@
 
     function renderCell(prod, cost, val) {
         let content = "";
+        
+        // Normalize Boolean Check (Sheets sometimes returns text 'TRUE' or boolean true)
         const isBool = (val === true || val === false || val === 'TRUE' || val === 'FALSE');
         
         if(isBool) {
