@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACM Signs v6.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
+    <script src="logic_acm.js"></script> <!-- The New Engine -->
+    <style>
+        .warn-pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+
+        <!-- 1. AUTH HEADER -->
+        <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
+            <div class="flex gap-3">
+                <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
+                <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
+            </div>
+            <button onclick="logout()" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
+        </div>
+
+        <!-- 2. PRODUCT HEADER -->
+        <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
+            <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
+            </a>
+            <div class="text-center">
+                <h2 class="text-lg font-bold">ACM Signs</h2>
+                <div class="flex items-center justify-center gap-2 text-[10px] mt-0.5">
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span id="status-text" class="font-bold text-gray-400">CONNECTING...</span>
+                    <span id="version-display" class="text-gray-500 font-mono hidden"></span>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
+        </div>
+
+        <!-- INPUTS -->
+        <div class="p-6 space-y-4">
+            <!-- Dimensions -->
+            <div class="grid grid-cols-3 gap-3">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="width" value="24" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="height" value="18" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+            </div>
+
+            <!-- Specs Row 1 -->
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Material</label><select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm" onchange="runCalc()"><option value="3mm">3mm Standard</option><option value="6mm">6mm Heavy Duty</option></select></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded bg-white font-bold text-sm" onchange="runCalc()"><option value="1">Single Sided</option><option value="2">Double Sided</option></select></div>
+            </div>
+
+            <!-- Specs Row 2 -->
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Laminate</label><select id="lam" class="w-full border p-2 rounded bg-white font-bold text-sm" onchange="runCalc()"><option value="None">None</option><option value="Gloss">Gloss</option><option value="Matte">Matte</option></select></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Shape</label><select id="shape" class="w-full border p-2 rounded bg-white font-bold text-sm" onchange="runCalc()"><option value="Square">Square / Rect</option><option value="Rounded">Rounded Corners</option><option value="Contour">Custom Contour</option></select></div>
+            </div>
+
+            <!-- Toggles -->
+            <div class="space-y-2 pt-2">
+                <div class="flex items-center justify-between p-2 bg-purple-50 rounded border border-purple-100">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="design" class="w-5 h-5 text-purple-600" onchange="runCalc()">
+                        <span class="text-xs font-bold text-purple-900">Include Design Fee</span>
+                    </div>
+                    <input type="number" id="files" value="1" class="w-12 border p-1 rounded text-center text-xs font-bold" oninput="runCalc()">
+                </div>
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
+                    <span class="text-xs font-bold text-gray-600">Charge Setup Per File?</span>
+                    <input type="checkbox" id="setup-per-file" class="w-5 h-5 text-gray-600" onchange="runCalc()">
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS -->
+        <div class="bg-white p-6 border-t border-gray-200">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Base Unit Price</span>
+                <span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
+            </div>
+
+            <!-- OPTIMIZATION BADGE -->
+            <div id="opt-badge" class="bg-blue-100 text-blue-800 text-[10px] font-bold px-3 py-1 rounded border border-blue-200 inline-block mb-4 hidden">
+                OPTIMIZED: Using <span id="opt-stock">4x8</span> Stock
+            </div>
+
+            <div class="border-t border-gray-100 my-2"></div>
+
+            <!-- LINE ITEMS -->
+            <div class="space-y-1 text-xs text-gray-600">
+                <div class="flex justify-between"><span>Setup Fee:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between text-purple-700" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
+            </div>
+
+            <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
+                <div>
+                    <span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span>
+                    <div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block ml-1">MINIMUM APPLIED</div>
+                </div>
+                <span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
+            </div>
+        </div>
+
+        <!-- DESCRIPTION GENERATOR -->
+        <div class="bg-gray-50 p-4 border-t border-gray-200">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
+        </div>
+
+    </div>
+
+<script>
+    let backendData = {};
+
+    window.onload = async function() {
+        const u = sessionStorage.getItem('signos_user') || 'Guest';
+        const r = sessionStorage.getItem('signos_role') || 'VIEW';
+        document.getElementById('auth-user').innerText = u;
+        document.getElementById('auth-role').innerText = r;
+
+        try {
+            const res = await fetch(`${SCRIPT_URL}?tab=PROD_ACM_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+            const data = await res.json();
+            if(data.error) throw new Error(data.error);
+            backendData = data;
+
+            document.getElementById("status-text").innerText = "ONLINE";
+            document.getElementById("status-text").className = "font-bold text-green-500";
+            document.getElementById("status-dot").className = "w-2 h-2 rounded-full bg-green-500";
+            document.getElementById("status-dot").classList.remove("animate-pulse");
+
+            // Version Display
+            const isDev = window.location.href.includes('mode=dev');
+            const ver = isDev ? (data.Sys_Version_Dev || 'v6.0') : (data.Sys_Version_Live || 'v6.0');
+            document.getElementById("version-display").innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
+            document.getElementById("version-display").classList.remove('hidden');
+
+            runCalc();
+
+        } catch(e) { console.error(e); }
+    };
+
+    function runCalc() {
+        if(!backendData.Item_Name) return;
+
+        const inputs = {
+            w: parseFloat(document.getElementById('width').value) || 24,
+            h: parseFloat(document.getElementById('height').value) || 18,
+            qty: parseFloat(document.getElementById('qty').value) || 1,
+            thickness: document.getElementById('material').value,
+            sides: parseInt(document.getElementById('sides').value),
+            lam: document.getElementById('lam').value,
+            shape: document.getElementById('shape').value,
+            incDesign: document.getElementById('design').checked,
+            setupPerFile: document.getElementById('setup-per-file').checked,
+            files: parseFloat(document.getElementById('files').value) || 1
+        };
+
+        const result = calculateACM(inputs, backendData);
+        const ret = result.retail;
+        const cost = result.cost;
+
+        const fmt = (n) => "$" + n.toFixed(2);
+
+        document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+        document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
+        document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
+        document.getElementById('ui-design').innerText = fmt(ret.designFee);
+        
+        document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+        document.getElementById('row-design').classList.toggle('hidden', ret.designFee === 0);
+
+        // Optimization Badge
+        const badge = document.getElementById('opt-badge');
+        const stockTxt = document.getElementById('opt-stock');
+        if (cost.stock && cost.stock.name !== "N/A") {
+            badge.classList.remove('hidden');
+            stockTxt.innerText = `${cost.stock.name} (${cost.stock.sheets} shts)`;
+        } else {
+            badge.classList.add('hidden');
+        }
+
+        // Description
+        const lamTxt = inputs.lam === "None" ? "unlaminated" : `with ${inputs.lam} laminate`;
+        const cutTxt = inputs.shape === "Square" ? "shear cut" : `${inputs.shape} cut`;
+        const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} ACM Signs, ${lamTxt}, ${cutTxt}. Printed full color on ${inputs.sides === 1 ? "ONE side" : "TWO sides"}.`;
+        document.getElementById('job-desc').value = desc;
+    }
+</script>
+</body>
+</html>
