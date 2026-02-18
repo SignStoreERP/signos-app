@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.8.1)
- * Features: Dynamic Aspect Ratio, CSS Background Fill, Technical BoM.
+ * PURE PHYSICS ENGINE: ACM Signs (v2.9.0)
+ * Features: Clean SVG for UI handling, Data-driven BoM export.
  */
 function calculateACM(inputs, data) {
     // --- 1. RETAIL ENGINE ---
@@ -46,40 +46,25 @@ function calculateACM(inputs, data) {
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign);
 
     // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // UPDATED: Dynamic Canvas & CSS Background Fill
-    function generateSVG(layout, limitQty, stockName) {
+    // UPDATED: Generates clean geometry only. Backgrounds handled by CSS.
+    function generateSVG(layout, limitQty) {
         if (!layout) return "";
-        
-        // 1. Dimensions
+
         const sw = layout.sheetW;
         const sh = layout.sheetH;
-        
-        // 2. Footer Height Calculation
-        // We set the footer to be 15% of the sheet's height, or a minimum pixel value
-        // to ensure text is readable.
-        const footerH = Math.max(sh * 0.15, 8); 
-        const totalH = sh + footerH;
-        
-        // 3. Styling
+
+        // Styling
         const style = {
-            bgCSS: "#f1f5f9",       // CSS Background (Slate-100) - Fills Window
-            sheetFill: "#ffffff",   // White Sheet
-            sheetStroke: "#475569", // Slate-600 Border
-            partFill: "rgba(37, 99, 235, 0.15)", // Blue-600 (15% Opacity)
-            partStroke: "#2563eb",  // Blue-600 Line
-            bomBg: "#0f172a",       // Slate-900 (Footer Background)
-            bomText: "#e2e8f0",     // Slate-200 (Text)
-            bomHighlight: "#38bdf8" // Sky-400 (Accent Text)
+            sheetFill: "#ffffff",
+            sheetStroke: "#475569", 
+            partFill: "rgba(37, 99, 235, 0.2)", 
+            partStroke: "#2563eb"
         };
 
-        // 4. Logic: Active Sheet Visualization
+        // Logic: Active Sheet Visualization
         const remainder = limitQty % layout.perSheet;
         const itemsOnActiveSheet = (remainder === 0) ? layout.perSheet : remainder;
-        const fullSheets = (remainder === 0) ? (limitQty / layout.perSheet) : Math.floor(limitQty / layout.perSheet);
-        const partialSheets = (remainder === 0) ? 0 : 1;
-        const totalSheetsNeeded = Math.ceil(limitQty / layout.perSheet);
 
-        // 5. Generate Parts
         let rects = "";
         let count = 0;
         outerLoop:
@@ -99,7 +84,7 @@ function calculateACM(inputs, data) {
                           stroke-width="0.1" />
                     ${showLabel ? 
                         `<text x="${layout.partW/2}" y="${layout.partH/2}" 
-                               font-family="monospace" font-size="1.5" 
+                               font-family="sans-serif" font-size="1.5" 
                                fill="${style.partStroke}" text-anchor="middle" 
                                dominant-baseline="middle" font-weight="bold" opacity="0.9">${label}</text>` 
                     : ''}
@@ -108,42 +93,11 @@ function calculateACM(inputs, data) {
             }
         }
 
-        // 6. BoM Data Calculation
-        const areaUsed = itemsOnActiveSheet * layout.partW * layout.partH;
-        const wastePct = ((1 - (areaUsed / (sw * sh))) * 100).toFixed(0);
-        
-        // Font Sizing Logic (Relative to Canvas Width)
-        const fsMain = Math.min(sw * 0.06, footerH * 0.35); 
-        const fsSub = Math.min(sw * 0.04, footerH * 0.25);
-        const padX = sw * 0.03;
-        const line1Y = sh + (footerH * 0.35);
-        const line2Y = sh + (footerH * 0.75);
-
-        // 7. Return SVG
-        // KEY FIX: background-color is applied to the STYLE attribute of the SVG.
-        // This ensures the color fills the HTML container even if aspect ratio differs.
-        return `<svg viewBox="0 0 ${sw} ${totalH}" preserveAspectRatio="xMidYMid meet" 
-                     style="width:100%; height:100%; display:block; background-color: ${style.bgCSS}; box-shadow: inset 0 0 20px rgba(0,0,0,0.05);">
-            
-            <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" />
-            
+        // Return Clean SVG (No footer, transparent background)
+        return `<svg viewBox="0 0 ${sw} ${sh}" preserveAspectRatio="xMidYMid meet" 
+                     style="width:100%; height:100%; display:block; overflow:visible;">
+            <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" vector-effect="non-scaling-stroke" />
             ${rects}
-            
-            <rect x="0" y="${sh}" width="${sw}" height="${footerH}" fill="${style.bomBg}" />
-            
-            <text x="${padX}" y="${line1Y}" font-family="sans-serif" font-size="${fsMain}" fill="${style.bomHighlight}" font-weight="bold" dominant-baseline="middle">
-                STOCK: ${stockName}
-            </text>
-            <text x="${sw - padX}" y="${line1Y}" font-family="sans-serif" font-size="${fsMain}" fill="${style.bomText}" text-anchor="end" dominant-baseline="middle">
-                REQ: ${totalSheetsNeeded} SHTS
-            </text>
-            
-            <text x="${padX}" y="${line2Y}" font-family="sans-serif" font-size="${fsSub}" fill="${style.bomText}" opacity="0.8" dominant-baseline="middle">
-                INV: ${fullSheets} FULL / ${partialSheets} OPEN
-            </text>
-            <text x="${sw - padX}" y="${line2Y}" font-family="sans-serif" font-size="${fsSub}" fill="${style.bomText}" text-anchor="end" opacity="0.8" dominant-baseline="middle">
-                WASTE: ${wastePct}%
-            </text>
         </svg>`;
     }
 
@@ -154,7 +108,7 @@ function calculateACM(inputs, data) {
             { name: "5x10", sw: 60, sh: 120, cost: parseFloat(data[`Cost_Stock_${thick}_5x10`] || 75) }
         ];
 
-        let best = { cost: Infinity, name: "N/A", sheets: 0, layout: null };
+        let best = { cost: Infinity, name: "N/A", sheets: 0, layout: null, stats: {} };
 
         stocks.forEach(stock => {
             // Rotation 1
@@ -175,10 +129,27 @@ function calculateACM(inputs, data) {
 
                 if (totalRunCost < best.cost) {
                     const isRotated = yieldB > yieldA;
+                    
+                    // Calculate Statistics for UI
+                    const remainder = qty % maxYield;
+                    const itemsOnLast = (remainder === 0) ? maxYield : remainder;
+                    const fullSheets = (remainder === 0) ? (qty / maxYield) : Math.floor(qty / maxYield);
+                    const partialSheets = (remainder === 0) ? 0 : 1;
+                    
+                    // Area Math
+                    const usedArea = itemsOnLast * ((isRotated ? h : w) * (isRotated ? w : h));
+                    const totalSheetArea = stock.sw * stock.sh;
+                    const wastePct = ((1 - (usedArea / totalSheetArea)) * 100).toFixed(0);
+
                     best = {
                         cost: totalRunCost,
                         name: stock.name,
                         sheets: sheetsNeeded,
+                        stats: {
+                            full: fullSheets,
+                            partial: partialSheets,
+                            waste: wastePct
+                        },
                         layout: {
                             sheetW: stock.sw,
                             sheetH: stock.sh,
@@ -197,16 +168,16 @@ function calculateACM(inputs, data) {
     }
 
     const optStock = findBestStock(inputs.w, inputs.h, inputs.qty, inputs.thickness);
-    const maxLen = 120; const maxWid = 60;
+    const maxLen = 120; const maxWid = 60; 
     const isOversized = (Math.max(inputs.w, inputs.h) > maxLen || Math.min(inputs.w, inputs.h) > maxWid);
     if (isOversized) { optStock.name = "OVERSIZED"; optStock.cost = 0; }
 
-    // Generate SVG with Quantity Limit & Stock Name
-    optStock.svg = generateSVG(optStock.layout, inputs.qty, optStock.name);
+    // Generate SVG
+    optStock.svg = generateSVG(optStock.layout, inputs.qty);
 
     // Costing
     const waste = parseFloat(data.Waste_Factor || 1.2);
-    const totalMatBoard = optStock.cost * waste;
+    const totalMatBoard = optStock.cost * waste; 
     const inkCost = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16);
     const costLam = (inputs.lam !== "None") ? (totalSqFt * parseFloat(data.Cost_Lam_SqFt || 0.36)) : 0;
 
@@ -234,7 +205,7 @@ function calculateACM(inputs, data) {
     const vendKey = `S365_${inputs.thickness}_${inputs.sides===2?'DS':'SS'}_SqFt`;
     const vendRate = parseFloat(data[vendKey] || 7.20);
     let vendTotal = (totalSqFt * vendRate);
-
+    
     if (inputs.shape === "Contour") vendTotal *= (1 + parseFloat(data.S365_Contour_Pct || 0.1));
     else if (inputs.rounded) vendTotal += (inputs.qty * parseFloat(data.S365_Rounded_Fee || 5));
     if (inputs.lam === "Gloss") vendTotal += (inputs.qty * parseFloat(data.S365_Gloss_Rate || 4));
