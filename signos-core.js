@@ -133,3 +133,26 @@ async function submitFeedback() {
     }
 }
 
+// 7. UI INJECTION (New Feature)
+function injectHeader(title, showMenu = true) {
+    const u = sessionStorage.getItem('signos_user') || 'GUEST';
+    const r = sessionStorage.getItem('signos_role') || 'VIEW';
+    
+    const html = `
+    <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center shadow-md shrink-0 sticky top-0 z-50">
+        <div class="flex flex-col leading-tight">
+            <span class="text-gray-400 text-[10px] uppercase tracking-wider">SignOS ERP</span>
+            <span class="font-bold text-white text-sm">${title}</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="hidden md:block text-right mr-2">
+                <div class="text-[9px] text-gray-400 uppercase">User</div>
+                <div class="font-bold text-xs">${u} <span class="bg-gray-800 px-1 rounded text-blue-400 border border-gray-700">${r}</span></div>
+            </div>
+            ${showMenu ? `<button onclick="goBack()" class="text-gray-300 hover:text-white text-xs font-bold border border-gray-600 px-3 py-1.5 rounded transition">MENU</button>` : ''}
+            <button onclick="logout()" class="text-red-400 hover:text-white text-[10px] font-bold border border-red-900/50 bg-red-900/10 px-3 py-1.5 rounded transition">EXIT</button>
+        </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('afterbegin', html);
+}
