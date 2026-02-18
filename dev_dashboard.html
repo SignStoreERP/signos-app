@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Command Center v3.1 | SignOS</title>
+    <title>Dev Command Center v3.2 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -11,14 +11,13 @@
         .hover-card { transition: all 0.2s ease-in-out; }
         .hover-card:hover { transform: translateY(-2px); border-color: #f97316; }
         
-        /* Custom Scrollbars */
+        /* Custom Scrollbars - Applied to both lists */
         .reg-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
         .reg-scroll::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         .reg-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         .reg-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<!-- FIX: Changed min-h-screen to h-screen to force internal scrolling -->
 <body class="bg-slate-900 h-screen font-sans text-slate-200 relative overflow-hidden flex flex-col">
 
     <!-- BACKGROUND FX -->
@@ -61,7 +60,7 @@
                             </div>
                             <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="text-[10px] font-mono text-orange-400 hover:text-white underline">signos-app</a>
                         </div>
-                        <!-- Inner Scroll Container -->
+                        <!-- Inner Scroll Container: DEV -->
                         <div id="col-dev" class="p-2 space-y-2 overflow-y-auto reg-scroll flex-1"></div>
                     </div>
 
@@ -74,7 +73,7 @@
                             </div>
                             <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="text-[10px] font-mono text-green-400 hover:text-white underline">signos-live</a>
                         </div>
-                        <!-- Inner Scroll Container -->
+                        <!-- Inner Scroll Container: LIVE (Identical Classes) -->
                         <div id="col-live" class="p-2 space-y-2 overflow-y-auto reg-scroll flex-1"></div>
                     </div>
 
@@ -244,6 +243,11 @@
                     colLive.appendChild(card);
                 }
             });
+            
+            // Empty State Handling
+            if(colLive.innerHTML === "") {
+                colLive.innerHTML = '<div class="text-center text-slate-500 text-xs italic p-4">No active modules deployed to Live.</div>';
+            }
 
         } catch(e) {
             colDev.innerHTML = `<div class="text-red-500 text-xs p-4 border border-red-500/30 rounded bg-red-900/20">Error: ${e.message}</div>`;
