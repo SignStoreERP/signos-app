@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yard Sign Calculator v22.1</title>
+    <title>Yard Signs v22.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <!-- PRODUCTION LOGIC ENGINE -->
@@ -18,17 +18,17 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- MAIN CARD: Header will be injected here automatically -->
+    <!-- MAIN CARD: Header injects here for "Island Mode" -->
     <div id="main-card" class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
 
         <!-- INPUTS -->
         <div class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="10" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="runCalc()"></div>
-                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px]" onchange="runCalc()"><option value="1">Single Sided</option><option value="2">Double Sided</option></select></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="10" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px]" onchange="runCalc()"><option value="1">Single Sided</option><option value="2">Double Sided</option></select></div>
             </div>
 
-            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Files</label><input type="number" id="files" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="runCalc()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1"># Designs</label><input type="number" id="files" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
 
             <div class="flex items-center p-2 border rounded bg-gray-50 mt-2 h-[46px]">
                 <input type="checkbox" id="stakes" class="w-5 h-5 text-blue-600 rounded" checked onchange="runCalc()">
@@ -38,11 +38,11 @@
             <!-- FEE TOGGLES -->
             <div class="space-y-2 pt-2">
                 <div class="flex items-center justify-between p-2 bg-purple-50 rounded border border-purple-100">
-                    <span class="text-xs font-bold text-purple-900">Include Design Fee?</span>
+                    <span class="text-[10px] font-bold text-purple-900">Include Design Fee?</span>
                     <input type="checkbox" id="design" checked onchange="runCalc()" class="w-5 h-5 text-purple-600">
                 </div>
                 <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
-                    <span class="text-xs font-bold text-gray-600">Charge Setup Per File?</span>
+                    <span class="text-[10px] font-bold text-gray-600">Charge Setup Per File?</span>
                     <input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-5 h-5 text-gray-600">
                 </div>
             </div>
@@ -98,26 +98,25 @@
     let backendData = {};
 
     window.onload = async function() {
-        // 1. INJECT HEADER (User/Role/Logout + Status UI)
+        // 1. INJECT UNIFIED HEADER
         injectHeader("Yard Signs");
 
         const u = sessionStorage.getItem('signos_user') || 'Guest';
         const r = sessionStorage.getItem('signos_role') || 'VIEW';
         
-        // Note: The new header includes the status elements with these IDs
+        // New Header IDs
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
         const verDisplay = document.getElementById("version-display");
 
         try {
-            // TARGET: PROD_Yard_Signs (Production Data)
             const res = await fetch(`${SCRIPT_URL}?tab=PROD_Yard_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
             const data = await res.json();
             
             if(data.error) throw new Error(data.error);
             backendData = data;
 
-            // Update UI State (using the injected elements)
+            // Update Header Status
             if(statusText) {
                 statusText.innerText = "ONLINE";
                 statusText.className = "font-bold text-green-500";
@@ -125,9 +124,9 @@
                 statusDot.classList.remove("animate-pulse");
             }
 
-            // Show Version from Backend
+            // Update Header Version
             const isDev = window.location.href.includes('mode=dev');
-            const ver = isDev ? (data.Sys_Version_Dev || 'v22.1') : (data.Sys_Version_Live || 'v22.1');
+            const ver = isDev ? (data.Sys_Version_Dev || 'v22.2') : (data.Sys_Version_Live || 'v22.2');
             
             if(verDisplay) {
                 verDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
@@ -148,7 +147,6 @@
     function runCalc() {
         if(!backendData.Item_Name) return;
 
-        // 1. Scrape Inputs
         const inputs = {
             qty: parseFloat(document.getElementById('qty').value) || 1,
             sides: parseInt(document.getElementById('sides').value),
@@ -158,18 +156,16 @@
             setupPerFile: document.getElementById('setup-per-file').checked
         };
 
-        // 2. RUN ENGINE (External JS)
-        // Uses logic_yard.js (Make sure this file is present)
+        // Call External Logic Engine
         const result = calculateYardSign(inputs, backendData);
         const ret = result.retail;
 
-        // 3. Update UI
+        // UI Updates
         const fmt = (n) => "$" + n.toFixed(2);
 
         document.getElementById('ui-unit').innerText = ret.isCustom ? "CUSTOM" : fmt(ret.unitPrice);
         document.getElementById('ui-total').innerText = ret.isCustom ? "CONTACT US" : fmt(ret.grandTotal);
 
-        // Line Items
         document.getElementById('ui-print').innerText = fmt(ret.printTotal);
         document.getElementById('ui-stakes').innerText = fmt(ret.stakeTotal);
         document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
@@ -179,7 +175,6 @@
         document.getElementById('row-design').classList.toggle('hidden', ret.designFee === 0);
         document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-        // Discount Table
         let rowsHtml = "";
         ret.tiers.forEach(tier => {
             if(tier.base === 0) return;
@@ -187,7 +182,6 @@
         });
         document.getElementById('tier-rows').innerHTML = rowsHtml;
 
-        // Job Description
         const sideTxt = inputs.sides === 1 ? "ONE" : "TWO";
         const stakeTxt = inputs.hasStakes ? "with 10\" x 24\" wire H-frame step stakes" : "NO Stakes";
         document.getElementById('job-desc').value = `(x${inputs.qty}) 24" x 18" 4mm Coroplast Signs with direct print latex ink on ${sideTxt} side(s) ${stakeTxt}.`;
