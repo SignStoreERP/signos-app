@@ -3,163 +3,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Command Center v4.1</title>
+    <title>SignOS Nexus | Dev Ops</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="signos-core.js"></script>
     
     <style>
         :root {
-            --bg-dark: #020617; /* Darker Slate 950 */
-            --glass: rgba(15, 23, 42, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.15);
+            --bg-deep: #020617;
+            --glass-panel: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --neon-blue: #3b82f6;
+            --neon-orange: #f97316;
+            --neon-green: #10b981;
         }
-        body { font-family: 'Inter', sans-serif; min-width: 375px; /* Prevent crushing on small phones */ }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-deep);
+            color: #e2e8f0;
+        }
+
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-        
+
+        /* Cyberpunk Grid Background */
         .cyber-grid {
-            background-color: var(--bg-dark);
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
+            background-size: 40px 40px;
         }
 
-        .glass-panel {
-            background: var(--glass);
-            backdrop-filter: blur(16px);
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--glass-panel);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         }
 
-        /* Scrollbar Polish */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; border: 2px solid #0f172a; }
+        .glass-card:hover {
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+            transition: all 0.2s ease;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Animations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .status-dot-pulse::before {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background-color: inherit;
+            animation: pulse-ring 2s infinite;
+            z-index: -1;
+        }
     </style>
 </head>
-<body class="text-slate-200 h-screen flex flex-col cyber-grid overflow-hidden">
+<body class="h-screen flex flex-col cyber-grid overflow-hidden">
 
-    <header class="h-16 border-b border-white/10 bg-slate-900/90 backdrop-blur-md flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
+    <nav class="h-16 border-b border-white/5 bg-slate-900/90 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-50">
         <div class="flex items-center gap-4">
-            <div class="w-3 h-8 bg-orange-500 rounded-sm shadow-[0_0_15px_rgba(249,115,22,0.6)]"></div>
+            <div class="w-10 h-10 bg-slate-800 rounded flex items-center justify-center border border-slate-700 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                <span class="text-xl">🛸</span>
+            </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black tracking-tight text-white leading-none">SignOS <span class="text-slate-400 font-normal">Command</span></h1>
-                <div class="hidden md:block text-[11px] text-orange-400 font-mono tracking-widest uppercase mt-0.5">Dev Ops Environment</div>
+                <h1 class="text-xl font-black tracking-tight text-white leading-none">SignOS <span class="text-slate-500 font-normal">NEXUS</span></h1>
+                <div class="text-[10px] text-blue-400 font-mono tracking-widest uppercase mt-0.5">Development Console v5.0</div>
             </div>
         </div>
         
-        <div class="flex items-center gap-4 font-mono text-xs">
-            <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded bg-slate-800 border border-slate-600">
-                <span class="text-slate-400">USER:</span>
-                <span class="text-white font-bold" id="dev-user">LOADING...</span>
+        <div class="hidden md:flex items-center gap-6 text-xs font-mono">
+            <div class="flex flex-col items-end">
+                <span class="text-slate-500 text-[10px] uppercase">Logged In As</span>
+                <span class="text-white font-bold" id="nav-user">LOADING...</span>
             </div>
-            
-            <a href="menu.html" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-red-900/30 border border-slate-600 hover:border-red-500 rounded text-slate-200 hover:text-red-400 transition font-bold group">
-                <span>EXIT</span>
-                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div class="flex flex-col items-end">
+                <span class="text-slate-500 text-[10px] uppercase">Network IP</span>
+                <span class="text-emerald-400 font-bold" id="nav-ip">...</span>
+            </div>
+            <a href="menu.html" class="ml-4 bg-red-900/20 hover:bg-red-600 hover:text-white text-red-400 border border-red-900/50 px-4 py-2 rounded transition font-bold">
+                EXIT
             </a>
         </div>
-    </header>
+    </nav>
 
-    <div class="flex-1 flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6 relative z-10">
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
         
-        <div class="flex-1 flex flex-col min-w-0 h-full">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 px-1 gap-2">
-                <div>
-                    <h2 class="text-xl font-bold text-white tracking-tight">Twin-Engine Registry</h2>
-                    <p class="text-sm text-slate-400">Real-time version comparison across environments</p>
-                </div>
-                <div class="flex gap-3 text-[11px] font-bold uppercase tracking-wider">
-                    <span class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Synced
-                    </span>
-                    <span class="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 text-orange-300 rounded border border-orange-500/20">
-                        <span class="w-2 h-2 rounded-full bg-orange-500"></span> Update Ready
-                    </span>
-                </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto pr-2 space-y-4 pb-20" id="module-list">
-                <div class="animate-pulse space-y-4">
-                    <div class="h-28 bg-slate-800/40 rounded-xl border border-slate-700"></div>
-                    <div class="h-28 bg-slate-800/40 rounded-xl border border-slate-700"></div>
-                    <div class="h-28 bg-slate-800/40 rounded-xl border border-slate-700"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="hidden md:flex w-72 flex-col gap-6 shrink-0">
+        <main class="flex-1 flex flex-col min-w-0 p-4 lg:p-6 gap-6 overflow-y-auto">
             
-            <div class="glass-panel p-5 rounded-xl relative overflow-hidden">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">System Latency</h3>
-                    <button onclick="pingAPI()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded transition border border-slate-600">REFRESH</button>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <div id="ping-result" class="text-5xl font-black text-slate-500">---</div>
-                    <div class="text-sm text-slate-500 font-mono">MS</div>
-                </div>
-                <div class="h-2 w-full bg-slate-800 mt-4 rounded-full overflow-hidden">
-                    <div id="ping-bar" class="h-full w-0 bg-slate-600 rounded-full transition-all duration-500"></div>
-                </div>
-            </div>
+            <section>
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> External Launch Bay
+                </h2>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
+                        <div class="relative z-10 flex flex-col h-full justify-between">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-3xl">🐙</span>
+                                <span class="text-[10px] font-bold bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded border border-orange-500/30">DEV</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-white group-hover:text-orange-400 transition">Github App</div>
+                                <div class="text-[10px] text-slate-400">Source Code & Commits</div>
+                            </div>
+                        </div>
+                    </a>
 
-            <div class="glass-panel p-5 rounded-xl flex-1 flex flex-col">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Admin Console</h3>
+                    <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
+                        <div class="relative z-10 flex flex-col h-full justify-between">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-3xl">🚀</span>
+                                <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">LIVE</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-white group-hover:text-emerald-400 transition">Github Live</div>
+                                <div class="text-[10px] text-slate-400">Production Deployments</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="https://docs.google.com/spreadsheets/d/1wiaj5rU5J2kv1SobfyysMFynDOsli4Nb6pDvIf3L9_Y/edit" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-green-600/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
+                        <div class="relative z-10 flex flex-col h-full justify-between">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-3xl">📊</span>
+                                <span class="text-[10px] font-bold bg-green-600/20 text-green-300 px-2 py-0.5 rounded border border-green-600/30">DATA</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-white group-hover:text-green-400 transition">Backend Sheet</div>
+                                <div class="text-[10px] text-slate-400">Pricing & Logic Database</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="https://notebooklm.google.com/" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
+                        <div class="relative z-10 flex flex-col h-full justify-between">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-3xl">✨</span>
+                                <span class="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">AI</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-white group-hover:text-purple-400 transition">NotebookLM</div>
+                                <div class="text-[10px] text-slate-400">Project Intelligence</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </section>
+
+            <section class="flex-1 flex flex-col min-h-0">
+                <div class="flex justify-between items-end mb-3">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-white"></span> Twin-Engine Monitor
+                    </h2>
+                    <div class="flex gap-4 text-[10px] font-mono text-slate-400">
+                        <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Synced</div>
+                        <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> Update Ready</div>
+                    </div>
+                </div>
+
+                <div class="hidden lg:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold uppercase text-slate-500 border-b border-slate-800">
+                    <div class="col-span-4">Module / File</div>
+                    <div class="col-span-4 text-center">Development (Orange)</div>
+                    <div class="col-span-4 text-center">Production (Green)</div>
+                </div>
+
+                <div id="module-list" class="flex-1 overflow-y-auto space-y-2 pb-20">
+                    <div class="animate-pulse space-y-2">
+                        <div class="h-16 bg-slate-800/50 rounded-lg"></div>
+                        <div class="h-16 bg-slate-800/50 rounded-lg"></div>
+                        <div class="h-16 bg-slate-800/50 rounded-lg"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <aside class="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900/50 backdrop-blur flex flex-col shrink-0">
+            
+            <div class="p-6 border-b border-slate-800">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">System Heartbeat</h3>
+                    <button onclick="pingAPI()" class="text-[10px] text-blue-400 hover:text-white transition">REFRESH</button>
+                </div>
                 
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <a href="admin_roadmap.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-blue-600/20 hover:border-blue-400 border border-slate-700 rounded-lg transition group">
-                        <span class="text-2xl mb-1 group-hover:scale-110 transition">🗺️</span>
-                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">Roadmap</span>
+                <div class="bg-slate-950 rounded-lg p-4 border border-slate-800/50 shadow-inner">
+                    <div class="flex justify-between items-baseline">
+                        <div class="text-[10px] text-slate-500 uppercase">API Latency</div>
+                        <div class="text-xs text-slate-500 font-mono">ms</div>
+                    </div>
+                    <div id="ping-result" class="text-4xl font-black text-white mt-1">---</div>
+                    <div class="h-1 w-full bg-slate-800 mt-3 rounded-full overflow-hidden">
+                        <div id="ping-bar" class="h-full w-0 bg-emerald-500 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Internal Tools</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="admin_roadmap.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-blue-500 transition group">
+                        <span class="text-2xl mb-2 group-hover:scale-110 transition">🗺️</span>
+                        <span class="text-[10px] font-bold text-slate-300">Roadmap</span>
                     </a>
-                    <a href="admin_viewer.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-purple-600/20 hover:border-purple-400 border border-slate-700 rounded-lg transition group">
-                        <span class="text-2xl mb-1 group-hover:scale-110 transition">📜</span>
-                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">Logs</span>
+                    <a href="admin_viewer.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-purple-500 transition group">
+                        <span class="text-2xl mb-2 group-hover:scale-110 transition">📜</span>
+                        <span class="text-[10px] font-bold text-slate-300">System Logs</span>
                     </a>
-                    <a href="admin_backup.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-emerald-600/20 hover:border-emerald-400 border border-slate-700 rounded-lg transition group">
-                        <span class="text-2xl mb-1 group-hover:scale-110 transition">💾</span>
-                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">Backup</span>
+                    <a href="admin_changelog.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-orange-500 transition group">
+                        <span class="text-2xl mb-2 group-hover:scale-110 transition">⏱️</span>
+                        <span class="text-[10px] font-bold text-slate-300">History</span>
                     </a>
-                    <a href="admin_changelog.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-orange-600/20 hover:border-orange-400 border border-slate-700 rounded-lg transition group">
-                        <span class="text-2xl mb-1 group-hover:scale-110 transition">🕓</span>
-                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">History</span>
+                    <a href="admin_backup.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-emerald-500 transition group">
+                        <span class="text-2xl mb-2 group-hover:scale-110 transition">💾</span>
+                        <span class="text-[10px] font-bold text-slate-300">Backup</span>
                     </a>
                 </div>
 
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">External Links</h3>
-                <div class="space-y-2">
-                    <a href="https://github.com/SignStoreERP/" target="_blank" class="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded border border-transparent hover:border-slate-500 transition flex items-center gap-3">
-                        <span class="text-white text-lg">🐙</span> GitHub Org
-                    </a>
-                    <a href="https://notebooklm.google.com/" target="_blank" class="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded border border-transparent hover:border-slate-500 transition flex items-center gap-3">
-                        <span class="text-blue-400 text-lg">⚡</span> NotebookLM
-                    </a>
+                <div class="mt-8 space-y-3">
+                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assets</h3>
+                     <a href="https://drive.google.com/" target="_blank" class="flex items-center gap-3 p-2 rounded hover:bg-slate-800/50 text-sm text-slate-300 hover:text-white transition">
+                        <span class="text-green-500">📁</span> Google Drive Assets
+                     </a>
+                     <a href="https://chat.google.com/" target="_blank" class="flex items-center gap-3 p-2 rounded hover:bg-slate-800/50 text-sm text-slate-300 hover:text-white transition">
+                        <span class="text-blue-500">💬</span> Google Chat
+                     </a>
                 </div>
             </div>
-        </div>
+
+            <div class="p-4 border-t border-slate-800 text-[10px] text-slate-600 text-center font-mono">
+                SIGNOS ERP // SYSTEM V3.5 <br>
+                AUTHORIZED PERSONNEL ONLY
+            </div>
+        </aside>
+
     </div>
 
     <script>
-        // --- CONSTANTS ---
-        // GitHub Links: Separated "Blob" (View Code) from "Commits" (History)
-        const GH_DEV_BLOB = "https://github.com/SignStoreERP/signos-app/blob/main/";
-        const GH_DEV_HIST = "https://github.com/SignStoreERP/signos-app/commits/main/";
-        
-        const GH_LIVE_BLOB = "https://github.com/SignStoreERP/signos-live/blob/main/";
-        const GH_LIVE_HIST = "https://github.com/SignStoreERP/signos-live/commits/main/";
+        // --- CONFIGURATION ---
+        const REPO_DEV = "https://github.com/SignStoreERP/signos-app/blob/main/";
+        const REPO_LIVE = "https://github.com/SignStoreERP/signos-live/blob/main/";
+        const REPO_HIST_DEV = "https://github.com/SignStoreERP/signos-app/commits/main/";
 
         const val = (obj, key) => obj && (obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "");
 
+        // --- INITIALIZATION ---
         window.onload = function() {
-            // 1. User Setup
+            // 1. User Identity
             const user = sessionStorage.getItem('signos_user') || 'GUEST';
-            document.getElementById('dev-user').innerText = user;
+            document.getElementById('nav-user').innerText = user;
 
-            // 2. Initial Data Fetch
+            // 2. Start Modules
             pingAPI();
             fetchRegistry();
+
+            // 3. IP Watcher (Async)
+            if(typeof clientIP !== 'undefined' && clientIP !== 'Unknown') {
+                 document.getElementById('nav-ip').innerText = clientIP;
+            } else {
+                setTimeout(() => { 
+                    document.getElementById('nav-ip').innerText = (typeof clientIP !== 'undefined') ? clientIP : 'OFFLINE';
+                }, 1000);
+            }
         };
 
         // --- PING FUNCTION ---
@@ -167,149 +286,143 @@
             const el = document.getElementById('ping-result');
             const bar = document.getElementById('ping-bar');
             const start = Date.now();
-
-            el.className = "text-5xl font-black text-slate-600 animate-pulse";
             
+            el.className = "text-4xl font-black text-slate-600 animate-pulse";
+            el.innerText = "...";
+
             try {
                 if(typeof SCRIPT_URL !== 'undefined') {
                     await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
                 } else {
-                    await new Promise(r => setTimeout(r, 600)); // Sim delay
+                    await new Promise(r => setTimeout(r, 600)); // Sim
                 }
+                const ms = Date.now() - start;
+                el.innerText = ms;
                 
-                const duration = Date.now() - start;
-                el.innerText = duration;
-
                 // Color Logic
-                let colorClass = "bg-emerald-500";
-                let textClass = "text-emerald-400";
-                
-                if (duration > 800) { colorClass = "bg-orange-500"; textClass = "text-orange-400"; }
-                if (duration > 2000) { colorClass = "bg-red-500"; textClass = "text-red-500"; }
+                let color = "bg-emerald-500";
+                let text = "text-white";
 
-                el.className = `text-5xl font-black ${textClass}`;
-                bar.className = `h-full ${colorClass} rounded-full transition-all duration-500`;
+                if(ms > 800) { color = "bg-orange-500"; text = "text-orange-400"; }
+                if(ms > 2000) { color = "bg-red-500"; text = "text-red-500"; }
+
+                el.className = `text-4xl font-black ${text}`;
+                bar.className = `h-full ${color} transition-all duration-500`;
                 bar.style.width = "100%";
 
             } catch(e) {
-                el.innerText = "OFF";
-                el.className = "text-5xl font-black text-red-600";
-                bar.className = "h-full bg-red-600 rounded-full";
+                el.innerText = "ERR";
+                bar.className = "h-full bg-red-600";
             }
         }
 
-        // --- REGISTRY BUILDER ---
+        // --- MODULE REGISTRY ---
         async function fetchRegistry() {
             const listEl = document.getElementById('module-list');
-            const user = sessionStorage.getItem('signos_user') || 'Guest';
-
+            
             try {
                 let data = [];
                 if(typeof SCRIPT_URL !== 'undefined') {
-                     const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP || 'Unknown'}&user=${user}`);
+                     const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules`);
                      data = await res.json();
-                     if(data.error) throw new Error(data.error);
                 } else {
-                    console.warn("Backend unavailable.");
+                    // Fallback for demo
+                    console.warn("API Offline");
                 }
 
-                listEl.innerHTML = ""; // Clear loading state
+                listEl.innerHTML = "";
 
-                if(data.length === 0) {
-                    listEl.innerHTML = `<div class="p-10 text-center text-slate-500 border-2 border-dashed border-slate-700 rounded-xl bg-slate-900/50">No modules found in registry.</div>`;
+                if(!data || data.length === 0) {
+                    listEl.innerHTML = `<div class="text-center py-10 text-slate-600 border border-dashed border-slate-800 rounded">No Modules Found via API</div>`;
                     return;
                 }
 
-                // Render Unified Cards
                 data.forEach(row => {
-                    const name = val(row, 'Display_Name') || 'Unnamed Module';
+                    // Extract Data
+                    const name = val(row, 'Display_Name');
                     const file = val(row, 'File_Link');
-                    const cat = val(row, 'Category') || 'SYSTEM';
                     const vDev = val(row, 'Dev_Ver');
                     const vLive = val(row, 'Live_Ver');
+                    const cat = val(row, 'Category') || 'SYSTEM';
 
-                    // Version Logic
+                    // Logic
                     const isSynced = vDev === vLive && vDev !== "";
-                    const isNewer = vDev > vLive && vLive !== "";
-                    
-                    let statusColor = "border-slate-700/50"; // Default
-                    let statusIcon = "";
-                    
-                    if (isSynced) {
-                        statusColor = "border-emerald-500/40 shadow-[0_0_20px_-10px_rgba(16,185,129,0.2)]";
-                        statusIcon = `<span class="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded text-[10px] font-bold border border-emerald-500/20">SYNCED</span>`;
+                    const isNewer = vDev > vLive; // Simple string comparison usually works for v1.1 vs v1.0
+
+                    // Styles
+                    let statusClass = "border-slate-800";
+                    let statusDot = "";
+
+                    if(isSynced) {
+                        statusClass = "border-emerald-500/30 bg-emerald-900/5";
+                        statusDot = `<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>`;
                     } else if (isNewer) {
-                        statusColor = "border-orange-500/40 shadow-[0_0_20px_-10px_rgba(249,115,22,0.2)]";
-                        statusIcon = `<span class="text-orange-400 bg-orange-500/10 px-2 py-1 rounded text-[10px] font-bold border border-orange-500/20">UPDATE READY</span>`;
+                        statusClass = "border-orange-500/50 bg-orange-900/10";
+                        statusDot = `<span class="relative w-2 h-2 rounded-full bg-orange-500 status-dot-pulse"></span>`;
+                    } else {
+                        statusDot = `<span class="w-2 h-2 rounded-full bg-slate-600"></span>`;
                     }
 
-                    // HTML Construction
+                    // Card HTML
                     const card = document.createElement('div');
-                    card.className = `glass-panel rounded-xl flex flex-col md:grid md:grid-cols-12 overflow-hidden transition hover:border-slate-500 duration-200 group mb-4 ${statusColor}`;
-                    
-                    // HEADER SECTION (Left on Desktop, Top on Mobile)
-                    // Spans 4 columns on desktop
+                    card.className = `glass-card rounded-lg flex flex-col lg:grid lg:grid-cols-12 items-center p-3 gap-3 ${statusClass} group`;
+
                     card.innerHTML = `
-                        <div class="col-span-4 p-5 bg-slate-900/60 border-b md:border-b-0 md:border-r border-slate-800 relative">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-2 py-0.5 rounded">${cat}</div>
-                                <div class="md:hidden">${statusIcon}</div> </div>
-                            
-                            <h3 class="text-lg md:text-xl font-bold text-white group-hover:text-blue-400 transition truncate">${name}</h3>
-                            
-                            <div class="flex items-center gap-3 mt-3">
-                                <span class="text-xs font-mono text-slate-500 truncate flex-1">${file}</span>
-                                
-                                <a href="${GH_DEV_HIST}${file}" target="_blank" title="View Commit History" 
-                                   class="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 hover:text-white transition">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <span class="text-[10px] font-bold uppercase">History</span>
-                                </a>
+                        <div class="col-span-4 w-full flex items-center gap-4">
+                            <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded bg-slate-800 text-lg">
+                                ${getIcon(cat)}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-slate-200 text-sm truncate group-hover:text-blue-400 transition">${name}</h4>
+                                    ${statusDot}
+                                </div>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[10px] font-mono text-slate-500 truncate">${file}</span>
+                                    <a href="${REPO_HIST_DEV}${file}" target="_blank" class="text-[10px] bg-slate-800 px-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition" title="View History">CLOCK 🕒</a>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="col-span-8 grid grid-cols-1 md:grid-cols-2 relative">
-                            
-                            <div class="hidden md:flex absolute inset-0 items-center justify-center pointer-events-none z-10">
-                                <div class="bg-slate-900 border border-slate-600 rounded-full p-1.5 shadow-xl text-lg">
-                                    ${isSynced ? '✅' : '⚠️'}
-                                </div>
+                        <div class="col-span-4 w-full bg-slate-950/50 rounded p-2 border border-slate-800 flex justify-between items-center group/dev hover:border-orange-500/50 transition relative overflow-hidden">
+                            <div class="absolute inset-y-0 left-0 w-1 bg-orange-500"></div>
+                            <div class="pl-3">
+                                <div class="text-[10px] text-orange-500/80 font-bold uppercase tracking-wider">Dev Engine</div>
+                                <div class="font-mono text-sm font-bold text-orange-200">${vDev || '--'}</div>
                             </div>
+                            <a href="${REPO_DEV}${file}" target="_blank" class="text-slate-600 hover:text-white px-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </a>
+                        </div>
 
-                            <div class="p-4 border-b md:border-b-0 border-slate-800/50 bg-orange-500/5 relative hover:bg-orange-500/10 transition group/dev">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-[10px] font-black text-orange-500 uppercase tracking-widest">DEV ENGINE</span>
-                                    <a href="${GH_DEV_BLOB}${file}" target="_blank" class="text-slate-500 hover:text-white transition opacity-0 group-hover/dev:opacity-100 flex items-center gap-1 text-[10px] uppercase font-bold">
-                                        View Code <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                                    </a>
-                                </div>
-                                <div class="font-mono text-lg font-bold ${vDev ? 'text-orange-200' : 'text-slate-600'}">
-                                    ${vDev || 'Not Deployed'}
-                                </div>
-                                <div class="text-[10px] text-orange-500/50 mt-1 font-mono">branch: main</div>
+                        <div class="col-span-4 w-full bg-slate-950/50 rounded p-2 border border-slate-800 flex justify-between items-center group/live hover:border-emerald-500/50 transition relative overflow-hidden">
+                            <div class="absolute inset-y-0 left-0 w-1 bg-emerald-500"></div>
+                            <div class="pl-3">
+                                <div class="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Live Engine</div>
+                                <div class="font-mono text-sm font-bold text-emerald-200">${vLive || '--'}</div>
                             </div>
-
-                            <div class="p-4 bg-emerald-500/5 relative hover:bg-emerald-500/10 transition group/live md:border-l border-slate-800/50">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">LIVE ENGINE</span>
-                                    <a href="${GH_LIVE_BLOB}${file}" target="_blank" class="text-slate-500 hover:text-white transition opacity-0 group-hover/live:opacity-100 flex items-center gap-1 text-[10px] uppercase font-bold">
-                                        View Code <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                                    </a>
-                                </div>
-                                <div class="font-mono text-lg font-bold ${vLive ? 'text-emerald-200' : 'text-slate-600'}">
-                                    ${vLive || 'Not Deployed'}
-                                </div>
-                                <div class="text-[10px] text-emerald-500/50 mt-1 font-mono">branch: main</div>
-                            </div>
-
+                            <a href="${REPO_LIVE}${file}" target="_blank" class="text-slate-600 hover:text-white px-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </a>
                         </div>
                     `;
                     listEl.appendChild(card);
                 });
 
             } catch(e) {
-                listEl.innerHTML = `<div class="p-6 bg-red-900/20 border border-red-500 text-red-300 rounded-xl text-center text-sm">System Error: ${e.message}</div>`;
+                console.error(e);
             }
+        }
+
+        function getIcon(cat) {
+            const map = {
+                'Rigid Signs': '🛡️',
+                'Roll Media': '🖨️',
+                'Services': '🔧',
+                'SYSTEM': '⚙️',
+                'Admin': '🔑'
+            };
+            return map[cat] || '📦';
         }
     </script>
 </body>
