@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cost Matrix v1.0</title>
+    <title>Cost Matrix v1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -72,6 +72,11 @@
     // --- 2. FETCH DATA ---
     async function loadData() {
         document.getElementById('loader').classList.remove('hidden');
+        
+        // Status Indicators
+        const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+
         try {
             // Parallel Fetch: Definitions AND Matrix
             const [defRes, matRes] = await Promise.all([
@@ -91,8 +96,25 @@
             renderMatrix();
             document.getElementById('loader').classList.add('hidden');
 
+            // UPDATE HEADER TO ONLINE
+            if(statusText) {
+                statusText.innerText = "ONLINE";
+                statusText.className = "font-bold text-green-500";
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                statusDot.classList.remove("animate-pulse");
+            }
+
         } catch(e) {
+            console.error(e);
             alert("Error loading matrix: " + e.message);
+            document.getElementById('loader').classList.add('hidden');
+            
+            // UPDATE HEADER TO OFFLINE
+            if(statusText) {
+                statusText.innerText = "OFFLINE";
+                statusText.className = "font-bold text-red-500";
+                statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+            }
         }
     }
 
