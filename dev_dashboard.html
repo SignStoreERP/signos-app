@@ -3,169 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Command Center v4.0</title>
+    <title>SignOS Command Center v4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="signos-core.js"></script>
     
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --glass: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-dark: #020617; /* Darker Slate 950 */
+            --glass: rgba(15, 23, 42, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.15);
         }
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; min-width: 375px; /* Prevent crushing on small phones */ }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         
-        /* Subtle Grid Background */
         .cyber-grid {
-            background-size: 40px 40px;
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         }
 
         /* Scrollbar Polish */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        /* Utilities */
-        .glass-panel {
-            background: var(--glass);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; border: 2px solid #0f172a; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 h-screen overflow-hidden flex flex-col cyber-grid">
+<body class="text-slate-200 h-screen flex flex-col cyber-grid overflow-hidden">
 
-    <header class="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-50">
+    <header class="h-16 border-b border-white/10 bg-slate-900/90 backdrop-blur-md flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
         <div class="flex items-center gap-4">
-            <div class="w-2 h-8 bg-orange-500 rounded-sm shadow-[0_0_15px_rgba(249,115,22,0.5)]"></div>
+            <div class="w-3 h-8 bg-orange-500 rounded-sm shadow-[0_0_15px_rgba(249,115,22,0.6)]"></div>
             <div>
-                <h1 class="text-xl font-black tracking-tight text-white leading-none">SignOS <span class="text-slate-500 font-normal">Command</span></h1>
-                <div class="text-[10px] text-orange-400 font-mono tracking-widest uppercase mt-0.5">Dev Ops Environment</div>
+                <h1 class="text-xl md:text-2xl font-black tracking-tight text-white leading-none">SignOS <span class="text-slate-400 font-normal">Command</span></h1>
+                <div class="hidden md:block text-[11px] text-orange-400 font-mono tracking-widest uppercase mt-0.5">Dev Ops Environment</div>
             </div>
         </div>
         
-        <div class="flex items-center gap-6 font-mono text-xs">
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded bg-slate-800/50 border border-slate-700">
-                <span class="text-slate-500">USER_ID:</span>
-                <span class="text-white font-bold" id="dev-user">GUEST</span>
+        <div class="flex items-center gap-4 font-mono text-xs">
+            <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded bg-slate-800 border border-slate-600">
+                <span class="text-slate-400">USER:</span>
+                <span class="text-white font-bold" id="dev-user">LOADING...</span>
             </div>
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded bg-slate-800/50 border border-slate-700">
-                <span class="text-slate-500">NET_IP:</span>
-                <span class="text-emerald-400 font-bold" id="dev-ip">LOADING...</span>
-            </div>
-            <a href="menu.html" class="group flex items-center gap-2 text-slate-400 hover:text-white transition">
+            
+            <a href="menu.html" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-red-900/30 border border-slate-600 hover:border-red-500 rounded text-slate-200 hover:text-red-400 transition font-bold group">
                 <span>EXIT</span>
                 <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </a>
         </div>
     </header>
 
-    <div class="flex-1 flex overflow-hidden p-6 gap-6 relative z-10">
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6 relative z-10">
         
-        <div class="flex-1 flex flex-col min-w-0">
-            <div class="flex justify-between items-end mb-4 px-2">
+        <div class="flex-1 flex flex-col min-w-0 h-full">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 px-1 gap-2">
                 <div>
-                    <h2 class="text-lg font-bold text-white">Twin-Engine Registry</h2>
-                    <p class="text-xs text-slate-500">Real-time version comparison across environments</p>
+                    <h2 class="text-xl font-bold text-white tracking-tight">Twin-Engine Registry</h2>
+                    <p class="text-sm text-slate-400">Real-time version comparison across environments</p>
                 </div>
-                <div class="flex gap-2 text-[10px] font-bold uppercase tracking-wider">
-                    <span class="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Synced
+                <div class="flex gap-3 text-[11px] font-bold uppercase tracking-wider">
+                    <span class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Synced
                     </span>
-                    <span class="flex items-center gap-1.5 px-2 py-1 bg-orange-500/10 text-orange-400 rounded border border-orange-500/20">
-                        <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Update Ready
+                    <span class="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 text-orange-300 rounded border border-orange-500/20">
+                        <span class="w-2 h-2 rounded-full bg-orange-500"></span> Update Ready
                     </span>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto pr-2 space-y-3" id="module-list">
-                <div class="animate-pulse space-y-3">
-                    <div class="h-24 bg-slate-800/50 rounded-xl"></div>
-                    <div class="h-24 bg-slate-800/50 rounded-xl"></div>
-                    <div class="h-24 bg-slate-800/50 rounded-xl"></div>
+            <div class="flex-1 overflow-y-auto pr-2 space-y-4 pb-20" id="module-list">
+                <div class="animate-pulse space-y-4">
+                    <div class="h-28 bg-slate-800/40 rounded-xl border border-slate-700"></div>
+                    <div class="h-28 bg-slate-800/40 rounded-xl border border-slate-700"></div>
+                    <div class="h-28 bg-slate-800/40 rounded-xl border border-slate-700"></div>
                 </div>
             </div>
         </div>
 
-        <div class="w-80 flex flex-col gap-6 shrink-0">
+        <div class="hidden md:flex w-72 flex-col gap-6 shrink-0">
             
-            <div class="glass-panel p-5 rounded-xl relative overflow-hidden group">
+            <div class="glass-panel p-5 rounded-xl relative overflow-hidden">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">System Latency</h3>
-                    <button onclick="pingAPI()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded transition border border-slate-700">REFRESH</button>
+                    <button onclick="pingAPI()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded transition border border-slate-600">REFRESH</button>
                 </div>
                 <div class="flex items-baseline gap-2">
-                    <div id="ping-result" class="text-4xl font-black text-slate-500">---</div>
-                    <div class="text-xs text-slate-600 font-mono">MS</div>
+                    <div id="ping-result" class="text-5xl font-black text-slate-500">---</div>
+                    <div class="text-sm text-slate-500 font-mono">MS</div>
                 </div>
-                <div class="h-1.5 w-full bg-slate-800 mt-4 rounded-full overflow-hidden">
+                <div class="h-2 w-full bg-slate-800 mt-4 rounded-full overflow-hidden">
                     <div id="ping-bar" class="h-full w-0 bg-slate-600 rounded-full transition-all duration-500"></div>
                 </div>
             </div>
 
             <div class="glass-panel p-5 rounded-xl flex-1 flex flex-col">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Command Tools</h3>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Admin Console</h3>
                 
                 <div class="grid grid-cols-2 gap-3 mb-6">
-                    <a href="admin_roadmap.html" class="flex flex-col items-center justify-center p-3 bg-slate-800/40 hover:bg-blue-600/20 hover:border-blue-500/50 border border-slate-700 rounded-lg transition group">
-                        <span class="text-lg mb-1 group-hover:scale-110 transition">🗺️</span>
-                        <span class="text-[10px] font-bold text-slate-300 group-hover:text-white">Roadmap</span>
+                    <a href="admin_roadmap.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-blue-600/20 hover:border-blue-400 border border-slate-700 rounded-lg transition group">
+                        <span class="text-2xl mb-1 group-hover:scale-110 transition">🗺️</span>
+                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">Roadmap</span>
                     </a>
-                    <a href="admin_viewer.html" class="flex flex-col items-center justify-center p-3 bg-slate-800/40 hover:bg-purple-600/20 hover:border-purple-500/50 border border-slate-700 rounded-lg transition group">
-                        <span class="text-lg mb-1 group-hover:scale-110 transition">📜</span>
-                        <span class="text-[10px] font-bold text-slate-300 group-hover:text-white">Logs</span>
+                    <a href="admin_viewer.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-purple-600/20 hover:border-purple-400 border border-slate-700 rounded-lg transition group">
+                        <span class="text-2xl mb-1 group-hover:scale-110 transition">📜</span>
+                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">Logs</span>
                     </a>
-                    <a href="admin_backup.html" class="flex flex-col items-center justify-center p-3 bg-slate-800/40 hover:bg-emerald-600/20 hover:border-emerald-500/50 border border-slate-700 rounded-lg transition group">
-                        <span class="text-lg mb-1 group-hover:scale-110 transition">💾</span>
-                        <span class="text-[10px] font-bold text-slate-300 group-hover:text-white">Backup</span>
+                    <a href="admin_backup.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-emerald-600/20 hover:border-emerald-400 border border-slate-700 rounded-lg transition group">
+                        <span class="text-2xl mb-1 group-hover:scale-110 transition">💾</span>
+                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">Backup</span>
                     </a>
-                    <a href="admin_changelog.html" class="flex flex-col items-center justify-center p-3 bg-slate-800/40 hover:bg-orange-600/20 hover:border-orange-500/50 border border-slate-700 rounded-lg transition group">
-                        <span class="text-lg mb-1 group-hover:scale-110 transition">🕓</span>
-                        <span class="text-[10px] font-bold text-slate-300 group-hover:text-white">History</span>
+                    <a href="admin_changelog.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/40 hover:bg-orange-600/20 hover:border-orange-400 border border-slate-700 rounded-lg transition group">
+                        <span class="text-2xl mb-1 group-hover:scale-110 transition">🕓</span>
+                        <span class="text-xs font-bold text-slate-300 group-hover:text-white">History</span>
                     </a>
                 </div>
 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">External Links</h3>
                 <div class="space-y-2">
-                    <a href="https://notebooklm.google.com/" target="_blank" class="block w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-700/50 rounded border border-transparent hover:border-slate-600 transition flex items-center gap-3">
-                        <span class="text-blue-400">⚡</span> NotebookLM
+                    <a href="https://github.com/SignStoreERP/" target="_blank" class="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded border border-transparent hover:border-slate-500 transition flex items-center gap-3">
+                        <span class="text-white text-lg">🐙</span> GitHub Org
                     </a>
-                    <a href="https://drive.google.com/" target="_blank" class="block w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-700/50 rounded border border-transparent hover:border-slate-600 transition flex items-center gap-3">
-                        <span class="text-green-400">📂</span> Google Drive
-                    </a>
-                     <a href="https://github.com/SignStoreERP/" target="_blank" class="block w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-700/50 rounded border border-transparent hover:border-slate-600 transition flex items-center gap-3">
-                        <span class="text-white">🐙</span> GitHub Org
+                    <a href="https://notebooklm.google.com/" target="_blank" class="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded border border-transparent hover:border-slate-500 transition flex items-center gap-3">
+                        <span class="text-blue-400 text-lg">⚡</span> NotebookLM
                     </a>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
-        // Constants
-        const GH_DEV_URL = "https://github.com/SignStoreERP/signos-app/commits/main/";
-        const GH_LIVE_URL = "https://github.com/SignStoreERP/signos-live/commits/main/";
+        // --- CONSTANTS ---
+        // GitHub Links: Separated "Blob" (View Code) from "Commits" (History)
+        const GH_DEV_BLOB = "https://github.com/SignStoreERP/signos-app/blob/main/";
+        const GH_DEV_HIST = "https://github.com/SignStoreERP/signos-app/commits/main/";
+        
+        const GH_LIVE_BLOB = "https://github.com/SignStoreERP/signos-live/blob/main/";
+        const GH_LIVE_HIST = "https://github.com/SignStoreERP/signos-live/commits/main/";
 
-        // Helper: Safely get value from object
         const val = (obj, key) => obj && (obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "");
 
         window.onload = function() {
-            // 1. User/IP Setup
-            const user = sessionStorage.getItem('signos_user') || 'DEV_GUEST';
+            // 1. User Setup
+            const user = sessionStorage.getItem('signos_user') || 'GUEST';
             document.getElementById('dev-user').innerText = user;
-
-            const ipCheck = setInterval(() => {
-                if(typeof clientIP !== 'undefined' && clientIP !== 'Unknown') {
-                    document.getElementById('dev-ip').innerText = clientIP;
-                    clearInterval(ipCheck);
-                }
-            }, 200);
 
             // 2. Initial Data Fetch
             pingAPI();
@@ -178,14 +168,13 @@
             const bar = document.getElementById('ping-bar');
             const start = Date.now();
 
-            el.className = "text-4xl font-black text-slate-600 animate-pulse";
+            el.className = "text-5xl font-black text-slate-600 animate-pulse";
             
             try {
-                // Mock ping for UI demo if script_url undefined
                 if(typeof SCRIPT_URL !== 'undefined') {
                     await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
                 } else {
-                    await new Promise(r => setTimeout(r, 400)); // Simulated delay
+                    await new Promise(r => setTimeout(r, 600)); // Sim delay
                 }
                 
                 const duration = Date.now() - start;
@@ -195,16 +184,16 @@
                 let colorClass = "bg-emerald-500";
                 let textClass = "text-emerald-400";
                 
-                if (duration > 500) { colorClass = "bg-orange-500"; textClass = "text-orange-400"; }
-                if (duration > 1500) { colorClass = "bg-red-500"; textClass = "text-red-500"; }
+                if (duration > 800) { colorClass = "bg-orange-500"; textClass = "text-orange-400"; }
+                if (duration > 2000) { colorClass = "bg-red-500"; textClass = "text-red-500"; }
 
-                el.className = `text-4xl font-black ${textClass}`;
+                el.className = `text-5xl font-black ${textClass}`;
                 bar.className = `h-full ${colorClass} rounded-full transition-all duration-500`;
                 bar.style.width = "100%";
 
             } catch(e) {
-                el.innerText = "ERR";
-                el.className = "text-4xl font-black text-red-600";
+                el.innerText = "OFF";
+                el.className = "text-5xl font-black text-red-600";
                 bar.className = "h-full bg-red-600 rounded-full";
             }
         }
@@ -216,20 +205,18 @@
 
             try {
                 let data = [];
-                
                 if(typeof SCRIPT_URL !== 'undefined') {
-                     const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP}&user=${user}`);
+                     const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules&ip=${clientIP || 'Unknown'}&user=${user}`);
                      data = await res.json();
                      if(data.error) throw new Error(data.error);
                 } else {
-                    // Fallback for visual testing if backend not connected
-                    console.warn("Backend not connected, rendering empty state or mock data would go here.");
+                    console.warn("Backend unavailable.");
                 }
 
                 listEl.innerHTML = ""; // Clear loading state
 
                 if(data.length === 0) {
-                    listEl.innerHTML = `<div class="p-8 text-center text-slate-500 border border-dashed border-slate-700 rounded-xl">No modules found in registry.</div>`;
+                    listEl.innerHTML = `<div class="p-10 text-center text-slate-500 border-2 border-dashed border-slate-700 rounded-xl bg-slate-900/50">No modules found in registry.</div>`;
                     return;
                 }
 
@@ -244,61 +231,75 @@
                     // Version Logic
                     const isSynced = vDev === vLive && vDev !== "";
                     const isNewer = vDev > vLive && vLive !== "";
-                    const onlyDev = vDev && !vLive;
                     
-                    let statusColor = "border-slate-700"; // Default
+                    let statusColor = "border-slate-700/50"; // Default
                     let statusIcon = "";
                     
                     if (isSynced) {
-                        statusColor = "border-emerald-500/50 shadow-[0_0_15px_-5px_rgba(16,185,129,0.3)]";
-                        statusIcon = `<span class="text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded text-[10px] font-bold border border-emerald-500/20">SYNCED</span>`;
-                    } else if (isNewer || onlyDev) {
-                        statusColor = "border-orange-500/50 shadow-[0_0_15px_-5px_rgba(249,115,22,0.3)]";
-                        statusIcon = `<span class="text-orange-500 bg-orange-500/10 px-2 py-1 rounded text-[10px] font-bold border border-orange-500/20">UPDATE READY</span>`;
+                        statusColor = "border-emerald-500/40 shadow-[0_0_20px_-10px_rgba(16,185,129,0.2)]";
+                        statusIcon = `<span class="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded text-[10px] font-bold border border-emerald-500/20">SYNCED</span>`;
+                    } else if (isNewer) {
+                        statusColor = "border-orange-500/40 shadow-[0_0_20px_-10px_rgba(249,115,22,0.2)]";
+                        statusIcon = `<span class="text-orange-400 bg-orange-500/10 px-2 py-1 rounded text-[10px] font-bold border border-orange-500/20">UPDATE READY</span>`;
                     }
 
                     // HTML Construction
                     const card = document.createElement('div');
-                    card.className = `glass-panel rounded-xl p-0 flex flex-col md:flex-row items-stretch overflow-hidden transition hover:-translate-y-1 duration-200 group ${statusColor}`;
+                    card.className = `glass-panel rounded-xl flex flex-col md:grid md:grid-cols-12 overflow-hidden transition hover:border-slate-500 duration-200 group mb-4 ${statusColor}`;
                     
+                    // HEADER SECTION (Left on Desktop, Top on Mobile)
+                    // Spans 4 columns on desktop
                     card.innerHTML = `
-                        <div class="p-4 w-full md:w-64 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-center shrink-0 relative">
-                            <div class="absolute top-3 right-3 md:hidden">${statusIcon}</div>
-                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">${cat}</div>
-                            <div class="font-bold text-white text-sm group-hover:text-blue-400 transition truncate">${name}</div>
-                            <div class="text-[10px] font-mono text-slate-600 truncate mt-1">${file}</div>
+                        <div class="col-span-4 p-5 bg-slate-900/60 border-b md:border-b-0 md:border-r border-slate-800 relative">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-2 py-0.5 rounded">${cat}</div>
+                                <div class="md:hidden">${statusIcon}</div> </div>
+                            
+                            <h3 class="text-lg md:text-xl font-bold text-white group-hover:text-blue-400 transition truncate">${name}</h3>
+                            
+                            <div class="flex items-center gap-3 mt-3">
+                                <span class="text-xs font-mono text-slate-500 truncate flex-1">${file}</span>
+                                
+                                <a href="${GH_DEV_HIST}${file}" target="_blank" title="View Commit History" 
+                                   class="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 hover:text-white transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span class="text-[10px] font-bold uppercase">History</span>
+                                </a>
+                            </div>
                         </div>
 
-                        <div class="flex-1 grid grid-cols-2 relative">
+                        <div class="col-span-8 grid grid-cols-1 md:grid-cols-2 relative">
                             
                             <div class="hidden md:flex absolute inset-0 items-center justify-center pointer-events-none z-10">
-                                <div class="bg-slate-900 border border-slate-700 rounded-full p-1 shadow-xl">
+                                <div class="bg-slate-900 border border-slate-600 rounded-full p-1.5 shadow-xl text-lg">
                                     ${isSynced ? '✅' : '⚠️'}
                                 </div>
                             </div>
 
-                            <div class="p-3 border-r border-slate-800/50 bg-orange-500/5 relative hover:bg-orange-500/10 transition">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-[10px] font-bold text-orange-600">DEV ENGINE</span>
-                                    <a href="${GH_DEV_URL}${file}" target="_blank" class="text-slate-500 hover:text-white transition">
-                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                            <div class="p-4 border-b md:border-b-0 border-slate-800/50 bg-orange-500/5 relative hover:bg-orange-500/10 transition group/dev">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] font-black text-orange-500 uppercase tracking-widest">DEV ENGINE</span>
+                                    <a href="${GH_DEV_BLOB}${file}" target="_blank" class="text-slate-500 hover:text-white transition opacity-0 group-hover/dev:opacity-100 flex items-center gap-1 text-[10px] uppercase font-bold">
+                                        View Code <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                                     </a>
                                 </div>
-                                <div class="font-mono text-xs font-bold ${vDev ? 'text-orange-200' : 'text-slate-600'}">
+                                <div class="font-mono text-lg font-bold ${vDev ? 'text-orange-200' : 'text-slate-600'}">
                                     ${vDev || 'Not Deployed'}
                                 </div>
+                                <div class="text-[10px] text-orange-500/50 mt-1 font-mono">branch: main</div>
                             </div>
 
-                            <div class="p-3 bg-emerald-500/5 relative hover:bg-emerald-500/10 transition">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-[10px] font-bold text-emerald-600">LIVE ENGINE</span>
-                                    <a href="${GH_LIVE_URL}${file}" target="_blank" class="text-slate-500 hover:text-white transition">
-                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                            <div class="p-4 bg-emerald-500/5 relative hover:bg-emerald-500/10 transition group/live md:border-l border-slate-800/50">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">LIVE ENGINE</span>
+                                    <a href="${GH_LIVE_BLOB}${file}" target="_blank" class="text-slate-500 hover:text-white transition opacity-0 group-hover/live:opacity-100 flex items-center gap-1 text-[10px] uppercase font-bold">
+                                        View Code <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                                     </a>
                                 </div>
-                                <div class="font-mono text-xs font-bold ${vLive ? 'text-emerald-200' : 'text-slate-600'}">
+                                <div class="font-mono text-lg font-bold ${vLive ? 'text-emerald-200' : 'text-slate-600'}">
                                     ${vLive || 'Not Deployed'}
                                 </div>
+                                <div class="text-[10px] text-emerald-500/50 mt-1 font-mono">branch: main</div>
                             </div>
 
                         </div>
@@ -307,7 +308,7 @@
                 });
 
             } catch(e) {
-                listEl.innerHTML = `<div class="p-6 bg-red-900/20 border border-red-500 text-red-400 rounded-xl text-center text-sm">System Error: ${e.message}</div>`;
+                listEl.innerHTML = `<div class="p-6 bg-red-900/20 border border-red-500 text-red-300 rounded-xl text-center text-sm">System Error: ${e.message}</div>`;
             }
         }
     </script>
