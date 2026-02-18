@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.8.0)
- * Features: Unified Dashboard, Auto-Sizing Container, Engineering Grid.
+ * PURE PHYSICS ENGINE: ACM Signs (v2.8.1)
+ * Features: Dynamic Aspect Ratio, CSS Background Fill, Technical BoM.
  */
 function calculateACM(inputs, data) {
     // --- 1. RETAIL ENGINE ---
@@ -46,92 +46,60 @@ function calculateACM(inputs, data) {
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign);
 
     // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // UPDATED: Unified Dashboard (Hides HTML footer, draws everything in SVG)
+    // UPDATED: Dynamic Canvas & CSS Background Fill
     function generateSVG(layout, limitQty, stockName) {
         if (!layout) return "";
         
-        // A. DOM MANIPULATION (The "Takeover")
-        // We find the container and the existing HTML footer to seamlessly replace them.
-        let boxW = 500, boxH = 300; // Defaults
-        const container = document.getElementById('nest-container');
-        if (container) {
-            boxW = container.clientWidth || 500;
-            boxH = container.clientHeight || 300;
-            
-            // Hide the default HTML footer to prevent overlap
-            // We look for the absolute positioned div at the bottom
-            const oldFooter = container.querySelector('.absolute.bottom-0');
-            if (oldFooter) oldFooter.style.display = 'none';
-        }
-
-        // B. Dimensions
+        // 1. Dimensions
         const sw = layout.sheetW;
         const sh = layout.sheetH;
         
-        // Footer Height: Fixed pixel height for the dashboard (approx 60px)
-        const footerH = 60; 
-        const canvasW = boxW;
-        const canvasH = boxH;
-        const viewH = canvasH - footerH; // Area available for drawing the sheet
-
-        // C. Scaling (Fit Sheet into View Area)
-        // We calculate the scale factor to fit the sheet within the view area (with padding)
-        const pad = 20;
-        const scaleX = (canvasW - (pad*2)) / sw;
-        const scaleY = (viewH - (pad*2)) / sh;
-        const scale = Math.min(scaleX, scaleY);
+        // 2. Footer Height Calculation
+        // We set the footer to be 15% of the sheet's height, or a minimum pixel value
+        // to ensure text is readable.
+        const footerH = Math.max(sh * 0.15, 8); 
+        const totalH = sh + footerH;
         
-        // Center the sheet
-        const drawW = sw * scale;
-        const drawH = sh * scale;
-        const offX = (canvasW - drawW) / 2;
-        const offY = (viewH - drawH) / 2;
-
-        // D. Styling (Engineering Blueprints)
+        // 3. Styling
         const style = {
-            bgFill: "#ffffff",      // White Paper
-            gridMajor: "#bfdbfe",   // Blue-200
-            gridMinor: "#f0f9ff",   // Sky-50
+            bgCSS: "#f1f5f9",       // CSS Background (Slate-100) - Fills Window
             sheetFill: "#ffffff",   // White Sheet
-            sheetStroke: "#334155", // Slate-700
-            partFill: "rgba(37, 99, 235, 0.15)", // Blue-600 Light
-            partStroke: "#2563eb",  // Blue-600
-            footerBg: "#0f172a",    // Slate-900 (Unified Footer)
-            textMain: "#f8fafc",    // Slate-50
-            textAccent: "#38bdf8",  // Sky-400
-            textDim: "#64748b"      // Slate-500
+            sheetStroke: "#475569", // Slate-600 Border
+            partFill: "rgba(37, 99, 235, 0.15)", // Blue-600 (15% Opacity)
+            partStroke: "#2563eb",  // Blue-600 Line
+            bomBg: "#0f172a",       // Slate-900 (Footer Background)
+            bomText: "#e2e8f0",     // Slate-200 (Text)
+            bomHighlight: "#38bdf8" // Sky-400 (Accent Text)
         };
 
-        // E. Logic: Active Sheet Calculation
+        // 4. Logic: Active Sheet Visualization
         const remainder = limitQty % layout.perSheet;
         const itemsOnActiveSheet = (remainder === 0) ? layout.perSheet : remainder;
         const fullSheets = (remainder === 0) ? (limitQty / layout.perSheet) : Math.floor(limitQty / layout.perSheet);
         const partialSheets = (remainder === 0) ? 0 : 1;
         const totalSheetsNeeded = Math.ceil(limitQty / layout.perSheet);
-        
-        const areaUsed = itemsOnActiveSheet * layout.partW * layout.partH;
-        const wastePct = ((1 - (areaUsed / (sw * sh))) * 100).toFixed(0);
 
-        // F. Generate Parts (Scaled)
+        // 5. Generate Parts
         let rects = "";
         let count = 0;
         outerLoop:
         for (let r = 0; r < layout.rows; r++) {
             for (let c = 0; c < layout.cols; c++) {
                 if (count >= itemsOnActiveSheet) break outerLoop;
-                const px = c * layout.partW;
-                const py = r * layout.partH;
-                const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
-                const showLabel = (layout.partW * scale > 30 && layout.partH * scale > 15); // Dynamic label hiding
 
-                rects += `<g transform="translate(${px}, ${py})">
+                const x = c * layout.partW;
+                const y = r * layout.partH;
+                const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
+                const showLabel = (layout.partW > 5 && layout.partH > 5);
+
+                rects += `<g transform="translate(${x}, ${y})">
                     <rect width="${layout.partW}" height="${layout.partH}" 
                           fill="${style.partFill}" 
                           stroke="${style.partStroke}" 
-                          stroke-width="${1/scale}" />
+                          stroke-width="0.1" />
                     ${showLabel ? 
                         `<text x="${layout.partW/2}" y="${layout.partH/2}" 
-                               font-family="sans-serif" font-size="${12/scale}" 
+                               font-family="monospace" font-size="1.5" 
                                fill="${style.partStroke}" text-anchor="middle" 
                                dominant-baseline="middle" font-weight="bold" opacity="0.9">${label}</text>` 
                     : ''}
@@ -140,45 +108,42 @@ function calculateACM(inputs, data) {
             }
         }
 
-        // G. Render Full Window SVG
-        // Note: We use pixel-perfect viewBox based on the container size
-        return `<svg viewBox="0 0 ${canvasW} ${canvasH}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; display:block; background-color: ${style.bgFill};">
-            <defs>
-                <pattern id="gridMinor" width="15" height="15" patternUnits="userSpaceOnUse">
-                    <path d="M 15 0 L 0 0 0 15" fill="none" stroke="${style.gridMinor}" stroke-width="1"/>
-                </pattern>
-                <pattern id="gridMajor" width="150" height="150" patternUnits="userSpaceOnUse">
-                    <rect width="150" height="150" fill="url(#gridMinor)" />
-                    <path d="M 150 0 L 0 0 0 150" fill="none" stroke="${style.gridMajor}" stroke-width="1"/>
-                </pattern>
-            </defs>
+        // 6. BoM Data Calculation
+        const areaUsed = itemsOnActiveSheet * layout.partW * layout.partH;
+        const wastePct = ((1 - (areaUsed / (sw * sh))) * 100).toFixed(0);
+        
+        // Font Sizing Logic (Relative to Canvas Width)
+        const fsMain = Math.min(sw * 0.06, footerH * 0.35); 
+        const fsSub = Math.min(sw * 0.04, footerH * 0.25);
+        const padX = sw * 0.03;
+        const line1Y = sh + (footerH * 0.35);
+        const line2Y = sh + (footerH * 0.75);
+
+        // 7. Return SVG
+        // KEY FIX: background-color is applied to the STYLE attribute of the SVG.
+        // This ensures the color fills the HTML container even if aspect ratio differs.
+        return `<svg viewBox="0 0 ${sw} ${totalH}" preserveAspectRatio="xMidYMid meet" 
+                     style="width:100%; height:100%; display:block; background-color: ${style.bgCSS}; box-shadow: inset 0 0 20px rgba(0,0,0,0.05);">
             
-            <rect width="${canvasW}" height="${canvasH}" fill="url(#gridMajor)" />
+            <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" />
             
-            <g transform="translate(${offX}, ${offY}) scale(${scale})">
-                <rect x="${2/scale}" y="${2/scale}" width="${sw}" height="${sh}" fill="rgba(0,0,0,0.1)" />
-                <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="${2/scale}" />
-                ${rects}
-            </g>
+            ${rects}
             
-            <g transform="translate(0, ${viewH})">
-                <rect width="${canvasW}" height="${footerH}" fill="${style.footerBg}" />
-                
-                <text x="15" y="22" font-family="sans-serif" font-size="14" fill="${style.textMain}" font-weight="bold">
-                    STOCK: ${stockName}
-                </text>
-                <text x="${canvasW/2}" y="22" font-family="sans-serif" font-size="14" fill="${style.textAccent}" text-anchor="middle" font-weight="bold">
-                    REQ: ${totalSheetsNeeded} SHEET${totalSheetsNeeded>1?'S':''} (${fullSheets} FULL / ${partialSheets} OPEN)
-                </text>
-                <text x="${canvasW-15}" y="22" font-family="sans-serif" font-size="14" fill="${style.textMain}" text-anchor="end" font-weight="bold">
-                    WASTE: ${wastePct}%
-                </text>
-                
-                <line x1="0" y1="38" x2="${canvasW}" y2="38" stroke="#334155" stroke-width="1" />
-                <text x="${canvasW/2}" y="52" font-family="sans-serif" font-size="10" fill="${style.textDim}" text-anchor="middle" letter-spacing="0.5">
-                    PRODUCTION SIMULATION: Analyzes material yield and cut paths to inform accurate costing.
-                </text>
-            </g>
+            <rect x="0" y="${sh}" width="${sw}" height="${footerH}" fill="${style.bomBg}" />
+            
+            <text x="${padX}" y="${line1Y}" font-family="sans-serif" font-size="${fsMain}" fill="${style.bomHighlight}" font-weight="bold" dominant-baseline="middle">
+                STOCK: ${stockName}
+            </text>
+            <text x="${sw - padX}" y="${line1Y}" font-family="sans-serif" font-size="${fsMain}" fill="${style.bomText}" text-anchor="end" dominant-baseline="middle">
+                REQ: ${totalSheetsNeeded} SHTS
+            </text>
+            
+            <text x="${padX}" y="${line2Y}" font-family="sans-serif" font-size="${fsSub}" fill="${style.bomText}" opacity="0.8" dominant-baseline="middle">
+                INV: ${fullSheets} FULL / ${partialSheets} OPEN
+            </text>
+            <text x="${sw - padX}" y="${line2Y}" font-family="sans-serif" font-size="${fsSub}" fill="${style.bomText}" text-anchor="end" opacity="0.8" dominant-baseline="middle">
+                WASTE: ${wastePct}%
+            </text>
         </svg>`;
     }
 
