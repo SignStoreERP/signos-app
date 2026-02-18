@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Nexus | v6.1</title>
+    <title>SignOS Nexus | v6.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="signos-core.js"></script>
     
     <style>
         :root {
-            /* Light Theme Palette matching menu.html */
             --bg-body: #f9fafb;     /* Gray 50 */
             --bg-card: #ffffff;     /* White */
             --border-subtle: #e5e7eb; /* Gray 200 */
@@ -27,13 +26,11 @@
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Subtle Background Pattern */
         .subtle-grid {
             background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
             background-size: 24px 24px;
         }
 
-        /* Modern Enterprise Cards */
         .nexus-card {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
@@ -47,7 +44,6 @@
             transform: translateY(-1px);
         }
 
-        /* Status Animations */
         @keyframes pulse-ring {
             0% { transform: scale(0.8); opacity: 0.5; }
             100% { transform: scale(2); opacity: 0; }
@@ -58,7 +54,6 @@
             animation: pulse-ring 2s infinite; z-index: -1;
         }
         
-        /* Desktop Scrollbar Styling */
         @media (min-width: 1024px) {
             ::-webkit-scrollbar { width: 8px; }
             ::-webkit-scrollbar-track { background: transparent; }
@@ -109,29 +104,30 @@
                     </h2>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-orange-500">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    
+                    <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-gray-400 hover:border-l-gray-600">
                         <div class="flex flex-col h-full justify-between gap-3">
                             <div class="flex justify-between items-start">
                                 <span class="text-2xl opacity-80 group-hover:scale-110 transition">🐙</span>
-                                <span class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">DEV</span>
+                                <span class="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">SOURCE</span>
                             </div>
                             <div>
-                                <div class="font-bold text-gray-900 text-sm">Github App</div>
-                                <div class="text-[10px] text-gray-500">Source Code</div>
+                                <div class="font-bold text-gray-900 text-sm">GitHub Dev</div>
+                                <div class="text-[10px] text-gray-500">Repository</div>
                             </div>
                         </div>
                     </a>
 
-                    <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-emerald-500">
+                    <a href="https://signstoreerp.github.io/signos-app/" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-orange-500 bg-orange-50/10">
                         <div class="flex flex-col h-full justify-between gap-3">
                             <div class="flex justify-between items-start">
-                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">🚀</span>
-                                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">LIVE</span>
+                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">🚧</span>
+                                <span class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">APP</span>
                             </div>
                             <div>
-                                <div class="font-bold text-gray-900 text-sm">Github Live</div>
-                                <div class="text-[10px] text-gray-500">Production Repo</div>
+                                <div class="font-bold text-gray-900 text-sm group-hover:text-orange-600 transition">Launch Dev</div>
+                                <div class="text-[10px] text-gray-500">Testing Environment</div>
                             </div>
                         </div>
                     </a>
@@ -149,6 +145,32 @@
                         </div>
                     </a>
 
+                    <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-gray-400 hover:border-l-gray-600">
+                        <div class="flex flex-col h-full justify-between gap-3">
+                            <div class="flex justify-between items-start">
+                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">🔒</span>
+                                <span class="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">SOURCE</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-900 text-sm">GitHub Live</div>
+                                <div class="text-[10px] text-gray-500">Repository</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="https://signstoreerp.github.io/signos-live/" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-emerald-500 bg-emerald-50/10">
+                        <div class="flex flex-col h-full justify-between gap-3">
+                            <div class="flex justify-between items-start">
+                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">🚀</span>
+                                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">APP</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-900 text-sm group-hover:text-emerald-600 transition">Launch Live</div>
+                                <div class="text-[10px] text-gray-500">Production Environment</div>
+                            </div>
+                        </div>
+                    </a>
+
                     <a href="https://notebooklm.google.com/" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-purple-500">
                         <div class="flex flex-col h-full justify-between gap-3">
                             <div class="flex justify-between items-start">
@@ -161,6 +183,7 @@
                             </div>
                         </div>
                     </a>
+
                 </div>
             </section>
 
@@ -230,7 +253,7 @@
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-gray-100 text-center">
-                    <div class="text-[10px] text-gray-400 font-mono">SignOS ERP v6.1</div>
+                    <div class="text-[10px] text-gray-400 font-mono">SignOS ERP v6.2</div>
                     <div class="text-[10px] text-gray-300 font-mono mt-1">AUTHORIZED PERSONNEL ONLY</div>
                 </div>
             </div>
@@ -278,7 +301,7 @@
             try {
                 if(typeof SCRIPT_URL === 'undefined') throw new Error("API Config Missing");
 
-                const res = await fetch(`${SCRIPT_URL}?req=sync_master`);
+                const res = await fetch(`${SCRIPT_URL}?req=sync_codebase`);
                 const data = await res.json();
 
                 if (data.status === 'success') {
