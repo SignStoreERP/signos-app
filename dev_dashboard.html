@@ -3,251 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Nexus | Dev Ops</title>
+    <title>SignOS Nexus | v6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="signos-core.js"></script>
     
     <style>
         :root {
-            --bg-deep: #020617;
-            --glass-panel: rgba(15, 23, 42, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --neon-blue: #3b82f6;
-            --neon-orange: #f97316;
-            --neon-green: #10b981;
+            /* Light Theme Palette matching menu.html */
+            --bg-body: #f9fafb;     /* Gray 50 */
+            --bg-card: #ffffff;     /* White */
+            --border-subtle: #e5e7eb; /* Gray 200 */
+            --text-main: #111827;   /* Gray 900 */
+            --text-muted: #6b7280;  /* Gray 500 */
+            --brand-blue: #2563eb;
         }
 
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-deep);
-            color: #e2e8f0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
         }
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Cyberpunk Grid Background */
-        .cyber-grid {
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
+        /* Subtle Background Pattern */
+        .subtle-grid {
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 24px 24px;
         }
 
-        /* Glassmorphism Cards */
-        .glass-card {
-            background: var(--glass-panel);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        /* Modern Enterprise Cards */
+        .nexus-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease-in-out;
         }
 
-        .glass-card:hover {
-            border-color: rgba(255,255,255,0.2);
-            transform: translateY(-2px);
-            transition: all 0.2s ease;
+        .nexus-card:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        /* Animations */
+        /* Status Animations */
         @keyframes pulse-ring {
             0% { transform: scale(0.8); opacity: 0.5; }
             100% { transform: scale(2); opacity: 0; }
         }
         .status-dot-pulse::before {
-            content: '';
-            position: absolute;
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            background-color: inherit;
-            animation: pulse-ring 2s infinite;
-            z-index: -1;
+            content: ''; position: absolute; width: 100%; height: 100%; top:0; left:0;
+            border-radius: 50%; background-color: inherit;
+            animation: pulse-ring 2s infinite; z-index: -1;
+        }
+        
+        /* Desktop Scrollbar Styling */
+        @media (min-width: 1024px) {
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
         }
     </style>
 </head>
-<body class="h-screen flex flex-col cyber-grid overflow-hidden">
+<body class="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-gray-50">
 
-    <nav class="h-16 border-b border-white/5 bg-slate-900/90 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-50">
-        <div class="flex items-center gap-4">
-            <div class="w-10 h-10 bg-slate-800 rounded flex items-center justify-center border border-slate-700 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                <span class="text-xl">🛸</span>
+    <nav class="h-14 bg-gray-900 text-white flex items-center justify-between px-4 lg:px-6 shrink-0 z-50 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shadow-lg shadow-blue-900/50">
+                <span class="text-lg">🛸</span>
             </div>
             <div>
-                <h1 class="text-xl font-black tracking-tight text-white leading-none">SignOS <span class="text-slate-500 font-normal">NEXUS</span></h1>
-                <div class="text-[10px] text-blue-400 font-mono tracking-widest uppercase mt-0.5">Development Console v5.0</div>
+                <h1 class="text-lg font-bold tracking-tight leading-none">SignOS <span class="text-gray-400 font-normal">NEXUS</span></h1>
+                <div class="text-[10px] text-blue-400 font-mono tracking-widest uppercase">Dev Ops Console</div>
             </div>
         </div>
         
-        <div class="hidden md:flex items-center gap-6 text-xs font-mono">
-            <div class="flex flex-col items-end">
-                <span class="text-slate-500 text-[10px] uppercase">Logged In As</span>
-                <span class="text-white font-bold" id="nav-user">LOADING...</span>
+        <div class="hidden lg:flex items-center gap-6 text-xs font-mono">
+            <div class="flex items-center gap-2">
+                <span class="text-gray-500">USER:</span>
+                <span class="font-bold text-white" id="nav-user">...</span>
             </div>
-            <div class="h-8 w-px bg-slate-700"></div>
-            <div class="flex flex-col items-end">
-                <span class="text-slate-500 text-[10px] uppercase">Network IP</span>
-                <span class="text-emerald-400 font-bold" id="nav-ip">...</span>
+            <div class="h-4 w-px bg-gray-700"></div>
+            <div class="flex items-center gap-2">
+                <span class="text-gray-500">IP:</span>
+                <span class="font-bold text-emerald-400" id="nav-ip">...</span>
             </div>
-            <a href="menu.html" class="ml-4 bg-red-900/20 hover:bg-red-600 hover:text-white text-red-400 border border-red-900/50 px-4 py-2 rounded transition font-bold">
+            <a href="menu.html" class="ml-4 bg-gray-800 hover:bg-red-900 text-gray-300 hover:text-white px-3 py-1.5 rounded transition border border-gray-700">
                 EXIT
             </a>
         </div>
+        
+        <a href="menu.html" class="lg:hidden text-xs font-bold text-gray-400 hover:text-white border border-gray-700 px-3 py-1 rounded">EXIT</a>
     </nav>
 
-    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    <div class="flex-1 flex flex-col lg:flex-row lg:overflow-hidden relative">
         
-        <main class="flex-1 flex flex-col min-w-0 p-4 lg:p-6 gap-6 overflow-y-auto">
+        <main class="flex-1 flex flex-col gap-6 p-4 lg:p-8 overflow-y-auto subtle-grid pb-20 lg:pb-8">
             
             <section>
-                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> External Launch Bay
-                </h2>
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
-                        <div class="relative z-10 flex flex-col h-full justify-between">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-3xl">🐙</span>
-                                <span class="text-[10px] font-bold bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded border border-orange-500/30">DEV</span>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-600"></span> External Launch Bay
+                    </h2>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-orange-500">
+                        <div class="flex flex-col h-full justify-between gap-3">
+                            <div class="flex justify-between items-start">
+                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">🐙</span>
+                                <span class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">DEV</span>
                             </div>
                             <div>
-                                <div class="font-bold text-white group-hover:text-orange-400 transition">Github App</div>
-                                <div class="text-[10px] text-slate-400">Source Code & Commits</div>
+                                <div class="font-bold text-gray-900 text-sm">Github App</div>
+                                <div class="text-[10px] text-gray-500">Source Code</div>
                             </div>
                         </div>
                     </a>
 
-                    <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
-                        <div class="relative z-10 flex flex-col h-full justify-between">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-3xl">🚀</span>
-                                <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">LIVE</span>
+                    <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-emerald-500">
+                        <div class="flex flex-col h-full justify-between gap-3">
+                            <div class="flex justify-between items-start">
+                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">🚀</span>
+                                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">LIVE</span>
                             </div>
                             <div>
-                                <div class="font-bold text-white group-hover:text-emerald-400 transition">Github Live</div>
-                                <div class="text-[10px] text-slate-400">Production Deployments</div>
+                                <div class="font-bold text-gray-900 text-sm">Github Live</div>
+                                <div class="text-[10px] text-gray-500">Production Repo</div>
                             </div>
                         </div>
                     </a>
 
-                    <a href="https://docs.google.com/spreadsheets/d/1wiaj5rU5J2kv1SobfyysMFynDOsli4Nb6pDvIf3L9_Y/edit" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-green-600/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
-                        <div class="relative z-10 flex flex-col h-full justify-between">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-3xl">📊</span>
-                                <span class="text-[10px] font-bold bg-green-600/20 text-green-300 px-2 py-0.5 rounded border border-green-600/30">DATA</span>
+                    <a href="https://docs.google.com/spreadsheets/d/1wiaj5rU5J2kv1SobfyysMFynDOsli4Nb6pDvIf3L9_Y/edit" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-green-600">
+                        <div class="flex flex-col h-full justify-between gap-3">
+                            <div class="flex justify-between items-start">
+                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">📊</span>
+                                <span class="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">DATA</span>
                             </div>
                             <div>
-                                <div class="font-bold text-white group-hover:text-green-400 transition">Backend Sheet</div>
-                                <div class="text-[10px] text-slate-400">Pricing & Logic Database</div>
+                                <div class="font-bold text-gray-900 text-sm">Backend Sheet</div>
+                                <div class="text-[10px] text-gray-500">Pricing Database</div>
                             </div>
                         </div>
                     </a>
 
-                    <a href="https://notebooklm.google.com/" target="_blank" class="glass-card p-4 rounded-xl group relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
-                        <div class="relative z-10 flex flex-col h-full justify-between">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-3xl">✨</span>
-                                <span class="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">AI</span>
+                    <a href="https://notebooklm.google.com/" target="_blank" class="nexus-card p-4 rounded-xl group relative overflow-hidden border-l-4 border-l-purple-500">
+                        <div class="flex flex-col h-full justify-between gap-3">
+                            <div class="flex justify-between items-start">
+                                <span class="text-2xl opacity-80 group-hover:scale-110 transition">✨</span>
+                                <span class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">AI</span>
                             </div>
                             <div>
-                                <div class="font-bold text-white group-hover:text-purple-400 transition">NotebookLM</div>
-                                <div class="text-[10px] text-slate-400">Project Intelligence</div>
+                                <div class="font-bold text-gray-900 text-sm">NotebookLM</div>
+                                <div class="text-[10px] text-gray-500">Project Intel</div>
                             </div>
                         </div>
                     </a>
                 </div>
             </section>
 
-            <section class="flex-1 flex flex-col min-h-0">
-                <div class="flex justify-between items-end mb-3">
-                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-white"></span> Twin-Engine Monitor
+            <section class="flex-1">
+                <div class="flex justify-between items-end mb-3 sticky top-0 bg-gray-50/95 backdrop-blur py-2 z-10 border-b border-gray-200">
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-gray-400"></span> Module Status
                     </h2>
-                    <div class="flex gap-4 text-[10px] font-mono text-slate-400">
-                        <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Synced</div>
-                        <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> Update Ready</div>
+                    <div class="flex gap-3 text-[10px] font-medium text-gray-500">
+                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Synced</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Update Ready</div>
                     </div>
                 </div>
 
-                <div class="hidden lg:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold uppercase text-slate-500 border-b border-slate-800">
+                <div class="hidden lg:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold uppercase text-gray-400 border-b border-gray-200">
                     <div class="col-span-4">Module / File</div>
                     <div class="col-span-4 text-center">Development (Orange)</div>
                     <div class="col-span-4 text-center">Production (Green)</div>
                 </div>
 
-                <div id="module-list" class="flex-1 overflow-y-auto space-y-2 pb-20">
-                    <div class="animate-pulse space-y-2">
-                        <div class="h-16 bg-slate-800/50 rounded-lg"></div>
-                        <div class="h-16 bg-slate-800/50 rounded-lg"></div>
-                        <div class="h-16 bg-slate-800/50 rounded-lg"></div>
+                <div id="module-list" class="space-y-3 mt-3">
+                    <div class="nexus-card p-6 text-center">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+                        <p class="text-xs text-gray-400 mt-2 font-mono">FETCHING REGISTRY...</p>
                     </div>
                 </div>
             </section>
         </main>
 
-        <aside class="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900/50 backdrop-blur flex flex-col shrink-0">
+        <aside class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex-shrink-0 flex flex-col z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] lg:shadow-none">
             
-            <div class="p-6 border-b border-slate-800">
+            <div class="p-6 border-b border-gray-100 bg-gray-50/50">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">System Heartbeat</h3>
-                    <button onclick="pingAPI()" class="text-[10px] text-blue-400 hover:text-white transition">REFRESH</button>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">System Heartbeat</h3>
+                    <button onclick="pingAPI()" class="text-[10px] text-blue-600 hover:text-blue-800 font-bold transition">REFRESH</button>
                 </div>
                 
-                <div class="bg-slate-950 rounded-lg p-4 border border-slate-800/50 shadow-inner">
+                <div class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-baseline">
-                        <div class="text-[10px] text-slate-500 uppercase">API Latency</div>
-                        <div class="text-xs text-slate-500 font-mono">ms</div>
+                        <div class="text-[10px] text-gray-400 uppercase font-bold">API Latency</div>
+                        <div class="text-xs text-gray-400 font-mono">ms</div>
                     </div>
-                    <div id="ping-result" class="text-4xl font-black text-white mt-1">---</div>
-                    <div class="h-1 w-full bg-slate-800 mt-3 rounded-full overflow-hidden">
+                    <div id="ping-result" class="text-3xl font-black text-gray-700 mt-1">---</div>
+                    <div class="h-1.5 w-full bg-gray-100 mt-3 rounded-full overflow-hidden">
                         <div id="ping-bar" class="h-full w-0 bg-emerald-500 transition-all duration-500"></div>
                     </div>
                 </div>
             </div>
 
             <div class="p-6 flex-1">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Internal Tools</h3>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Internal Tools</h3>
                 <div class="grid grid-cols-2 gap-3">
-                    <a href="admin_roadmap.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-blue-500 transition group">
-                        <span class="text-2xl mb-2 group-hover:scale-110 transition">🗺️</span>
-                        <span class="text-[10px] font-bold text-slate-300">Roadmap</span>
+                    <a href="admin_roadmap.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-blue-50 hover:border-blue-200 rounded-lg border border-gray-200 transition group shadow-sm">
+                        <span class="text-xl mb-2 group-hover:scale-110 transition">🗺️</span>
+                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-blue-600">Roadmap</span>
                     </a>
-                    <a href="admin_viewer.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-purple-500 transition group">
-                        <span class="text-2xl mb-2 group-hover:scale-110 transition">📜</span>
-                        <span class="text-[10px] font-bold text-slate-300">System Logs</span>
+                    <a href="admin_viewer.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-purple-50 hover:border-purple-200 rounded-lg border border-gray-200 transition group shadow-sm">
+                        <span class="text-xl mb-2 group-hover:scale-110 transition">📜</span>
+                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-purple-600">Logs</span>
                     </a>
-                    <a href="admin_changelog.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-orange-500 transition group">
-                        <span class="text-2xl mb-2 group-hover:scale-110 transition">⏱️</span>
-                        <span class="text-[10px] font-bold text-slate-300">History</span>
+                    <a href="admin_changelog.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-orange-50 hover:border-orange-200 rounded-lg border border-gray-200 transition group shadow-sm">
+                        <span class="text-xl mb-2 group-hover:scale-110 transition">⏱️</span>
+                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-orange-600">History</span>
                     </a>
-                    <a href="admin_backup.html" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-700 rounded-lg border border-slate-700 hover:border-emerald-500 transition group">
-                        <span class="text-2xl mb-2 group-hover:scale-110 transition">💾</span>
-                        <span class="text-[10px] font-bold text-slate-300">Backup</span>
+                    <a href="admin_backup.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-emerald-50 hover:border-emerald-200 rounded-lg border border-gray-200 transition group shadow-sm">
+                        <span class="text-xl mb-2 group-hover:scale-110 transition">💾</span>
+                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-emerald-600">Backup</span>
                     </a>
                 </div>
 
-                <div class="mt-8 space-y-3">
-                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assets</h3>
-                     <a href="https://drive.google.com/" target="_blank" class="flex items-center gap-3 p-2 rounded hover:bg-slate-800/50 text-sm text-slate-300 hover:text-white transition">
-                        <span class="text-green-500">📁</span> Google Drive Assets
-                     </a>
-                     <a href="https://chat.google.com/" target="_blank" class="flex items-center gap-3 p-2 rounded hover:bg-slate-800/50 text-sm text-slate-300 hover:text-white transition">
-                        <span class="text-blue-500">💬</span> Google Chat
-                     </a>
+                <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+                    <div class="text-[10px] text-gray-400 font-mono">SignOS ERP v6.0</div>
+                    <div class="text-[10px] text-gray-300 font-mono mt-1">AUTHORIZED PERSONNEL ONLY</div>
                 </div>
-            </div>
-
-            <div class="p-4 border-t border-slate-800 text-[10px] text-slate-600 text-center font-mono">
-                SIGNOS ERP // SYSTEM V3.5 <br>
-                AUTHORIZED PERSONNEL ONLY
             </div>
         </aside>
 
@@ -271,7 +258,7 @@
             pingAPI();
             fetchRegistry();
 
-            // 3. IP Watcher (Async)
+            // 3. IP Watcher
             if(typeof clientIP !== 'undefined' && clientIP !== 'Unknown') {
                  document.getElementById('nav-ip').innerText = clientIP;
             } else {
@@ -287,7 +274,7 @@
             const bar = document.getElementById('ping-bar');
             const start = Date.now();
             
-            el.className = "text-4xl font-black text-slate-600 animate-pulse";
+            el.className = "text-3xl font-black text-gray-400 animate-pulse";
             el.innerText = "...";
 
             try {
@@ -301,12 +288,12 @@
                 
                 // Color Logic
                 let color = "bg-emerald-500";
-                let text = "text-white";
+                let text = "text-gray-700";
 
-                if(ms > 800) { color = "bg-orange-500"; text = "text-orange-400"; }
-                if(ms > 2000) { color = "bg-red-500"; text = "text-red-500"; }
+                if(ms > 800) { color = "bg-orange-500"; text = "text-orange-600"; }
+                if(ms > 2000) { color = "bg-red-500"; text = "text-red-600"; }
 
-                el.className = `text-4xl font-black ${text}`;
+                el.className = `text-3xl font-black ${text}`;
                 bar.className = `h-full ${color} transition-all duration-500`;
                 bar.style.width = "100%";
 
@@ -326,14 +313,13 @@
                      const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules`);
                      data = await res.json();
                 } else {
-                    // Fallback for demo
                     console.warn("API Offline");
                 }
 
                 listEl.innerHTML = "";
 
                 if(!data || data.length === 0) {
-                    listEl.innerHTML = `<div class="text-center py-10 text-slate-600 border border-dashed border-slate-800 rounded">No Modules Found via API</div>`;
+                    listEl.innerHTML = `<div class="text-center py-8 text-gray-400 bg-white border border-dashed border-gray-300 rounded-lg">No Modules Found via API</div>`;
                     return;
                 }
 
@@ -347,61 +333,61 @@
 
                     // Logic
                     const isSynced = vDev === vLive && vDev !== "";
-                    const isNewer = vDev > vLive; // Simple string comparison usually works for v1.1 vs v1.0
+                    const isNewer = vDev > vLive;
 
                     // Styles
-                    let statusClass = "border-slate-800";
+                    let statusClass = "border-l-4 border-l-gray-300"; // Default
                     let statusDot = "";
 
                     if(isSynced) {
-                        statusClass = "border-emerald-500/30 bg-emerald-900/5";
-                        statusDot = `<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>`;
+                        statusClass = "border-l-4 border-l-emerald-500 bg-emerald-50/30";
+                        statusDot = `<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm"></span>`;
                     } else if (isNewer) {
-                        statusClass = "border-orange-500/50 bg-orange-900/10";
+                        statusClass = "border-l-4 border-l-orange-500 bg-orange-50/30 shadow-md";
                         statusDot = `<span class="relative w-2 h-2 rounded-full bg-orange-500 status-dot-pulse"></span>`;
                     } else {
-                        statusDot = `<span class="w-2 h-2 rounded-full bg-slate-600"></span>`;
+                        statusDot = `<span class="w-2 h-2 rounded-full bg-gray-300"></span>`;
                     }
 
                     // Card HTML
                     const card = document.createElement('div');
-                    card.className = `glass-card rounded-lg flex flex-col lg:grid lg:grid-cols-12 items-center p-3 gap-3 ${statusClass} group`;
+                    card.className = `nexus-card rounded-lg flex flex-col lg:grid lg:grid-cols-12 items-center p-4 gap-4 ${statusClass} group`;
 
                     card.innerHTML = `
                         <div class="col-span-4 w-full flex items-center gap-4">
-                            <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded bg-slate-800 text-lg">
+                            <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded bg-gray-100 text-xl border border-gray-200">
                                 ${getIcon(cat)}
                             </div>
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2">
-                                    <h4 class="font-bold text-slate-200 text-sm truncate group-hover:text-blue-400 transition">${name}</h4>
+                                    <h4 class="font-bold text-gray-800 text-sm truncate group-hover:text-blue-600 transition">${name}</h4>
                                     ${statusDot}
                                 </div>
-                                <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] font-mono text-slate-500 truncate">${file}</span>
-                                    <a href="${REPO_HIST_DEV}${file}" target="_blank" class="text-[10px] bg-slate-800 px-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition" title="View History">CLOCK 🕒</a>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] font-mono text-gray-500 truncate max-w-[140px]">${file}</span>
+                                    <a href="${REPO_HIST_DEV}${file}" target="_blank" class="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition" title="View History">CLOCK 🕒</a>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-span-4 w-full bg-slate-950/50 rounded p-2 border border-slate-800 flex justify-between items-center group/dev hover:border-orange-500/50 transition relative overflow-hidden">
-                            <div class="absolute inset-y-0 left-0 w-1 bg-orange-500"></div>
+                        <div class="col-span-4 w-full bg-white rounded p-2 border border-orange-100 flex justify-between items-center group/dev hover:border-orange-300 hover:shadow-sm transition relative overflow-hidden">
+                            <div class="absolute inset-y-0 left-0 w-1 bg-orange-400"></div>
                             <div class="pl-3">
-                                <div class="text-[10px] text-orange-500/80 font-bold uppercase tracking-wider">Dev Engine</div>
-                                <div class="font-mono text-sm font-bold text-orange-200">${vDev || '--'}</div>
+                                <div class="text-[9px] text-orange-600 font-bold uppercase tracking-wider">Dev Engine</div>
+                                <div class="font-mono text-sm font-bold text-gray-700">${vDev || '--'}</div>
                             </div>
-                            <a href="${REPO_DEV}${file}" target="_blank" class="text-slate-600 hover:text-white px-2">
+                            <a href="${REPO_DEV}${file}" target="_blank" class="text-gray-400 hover:text-orange-500 px-2 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                             </a>
                         </div>
 
-                        <div class="col-span-4 w-full bg-slate-950/50 rounded p-2 border border-slate-800 flex justify-between items-center group/live hover:border-emerald-500/50 transition relative overflow-hidden">
+                        <div class="col-span-4 w-full bg-white rounded p-2 border border-emerald-100 flex justify-between items-center group/live hover:border-emerald-300 hover:shadow-sm transition relative overflow-hidden">
                             <div class="absolute inset-y-0 left-0 w-1 bg-emerald-500"></div>
                             <div class="pl-3">
-                                <div class="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Live Engine</div>
-                                <div class="font-mono text-sm font-bold text-emerald-200">${vLive || '--'}</div>
+                                <div class="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Live Engine</div>
+                                <div class="font-mono text-sm font-bold text-gray-700">${vLive || '--'}</div>
                             </div>
-                            <a href="${REPO_LIVE}${file}" target="_blank" class="text-slate-600 hover:text-white px-2">
+                            <a href="${REPO_LIVE}${file}" target="_blank" class="text-gray-400 hover:text-emerald-500 px-2 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                             </a>
                         </div>
