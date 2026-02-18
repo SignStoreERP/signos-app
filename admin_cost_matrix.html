@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cost Matrix v1.5 (Staged)</title>
+    <title>Cost Matrix v1.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -34,11 +34,6 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <div class="flex items-center gap-2 mr-4 border-r border-gray-200 pr-4">
-                    <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                    <span id="status-text" class="text-xs font-bold text-gray-400">CONNECTING...</span>
-                </div>
-
                 <button onclick="loadData()" class="bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-1.5 rounded text-xs font-bold border border-gray-200 transition">RESET VIEW</button>
             </div>
         </div>
@@ -96,15 +91,6 @@
         pendingChanges = {}; // Reset queue
         updateCommitBar();
         
-        const statusText = document.getElementById("status-text");
-        const statusDot = document.getElementById("status-dot");
-
-        if(statusText) {
-            statusText.innerText = "CONNECTING...";
-            statusText.className = "text-xs font-bold text-gray-400";
-            statusDot.className = "w-2 h-2 rounded-full bg-yellow-400 animate-pulse";
-        }
-        
         try {
             const [defRes, matRes] = await Promise.all([
                 fetch(`${SCRIPT_URL}?req=table&tab=REF_Cost_Definitions`),
@@ -118,24 +104,11 @@
 
             renderMatrix();
             document.getElementById('loader').classList.add('hidden');
-            
-            // Status Dot Update
-            if(statusText) {
-                statusText.innerText = "ONLINE";
-                statusText.className = "text-xs font-bold text-green-500";
-                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-                statusDot.classList.remove("animate-pulse");
-            }
 
         } catch(e) {
             console.error(e);
             alert("Error: " + e.message);
             document.getElementById('loader').classList.add('hidden');
-            if(statusText) {
-                statusText.innerText = "OFFLINE";
-                statusText.className = "text-xs font-bold text-red-500";
-                statusDot.className = "w-2 h-2 rounded-full bg-red-500";
-            }
         }
     }
 
