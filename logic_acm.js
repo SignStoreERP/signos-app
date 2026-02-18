@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.9.0)
- * Features: Clean SVG for UI handling, Data-driven BoM export.
+ * PURE PHYSICS ENGINE: ACM Signs (v2.9.1)
+ * Features: Smart Nesting, Optimization, and Inventory/Waste Logic.
  */
 function calculateACM(inputs, data) {
     // --- 1. RETAIL ENGINE ---
@@ -9,11 +9,11 @@ function calculateACM(inputs, data) {
 
     // Pricing Factors
     const baseRate = inputs.thickness === "6mm" 
-        ? parseFloat(data.Retail_Price_6mm_Base || 16.50) 
+        ? parseFloat(data.Retail_Price_6mm_Base || 16.50)
         : parseFloat(data.Retail_Price_3mm_Base || 14.00);
-
-    const dsAdder = inputs.thickness === "6mm" 
-        ? parseFloat(data.Retail_Price_6mm_DS || 8.25) 
+    
+    const dsAdder = inputs.thickness === "6mm"
+        ? parseFloat(data.Retail_Price_6mm_DS || 8.25)
         : parseFloat(data.Retail_Price_3mm_DS || 7.00);
 
     let retMaterial = baseRate * sqFt;
@@ -27,7 +27,7 @@ function calculateACM(inputs, data) {
     const contourPct = parseFloat(data.Retail_Adder_Contour_Pct || 0.35);
 
     if (inputs.shape === "Contour") {
-        retFinish = retMaterial * contourPct;
+        retFinish = retMaterial * contourPct; 
     } else if (inputs.rounded) {
         retFinish = roundRate;
     }
@@ -43,60 +43,44 @@ function calculateACM(inputs, data) {
 
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotalRaw = totalProduct + feeSetup + feeDesign;
-    const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign);
+    const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign); 
 
     // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // UPDATED: Generates clean geometry only. Backgrounds handled by CSS.
+    // Draw SVG: Graph Paper Background + Dynamic Layout
     function generateSVG(layout, limitQty) {
         if (!layout) return "";
-
         const sw = layout.sheetW;
         const sh = layout.sheetH;
-
-        // Styling
-        const style = {
-            sheetFill: "#ffffff",
-            sheetStroke: "#475569", 
-            partFill: "rgba(37, 99, 235, 0.2)", 
-            partStroke: "#2563eb"
-        };
-
-        // Logic: Active Sheet Visualization
-        const remainder = limitQty % layout.perSheet;
-        const itemsOnActiveSheet = (remainder === 0) ? layout.perSheet : remainder;
-
         let rects = "";
         let count = 0;
+        
+        // Loop Rows/Cols
         outerLoop:
         for (let r = 0; r < layout.rows; r++) {
             for (let c = 0; c < layout.cols; c++) {
-                if (count >= itemsOnActiveSheet) break outerLoop;
+                if (count >= limitQty) break outerLoop;
 
                 const x = c * layout.partW;
                 const y = r * layout.partH;
                 const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
-                const showLabel = (layout.partW > 5 && layout.partH > 5);
-
+                
                 rects += `<g transform="translate(${x}, ${y})">
-                    <rect width="${layout.partW}" height="${layout.partH}" 
-                          fill="${style.partFill}" 
-                          stroke="${style.partStroke}" 
-                          stroke-width="0.1" />
-                    ${showLabel ? 
-                        `<text x="${layout.partW/2}" y="${layout.partH/2}" 
-                               font-family="sans-serif" font-size="1.5" 
-                               fill="${style.partStroke}" text-anchor="middle" 
-                               dominant-baseline="middle" font-weight="bold" opacity="0.9">${label}</text>` 
-                    : ''}
+                    <rect width="${layout.partW}" height="${layout.partH}" fill="#3b82f6" stroke="white" stroke-width="0.25" opacity="0.9" />
+                    <text x="${layout.partW/2}" y="${layout.partH/2}" font-family="sans-serif" font-size="2" fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text>
                 </g>`;
                 count++;
             }
         }
 
-        // Return Clean SVG (No footer, transparent background)
-        return `<svg viewBox="0 0 ${sw} ${sh}" preserveAspectRatio="xMidYMid meet" 
-                     style="width:100%; height:100%; display:block; overflow:visible;">
-            <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" vector-effect="non-scaling-stroke" />
+        // Graph Paper Pattern + Sheet Boundary
+        return `<svg viewBox="0 0 ${sw} ${sh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full bg-slate-50">
+            <defs>
+                <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse">
+                    <path d="M 12 0 L 0 0 0 12" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            <rect x="0" y="0" width="${sw}" height="${sh}" fill="none" stroke="#94a3b8" stroke-width="1" />
             ${rects}
         </svg>`;
     }
@@ -108,7 +92,7 @@ function calculateACM(inputs, data) {
             { name: "5x10", sw: 60, sh: 120, cost: parseFloat(data[`Cost_Stock_${thick}_5x10`] || 75) }
         ];
 
-        let best = { cost: Infinity, name: "N/A", sheets: 0, layout: null, stats: {} };
+        let best = { cost: Infinity, name: "N/A", sheets: 0, layout: null };
 
         stocks.forEach(stock => {
             // Rotation 1
@@ -127,29 +111,22 @@ function calculateACM(inputs, data) {
                 const sheetsNeeded = Math.ceil(qty / maxYield);
                 const totalRunCost = sheetsNeeded * stock.cost;
 
+                // --- NEW MATH: Inventory & Waste ---
+                // Calculate Full vs Partial sheets
+                const fullSheets = Math.floor(qty / maxYield);
+                const partialSheets = (qty % maxYield) > 0 ? 1 : 0;
+                
+                // Calculate Waste %
+                const areaUsed = (w * h * qty);
+                const areaBought = (stock.sw * stock.sh * sheetsNeeded);
+                const wastePct = ((1 - (areaUsed / areaBought)) * 100).toFixed(1);
+
                 if (totalRunCost < best.cost) {
                     const isRotated = yieldB > yieldA;
-                    
-                    // Calculate Statistics for UI
-                    const remainder = qty % maxYield;
-                    const itemsOnLast = (remainder === 0) ? maxYield : remainder;
-                    const fullSheets = (remainder === 0) ? (qty / maxYield) : Math.floor(qty / maxYield);
-                    const partialSheets = (remainder === 0) ? 0 : 1;
-                    
-                    // Area Math
-                    const usedArea = itemsOnLast * ((isRotated ? h : w) * (isRotated ? w : h));
-                    const totalSheetArea = stock.sw * stock.sh;
-                    const wastePct = ((1 - (usedArea / totalSheetArea)) * 100).toFixed(0);
-
-                    best = {
-                        cost: totalRunCost,
-                        name: stock.name,
-                        sheets: sheetsNeeded,
-                        stats: {
-                            full: fullSheets,
-                            partial: partialSheets,
-                            waste: wastePct
-                        },
+                    best = { 
+                        cost: totalRunCost, 
+                        name: stock.name, 
+                        sheets: sheetsNeeded, 
                         layout: {
                             sheetW: stock.sw,
                             sheetH: stock.sh,
@@ -158,7 +135,11 @@ function calculateACM(inputs, data) {
                             cols: isRotated ? colsB : colsA,
                             rows: isRotated ? rowsB : rowsA,
                             perSheet: maxYield,
-                            rotated: isRotated
+                            rotated: isRotated,
+                            // ADDED KEYS FOR FOOTER:
+                            fullSheets: fullSheets,
+                            partialSheets: partialSheets,
+                            wastePct: wastePct
                         }
                     };
                 }
@@ -168,24 +149,28 @@ function calculateACM(inputs, data) {
     }
 
     const optStock = findBestStock(inputs.w, inputs.h, inputs.qty, inputs.thickness);
-    const maxLen = 120; const maxWid = 60; 
+    const maxLen = 120; const maxWid = 60;
     const isOversized = (Math.max(inputs.w, inputs.h) > maxLen || Math.min(inputs.w, inputs.h) > maxWid);
     if (isOversized) { optStock.name = "OVERSIZED"; optStock.cost = 0; }
-
-    // Generate SVG
-    optStock.svg = generateSVG(optStock.layout, inputs.qty);
+    
+    // Generate SVG with Quantity Limit
+    if(optStock.layout) {
+        optStock.svg = generateSVG(optStock.layout, inputs.qty);
+    } else {
+        optStock.svg = "";
+    }
 
     // Costing
     const waste = parseFloat(data.Waste_Factor || 1.2);
-    const totalMatBoard = optStock.cost * waste; 
+    const totalMatBoard = optStock.cost * waste;
     const inkCost = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16);
     const costLam = (inputs.lam !== "None") ? (totalSqFt * parseFloat(data.Cost_Lam_SqFt || 0.36)) : 0;
-
+    
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const rateMach = parseFloat(data.Rate_Machine_Print || 45);
     const rateCNC = parseFloat(data.Rate_Machine_CNC || 35);
 
-    let cutTime = 0;
+    let cutTime = 0; 
     let machineRate = 0;
     if (inputs.shape === "Contour") {
         cutTime = parseFloat(data.Time_Setup_CNC || 10) + (parseFloat(data.Time_Cut_Contour || 8) * inputs.qty);
