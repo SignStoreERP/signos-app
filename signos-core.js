@@ -1,4 +1,4 @@
-// SignOS Core System v1.7
+// SignOS Core System v1.7.1
 // Features: Twin-Engine Env, IP Telemetry, Island Header, Feedback Modal
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
@@ -7,16 +7,19 @@ const IS_DEV_ENV = window.location.href.includes('signos-app') || window.locatio
 let clientIP = "Unknown";
 const currentHost = window.location.hostname;
 
+// 1. IP Telemetry
 fetch('https://api.ipify.org?format=json')
     .then(r => r.json())
     .then(d => { clientIP = d.ip; })
     .catch(e => console.log("IP Silent"));
 
+// 2. Session Security
 if (!window.location.pathname.includes('index.html')) {
     const user = sessionStorage.getItem('signos_user');
     if (!user) window.location.href = 'index.html';
 }
 
+// 3. Global Logout
 function logout() {
     const u = sessionStorage.getItem('signos_user');
     fetch(`${SCRIPT_URL}?req=log_event&action=LOGOUT&user=${u}&ip=${clientIP}&host=${currentHost}`, {mode: 'no-cors'});
@@ -24,6 +27,7 @@ function logout() {
     window.location.href = 'index.html';
 }
 
+// 4. Global Navigation
 function goBack() {
     const role = sessionStorage.getItem('signos_role');
     let mode = 'sales';
@@ -32,16 +36,16 @@ function goBack() {
     window.location.href = `menu.html?mode=${mode}`;
 }
 
-// --- UI INJECTION (Island Mode + Status Support) ---
+// 5. UI Injection (Island Mode + Status)
 function injectHeader(title, showMenu = true) {
     const u = sessionStorage.getItem('signos_user') || 'GUEST';
     const r = sessionStorage.getItem('signos_role') || 'VIEW';
     
+    // Target the main card to keep the "Island" look
     const container = document.getElementById('main-card') || document.querySelector('.max-w-md') || document.body;
     const isCard = container !== document.body;
     const stickyClass = isCard ? "" : "sticky top-0 z-50 shadow-md";
     
-    // Header includes Status Dot/Text hooks for the calculator scripts
     const html = `
     <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center border-b border-gray-800 ${stickyClass} shrink-0">
         <div class="flex flex-col leading-tight">
@@ -68,7 +72,7 @@ function injectHeader(title, showMenu = true) {
     container.insertAdjacentHTML('afterbegin', html);
 }
 
-// --- FEEDBACK MODAL (Restored) ---
+// 6. Feedback Modal Logic
 window.addEventListener('load', function() {
     const user = sessionStorage.getItem('signos_user');
     if (!user || window.location.pathname.includes('index.html')) return;
@@ -84,7 +88,7 @@ function injectFeedbackUI() {
     document.body.appendChild(btn);
 
     const modalHTML = `
-    <div id="glb-feedback-modal" class="fixed inset-0 bg-black/80 z-[1] hidden flex items-center justify-center p-4">
+    <div id="glb-feedback-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center">
                 <h3 class="font-bold text-sm">Submit Feedback</h3>
