@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cost Matrix v1.2</title>
+    <title>Cost Matrix v1.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -11,9 +11,9 @@
         .matrix-cell:hover { background-color: #f3f4f6; }
         
         /* Freeze Header and First Column */
-        .sticky-col { position: sticky; left: 0; z-index: 10; background-color: white; border-right: 2px solid #e5e7eb; }
+        .sticky-col { position: sticky; left: 0; z-index: 10; background-color: white; border-right: 2px solid #e5e7eb; box-shadow: 4px 0 6px -2px rgba(0, 0, 0, 0.05); }
         .sticky-header { position: sticky; top: 0; z-index: 20; background-color: #f9fafb; border-bottom: 2px solid #e5e7eb; }
-        .z-30-corner { z-index: 30 !important; } /* Top Left Corner stays on top */
+        .z-30-corner { z-index: 30 !important; } /* Top Left Corner */
         
         /* Custom Toggle Switch */
         .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
@@ -70,7 +70,7 @@
     
     // --- 1. SETUP ---
     window.onload = function() {
-        // Fallback if injectHeader is missing (e.g., using old signos-core.js)
+        // Safety Check for Header Injection
         if (typeof injectHeader === "function") {
             injectHeader("Cost Matrix");
         } else {
@@ -83,7 +83,6 @@
     async function loadData() {
         document.getElementById('loader').classList.remove('hidden');
         
-        // Status Indicators
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
 
@@ -125,12 +124,10 @@
             alert("Error loading matrix: " + e.message);
             document.getElementById('loader').classList.add('hidden');
             
-            // UPDATE HEADER TO OFFLINE
             if(statusText) {
                 statusText.innerText = "OFFLINE";
                 statusText.className = "text-xs font-bold text-red-500";
                 statusDot.className = "w-2 h-2 rounded-full bg-red-500";
-                statusDot.classList.remove("animate-pulse");
             }
         }
     }
@@ -143,14 +140,12 @@
         // A. Build Headers (Products)
         if(matrix.length === 0) return;
         
-        // Look at KEYS of the FIRST ROW object to find columns like "PROD_Yard"
+        // FIX: Look at KEYS of the FIRST ROW object (matrix[0]), NOT the array itself
         const firstRow = matrix[0]; 
         const products = Object.keys(firstRow).filter(k => k !== 'Cost_ID');
         
-        // Sticky Header Logic
-        let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[200px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
+        let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[320px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
         products.forEach(prod => {
-            // Clean up header display (e.g. PROD_Yard -> Yard)
             const label = prod.replace('PROD_', '').replace('_', ' ');
             headerHTML += `<th class="p-4 sticky-header min-w-[100px] text-center border-l border-gray-200">${label}</th>`;
         });
@@ -159,28 +154,45 @@
         // B. Build Rows (Costs)
         tbody.innerHTML = "";
         
-        // Loop through Definitions to preserve "Master" order/categories
         definitions.forEach(def => {
             const costID = def.Cost_ID;
-            // Find this row in the Matrix data
             const matrixRow = matrix.find(r => r.Cost_ID === costID);
             
-            if(!matrixRow) return; // Skip if not in matrix yet
+            if(!matrixRow) return;
 
+            // Format Cost Value (if numeric)
+            let defaultVal = def.Default_Source_Ref;
+            if (typeof defaultVal === 'number') {
+                // Formatting helper for currency vs decimal
+                if (def.Unit && (def.Unit.includes('$') || defaultVal > 1)) {
+                    defaultVal = `$${defaultVal.toFixed(2)}`;
+                }
+            }
+
+            // Rich Row Header (Cost Card Logic)
             let rowHTML = `
-                <td class="p-3 sticky-col bg-white border-r border-gray-100 group">
-                    <div class="font-bold text-gray-800">${def.Display_Name || costID}</div>
-                    <div class="text-[9px] text-gray-400 font-mono group-hover:text-blue-500">${costID}</div>
+                <td class="p-4 sticky-col bg-white border-r border-gray-100 group min-w-[320px]">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="font-bold text-gray-800 text-sm">${def.Display_Name || costID}</div>
+                        <div class="text-[10px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100 font-bold ml-2 shrink-0">
+                            ${def.Unit || '-'}
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-gray-500 leading-tight mb-2">${def.Notes || 'No description available.'}</div>
+                    <div class="flex justify-between items-center border-t border-dashed border-gray-100 pt-2 mt-1">
+                        <div class="text-[9px] text-gray-300 font-mono group-hover:text-gray-400 transition select-all cursor-copy" title="Copy Key">${costID}</div>
+                        <div class="text-[10px] font-bold text-gray-600 bg-gray-50 px-1.5 rounded">Base: ${defaultVal}</div>
+                    </div>
                 </td>`;
 
             products.forEach(prod => {
-                const val = matrixRow[prod]; // TRUE, FALSE, or Number
+                const val = matrixRow[prod]; 
                 rowHTML += renderCell(prod, costID, val);
             });
 
             const tr = document.createElement('tr');
             tr.innerHTML = rowHTML;
-            tr.className = "hover:bg-gray-50";
+            tr.className = "hover:bg-gray-50 transition";
             tbody.appendChild(tr);
         });
     }
@@ -188,41 +200,38 @@
     function renderCell(prod, cost, val) {
         let content = "";
         
-        // Normalize Boolean Check (Sheets sometimes returns text 'TRUE' or boolean true)
+        // Normalize Boolean Check
         const isBool = (val === true || val === false || String(val).toUpperCase() === 'TRUE' || String(val).toUpperCase() === 'FALSE');
         
         if(isBool) {
-            // Render Toggle
             const checked = (val === true || String(val).toUpperCase() === 'TRUE') ? 'checked' : '';
             content = `
-                <div class="flex justify-center">
-                    <div class="relative inline-block w-8 align-middle select-none">
+                <div class="flex justify-center h-full items-center">
+                    <div class="relative inline-block w-9 align-middle select-none">
                         <input type="checkbox" ${checked} onchange="updateCell('${prod}', '${cost}', this.checked)" 
-                            class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 transition-all duration-300"/>
-                        <label class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer transition-all duration-300"></label>
+                            class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 transition-all duration-300"/>
+                        <label class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer transition-all duration-300"></label>
                     </div>
                 </div>`;
         } else {
             // Render Input (Override)
             content = `
-                <div class="flex justify-center">
+                <div class="flex justify-center h-full items-center">
                     <input type="number" value="${val}" onchange="updateCell('${prod}', '${cost}', this.value)"
-                        class="w-16 text-center border border-gray-200 rounded text-xs py-1 font-bold text-blue-600 focus:border-blue-500 outline-none bg-blue-50/50 hover:bg-white transition-colors">
+                        class="w-20 text-center border border-yellow-300 bg-yellow-50 rounded text-sm py-1 font-bold text-yellow-800 focus:border-yellow-500 outline-none shadow-sm hover:bg-white transition-colors" title="Custom Override">
                 </div>`;
         }
 
-        return `<td class="p-3 border-l border-gray-100 matrix-cell">${content}</td>`;
+        return `<td class="p-3 border-l border-gray-100 matrix-cell align-middle">${content}</td>`;
     }
 
     // --- 4. UPDATE LOGIC ---
     async function updateCell(prod, cost, value) {
         const u = sessionStorage.getItem('signos_user') || 'Admin';
         
-        // Optimistic UI Update
         showSaving(true);
 
         try {
-            // Send new value to Backend
             const url = `${SCRIPT_URL}?req=update_matrix&product_id=${prod}&cost_id=${cost}&value=${value}&user=${u}`;
             const res = await fetch(url);
             const data = await res.json();
@@ -236,14 +245,13 @@
             alert("Update Failed: " + e.message);
             console.error(e);
             showSaving(false); 
-            // Ideally revert the UI change here, but alert is sufficient for v1
         }
     }
 
     function showSaving(isSaving) {
         const ind = document.getElementById('save-indicator');
         if(!ind) return;
-        
+
         if(isSaving) {
             ind.innerHTML = `<div class="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div> SAVING...`;
             ind.className = "text-xs font-bold text-blue-600 flex items-center gap-1 mr-2";
