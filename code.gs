@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.25 - MATRIX INTEGRATION ENGINE (v7.0)
+// SignOS API v6.26 - MATRIX INTEGRATION (FIXED)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -25,7 +25,10 @@ function doGet(e) {
   // 2. Auth & Core Tables
   if (params.req === "auth") return handleAuth(params.pin);
   if (params.req === "table") return fetchTable(params.tab);
+  
+  // 2b. Matrix Updates & Fetches (New)
   if (params.req === "update_matrix") return updateMatrixValue(params);
+  if (params.req === "view_module") return fetchProductWithMatrix(params.tab); // <--- ADDED PER REQUEST
 
   // 3. Roadmap / Ticketing
   if (params.req === "add_roadmap") return addRoadmapItem(params);
@@ -46,8 +49,7 @@ function doGet(e) {
   // 6. NotebookLM Bridge
   if (params.req === "sync_codebase") return generateNotebookLMBridge();
 
-  // 7. DEFAULT: Matrix Config Fetch (v7.0)
-  // Replaces standard fetchConfig with the new Matrix-aware engine
+  // 7. DEFAULT: Matrix Config Fetch (Fallthrough)
   return fetchProductWithMatrix(params.tab || "PROD_Yard_Signs");
 }
 
@@ -376,6 +378,7 @@ function syncVersionsFromGitHub() {
       } catch (e) {}
     }
   }
+} // <--- THIS BRACKET WAS MISSING
 
 // ==========================================
 //  COST MATRIX LOGIC
