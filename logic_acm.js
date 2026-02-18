@@ -1,13 +1,13 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.3)
- * Features: Smart Nesting, SVG Vector Generation, and Cost Optimization.
+ * PURE PHYSICS ENGINE: ACM Signs (v2.4)
+ * Features: Smart Nesting, "Partial Sheet" Rendering, and Optimization.
  */
 function calculateACM(inputs, data) {
     // --- 1. RETAIL ENGINE ---
     const sqFt = (inputs.w * inputs.h) / 144;
     const totalSqFt = sqFt * inputs.qty;
 
-    // A. Material Base
+    // Pricing Factors
     const baseRate = inputs.thickness === "6mm" 
         ? parseFloat(data.Retail_Price_6mm_Base || 16.50)
         : parseFloat(data.Retail_Price_3mm_Base || 14.00);
@@ -19,49 +19,47 @@ function calculateACM(inputs, data) {
     let retMaterial = baseRate * sqFt;
     if (inputs.sides === 2) retMaterial += (dsAdder * sqFt);
 
-    // B. Laminate
     const lamRate = parseFloat(data.Retail_Price_Lam || 8.00);
     const retLam = (inputs.lam !== "None") ? (lamRate * sqFt) : 0;
 
-    // C. Finishing
     let retFinish = 0;
     const roundRate = parseFloat(data.Retail_Price_Rounded || 5.00);
     const contourPct = parseFloat(data.Retail_Adder_Contour_Pct || 0.35);
 
     if (inputs.shape === "Contour") {
         retFinish = retMaterial * contourPct; 
-    } else {
-        if (inputs.rounded) retFinish = roundRate;
+    } else if (inputs.rounded) {
+        retFinish = roundRate;
     }
 
     const unitPrice = retMaterial + retLam + retFinish;
     const totalProduct = unitPrice * inputs.qty;
 
-    // D. Fees
+    // Fees
     const feeSetupBase = parseFloat(data.Retail_Fee_Setup || 25);
     const feeDesignBase = parseFloat(data.Retail_Fee_Design || 45);
     const feeSetup = inputs.setupPerFile ? (feeSetupBase * inputs.files) : feeSetupBase;
-    
-    let feeDesign = 0;
-    if (inputs.incDesign) {
-        feeDesign = inputs.designPerFile ? (feeDesignBase * inputs.files) : feeDesignBase;
-    }
+    const feeDesign = inputs.incDesign ? (inputs.designPerFile ? (feeDesignBase * inputs.files) : feeDesignBase) : 0;
 
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotalRaw = totalProduct + feeSetup + feeDesign;
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign); 
 
     // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // Helper to draw the SVG diagram
-    function generateSVG(layout) {
+    // Draw SVG: Now stops at 'inputs.qty' to show partial sheets
+    function generateSVG(layout, limitQty) {
         if (!layout) return "";
         const sw = layout.sheetW;
         const sh = layout.sheetH;
         let rects = "";
+        let count = 0;
         
-        // Draw the nested parts
+        // Loop Rows/Cols but STOP if we hit quantity limit
+        outerLoop:
         for (let r = 0; r < layout.rows; r++) {
             for (let c = 0; c < layout.cols; c++) {
+                if (count >= limitQty) break outerLoop; // Stop drawing
+
                 const x = c * layout.partW;
                 const y = r * layout.partH;
                 const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
@@ -70,16 +68,17 @@ function calculateACM(inputs, data) {
                     <rect width="${layout.partW}" height="${layout.partH}" fill="#3b82f6" stroke="white" stroke-width="0.25" opacity="0.9" />
                     <text x="${layout.partW/2}" y="${layout.partH/2}" font-family="sans-serif" font-size="2" fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text>
                 </g>`;
+                count++;
             }
         }
 
-        return `<svg viewBox="0 0 ${sw} ${sh}" class="w-full h-full bg-gray-200 border border-gray-400">
+        // Background is Gray (Stock), Blue is Parts
+        return `<svg viewBox="0 0 ${sw} ${sh}" class="w-full h-full bg-gray-300 border border-gray-500">
             ${rects}
-            <text x="2" y="${sh-2}" font-size="3" fill="#666">${sw}" x ${sh}" Master Sheet (${layout.perSheet} up)</text>
+            <text x="2" y="${sh-2}" font-size="2" fill="#555" font-family="monospace">${sw}" x ${sh}" Stock | Used: ${count} / Yield: ${layout.perSheet}</text>
         </svg>`;
     }
 
-    // Optimization Logic
     function findBestStock(w, h, qty, thick) {
         const stocks = [
             { name: "4x8", sw: 48, sh: 96, cost: parseFloat(data[`Cost_Stock_${thick}_4x8`] || 52) },
@@ -90,12 +89,12 @@ function calculateACM(inputs, data) {
         let best = { cost: Infinity, name: "N/A", sheets: 0, layout: null };
 
         stocks.forEach(stock => {
-            // Check Rotation 1
+            // Rotation 1
             const colsA = Math.floor(stock.sw / w);
             const rowsA = Math.floor(stock.sh / h);
             const yieldA = colsA * rowsA;
 
-            // Check Rotation 2 (Rotated 90 deg)
+            // Rotation 2
             const colsB = Math.floor(stock.sw / h);
             const rowsB = Math.floor(stock.sh / w);
             const yieldB = colsB * rowsB;
@@ -106,7 +105,6 @@ function calculateACM(inputs, data) {
                 const sheetsNeeded = Math.ceil(qty / maxYield);
                 const totalRunCost = sheetsNeeded * stock.cost;
 
-                // Pick Cheapest Run
                 if (totalRunCost < best.cost) {
                     const isRotated = yieldB > yieldA;
                     best = { 
@@ -131,15 +129,12 @@ function calculateACM(inputs, data) {
     }
 
     const optStock = findBestStock(inputs.w, inputs.h, inputs.qty, inputs.thickness);
-    
-    // Check Oversized
-    const maxLen = 120;
-    const maxWid = 60;
+    const maxLen = 120; const maxWid = 60;
     const isOversized = (Math.max(inputs.w, inputs.h) > maxLen || Math.min(inputs.w, inputs.h) > maxWid);
     if (isOversized) { optStock.name = "OVERSIZED"; optStock.cost = 0; }
     
-    // Generate SVG
-    optStock.svg = generateSVG(optStock.layout);
+    // Generate SVG with Quantity Limit
+    optStock.svg = generateSVG(optStock.layout, inputs.qty);
 
     // Costing
     const waste = parseFloat(data.Waste_Factor || 1.2);
