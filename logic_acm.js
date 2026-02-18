@@ -1,5 +1,5 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.2)
+ * PURE PHYSICS ENGINE: ACM Signs (v2.2.1)
  * Features: Smart Nesting, Max Dim Checks, and Sheet Optimization.
  */
 function calculateACM(inputs, data) {
@@ -61,8 +61,8 @@ function calculateACM(inputs, data) {
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign); 
 
     // --- 3. COST ENGINE (OPTIMIZATION & NESTING) ---
+    // Helper function moved inside to access 'data'
     const findBestStock = (w, h, qty, thick) => {
-        // Define Available Stock Sizes
         const stocks = [
             { name: "4x8", sw: 48, sh: 96, cost: parseFloat(data[`Cost_Stock_${thick}_4x8`] || 52) },
             { name: "4x10", sw: 48, sh: 120, cost: parseFloat(data[`Cost_Stock_${thick}_4x10`] || 69) },
@@ -72,12 +72,10 @@ function calculateACM(inputs, data) {
         let best = { cost: Infinity, name: "N/A", sheets: 0, yieldPerSheet: 0 };
 
         stocks.forEach(stock => {
-            // Check Rotation 1 (W fits SW)
             const fit1_W = Math.floor(stock.sw / w);
             const fit1_H = Math.floor(stock.sh / h);
             const yield1 = fit1_W * fit1_H;
 
-            // Check Rotation 2 (W fits SH)
             const fit2_W = Math.floor(stock.sw / h);
             const fit2_H = Math.floor(stock.sh / w);
             const yield2 = fit2_W * fit2_H;
@@ -87,8 +85,6 @@ function calculateACM(inputs, data) {
             if (maxYield > 0) {
                 const sheetsNeeded = Math.ceil(qty / maxYield);
                 const totalRunCost = sheetsNeeded * stock.cost;
-
-                // Optimization: If cost is equal, prefer the smaller sheet (4x8)
                 if (totalRunCost < best.cost) {
                     best = { cost: totalRunCost, name: stock.name, sheets: sheetsNeeded, yieldPerSheet: maxYield };
                 }
@@ -99,10 +95,9 @@ function calculateACM(inputs, data) {
 
     const optStock = findBestStock(inputs.w, inputs.h, inputs.qty, inputs.thickness);
     
-    // If Oversized, force "Custom" cost logic
     if (isOversized) {
         optStock.name = "OVERSIZED";
-        optStock.cost = 0; // Or handle as special case
+        optStock.cost = 0; 
     }
 
     const waste = parseFloat(data.Waste_Factor || 1.2);
@@ -120,11 +115,9 @@ function calculateACM(inputs, data) {
     let cutTime = 0; 
     let machineRate = 0;
     if (inputs.shape === "Contour") {
-        // CNC Setup + Cut Time
         cutTime = parseFloat(data.Time_Setup_CNC || 10) + (parseFloat(data.Time_Cut_Contour || 8) * inputs.qty);
         machineRate = rateCNC;
     } else {
-        // Shear Setup + Cut Time + Rounding
         const shearTime = parseFloat(data.Time_Shear_Base || 5) + (parseFloat(data.Time_Shear_Add || 3) * inputs.qty);
         const roundTime = inputs.rounded ? (parseFloat(data.Time_Round_Corn || 2) * inputs.qty) : 0;
         cutTime = shearTime + roundTime;
