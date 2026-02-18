@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.26 - MATRIX INTEGRATION (FIXED)
+// SignOS API v6.27 - Added Backup Folder for Cost Matrix
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -13,6 +13,9 @@ const ARCHIVE_FOLDER_ID = "18MBPWajHdF4TNQ0g8Iz1n1-GT3nBrMj4";
 
 // CONTEXT: SignOS Dev Folder
 const CONTEXT_FOLDER_ID = "1Hl5LtIhwt6p3zDeV52kok-8C61_ApXf7"; 
+
+// CONTEXT: admin_cost_matrix.html BACKUP Folder
+const BACKUP_FOLDER_ID = "1bvOCt3Cs8U7gGmmFmmMvWJUetxXYV1tU"; 
 
 function doGet(e) {
   const params = e.parameter;
@@ -533,7 +536,7 @@ function commitMatrixBatch(p) {
     const backupName = `BACKUP_Matrix_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
     
     // FIX: Use your existing ARCHIVE_FOLDER_ID
-    const backupFolder = DriveApp.getFolderById(ARCHIVE_FOLDER_ID); 
+    const backupFolder = DriveApp.getFolderById(BACKUP_FOLDER_ID); 
     backupFolder.createFile(backupName, JSON.stringify(currentData), MimeType.PLAIN_TEXT);
 
     // 2. PARSE & APPLY UPDATES
