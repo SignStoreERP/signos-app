@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Simulator v1.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="signos-core.js"></script>
+    
+    <!-- IMPORT LOGIC ENGINES -->
+    <script src="logic_yard.js"></script>
+    <script src="logic_acm.js"></script>
+
+    <style>
+        .chart-container { position: relative; height: 60vh; width: 100%; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- HEADER -->
+    <div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white shadow-xl m-4 rounded-xl border border-gray-200 overflow-hidden">
+        
+        <!-- CONTROLS TOOLBAR -->
+        <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 grid grid-cols-12 gap-4 shrink-0 items-end">
+            
+            <!-- MODULE SELECTOR -->
+            <div class="col-span-3">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Product Engine</label>
+                <select id="sim-module" class="w-full border border-gray-300 rounded p-2 text-sm font-bold bg-white" onchange="loadModuleData()">
+                    <option value="YARD">Yard Signs (Coro)</option>
+                    <option value="ACM">ACM Signs (Metal)</option>
+                </select>
+            </div>
+
+            <!-- VARIABLE CONTROLS -->
+            <div class="col-span-6 flex gap-4">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">X-Axis Range (Qty)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="range-start" value="1" class="w-16 border rounded p-2 text-center text-sm font-bold" placeholder="Start">
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="number" id="range-end" value="100" class="w-16 border rounded p-2 text-center text-sm font-bold" placeholder="End">
+                        <span class="text-gray-400 text-xs">Step:</span>
+                        <input type="number" id="range-step" value="5" class="w-12 border rounded p-2 text-center text-sm font-bold">
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Fixed Size (WxH)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="fixed-w" value="24" class="w-16 border rounded p-2 text-center text-sm font-bold">
+                        <span class="text-gray-400 font-bold">x</span>
+                        <input type="number" id="fixed-h" value="18" class="w-16 border rounded p-2 text-center text-sm font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION -->
+            <div class="col-span-3 text-right">
+                <button onclick="runSimulation()" id="btn-run" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                    RUN SIMULATION
+                </button>
+            </div>
+        </div>
+
+        <!-- CHART AREA -->
+        <div class="flex-1 p-6 relative bg-white">
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+            <div id="loader" class="absolute inset-0 flex items-center justify-center bg-white/80 z-50 hidden">
+                <div class="text-center">
+                    <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <span class="text-xs font-bold text-gray-400 tracking-widest">CRUNCHING NUMBERS...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS FOOTER -->
+        <div class="bg-gray-900 text-white px-6 py-3 flex justify-between text-xs font-mono shrink-0">
+            <div>
+                <span class="text-gray-500">BACKEND SOURCE:</span>
+                <span id="data-source" class="text-blue-400 font-bold ml-2">---</span>
+            </div>
+            <div class="flex gap-4">
+                <span>RETAIL: <span class="text-green-400 font-bold">Line</span></span>
+                <span>COST: <span class="text-red-400 font-bold">Bar</span></span>
+                <span>MARGIN: <span class="text-yellow-400 font-bold">Dot</span></span>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    let chartInstance = null;
+    let currentBackend = {};
+    
+    // Config Mapping for Logic Engines
+    const MODULES = {
+        'YARD': { tab: 'PROD_Yard_Signs', engine: 'calculateYardSign', defW: 24, defH: 18 },
+        'ACM':  { tab: 'PROD_ACM_Signs',  engine: 'calculateACM',      defW: 24, defH: 18 }
+    };
+
+    window.onload = function() {
+        injectHeader("Pricing Simulator");
+        loadModuleData();
+    };
+
+    async function loadModuleData() {
+        const modKey = document.getElementById('sim-module').value;
+        const config = MODULES[modKey];
+        const btn = document.getElementById('btn-run');
+        
+        btn.innerText = "LOADING DATA...";
+        btn.disabled = true;
+
+        try {
+            const u = sessionStorage.getItem('signos_user') || 'Admin';
+            const res = await fetch(`${SCRIPT_URL}?req=view_module&tab=${config.tab}&user=${u}`);
+            const data = await res.json();
+            
+            if(data.error) throw new Error(data.error);
+            currentBackend = data;
+            
+            document.getElementById('data-source').innerText = `${config.tab} (${data.Sys_Version_Live || 'v?'})`;
+            document.getElementById('fixed-w').value = config.defW;
+            document.getElementById('fixed-h').value = config.defH;
+            
+            // Check if Logic is Loaded
+            if(typeof window[config.engine] !== 'function') {
+                throw new Error(`Logic Engine '${config.engine}' not found. Verify script imports.`);
+            }
+
+            btn.innerText = "RUN SIMULATION";
+            btn.disabled = false;
+            runSimulation(); // Auto-run on load
+
+        } catch(e) {
+            alert("Load Error: " + e.message);
+            btn.innerText = "ERROR";
+        }
+    }
+
+    function runSimulation() {
+        const modKey = document.getElementById('sim-module').value;
+        const config = MODULES[modKey];
+        const engine = window[config.engine];
+
+        // 1. Get Range Parameters
+        const start = parseInt(document.getElementById('range-start').value);
+        const end = parseInt(document.getElementById('range-end').value);
+        const step = parseInt(document.getElementById('range-step').value);
+        const w = parseFloat(document.getElementById('fixed-w').value);
+        const h = parseFloat(document.getElementById('fixed-h').value);
+
+        // 2. Generate Data Points
+        const labels = [];
+        const retailPoints = [];
+        const costPoints = [];
+        const marginPoints = [];
+
+        for (let q = start; q <= end; q += step) {
+            labels.push(q);
+            
+            // Construct Inputs based on Module Type
+            let inputs = {};
+            if(modKey === 'YARD') {
+                inputs = { qty: q, sides: 1, files: 1, hasStakes: true, incDesign: false, setupPerFile: false };
+            } else if (modKey === 'ACM') {
+                inputs = { qty: q, w: w, h: h, thickness: "3mm", sides: 1, lam: "Gloss", shape: "Rectangle", rounded: false, incDesign: false, setupPerFile: false, files: 1 };
+            }
+
+            // --- THE MAGIC: RUN HEADLESS LOGIC ---
+            const result = engine(inputs, currentBackend);
+            
+            // Store Unit Data (Total / Qty) to visualize per-item economics
+            const unitRetail = result.retail.grandTotal / q;
+            const unitCost = result.cost.total / q;
+            const margin = ((unitRetail - unitCost) / unitRetail) * 100;
+
+            retailPoints.push(unitRetail.toFixed(2));
+            costPoints.push(unitCost.toFixed(2));
+            marginPoints.push(margin.toFixed(1));
+        }
+
+        renderChart(labels, retailPoints, costPoints, marginPoints);
+    }
+
+    function renderChart(labels, retail, cost, margin) {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        
+        if(chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Unit Retail ($)',
+                        data: retail,
+                        borderColor: '#2563eb', // Blue
+                        backgroundColor: '#2563eb',
+                        yAxisID: 'y',
+                        tension: 0.1,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'Unit Cost ($)',
+                        data: cost,
+                        borderColor: '#ef4444', // Red
+                        backgroundColor: '#ef4444',
+                        yAxisID: 'y',
+                        borderDash: [1],
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Margin %',
+                        data: margin,
+                        borderColor: '#fbbf24', // Yellow
+                        backgroundColor: 'rgba(251, 191, 36, 0.5)',
+                        yAxisID: 'y1',
+                        type: 'bar',
+                        barThickness: 6,
+                        opacity: 0.5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Price / Cost ($)' },
+                        grid: { color: '#f3f4f6' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Margin (%)' },
+                        grid: { drawOnChartArea: false },
+                        min: 0,
+                        max: 100
+                    },
+                    x: {
+                        title: { display: true, text: 'Quantity' },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    label += (context.dataset.yAxisID === 'y1') ? context.parsed.y + '%' : '$' + context.parsed.y;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
