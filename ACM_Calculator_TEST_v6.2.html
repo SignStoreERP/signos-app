@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACM Signs v6.5</title>
+    <title>ACM Signs v6.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_acm.js"></script>
@@ -12,8 +12,8 @@
         @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
         .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
         .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
-        /* Lightbox SVG Scaling */
-        .svg-preview { display: flex; align-items: center; justify-content: center; background: white; }
+        /* Clean Preview: No wrapper border, SVG handles it */
+        .svg-preview { display: flex; align-items: center; justify-content: center; background: transparent; }
         .svg-preview svg { width: 100%; height: 100%; max-height: 100%; display: block; object-fit: contain; }
     </style>
 </head>
@@ -174,13 +174,14 @@
             </div>
 
             <!-- CANVAS -->
+            <!-- Updated: Removed border/shadow from container, using transparent bg -->
             <div class="flex-1 bg-gray-200 p-4 flex justify-center items-center overflow-hidden">
-                <div id="lightbox-svg" class="w-full h-full max-w-3xl svg-preview shadow-lg bg-white border border-gray-300"></div>
+                <div id="lightbox-svg" class="w-full h-full max-w-3xl svg-preview"></div>
             </div>
 
             <!-- FOOTER -->
             <div class="p-3 bg-white border-t text-center shrink-0">
-                <p class="text-[10px] text-gray-400">Visual simulation only. Does not affect quote pricing.</p>
+                <p class="text-[10px] text-gray-500 font-bold">Production Simulation: Analyzes material yield and cut paths to inform accurate costing.</p>
             </div>
         </div>
     </div>
@@ -189,7 +190,6 @@
     let backendData = {};
     let currentSVG = "";
 
-    // VALIDATION: Force > 0
     function validateInput(el) {
         if (!el.value || parseFloat(el.value) <= 0) {
             el.value = 1;
@@ -251,7 +251,7 @@
             document.getElementById("status-dot").classList.remove("animate-pulse");
 
             const isDev = window.location.href.includes('mode=dev');
-            const ver = isDev ? (data.Sys_Version_Dev || 'v6.5') : (data.Sys_Version_Live || 'v6.5');
+            const ver = isDev ? (data.Sys_Version_Dev || 'v6.6') : (data.Sys_Version_Live || 'v6.6');
             document.getElementById("version-display").innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
             document.getElementById("version-display").classList.remove('hidden');
 
