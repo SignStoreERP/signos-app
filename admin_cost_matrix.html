@@ -9,46 +9,51 @@
     <style>
         .matrix-cell { transition: all 0.1s; }
         .matrix-cell:hover { background-color: #f3f4f6; }
+        
         /* Freeze Header and First Column */
         .sticky-col { position: sticky; left: 0; z-index: 10; background-color: white; border-right: 2px solid #e5e7eb; }
         .sticky-header { position: sticky; top: 0; z-index: 20; background-color: #f9fafb; border-bottom: 2px solid #e5e7eb; }
-        .z-30-corner { z-index: 30 !important; } /* Top Left Corner */
+        .z-30-corner { z-index: 30 !important; } /* Top Left Corner stays on top */
         
+        /* Custom Toggle Switch */
         .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
         .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans overflow-hidden">
 
-    <!-- HEADER INJECTED HERE -->
     <div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white shadow-xl m-4 rounded-xl border border-gray-200 overflow-hidden">
         
-        <!-- TOOLBAR -->
         <div class="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shrink-0">
             <div>
                 <h2 class="text-lg font-bold text-gray-800">Production Cost Matrix</h2>
                 <p class="text-xs text-gray-500">Toggle active cost variables per product line.</p>
             </div>
+            
             <div class="flex items-center gap-2">
-                <div id="save-indicator" class="hidden text-xs font-bold text-green-600 flex items-center gap-1">
+                <div class="flex items-center gap-2 mr-4 border-r border-gray-200 pr-4">
+                    <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                    <span id="status-text" class="text-xs font-bold text-gray-400">CONNECTING...</span>
+                </div>
+
+                <div id="save-indicator" class="hidden text-xs font-bold text-green-600 flex items-center gap-1 mr-2">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> SAVED
                 </div>
+                
                 <button onclick="loadData()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded text-xs font-bold border border-gray-200 transition">REFRESH</button>
             </div>
         </div>
 
-        <!-- MATRIX GRID -->
         <div class="flex-1 overflow-auto relative">
             <table class="w-full text-left border-collapse">
                 <thead class="text-xs text-gray-500 font-bold uppercase bg-gray-50">
                     <tr id="matrix-header">
-                        <!-- Header injected via JS -->
-                    </tr>
+                        </tr>
                 </thead>
                 <tbody id="matrix-body" class="text-xs font-medium text-gray-700 divide-y divide-gray-100">
-                    <!-- Body injected via JS -->
-                </tbody>
+                    </tbody>
             </table>
+            
             <div id="loader" class="absolute inset-0 flex items-center justify-center bg-white/80 z-50">
                 <div class="flex flex-col items-center">
                     <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -65,7 +70,12 @@
     
     // --- 1. SETUP ---
     window.onload = function() {
-        injectHeader("Cost Matrix");
+        // Fallback if injectHeader is missing (e.g., using old signos-core.js)
+        if (typeof injectHeader === "function") {
+            injectHeader("Cost Matrix");
+        } else {
+            console.warn("Update signos-core.js to v1.8 for dynamic headers.");
+        }
         loadData();
     };
 
@@ -76,6 +86,12 @@
         // Status Indicators
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
+
+        if(statusText) {
+            statusText.innerText = "CONNECTING...";
+            statusText.className = "text-xs font-bold text-gray-400";
+            statusDot.className = "w-2 h-2 rounded-full bg-yellow-400 animate-pulse";
+        }
 
         try {
             // Parallel Fetch: Definitions AND Matrix
@@ -99,7 +115,7 @@
             // UPDATE HEADER TO ONLINE
             if(statusText) {
                 statusText.innerText = "ONLINE";
-                statusText.className = "font-bold text-green-500";
+                statusText.className = "text-xs font-bold text-green-500";
                 statusDot.className = "w-2 h-2 rounded-full bg-green-500";
                 statusDot.classList.remove("animate-pulse");
             }
@@ -112,8 +128,9 @@
             // UPDATE HEADER TO OFFLINE
             if(statusText) {
                 statusText.innerText = "OFFLINE";
-                statusText.className = "font-bold text-red-500";
+                statusText.className = "text-xs font-bold text-red-500";
                 statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+                statusDot.classList.remove("animate-pulse");
             }
         }
     }
@@ -126,14 +143,15 @@
         // A. Build Headers (Products)
         if(matrix.length === 0) return;
         
-        // FIX: Look at KEYS of the FIRST ROW object, not keys of the Array itself
-        const firstRow = matrix; 
+        // Look at KEYS of the FIRST ROW object to find columns like "PROD_Yard"
+        const firstRow = matrix[0]; 
         const products = Object.keys(firstRow).filter(k => k !== 'Cost_ID');
         
+        // Sticky Header Logic
         let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[200px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
         products.forEach(prod => {
             // Clean up header display (e.g. PROD_Yard -> Yard)
-            const label = prod.replace('PROD_', '');
+            const label = prod.replace('PROD_', '').replace('_', ' ');
             headerHTML += `<th class="p-4 sticky-header min-w-[100px] text-center border-l border-gray-200">${label}</th>`;
         });
         thead.innerHTML = headerHTML;
@@ -151,7 +169,7 @@
 
             let rowHTML = `
                 <td class="p-3 sticky-col bg-white border-r border-gray-100 group">
-                    <div class="font-bold text-gray-800">${def.Display_Name}</div>
+                    <div class="font-bold text-gray-800">${def.Display_Name || costID}</div>
                     <div class="text-[9px] text-gray-400 font-mono group-hover:text-blue-500">${costID}</div>
                 </td>`;
 
@@ -171,17 +189,17 @@
         let content = "";
         
         // Normalize Boolean Check (Sheets sometimes returns text 'TRUE' or boolean true)
-        const isBool = (val === true || val === false || val === 'TRUE' || val === 'FALSE');
+        const isBool = (val === true || val === false || String(val).toUpperCase() === 'TRUE' || String(val).toUpperCase() === 'FALSE');
         
         if(isBool) {
             // Render Toggle
-            const checked = (val === true || val === 'TRUE') ? 'checked' : '';
+            const checked = (val === true || String(val).toUpperCase() === 'TRUE') ? 'checked' : '';
             content = `
                 <div class="flex justify-center">
                     <div class="relative inline-block w-8 align-middle select-none">
                         <input type="checkbox" ${checked} onchange="updateCell('${prod}', '${cost}', this.checked)" 
-                            class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
-                        <label class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
+                            class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 transition-all duration-300"/>
+                        <label class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer transition-all duration-300"></label>
                     </div>
                 </div>`;
         } else {
@@ -189,7 +207,7 @@
             content = `
                 <div class="flex justify-center">
                     <input type="number" value="${val}" onchange="updateCell('${prod}', '${cost}', this.value)"
-                        class="w-16 text-center border border-gray-200 rounded text-xs py-1 font-bold text-blue-600 focus:border-blue-500 outline-none bg-blue-50/50">
+                        class="w-16 text-center border border-gray-200 rounded text-xs py-1 font-bold text-blue-600 focus:border-blue-500 outline-none bg-blue-50/50 hover:bg-white transition-colors">
                 </div>`;
         }
 
@@ -200,10 +218,11 @@
     async function updateCell(prod, cost, value) {
         const u = sessionStorage.getItem('signos_user') || 'Admin';
         
-        // Optimistic UI Update (Already handled by input change)
+        // Optimistic UI Update
         showSaving(true);
 
         try {
+            // Send new value to Backend
             const url = `${SCRIPT_URL}?req=update_matrix&product_id=${prod}&cost_id=${cost}&value=${value}&user=${u}`;
             const res = await fetch(url);
             const data = await res.json();
@@ -211,23 +230,27 @@
             if(data.status === 'success') {
                 showSaving(false);
             } else {
-                throw new Error(data.message);
+                throw new Error(data.message || "Unknown API Error");
             }
         } catch(e) {
             alert("Update Failed: " + e.message);
-            showSaving(false); // Should probably revert UI here in V2
+            console.error(e);
+            showSaving(false); 
+            // Ideally revert the UI change here, but alert is sufficient for v1
         }
     }
 
     function showSaving(isSaving) {
         const ind = document.getElementById('save-indicator');
+        if(!ind) return;
+        
         if(isSaving) {
             ind.innerHTML = `<div class="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div> SAVING...`;
-            ind.className = "text-xs font-bold text-blue-600 flex items-center gap-1";
+            ind.className = "text-xs font-bold text-blue-600 flex items-center gap-1 mr-2";
             ind.classList.remove('hidden');
         } else {
             ind.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> SAVED`;
-            ind.className = "text-xs font-bold text-green-600 flex items-center gap-1";
+            ind.className = "text-xs font-bold text-green-600 flex items-center gap-1 mr-2";
             setTimeout(() => ind.classList.add('hidden'), 2000);
         }
     }
