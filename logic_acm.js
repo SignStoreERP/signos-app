@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.6.4)
- * Features: Smart Nesting, Graph Paper Sandbox, and BoM Footer.
+ * PURE PHYSICS ENGINE: ACM Signs (v2.7)
+ * Features: Active Sheet Visualization, Technical BoM, Tight Grid.
  */
 function calculateACM(inputs, data) {
     // --- 1. RETAIL ENGINE ---
@@ -45,128 +45,113 @@ function calculateACM(inputs, data) {
     const grandTotalRaw = totalProduct + feeSetup + feeDesign;
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign);
 
-// --- 2. COST ENGINE (VISUAL NESTING) ---
-    // UPDATED: Cinema Mode (Forces Landscape Canvas & Fit-Text Footer)
+    // --- 2. COST ENGINE (VISUAL NESTING) ---
+    // UPDATED: Active Sheet Logic, Tight Grid, Technical BoM
     function generateSVG(layout, limitQty, stockName) {
         if (!layout) return "";
         
-        // 1. Core Dimensions (Inches)
+        // 1. Dimensions & Canvas
         const sw = layout.sheetW;
         const sh = layout.sheetH;
         
-        // 2. Cinema Canvas Calculation
-        // We force the canvas to be Landscape (4:3 ratio) so it fills the UI window better
-        // instead of being a skinny tall strip.
-        const targetAspect = 1.33; // 4:3 Ratio
+        // Footer Height: Fixed proportion to ensure text fits (15% of sheet height or min 10 units)
+        const footerH = Math.max(sh * 0.15, 12); 
+        const totalH = sh + footerH; 
         
-        // Calculate the "Visual Box" needed to hold the sheet + margins
-        const sheetVisualH = sh * 1.1; // Sheet + 10% vertical buffer
-        const sheetVisualW = sw * 1.1; // Sheet + 10% horizontal buffer
-        
-        let canvasW, canvasH;
-
-        // If the sheet is tall (Portrait), scale width to match target aspect
-        if ((sheetVisualW / sheetVisualH) < targetAspect) {
-            canvasH = sheetVisualH;
-            canvasW = canvasH * targetAspect;
-        } else {
-            // If sheet is wide, use its width
-            canvasW = sheetVisualW;
-            canvasH = canvasW / targetAspect;
-        }
-
-        // 3. Footer Setup
-        // Fixed ratio height for the footer relative to canvas (looks consistent)
-        const footerH = canvasH * 0.15; 
-        const totalH = canvasH + footerH; // Extend total height to include footer
-
-        // Centering offsets for the sheet
-        const offX = (canvasW - sw) / 2;
-        const offY = (canvasH - sh) / 2;
-
-        // 4. Styling
+        // 2. Styling (Blueprint / Technical)
         const style = {
-            gridLine: "#cbd5e1",    // Slate-300
-            bgFill: "#f1f5f9",      // Slate-100 (Graph Paper)
+            bgFill: "#f1f5f9",      // Slate-100 Background
+            gridStroke: "#cbd5e1",  // Slate-300 Grid Lines
             sheetFill: "#ffffff",   // White Sheet
-            sheetStroke: "#64748b", // Slate-500
-            partFill: "rgba(37, 99, 235, 0.1)", // Blue-600 with opacity
-            partStroke: "#2563eb",  // Blue-600
-            bomBg: "#1e293b",       // Slate-800 Footer
-            bomText: "#ffffff"      // White Text
+            sheetStroke: "#475569", // Slate-600 Border
+            partFill: "rgba(37, 99, 235, 0.15)", // Blue-600 (15% Opacity)
+            partStroke: "#2563eb",  // Blue-600 Line
+            bomBg: "#0f172a",       // Slate-900 (Footer Background)
+            bomText: "#e2e8f0",     // Slate-200 (Text)
+            bomHighlight: "#38bdf8" // Sky-400 (Accent Text)
         };
 
-        // 5. Generate Parts
+        // 3. Logic: Show "Newest" Sheet Only
+        // If we need 2.5 sheets, show the 0.5 sheet (the active one).
+        // If we need exactly 3.0 sheets, show a full sheet.
+        const remainder = limitQty % layout.perSheet;
+        const itemsOnActiveSheet = (remainder === 0) ? layout.perSheet : remainder;
+        
+        const fullSheets = (remainder === 0) ? (limitQty / layout.perSheet) : Math.floor(limitQty / layout.perSheet);
+        const partialSheets = (remainder === 0) ? 0 : 1;
+        const totalSheetsNeeded = Math.ceil(limitQty / layout.perSheet);
+
+        // 4. Generate Parts (Loop only for Active Sheet items)
         let rects = "";
         let count = 0;
 
         outerLoop:
         for (let r = 0; r < layout.rows; r++) {
             for (let c = 0; c < layout.cols; c++) {
-                if (count >= limitQty) break outerLoop;
+                if (count >= itemsOnActiveSheet) break outerLoop;
 
                 const x = c * layout.partW;
                 const y = r * layout.partH;
                 const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
-                const showLabel = (layout.partW > 6 && layout.partH > 6);
+                const showLabel = (layout.partW > 5 && layout.partH > 5);
 
                 rects += `<g transform="translate(${x}, ${y})">
                     <rect width="${layout.partW}" height="${layout.partH}" 
                           fill="${style.partFill}" 
                           stroke="${style.partStroke}" 
-                          stroke-width="0.2" />
+                          stroke-width="0.15" />
                     ${showLabel ? 
                         `<text x="${layout.partW/2}" y="${layout.partH/2}" 
-                               font-family="sans-serif" font-size="1.5" 
+                               font-family="monospace" font-size="1.5" 
                                fill="${style.partStroke}" text-anchor="middle" 
-                               dominant-baseline="middle" font-weight="bold" opacity="0.8">${label}</text>` 
+                               dominant-baseline="middle" font-weight="bold" opacity="0.9">${label}</text>` 
                     : ''}
                 </g>`;
                 count++;
             }
         }
 
-        // 6. BoM Data & Text Scaling
-        const totalSheets = Math.ceil(limitQty / layout.perSheet);
-        const areaUsed = count * layout.partW * layout.partH;
-        const wastePct = ((1 - (areaUsed / (sw * sh))) * 100).toFixed(1);
-        const bomText = `REQ: ${totalSheets} SHT | STOCK: ${stockName} | WASTE: ${wastePct}%`;
+        // 5. BoM Data Calculation
+        const areaUsed = itemsOnActiveSheet * layout.partW * layout.partH;
+        const wasteSqFt = ((sw * sh) - areaUsed) / 144;
+        const wastePct = ((1 - (areaUsed / (sw * sh))) * 100).toFixed(0);
+        
+        // Font Sizing Logic
+        const fsMain = footerH * 0.25; // Main text size
+        const fsSub = footerH * 0.18;  // Sub text size
+        const padX = sw * 0.05;        // Left padding
+        const line1Y = sh + (footerH * 0.4);
+        const line2Y = sh + (footerH * 0.75);
 
-        // Calculate dynamic font size to ensure it fits inside the footer width
-        // We limit it to max 45% of footer height, but shrink it if the canvas is narrow
-        const charCount = bomText.length;
-        const maxFontSize = footerH * 0.45;
-        const fitFontSize = (canvasW * 0.9) / (charCount * 0.6); // Approximate width per char
-        const finalFontSize = Math.min(maxFontSize, fitFontSize);
-
-        // 7. Render
-        return `<svg viewBox="0 0 ${canvasW} ${totalH}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; display:block; background-color: ${style.bgFill};">
+        // 6. Return SVG
+        return `<svg viewBox="0 0 ${sw} ${totalH}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; display:block; background-color: ${style.bgFill};">
             <defs>
-                <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse">
-                    <path d="M 12 0 L 0 0 0 12" fill="none" stroke="${style.gridLine}" stroke-width="0.5"/>
+                <pattern id="grid" width="0.5" height="0.5" patternUnits="userSpaceOnUse">
+                    <path d="M 0.5 0 L 0 0 0 0.5" fill="none" stroke="${style.gridStroke}" stroke-width="0.05"/>
                 </pattern>
             </defs>
             
-            <rect width="${canvasW}" height="${totalH}" fill="url(#grid)" />
+            <rect width="${sw}" height="${sh}" fill="url(#grid)" />
             
-            <g transform="translate(${offX}, ${offY})">
-                <rect x="1" y="1" width="${sw}" height="${sh}" fill="rgba(0,0,0,0.2)" />
-                <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" />
-                ${rects}
-            </g>
+            <rect width="${sw}" height="${sh}" fill="none" stroke="${style.sheetStroke}" stroke-width="0.5" />
             
-            <g transform="translate(0, ${canvasH})">
-                <rect width="${canvasW}" height="${footerH}" fill="${style.bomBg}" />
-                <text x="${canvasW/2}" y="${footerH/2}" 
-                      font-family="monospace" 
-                      font-size="${finalFontSize}" 
-                      fill="${style.bomText}" 
-                      text-anchor="middle" 
-                      dominant-baseline="middle" 
-                      letter-spacing="0.5">
-                      ${bomText}
-                </text>
-            </g>
+            ${rects}
+            
+            <rect x="0" y="${sh}" width="${sw}" height="${footerH}" fill="${style.bomBg}" />
+            
+            <text x="${padX}" y="${line1Y}" font-family="monospace" font-size="${fsMain}" fill="${style.bomHighlight}" font-weight="bold">
+                STOCK: ${stockName}
+            </text>
+            <text x="${sw - padX}" y="${line1Y}" font-family="monospace" font-size="${fsMain}" fill="${style.bomText}" text-anchor="end">
+                REQ: ${totalSheetsNeeded} SHTS
+            </text>
+            
+            <text x="${padX}" y="${line2Y}" font-family="monospace" font-size="${fsSub}" fill="${style.bomText}" opacity="0.8">
+                INVENTORY: ${fullSheets} FULL / ${partialSheets} OPEN
+            </text>
+            <text x="${sw - padX}" y="${line2Y}" font-family="monospace" font-size="${fsSub}" fill="${style.bomText}" text-anchor="end" opacity="0.8">
+                WASTE: ${wastePct}% (${wasteSqFt.toFixed(1)} sqft)
+            </text>
         </svg>`;
     }
 
