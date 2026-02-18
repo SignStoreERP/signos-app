@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.23 - Critical Array Fixes
+// SignOS API v6.24 - Add Cost Matrix Logic
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -374,6 +374,52 @@ function syncVersionsFromGitHub() {
       } catch (e) {}
     }
   }
+
+// ==========================================
+//  COST MATRIX LOGIC
+// ==========================================
+
+function updateMatrixValue(p) {
+  try {
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Cost_Matrix");
+    
+    // 1. Get Headers and IDs to find coordinates
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues(); // Product IDs
+    const rowIds = sheet.getRange(1, 1, lastRow, 1).getValues().flat(); // Cost IDs
+    
+    // 2. Find Coordinates
+    const colIndex = headers.indexOf(p.product_id); // Returns -1 if not found
+    const rowIndex = rowIds.indexOf(p.cost_id);     // Returns -1 if not found
+    
+    if (colIndex === -1) return returnJSON({ status: "error", message: "Product ID not found" });
+    if (rowIndex === -1) return returnJSON({ status: "error", message: "Cost ID not found" });
+    
+    // 3. Determine Value Type (Boolean or Number)
+    let val = p.value;
+    if (val === 'TRUE') val = true;
+    else if (val === 'FALSE') val = false;
+    else if (!isNaN(parseFloat(val))) val = parseFloat(val);
+    
+    // 4. Update Cell (Adding 1 because array index is 0-based, sheet is 1-based)
+    sheet.getRange(rowIndex + 1, colIndex + 1).setValue(val);
+    
+    // 5. Log the Change (Audit Trail)
+    logActivity({
+      user: p.user,
+      action: "MATRIX_UPDATE",
+      target: `${p.product_id} -> ${p.cost_id}`,
+      meta: `Changed to ${val}`,
+      req: "update_matrix"
+    });
+    
+    return returnJSON({ status: "success", new_value: val });
+    
+  } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
+
   return returnJSON({ status: "success" });
 }
 
