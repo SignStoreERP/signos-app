@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACM Signs v6.8</title>
+    <title>ACM Signs v6.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_acm.js"></script>
@@ -199,211 +199,228 @@
         </div>
     </div>
 
-<script>
-    let backendData = {};
-    let currentSVG = "";
+    <script>
+        let backendData = {};
+        let currentSVG = "";
 
-    // --- 1. VALIDATION & UI LOGIC ---
-    function validateInput(el) {
-        if (!el.value || parseFloat(el.value) <= 0) {
-            el.value = 1;
-        }
-        // Update Simulation if in Lightbox, otherwise run Main Calc
-        if(el.id.includes('sim')) updateSim();
-        else runCalc();
-    }
-
-    function toggleNesting() {
-        document.getElementById('nest-container').classList.toggle('hidden');
-    }
-
-    function updateShapeOptions() {
-        const shape = document.getElementById('shape').value;
-        const subOpt = document.getElementById('sub-shape-opt');
-        if(shape === 'Rectangle') {
-            subOpt.classList.remove('hidden');
-        } else {
-            subOpt.classList.add('hidden');
-            document.getElementById('rounded').checked = false; 
-        }
-        runCalc();
-    }
-
-    function updateDesignOptions() {
-        const incDesign = document.getElementById('design').checked;
-        const subOpt = document.getElementById('sub-design-opt');
-        if(incDesign) subOpt.classList.remove('hidden');
-        else {
-            subOpt.classList.add('hidden');
-            document.getElementById('design-per-file').checked = false;
-        }
-        runCalc();
-    }
-
-    // --- 2. LIGHTBOX & SANDBOX ---
-    function openLightbox() {
-        // Sync Main Inputs to Sim Inputs
-        document.getElementById('sim-qty').value = document.getElementById('qty').value;
-        document.getElementById('sim-w').value = document.getElementById('width').value;
-        document.getElementById('sim-h').value = document.getElementById('height').value;
-        
-        updateSim();
-        document.getElementById('lightbox').classList.remove('hidden');
-    }
-    
-    function closeLightbox() {
-        document.getElementById('lightbox').classList.add('hidden');
-    }
-
-    function updateSim() {
-        const simInputs = {
-            qty: parseFloat(document.getElementById('sim-qty').value) || 1,
-            w: parseFloat(document.getElementById('sim-w').value) || 24,
-            h: parseFloat(document.getElementById('sim-h').value) || 18,
-            thickness: document.getElementById('material').value,
-            sides: 1, lam: "None", shape: "Square", incDesign: false, setupPerFile: false, files: 1
-        };
-
-        const res = calculateACM(simInputs, backendData);
-        // Inject SVG Logic
-        document.getElementById('lightbox-svg').innerHTML = res.cost.stock.svg;
-    }
-
-    // --- 3. INITIALIZATION ---
-    window.onload = async function() {
-        // A. INJECT UNIFIED HEADER
-        injectHeader("ACM Signs"); 
-
-        // B. SESSION DATA
-        const u = sessionStorage.getItem('signos_user') || 'Guest';
-        const r = sessionStorage.getItem('signos_role') || 'VIEW';
-        
-        // Timeout Protection
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Request Timed Out")), 5000));
-
-        try {
-            if (typeof calculateACM === 'undefined') throw new Error("Logic File Missing");
-            
-            // C. FETCH DATA
-            const fetchPromise = fetch(`${SCRIPT_URL}?tab=PROD_ACM_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
-            const res = await Promise.race([fetchPromise, timeout]);
-            const data = await res.json();
-            
-            if(data.error) throw new Error(data.error);
-            backendData = data;
-
-            // D. UPDATE STATUS UI (Uses the injected header elements if possible, or local)
-            const statusText = document.getElementById("status-text");
-            const statusDot = document.getElementById("status-dot");
-            
-            // Check if status elements exist (from injected header or local HTML)
-            if(statusText && statusDot) {
-                statusText.innerText = "ONLINE";
-                statusText.className = "font-bold text-green-500";
-                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-                statusDot.classList.remove("animate-pulse");
+        // --- 1. VALIDATION & UI LOGIC ---
+        function validateInput(el) {
+            if (!el.value || parseFloat(el.value) <= 0) {
+                el.value = 1;
             }
+            // Update Simulation if in Lightbox, otherwise run Main Calc
+            if(el.id.includes('sim')) updateSim();
+            else runCalc();
+        }
 
-            const isDev = window.location.href.includes('mode=dev');
-            const ver = isDev ? (data.Sys_Version_Dev || 'v6.8') : (data.Sys_Version_Live || 'v6.8');
-            
-            const verDisplay = document.getElementById("version-display");
-            if(verDisplay) {
-                verDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
-                verDisplay.classList.remove('hidden');
+        function toggleNesting() {
+            document.getElementById('nest-container').classList.toggle('hidden');
+        }
+
+        function updateShapeOptions() {
+            const shape = document.getElementById('shape').value;
+            const subOpt = document.getElementById('sub-shape-opt');
+            if(shape === 'Rectangle') {
+                subOpt.classList.remove('hidden');
+            } else {
+                subOpt.classList.add('hidden');
+                document.getElementById('rounded').checked = false;
             }
-
-            updateShapeOptions(); 
             runCalc();
-
-        } catch(e) { 
-            console.error("Critical Error:", e);
-            const statusText = document.getElementById("status-text");
-            if(statusText) {
-                statusText.innerText = "OFFLINE";
-                statusText.className = "font-bold text-red-500";
-            }
-            alert("System Error: " + e.message); 
         }
-    };
 
-    // --- 4. CALCULATION ENGINE ---
-    function runCalc() {
-        if(!backendData.Item_Name) return;
+        function updateDesignOptions() {
+            const incDesign = document.getElementById('design').checked;
+            const subOpt = document.getElementById('sub-design-opt');
+            if(incDesign) subOpt.classList.remove('hidden');
+            else {
+                subOpt.classList.add('hidden');
+                document.getElementById('design-per-file').checked = false;
+            }
+            runCalc();
+        }
 
-        const inputs = {
-            w: parseFloat(document.getElementById('width').value) || 24,
-            h: parseFloat(document.getElementById('height').value) || 18,
-            qty: parseFloat(document.getElementById('qty').value) || 1,
-            thickness: document.getElementById('material').value,
-            sides: parseInt(document.getElementById('sides').value),
-            lam: document.getElementById('lam').value,
-            shape: document.getElementById('shape').value,
-            rounded: document.getElementById('rounded').checked,
-            incDesign: document.getElementById('design').checked,
-            setupPerFile: document.getElementById('setup-per-file').checked,
-            designPerFile: document.getElementById('design-per-file').checked,
-            files: parseFloat(document.getElementById('files').value) || 1
+        // --- 2. LIGHTBOX & SANDBOX ---
+        function openLightbox() {
+            // Sync Main Inputs to Sim Inputs
+            document.getElementById('sim-qty').value = document.getElementById('qty').value;
+            document.getElementById('sim-w').value = document.getElementById('width').value;
+            document.getElementById('sim-h').value = document.getElementById('height').value;
+            
+            updateSim();
+            document.getElementById('lightbox').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.add('hidden');
+        }
+
+        function updateSim() {
+            const simInputs = {
+                qty: parseFloat(document.getElementById('sim-qty').value) || 1,
+                w: parseFloat(document.getElementById('sim-w').value) || 24,
+                h: parseFloat(document.getElementById('sim-h').value) || 18,
+                thickness: document.getElementById('material').value,
+                sides: 1, lam: "None", shape: "Square", incDesign: false, setupPerFile: false, files: 1
+            };
+
+            const res = calculateACM(simInputs, backendData);
+            const stock = res.cost.stock;
+            
+            // Inject SVG Logic
+            document.getElementById('lightbox-svg').innerHTML = stock.svg;
+
+            // RESTORED: Inject Footer Data (BoM)
+            if(stock.stats) {
+                document.getElementById('sim-stock').innerText = stock.name;
+                document.getElementById('sim-req').innerText = `${stock.sheets} SHTS`;
+                document.getElementById('sim-inv').innerText = `${stock.stats.full} FULL / ${stock.stats.partial} OPEN`;
+                document.getElementById('sim-waste').innerText = `${stock.stats.waste}%`;
+            } else {
+                document.getElementById('sim-stock').innerText = "N/A";
+                document.getElementById('sim-req').innerText = "---";
+                document.getElementById('sim-inv').innerText = "---";
+                document.getElementById('sim-waste').innerText = "---%";
+            }
+        }
+
+        // --- 3. INITIALIZATION ---
+        window.onload = async function() {
+            // A. INJECT UNIFIED HEADER
+            if (typeof injectHeader === "function") {
+               injectHeader("ACM Signs");
+            }
+
+            // B. SESSION DATA
+            const u = sessionStorage.getItem('signos_user') || 'Guest';
+            const r = sessionStorage.getItem('signos_role') || 'VIEW';
+
+            // Timeout Protection
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Request Timed Out")), 5000));
+
+            try {
+                if (typeof calculateACM === 'undefined') throw new Error("Logic File Missing");
+                
+                // C. FETCH DATA
+                const fetchPromise = fetch(`${SCRIPT_URL}?tab=PROD_ACM_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+                const res = await Promise.race([fetchPromise, timeout]);
+                const data = await res.json();
+
+                if(data.error) throw new Error(data.error);
+                backendData = data;
+
+                // D. UPDATE STATUS UI (Uses the injected header elements if possible, or local)
+                const statusText = document.getElementById("status-text");
+                const statusDot = document.getElementById("status-dot");
+                
+                // Check if status elements exist (from injected header or local HTML)
+                if(statusText && statusDot) {
+                    statusText.innerText = "ONLINE";
+                    statusText.className = "font-bold text-green-500";
+                    statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                    statusDot.classList.remove("animate-pulse");
+                }
+
+                const isDev = window.location.href.includes('mode=dev');
+                const ver = isDev ? (data.Sys_Version_Dev || 'v6.9') : (data.Sys_Version_Live || 'v6.9');
+                
+                const verDisplay = document.getElementById("version-display");
+                if(verDisplay) {
+                    verDisplay.innerText = isDev ? `(Beta ${ver})` : `Live ${ver}`;
+                    verDisplay.classList.remove('hidden');
+                }
+
+                updateShapeOptions();
+                runCalc();
+
+            } catch(e) {
+                console.error("Critical Error:", e);
+                const statusText = document.getElementById("status-text");
+                if(statusText) {
+                    statusText.innerText = "OFFLINE";
+                    statusText.className = "font-bold text-red-500";
+                }
+                alert("System Error: " + e.message);
+            }
         };
 
-        const result = calculateACM(inputs, backendData);
-        const ret = result.retail;
-        const cost = result.cost;
+        // --- 4. CALCULATION ENGINE ---
+        function runCalc() {
+            if(!backendData.Item_Name) return;
 
-        // UI Updates
-        const warn = document.getElementById('size-warn');
-        if(ret.isOversized) warn.classList.remove('hidden'); else warn.classList.add('hidden');
+            const inputs = {
+                w: parseFloat(document.getElementById('width').value) || 24,
+                h: parseFloat(document.getElementById('height').value) || 18,
+                qty: parseFloat(document.getElementById('qty').value) || 1,
+                thickness: document.getElementById('material').value,
+                sides: parseInt(document.getElementById('sides').value),
+                lam: document.getElementById('lam').value,
+                shape: document.getElementById('shape').value,
+                rounded: document.getElementById('rounded').checked,
+                incDesign: document.getElementById('design').checked,
+                setupPerFile: document.getElementById('setup-per-file').checked,
+                designPerFile: document.getElementById('design-per-file').checked,
+                files: parseFloat(document.getElementById('files').value) || 1
+            };
 
-        const fmt = (n) => "$" + n.toFixed(2);
+            const result = calculateACM(inputs, backendData);
+            const ret = result.retail;
+            const cost = result.cost;
 
-        document.getElementById('ui-unit').innerText = ret.isOversized ? "CUSTOM" : fmt(ret.unitPrice);
-        document.getElementById('ui-total').innerText = ret.isOversized ? "CONTACT US" : fmt(ret.grandTotal);
-        
-        document.getElementById('li-mat').innerText = fmt(ret.breakdown.material);
-        document.getElementById('li-lam').innerText = fmt(ret.breakdown.laminate);
-        
-        const finishVal = ret.breakdown.finish;
-        const rowFinish = document.getElementById('row-finish');
-        if(finishVal > 0) {
-            rowFinish.classList.remove('hidden');
-            document.getElementById('li-finish').innerText = fmt(finishVal);
-            document.getElementById('lbl-finish').innerText = inputs.shape === 'Contour' ? 'CNC Shape' : 'Rounded Corners';
-        } else {
-            rowFinish.classList.add('hidden');
+            // UI Updates
+            const warn = document.getElementById('size-warn');
+            if(ret.isOversized) warn.classList.remove('hidden'); else warn.classList.add('hidden');
+
+            const fmt = (n) => "$" + n.toFixed(2);
+
+            document.getElementById('ui-unit').innerText = ret.isOversized ? "CUSTOM" : fmt(ret.unitPrice);
+            document.getElementById('ui-total').innerText = ret.isOversized ? "CONTACT US" : fmt(ret.grandTotal);
+
+            document.getElementById('li-mat').innerText = fmt(ret.breakdown.material);
+            document.getElementById('li-lam').innerText = fmt(ret.breakdown.laminate);
+
+            const finishVal = ret.breakdown.finish;
+            const rowFinish = document.getElementById('row-finish');
+            if(finishVal > 0) {
+                rowFinish.classList.remove('hidden');
+                document.getElementById('li-finish').innerText = fmt(finishVal);
+                document.getElementById('lbl-finish').innerText = inputs.shape === 'Contour' ? 'CNC Shape' : 'Rounded Corners';
+            } else {
+                rowFinish.classList.add('hidden');
+            }
+
+            document.getElementById('ui-setup').innerText = fmt(ret.fees.setup);
+            document.getElementById('lbl-setup').innerText = inputs.setupPerFile ? `${inputs.files} Files` : 'Flat';
+
+            const rowDesign = document.getElementById('row-design');
+            if(ret.fees.design > 0) {
+                rowDesign.classList.remove('hidden');
+                document.getElementById('ui-design').innerText = fmt(ret.fees.design);
+                document.getElementById('lbl-design').innerText = inputs.designPerFile ? `${inputs.files} Files` : 'Flat';
+            } else {
+                rowDesign.classList.add('hidden');
+            }
+
+            document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+
+            // Optimization Badge & SVG
+            const badge = document.getElementById('opt-badge');
+            if (cost.stock && cost.stock.name !== "N/A" && !ret.isOversized) {
+                badge.classList.remove('hidden');
+                document.getElementById('opt-stock').innerText = `${cost.stock.name} (${cost.stock.sheets} shts)`;
+                
+                // Inject Main View SVG
+                currentSVG = cost.stock.svg;
+                document.getElementById('nest-svg').innerHTML = currentSVG;
+            } else {
+                badge.classList.add('hidden');
+                document.getElementById('nest-container').classList.add('hidden');
+            }
+
+            const cutTxt = inputs.shape === 'Contour' ? 'CNC Custom Shape' : (inputs.rounded ? 'Shear Cut with Rounded Corners' : 'Shear Cut');
+            const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} ACM Signs, ${inputs.lam} Laminated, ${cutTxt}.\nPrinted full color on ${inputs.sides === 1 ? "ONE side" : "TWO sides"}.`;
+            document.getElementById('job-desc').value = desc;
         }
-
-        document.getElementById('ui-setup').innerText = fmt(ret.fees.setup);
-        document.getElementById('lbl-setup').innerText = inputs.setupPerFile ? `${inputs.files} Files` : 'Flat';
-
-        const rowDesign = document.getElementById('row-design');
-        if(ret.fees.design > 0) {
-            rowDesign.classList.remove('hidden');
-            document.getElementById('ui-design').innerText = fmt(ret.fees.design);
-            document.getElementById('lbl-design').innerText = inputs.designPerFile ? `${inputs.files} Files` : 'Flat';
-        } else {
-            rowDesign.classList.add('hidden');
-        }
-
-        document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
-
-        // Optimization Badge & SVG
-        const badge = document.getElementById('opt-badge');
-        if (cost.stock && cost.stock.name !== "N/A" && !ret.isOversized) {
-            badge.classList.remove('hidden');
-            document.getElementById('opt-stock').innerText = `${cost.stock.name} (${cost.stock.sheets} shts)`;
-            
-            // Inject Main View SVG
-            currentSVG = cost.stock.svg;
-            document.getElementById('nest-svg').innerHTML = currentSVG;
-        } else {
-            badge.classList.add('hidden');
-            document.getElementById('nest-container').classList.add('hidden');
-        }
-
-        const cutTxt = inputs.shape === 'Contour' ? 'CNC Custom Shape' : (inputs.rounded ? 'Shear Cut with Rounded Corners' : 'Shear Cut');
-        const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} ACM Signs, ${inputs.lam} Laminated, ${cutTxt}. Printed full color on ${inputs.sides === 1 ? "ONE side" : "TWO sides"}.`;
-        document.getElementById('job-desc').value = desc;
-    }
-</script>
+    </script>
 </body>
 </html>
