@@ -28,7 +28,8 @@ function doGet(e) {
   
   // 2b. Matrix Updates & Fetches (New)
   if (params.req === "update_matrix") return updateMatrixValue(params);
-  if (params.req === "view_module") return fetchProductWithMatrix(params.tab); // <--- ADDED PER REQUEST
+  if (params.req === "view_module") return fetchProductWithMatrix(params.tab);
+  if (params.req === "commit_matrix") return commitMatrixBatch(params);
 
   // 3. Roadmap / Ticketing
   if (params.req === "add_roadmap") return addRoadmapItem(params);
@@ -513,4 +514,68 @@ function fetchProductWithMatrix(tabName) {
   }
 
   return returnJSON(config);
+}
+
+// ==========================================
+//  MATRIX BATCH ENGINE (Stage & Commit)
+// ==========================================
+
+function commitMatrixBatch(p) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000); // Prevent collision
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Cost_Matrix");
+    
+    // 1. CREATE BACKUP (Safety Net)
+    // We dump the current values before changing anything
+    const currentData = sheet.getDataRange().getValues();
+    const backupName = `BACKUP_Matrix_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+    
+    // FIX: Use your existing ARCHIVE_FOLDER_ID
+    const backupFolder = DriveApp.getFolderById(ARCHIVE_FOLDER_ID); 
+    backupFolder.createFile(backupName, JSON.stringify(currentData), MimeType.PLAIN_TEXT);
+
+    // 2. PARSE & APPLY UPDATES
+    const updates = JSON.parse(p.payload);
+    
+    // FIX: Select [0] to get the 1D list of headers
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const costIds = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues().flat();
+
+    let successCount = 0;
+
+    updates.forEach(change => {
+      const colIndex = headers.indexOf(change.product);
+      const rowIndex = costIds.indexOf(change.cost);
+      
+      // Only update if valid coordinates found
+      if (colIndex > -1 && rowIndex > -1) {
+        let val = change.value;
+        // Normalize Booleans
+        if (val === 'TRUE') val = true;
+        if (val === 'FALSE') val = false;
+        
+        // Sheet is 1-indexed, Array is 0-indexed -> Add 1
+        sheet.getRange(rowIndex + 1, colIndex + 1).setValue(val);
+        successCount++;
+      }
+    });
+
+    // 3. LOG ACTIVITY
+    logActivity({
+      user: p.user,
+      action: "MATRIX_COMMIT",
+      target: "SYS_Cost_Matrix",
+      meta: `Batch Updated ${successCount} records. Backup: ${backupName}`,
+      req: "commit_matrix"
+    });
+
+    return returnJSON({ status: "success", backup: backupName, count: successCount });
+
+  } catch (e) {
+    return returnJSON({ status: "error", message: e.toString() });
+  } finally {
+    lock.releaseLock();
+  }
 }
