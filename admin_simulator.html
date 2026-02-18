@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Simulator v1.1</title>
+    <title>Pricing Simulator v1.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
@@ -17,6 +17,9 @@
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
         .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
+        
+        /* Sandbox Inputs */
+        .cost-input { @apply border-red-200 text-red-800 bg-red-50 focus:border-red-500 focus:bg-white; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans overflow-hidden">
@@ -25,7 +28,7 @@
     <div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white shadow-xl m-4 rounded-xl border border-gray-200 overflow-hidden">
         
         <!-- TOP TOOLBAR -->
-        <div class="bg-white border-b border-gray-200 px-6 py-4 grid grid-cols-12 gap-4 shrink-0 items-end">
+        <div class="bg-white border-b border-gray-200 px-6 py-4 grid grid-cols-12 gap-4 shrink-0 items-end z-20 relative">
             <!-- MODULE -->
             <div class="col-span-3">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Engine</label>
@@ -57,10 +60,24 @@
             </div>
         </div>
 
-        <!-- CONFIGURATION PANEL (Dynamic) -->
-        <div class="bg-gray-50 border-b border-gray-200 px-6 py-3 shrink-0 overflow-x-auto">
+        <!-- OPTIONS PANEL (Blue) -->
+        <div class="bg-blue-50/50 border-b border-blue-100 px-6 py-3 shrink-0 overflow-x-auto relative z-10">
             <div class="flex items-center gap-6" id="config-container">
-                <!-- Injected via JS based on module -->
+                <!-- Product Options Injected Here -->
+            </div>
+        </div>
+
+        <!-- COST SANDBOX PANEL (Red) -->
+        <div class="bg-red-50 border-b border-red-100 px-6 py-3 shrink-0 overflow-x-auto shadow-inner relative z-10">
+            <div class="flex items-center gap-2 mb-2">
+                <h3 class="text-[9px] font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Backend Cost Drivers (Sandbox)
+                </h3>
+                <span class="text-[9px] text-red-400 font-medium ml-2">Changes here are temporary and do not save to database.</span>
+            </div>
+            <div class="flex items-center gap-4" id="cost-container">
+                <!-- Cost Variables Injected Here -->
             </div>
         </div>
 
@@ -85,8 +102,8 @@
             </div>
             <div class="flex gap-6">
                 <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-600 rounded-sm"></span> RETAIL UNIT</div>
-                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm"></span> COST UNIT</div>
-                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-400 rounded-sm"></span> MARGIN %</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm border border-red-400 border-dashed"></span> COST UNIT</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-400 rounded-sm opacity-50"></span> MARGIN %</div>
             </div>
         </div>
 
@@ -104,7 +121,18 @@
             controls: [
                 { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
                 { id: 'stakes', label: 'Wire Stakes', type: 'toggle', def: true },
-                { id: 'files', label: 'Design Files', type: 'number', def: 1 }
+                { id: 'files', label: 'Files', type: 'number', def: 1 },
+                { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
+                { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
+            ],
+            // NEW: Cost Drivers specific to Yard Signs
+            costs: [
+                { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
+                { key: 'Cost_Ink_Base', label: 'Ink / SqFt ($)' },
+                { key: 'Cost_Stake', label: 'Stake Cost ($)' },
+                { key: 'Rate_Operator', label: 'Labor / Hr ($)' },
+                { key: 'Rate_Machine', label: 'Machine / Hr ($)' },
+                { key: 'Waste_Factor', label: 'Waste (1.x)' }
             ]
         },
         'ACM': { 
@@ -116,7 +144,16 @@
                 { id: 'thickness', label: 'Material', type: 'select', opts: [{v:'3mm', t:'3mm Std'}, {v:'6mm', t:'6mm HD'}] },
                 { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
                 { id: 'lam', label: 'Laminate', type: 'select', opts: [{v:'Gloss', t:'Gloss'}, {v:'Matte', t:'Matte'}] },
-                { id: 'shape', label: 'Cut Shape', type: 'select', opts: [{v:'Rectangle', t:'Rectangle'}, {v:'Contour', t:'Contour'}] }
+                { id: 'shape', label: 'Shape', type: 'select', opts: [{v:'Rectangle', t:'Rectangle'}, {v:'Contour', t:'Contour'}] },
+                { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
+            ],
+            // NEW: Cost Drivers specific to ACM
+            costs: [
+                { key: 'Cost_Sheet_3mm', label: '3mm Sheet ($)' },
+                { key: 'Cost_Lam_SqFt', label: 'Lam / SqFt ($)' },
+                { key: 'Rate_CNC_Labor', label: 'CNC Labor ($)' },
+                { key: 'Rate_Machine_CNC', label: 'Router / Hr ($)' },
+                { key: 'Waste_Factor', label: 'Waste (1.x)' }
             ]
         }
     };
@@ -131,16 +168,16 @@
         const modKey = document.getElementById('sim-module').value;
         const config = MODULES[modKey];
         const btn = document.getElementById('btn-run');
-        
-        // Status Indicators
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
 
         btn.innerText = "LOADING...";
         btn.disabled = true;
 
-        // Render Controls Dynamic
+        // Render Frontend Controls
         renderControls(config.controls);
+        // Clear Cost Panel (will populate after fetch)
+        document.getElementById('cost-container').innerHTML = `<span class="text-xs text-red-300 font-bold animate-pulse">Fetching backend data...</span>`;
 
         try {
             const u = sessionStorage.getItem('signos_user') || 'Admin';
@@ -152,12 +189,11 @@
             
             document.getElementById('data-source').innerText = `${config.tab} (${data.Sys_Version_Live || 'v?'})`;
             
-            // Check Logic
-            if(typeof window[config.engine] !== 'function') {
-                throw new Error(`Logic Engine '${config.engine}' missing.`);
-            }
+            if(typeof window[config.engine] !== 'function') throw new Error(`Logic Engine '${config.engine}' missing.`);
 
-            // SUCCESS STATE
+            // RENDER COST SANDBOX INPUTS
+            renderCostInputs(config.costs, data);
+
             btn.innerText = "RUN SIMULATION";
             btn.disabled = false;
             
@@ -189,14 +225,14 @@
             
             if(c.type === 'number') {
                 wrap.innerHTML = `
-                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">${c.label}</label>
-                    <input type="number" id="cfg-${c.id}" value="${c.def}" class="w-20 border p-1 rounded text-sm font-bold text-center">
+                    <label class="block text-[9px] font-bold text-blue-800 uppercase mb-1">${c.label}</label>
+                    <input type="number" id="cfg-${c.id}" value="${c.def}" class="w-20 border border-blue-200 p-1 rounded text-sm font-bold text-center text-blue-900 focus:border-blue-500 outline-none">
                 `;
             } else if (c.type === 'select') {
                 const opts = c.opts.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
                 wrap.innerHTML = `
-                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">${c.label}</label>
-                    <select id="cfg-${c.id}" class="border p-1 rounded text-sm font-bold bg-white w-28">${opts}</select>
+                    <label class="block text-[9px] font-bold text-blue-800 uppercase mb-1">${c.label}</label>
+                    <select id="cfg-${c.id}" class="border border-blue-200 p-1 rounded text-sm font-bold bg-white w-28 text-blue-900 focus:border-blue-500 outline-none">${opts}</select>
                 `;
             } else if (c.type === 'toggle') {
                 const checked = c.def ? 'checked' : '';
@@ -206,11 +242,30 @@
                             <input type="checkbox" id="cfg-${c.id}" ${checked} class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
                             <label for="cfg-${c.id}" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
                         </div>
-                        <span class="text-[10px] font-bold text-gray-600 uppercase">${c.label}</span>
+                        <span class="text-[10px] font-bold text-blue-800 uppercase">${c.label}</span>
                     </div>
                 `;
             }
             container.appendChild(wrap);
+        });
+    }
+
+    function renderCostInputs(costs, data) {
+        const container = document.getElementById('cost-container');
+        container.innerHTML = "";
+
+        costs.forEach(c => {
+            // Get value from backend, default to 0 if missing
+            const val = parseFloat(data[c.key]) || 0;
+            
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <label class="block text-[9px] font-bold text-red-700 uppercase mb-1 truncate" title="${c.key}">${c.label}</label>
+                <input type="number" id="cost-${c.key}" value="${val}" step="0.01" 
+                    class="w-24 border border-red-200 bg-red-50 p-1 rounded text-sm font-bold text-center text-red-900 focus:border-red-500 focus:bg-white outline-none transition"
+                    onchange="runSimulation()">
+            `;
+            container.appendChild(div);
         });
     }
 
@@ -220,29 +275,33 @@
         const config = MODULES[modKey];
         const engine = window[config.engine];
 
-        // Get Range
+        // 1. Get Range
         const start = parseInt(document.getElementById('range-start').value);
         const end = parseInt(document.getElementById('range-end').value);
         const step = parseInt(document.getElementById('range-step').value);
 
-        // Build Inputs Object Dynamically
-        let inputs = { qty: 1 }; // Base
-        
-        // Harvest Config Panel Inputs
+        // 2. Build Inputs Object
+        let inputs = { qty: 1 };
         config.controls.forEach(c => {
             const el = document.getElementById(`cfg-${c.id}`);
             if(c.type === 'toggle') inputs[c.id] = el.checked;
             else if(c.type === 'number') inputs[c.id] = parseFloat(el.value);
             else if(c.type === 'select') inputs[c.id] = isNaN(parseFloat(el.value)) ? el.value : parseFloat(el.value);
         });
-
-        // Add Defaults for missing logic requirements
-        inputs.incDesign = false;
-        inputs.setupPerFile = false;
         if(!inputs.files) inputs.files = 1;
         if(!inputs.rounded) inputs.rounded = false; 
 
-        // Generate Points
+        // 3. BUILD SANDBOX BACKEND
+        // Clone the live data, then overwrite with values from Red Inputs
+        let simBackend = { ...currentBackend };
+        config.costs.forEach(c => {
+            const el = document.getElementById(`cost-${c.key}`);
+            if(el) {
+                simBackend[c.key] = parseFloat(el.value);
+            }
+        });
+
+        // 4. Generate Points
         const labels = [];
         const retailPoints = [];
         const costPoints = [];
@@ -250,9 +309,10 @@
 
         for (let q = start; q <= end; q += step) {
             labels.push(q);
-            inputs.qty = q; // Update Qty for this iteration
+            inputs.qty = q; 
 
-            const result = engine(inputs, currentBackend);
+            // Pass the SANDBOX data, not live data
+            const result = engine(inputs, simBackend);
             
             const unitRetail = result.retail.grandTotal / q;
             const unitCost = result.cost.total / q;
@@ -290,7 +350,7 @@
                         borderColor: '#ef4444', // Red
                         backgroundColor: '#ef4444',
                         yAxisID: 'y',
-                        borderDash: [1],
+                        borderDash: [1], // Dashed Line
                         borderWidth: 2
                     },
                     {
