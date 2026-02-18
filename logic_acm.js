@@ -1,5 +1,5 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.6.3)
+ * PURE PHYSICS ENGINE: ACM Signs (v2.6.4)
  * Features: Smart Nesting, Graph Paper Sandbox, and BoM Footer.
  */
 function calculateACM(inputs, data) {
@@ -45,36 +45,58 @@ function calculateACM(inputs, data) {
     const grandTotalRaw = totalProduct + feeSetup + feeDesign;
     const grandTotal = Math.max(grandTotalRaw, minOrder + feeSetup + feeDesign);
 
-    // --- 2. COST ENGINE (VISUAL NESTING) ---
-    // UPDATED: "Sandbox" Style with Graph Grid & BoM Footer
+// --- 2. COST ENGINE (VISUAL NESTING) ---
+    // UPDATED: Cinema Mode (Forces Landscape Canvas & Fit-Text Footer)
     function generateSVG(layout, limitQty, stockName) {
         if (!layout) return "";
         
-        // 1. Core Dimensions
+        // 1. Core Dimensions (Inches)
         const sw = layout.sheetW;
         const sh = layout.sheetH;
         
-        // 2. Sandbox Canvas Setup (Margins & Footer)
-        // We add 5% padding around the sheet so it "floats" on the grid
-        const pad = Math.max(sw, sh) * 0.05; 
-        const footerH = Math.max(sh * 0.12, 10); // Dedicated footer area
+        // 2. Cinema Canvas Calculation
+        // We force the canvas to be Landscape (4:3 ratio) so it fills the UI window better
+        // instead of being a skinny tall strip.
+        const targetAspect = 1.33; // 4:3 Ratio
         
-        const canvasW = sw + (pad * 2);
-        const canvasH = sh + (pad * 2) + footerH;
+        // Calculate the "Visual Box" needed to hold the sheet + margins
+        const sheetVisualH = sh * 1.1; // Sheet + 10% vertical buffer
+        const sheetVisualW = sw * 1.1; // Sheet + 10% horizontal buffer
+        
+        let canvasW, canvasH;
 
-        // 3. Styling Configuration
+        // If the sheet is tall (Portrait), scale width to match target aspect
+        if ((sheetVisualW / sheetVisualH) < targetAspect) {
+            canvasH = sheetVisualH;
+            canvasW = canvasH * targetAspect;
+        } else {
+            // If sheet is wide, use its width
+            canvasW = sheetVisualW;
+            canvasH = canvasW / targetAspect;
+        }
+
+        // 3. Footer Setup
+        // Fixed ratio height for the footer relative to canvas (looks consistent)
+        const footerH = canvasH * 0.15; 
+        const totalH = canvasH + footerH; // Extend total height to include footer
+
+        // Centering offsets for the sheet
+        const offX = (canvasW - sw) / 2;
+        const offY = (canvasH - sh) / 2;
+
+        // 4. Styling
         const style = {
-            gridLine: "#e2e8f0",    // Light Gray Grid
-            bgFill: "#f8fafc",      // Very Light Slate Background
+            gridLine: "#cbd5e1",    // Slate-300
+            bgFill: "#f1f5f9",      // Slate-100 (Graph Paper)
             sheetFill: "#ffffff",   // White Sheet
-            sheetStroke: "#94a3b8", // Slate-400 Border
-            partFill: "rgba(59, 130, 246, 0.1)", // Blue Tint
-            partStroke: "#3b82f6",  // Blue Line
-            bomBg: "#1e293b",       // Dark Slate Footer
+            sheetStroke: "#64748b", // Slate-500
+            partFill: "rgba(37, 99, 235, 0.1)", // Blue-600 with opacity
+            partStroke: "#2563eb",  // Blue-600
+            bomBg: "#1e293b",       // Slate-800 Footer
             bomText: "#ffffff"      // White Text
         };
 
-        // 4. Generate Parts
+        // 5. Generate Parts
         let rects = "";
         let count = 0;
 
@@ -86,58 +108,62 @@ function calculateACM(inputs, data) {
                 const x = c * layout.partW;
                 const y = r * layout.partH;
                 const label = `${layout.rotated ? inputs.h : inputs.w}x${layout.rotated ? inputs.w : inputs.h}`;
-                
-                // Hide label if part is too small to read
-                const showLabel = (layout.partW > 4 && layout.partH > 4);
+                const showLabel = (layout.partW > 6 && layout.partH > 6);
 
                 rects += `<g transform="translate(${x}, ${y})">
                     <rect width="${layout.partW}" height="${layout.partH}" 
                           fill="${style.partFill}" 
                           stroke="${style.partStroke}" 
-                          stroke-width="0.1" />
+                          stroke-width="0.2" />
                     ${showLabel ? 
                         `<text x="${layout.partW/2}" y="${layout.partH/2}" 
                                font-family="sans-serif" font-size="1.5" 
                                fill="${style.partStroke}" text-anchor="middle" 
-                               dominant-baseline="middle" opacity="0.9" font-weight="bold">${label}</text>` 
+                               dominant-baseline="middle" font-weight="bold" opacity="0.8">${label}</text>` 
                     : ''}
                 </g>`;
                 count++;
             }
         }
 
-        // 5. Calculate BoM Data
+        // 6. BoM Data & Text Scaling
         const totalSheets = Math.ceil(limitQty / layout.perSheet);
-        const areaUsed = count * layout.partW * layout.partH; // Area used on THIS sheet
+        const areaUsed = count * layout.partW * layout.partH;
         const wastePct = ((1 - (areaUsed / (sw * sh))) * 100).toFixed(1);
-        
-        const bomText = `REQ: ${totalSheets} SHEET${totalSheets > 1 ? 'S' : ''} | STOCK: ${stockName} | WASTE: ${wastePct}%`;
+        const bomText = `REQ: ${totalSheets} SHT | STOCK: ${stockName} | WASTE: ${wastePct}%`;
 
-        // 6. Return SVG
-        return `<svg viewBox="0 0 ${canvasW} ${canvasH}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; display:block;">
+        // Calculate dynamic font size to ensure it fits inside the footer width
+        // We limit it to max 45% of footer height, but shrink it if the canvas is narrow
+        const charCount = bomText.length;
+        const maxFontSize = footerH * 0.45;
+        const fitFontSize = (canvasW * 0.9) / (charCount * 0.6); // Approximate width per char
+        const finalFontSize = Math.min(maxFontSize, fitFontSize);
+
+        // 7. Render
+        return `<svg viewBox="0 0 ${canvasW} ${totalH}" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; display:block; background-color: ${style.bgFill};">
             <defs>
-                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="${style.gridLine}" stroke-width="0.5"/>
+                <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse">
+                    <path d="M 12 0 L 0 0 0 12" fill="none" stroke="${style.gridLine}" stroke-width="0.5"/>
                 </pattern>
             </defs>
             
-            <rect width="${canvasW}" height="${canvasH}" fill="${style.bgFill}" />
-            <rect width="${canvasW}" height="${canvasH}" fill="url(#grid)" />
+            <rect width="${canvasW}" height="${totalH}" fill="url(#grid)" />
             
-            <g transform="translate(${pad}, ${pad})">
+            <g transform="translate(${offX}, ${offY})">
+                <rect x="1" y="1" width="${sw}" height="${sh}" fill="rgba(0,0,0,0.2)" />
                 <rect width="${sw}" height="${sh}" fill="${style.sheetFill}" stroke="${style.sheetStroke}" stroke-width="0.5" />
                 ${rects}
             </g>
             
-            <g transform="translate(0, ${canvasH - footerH})">
+            <g transform="translate(0, ${canvasH})">
                 <rect width="${canvasW}" height="${footerH}" fill="${style.bomBg}" />
                 <text x="${canvasW/2}" y="${footerH/2}" 
                       font-family="monospace" 
-                      font-size="${footerH * 0.35}" 
+                      font-size="${finalFontSize}" 
                       fill="${style.bomText}" 
                       text-anchor="middle" 
                       dominant-baseline="middle" 
-                      letter-spacing="1">
+                      letter-spacing="0.5">
                       ${bomText}
                 </text>
             </g>
