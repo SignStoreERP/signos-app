@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Command Center v3.0 | SignOS</title>
+    <title>Dev Command Center v3.1 | SignOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
         .dev-pattern { background-image: radial-gradient(#fb923c 1px, transparent 1px); background-size: 20px 20px; opacity: 0.1; }
         .hover-card { transition: all 0.2s ease-in-out; }
         .hover-card:hover { transform: translateY(-2px); border-color: #f97316; }
-        .reg-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-        .reg-scroll::-webkit-scrollbar-track { background: #1e293b; }
-        .reg-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        
+        /* Custom Scrollbars */
+        .reg-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .reg-scroll::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        .reg-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .reg-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="bg-slate-900 min-h-screen font-sans text-slate-200 relative overflow-hidden flex flex-col">
+<!-- FIX: Changed min-h-screen to h-screen to force internal scrolling -->
+<body class="bg-slate-900 h-screen font-sans text-slate-200 relative overflow-hidden flex flex-col">
 
     <!-- BACKGROUND FX -->
     <div class="absolute inset-0 dev-pattern pointer-events-none"></div>
@@ -40,36 +44,38 @@
         <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
 
             <!-- LEFT COL: TWIN ENGINE REGISTRY -->
-            <div class="lg:col-span-3">
-                <div class="flex justify-between items-center mb-3">
+            <div class="lg:col-span-3 h-full flex flex-col">
+                <div class="flex justify-between items-center mb-3 shrink-0">
                     <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Twin-Engine Repository Tracker</h3>
                     <span id="reg-count" class="text-xs font-bold text-slate-600">Loading...</span>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
                     
                     <!-- DEV COLUMN -->
-                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden flex flex-col">
-                        <div class="bg-orange-900/20 border-b border-orange-500/20 p-3 flex justify-between items-center">
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden flex flex-col h-full max-h-[800px]">
+                        <div class="bg-orange-900/20 border-b border-orange-500/20 p-3 flex justify-between items-center shrink-0">
                             <div class="flex items-center gap-2">
                                 <span class="text-xl">🛠️</span>
                                 <span class="font-bold text-orange-500 text-sm">DEV ENGINE</span>
                             </div>
                             <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="text-[10px] font-mono text-orange-400 hover:text-white underline">signos-app</a>
                         </div>
-                        <div id="col-dev" class="p-2 space-y-2"></div>
+                        <!-- Inner Scroll Container -->
+                        <div id="col-dev" class="p-2 space-y-2 overflow-y-auto reg-scroll flex-1"></div>
                     </div>
 
                     <!-- LIVE COLUMN -->
-                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden flex flex-col">
-                        <div class="bg-green-900/20 border-b border-green-500/20 p-3 flex justify-between items-center">
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden flex flex-col h-full max-h-[800px]">
+                        <div class="bg-green-900/20 border-b border-green-500/20 p-3 flex justify-between items-center shrink-0">
                             <div class="flex items-center gap-2">
                                 <span class="text-xl">🚀</span>
                                 <span class="font-bold text-green-500 text-sm">LIVE ENGINE</span>
                             </div>
                             <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="text-[10px] font-mono text-green-400 hover:text-white underline">signos-live</a>
                         </div>
-                        <div id="col-live" class="p-2 space-y-2"></div>
+                        <!-- Inner Scroll Container -->
+                        <div id="col-live" class="p-2 space-y-2 overflow-y-auto reg-scroll flex-1"></div>
                     </div>
 
                 </div>
@@ -129,7 +135,6 @@
         const user = sessionStorage.getItem('signos_user') || 'DEV_GUEST';
         document.getElementById('dev-user').innerText = user;
         
-        // Wait for IP
         const ipInterval = setInterval(() => {
             if(typeof clientIP !== 'undefined' && clientIP !== 'Unknown') {
                 document.getElementById('dev-ip').innerText = clientIP;
@@ -189,14 +194,14 @@
             data.forEach(row => {
                 const name = val(row, 'Display_Name');
                 const file = val(row, 'File_Link');
-                const desc = val(row, 'Category'); // Using Category as short desc
+                const desc = val(row, 'Category'); 
                 const verDev = val(row, 'Dev_Ver');
                 const verLive = val(row, 'Live_Ver');
 
                 // --- DEV CARD ---
                 if (verDev) {
                     const card = document.createElement('div');
-                    card.className = "bg-slate-900/50 p-3 rounded border border-slate-700 hover:border-orange-500 transition group";
+                    card.className = "bg-slate-900/50 p-3 rounded border border-slate-700 hover:border-orange-500 transition group shrink-0";
                     card.innerHTML = `
                         <div class="flex justify-between items-start">
                             <div>
@@ -219,7 +224,7 @@
                 // --- LIVE CARD ---
                 if (verLive) {
                     const card = document.createElement('div');
-                    card.className = "bg-slate-900/50 p-3 rounded border border-slate-700 hover:border-green-500 transition group";
+                    card.className = "bg-slate-900/50 p-3 rounded border border-slate-700 hover:border-green-500 transition group shrink-0";
                     card.innerHTML = `
                         <div class="flex justify-between items-start">
                             <div>
