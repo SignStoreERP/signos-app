@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.20 - (NotebookLM Bridge Added)
+// SignOS API v6.21 - (Markdown Mode for NotebookLM Bridge Added)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -255,68 +255,75 @@ function syncVersionsFromGitHub() {
 }
 
 /**
- * NOTEBOOKLM BRIDGE (v2.0)
- * Compiles the entire LIVE application into a single context file.
- * Updates the existing file instead of creating duplicates.
- * Targets: SignOS ERP Shared Folder
+ * NOTEBOOKLM BRIDGE (v3.0 - Markdown Edition)
+ * Compiles codebase into a Markdown-formatted text file.
+ * Uses code fences (```) for better AI syntax highlighting.
  */
 function generateNotebookLMBridge() {
   const ss = SpreadsheetApp.openById(DATA_SS_ID);
   const sheet = ss.getSheetByName("SYS_Modules");
   const data = sheet.getDataRange().getValues();
   
-  let fullContent = "SIGNOS ERP - MASTER CODEBASE CONTEXT\n";
-  fullContent += "Last Sync: " + new Date().toString() + "\n";
-  fullContent += "========================================\n\n";
+  // 1. Markdown Header
+  let fullContent = "# SIGNOS ERP - MASTER CODEBASE CONTEXT\n";
+  fullContent += `**Last Sync:** ${new Date().toString()}\n`;
+  fullContent += "---\n\n";
 
   const repoOwner = "SignStoreERP";
-  // We prioritize DEV repo for the context bridge to capture latest changes
   const repoName = "signos-app"; 
 
-  // 1. Compile the Code
   let count = 0;
+
+  // 2. Iterate Modules
   for (let i = 1; i < data.length; i++) {
     const name = data[i][1]; // Display Name
     const fileName = data[i][2]; // File Link
     
-    if (fileName && fileName.toString().endsWith(".html")) {
+    // Check for HTML or JS files
+    if (fileName && (fileName.toString().endsWith(".html") || fileName.toString().endsWith(".js"))) {
       try {
         const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${fileName}`;
-        const html = UrlFetchApp.fetch(url).getContentText();
+        const content = UrlFetchApp.fetch(url).getContentText();
         
-        fullContent += `--- MODULE START: ${name} (${fileName}) ---\n`;
-        fullContent += html + "\n";
-        fullContent += `--- MODULE END: ${fileName} ---\n\n`;
+        // Determine Language for Syntax Highlighting
+        const ext = fileName.split('.').pop();
+        const lang = ext === 'js' ? 'javascript' : 'html';
+
+        // 3. Construct Markdown Block
+        fullContent += `## ${name} (${fileName})\n`;
+        fullContent += `> Source: ${url}\n\n`;
+        fullContent += "```" + lang + "\n";
+        fullContent += content + "\n";
+        fullContent += "```\n\n";
+        fullContent += "---\n\n";
+        
         count++;
+        
       } catch (e) {
-        fullContent += `[ERROR FETCHING ${fileName}]\n\n`;
+        fullContent += `> **ERROR FETCHING ${fileName}**\n\n---\n\n`;
       }
     }
   }
-
-  // 2. Target Specific Folder
-  const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID);
-  const fileName = "SignOS_Master_Context.txt";
-  const files = folder.getFilesByName(fileName);
-
+  
+  // 4. Update File (Same ID, New Content)
+  const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID); // Ensure this const is defined at top of script
+  const targetName = "SignOS_Master_Context.txt";
+  const files = folder.getFilesByName(targetName);
+  
   let fileUrl = "";
 
-  // 3. Update or Create Logic
   if (files.hasNext()) {
-    // UPDATE EXISTING
     const file = files.next();
     file.setContent(fullContent);
     fileUrl = file.getUrl();
   } else {
-    // CREATE NEW
-    const file = folder.createFile(fileName, fullContent, MimeType.PLAIN_TEXT);
+    const file = folder.createFile(targetName, fullContent, MimeType.PLAIN_TEXT);
     fileUrl = file.getUrl();
   }
-
-  return ContentService.createTextOutput(JSON.stringify({ 
-    status: "success", 
-    message: `Compiled ${count} modules.`,
-    url: fileUrl 
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: "success",
+    message: `Synced ${count} modules (Markdown Mode).`,
+    url: fileUrl
   })).setMimeType(ContentService.MimeType.JSON);
 }
-
