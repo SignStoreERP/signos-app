@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.21 - (Markdown Mode for NotebookLM Bridge Added)
+// SignOS API v6.23 - Critical Array Fixes
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -11,12 +11,12 @@ const LOG_SS_ID = "1LqSV-byNLOdu_GVyasvFmwyaW8TkyvW4F78u6_gaqzk";
 // ARCHIVE: SignOS_Archives Folder
 const ARCHIVE_FOLDER_ID = "18MBPWajHdF4TNQ0g8Iz1n1-GT3nBrMj4";
 
-// CONTEXT: SignOS ERP Shared Folder (For NotebookLM)
+// CONTEXT: SignOS Dev Folder
 const CONTEXT_FOLDER_ID = "1Hl5LtIhwt6p3zDeV52kok-8C61_ApXf7"; 
 
 function doGet(e) {
   const params = e.parameter;
-
+  
   // 1. LOGGING (Async)
   if (params.ip) logActivity(params);
 
@@ -33,21 +33,24 @@ function doGet(e) {
 
   // 4. Archival & Logs (Admin)
   if (params.req === "manual_archive") return manualExport(params.pin);
-  if (params.req === "get_logs") return fetchLogs(params);
+  if (params.req === "get_archive_index") return fetchArchiveIndex();
+  if (params.req === "get_log_content") return fetchLogFile(params.file_id);
+  if (params.req === "get_live_logs") return fetchLiveLogs();
   if (params.req === "log_event") return ContentService.createTextOutput("Logged");
 
   // 5. System Utils
   if (params.req === "ping") return ContentService.createTextOutput("pong");
   if (params.req === "sync_versions") return syncVersionsFromGitHub();
   
-  // 6. NOTEBOOKLM BRIDGE (New)
-  if (params.req === "sync_master") return generateNotebookLMBridge();
+  // 6. NotebookLM Bridge
+  if (params.req === "sync_codebase") return generateNotebookLMBridge();
 
-  return ContentService.createTextOutput("SignOS API Online");
+  // 7. DEFAULT: Config Fetch
+  return fetchConfig(params.tab || "PROD_Yard_Signs");
 }
 
 // ==========================================
-// CORE FUNCTIONS
+//  CORE DATA FUNCTIONS
 // ==========================================
 
 function handleAuth(pin) {
@@ -55,261 +58,269 @@ function handleAuth(pin) {
   const data = sheet.getDataRange().getValues();
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][6] == pin && data[i][7] === true) { // Col G=PIN, H=Active
-      return json({
+    if (String(data[i][6]) === String(pin)) { // Col G
+      const isActive = (data[i][7] === true || String(data[i][7]).toUpperCase() === "TRUE");
+      if (!isActive) return returnJSON({ status: "fail", message: "Account Disabled" });
+
+      return returnJSON({
         status: "success",
-        name: data[i][1], // First Name
-        role: data[i][5], // Role
+        name: data[i][1], 
+        role: data[i][5], 
         permissions: {
-          roadmap: data[i][8],
-          backup: data[i][9]
+          roadmap: data[i][8] || "None",
+          backup: data[i][9] || "None"
         }
       });
     }
   }
-  return json({ status: "error", message: "Invalid PIN" });
+  return returnJSON({ status: "fail", message: "Invalid PIN" });
 }
 
 function fetchTable(tabName) {
   try {
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const sheet = ss.getSheetByName(tabName);
-    if (!sheet) return json({ error: "Table not found" });
-
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const rows = data.slice(1);
-
+    if (!sheet) return returnJSON({ error: `Tab '${tabName}' not found` });
+    
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return returnJSON([]);
+    
+    // FIX v6.22: Select row 0 specifically for headers
+    const headers = values[0]; 
+    const rows = values.slice(1);
+    
     const result = rows.map(row => {
       let obj = {};
-      headers.forEach((h, i) => obj[h] = row[i]);
+      headers.forEach((header, index) => {
+        if(header && String(header).trim() !== "") obj[header] = row[index];
+      });
       return obj;
     });
+    return returnJSON(result);
+  } catch (err) { return returnJSON({ error: err.toString() }); }
+}
 
-    return json(result);
-  } catch (e) {
-    return json({ error: e.toString() });
-  }
+function fetchConfig(tabName) {
+  try {
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const sheet = ss.getSheetByName(tabName);
+    if (!sheet) return returnJSON({ error: `Tab '${tabName}' not found` });
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return returnJSON({});
+    
+    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    const config = {};
+    
+    data.forEach(row => {
+      const key = row[0];
+      const val = row[1];
+      if (key && String(key).trim() !== "") config[key] = val;
+    });
+    
+    return returnJSON(config);
+  } catch (err) { return returnJSON({ error: err.toString() }); }
 }
 
 // ==========================================
-// ROADMAP & TICKETING
+//  ROADMAP & TICKETING
 // ==========================================
 
 function addRoadmapItem(p) {
   const ss = SpreadsheetApp.openById(DATA_SS_ID);
   const sheet = ss.getSheetByName("SYS_Roadmap");
+  const id = "RMP_" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmm");
   
-  const newId = "RMP_" + (Math.floor(Math.random() * 90000) + 10000);
-  const timestamp = new Date();
-  
-  // ID, Timestamp, User, Category, Priority, Title, Description, Status, Target, Source, Context
   sheet.appendRow([
-    newId, 
-    timestamp, 
-    p.user, 
-    p.cat, 
-    p.prio || "Med", 
-    decodeURIComponent(p.title), 
-    decodeURIComponent(p.desc), 
-    "Pending", 
-    p.target || "APP", 
-    p.source || "User",
-    p.context || "General"
+    id, new Date(), p.user, p.cat, p.prio || "Med",
+    decodeURIComponent(p.title), decodeURIComponent(p.desc),
+    "Pending", p.target || "APP", p.source || "User", p.context || "General"
   ]);
-  
-  return json({ status: "success", id: newId });
+  return returnJSON({ status: "success", id: id });
 }
 
-function getTicketDetails(id) {
-  const ss = SpreadsheetApp.openById(DATA_SS_ID);
-  const sheet = ss.getSheetByName("SYS_Roadmap_Actions");
-  const data = sheet.getDataRange().getValues();
-  
-  const actions = data.filter(r => r[1] === id).map(r => ({
-    timestamp: r[2],
-    user: r[3],
-    type: r[4],
-    details: r[5]
-  }));
-  
-  return json(actions);
+function getTicketDetails(ticketId) {
+  try {
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const pSheet = ss.getSheetByName("SYS_Roadmap");
+    const cSheet = ss.getSheetByName("SYS_Roadmap_Actions");
+    
+    const pData = pSheet.getDataRange().getValues();
+    // FIX v6.22: Select row 0 for headers
+    const pHeaders = pData[0];
+    let ticket = null;
+    
+    for(let i=1; i<pData.length; i++) {
+      if(String(pData[i][0]) === String(ticketId)) {
+        ticket = {};
+        pHeaders.forEach((h, idx) => ticket[h] = pData[i][idx]);
+        break;
+      }
+    }
+    
+    if(!ticket) return returnJSON({ status: "error", message: "Ticket not found" });
+    
+    const cData = cSheet.getDataRange().getValues();
+    // FIX v6.22: Select row 0 for headers
+    const cHeaders = cData[0];
+    const history = [];
+    
+    for(let i=1; i<cData.length; i++) {
+      if(String(cData[i][1]) === String(ticketId)) {
+        let act = {};
+        cHeaders.forEach((h, idx) => act[h] = cData[i][idx]);
+        history.push(act);
+      }
+    }
+    history.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+    
+    return returnJSON({ status: "success", ticket: ticket, history: history });
+    
+  } catch(e) { return returnJSON({ status: "error", message: e.toString() }); }
 }
 
 function addTicketAction(p) {
   const ss = SpreadsheetApp.openById(DATA_SS_ID);
   const sheet = ss.getSheetByName("SYS_Roadmap_Actions");
+  const actId = "ACT_" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
   
-  const actId = "ACT_" + Date.now();
-  // Action_ID, Parent_ID, Timestamp, User, Type, Details
-  sheet.appendRow([actId, p.parent_id, new Date(), p.user, p.type, decodeURIComponent(p.details)]);
+  sheet.appendRow([actId, p.id, new Date(), p.user, p.type, decodeURIComponent(p.msg)]);
   
-  return json({ status: "success" });
+  if(p.new_status) {
+    const pSheet = ss.getSheetByName("SYS_Roadmap");
+    const pData = pSheet.getDataRange().getValues();
+    for(let i=1; i<pData.length; i++) {
+      if(String(pData[i][0]) === String(p.id)) {
+        pSheet.getRange(i+1, 8).setValue(p.new_status);
+        break;
+      }
+    }
+  }
+  return returnJSON({ status: "success" });
 }
 
 // ==========================================
-// LOGGING & ARCHIVES
+//  ARCHIVE & LOGGING
 // ==========================================
+
+function fetchArchiveIndex() {
+  const ss = SpreadsheetApp.openById(LOG_SS_ID);
+  const sheet = ss.getSheetByName("SYS_Archive_Index");
+  if (!sheet) return returnJSON([]);
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return returnJSON([]);
+  
+  const result = data.slice(1).map(r => {
+    let fileId = null;
+    if (r[2] && r[2].includes("/d/")) {
+        const match = r[2].match(/\/d\/(.+?)\//);
+        if(match) fileId = match[1];
+    }
+    return { date: r[0], name: r[1], url: r[2], count: r[3], type: r[4], file_id: fileId };
+  }).reverse();
+  return returnJSON(result);
+}
+
+function fetchLogFile(fileId) {
+  try {
+    const file = DriveApp.getFileById(fileId);
+    return returnJSON({ status: "success", content: file.getBlob().getDataAsString() });
+  } catch(e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
+
+function fetchLiveLogs() {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Access_Logs");
+    if (!sheet) return returnJSON({ status: "error", message: "Log sheet not found" });
+    
+    // RETURN RAW DATA (Fix for logic_viewer.js)
+    // We return the entire grid (Array of Arrays) so the frontend can slice/map it by index.
+    const data = sheet.getDataRange().getValues();
+    
+    return returnJSON({ status: "success", logs: data });
+    
+  } catch(e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
 
 function logActivity(p) {
   try {
     const ss = SpreadsheetApp.openById(LOG_SS_ID);
     const sheet = ss.getSheetByName("SYS_Access_Logs");
-    // Timestamp, IP, User, Role, Action, Target, Meta
-    sheet.appendRow([
-      new Date(),
-      p.ip || "Unknown",
-      p.user || "N/A",
-      p.role || "N/A",
-      p.req || "visit",
-      p.tab || "N/A",
-      JSON.stringify(p)
-    ]);
-  } catch (e) {
-    console.log("Log Error: " + e.toString());
-  }
+    sheet.appendRow([new Date(), p.ip || "Unknown", p.user || "GUEST", p.role || "N/A", p.req, p.tab || "N/A", JSON.stringify(p)]);
+  } catch (e) {}
 }
 
 function manualExport(pin) {
-  // Validate Admin PIN again for security
   const auth = handleAuth(pin);
   const authObj = JSON.parse(auth.getContent());
-  if (authObj.status !== "success") return json({ status: "error", message: "Unauthorized" });
-
-  return archiveDailyLogs();
+  if (authObj.status !== "success") return returnJSON({ status: "error", message: "Unauthorized" });
+  
+  return returnJSON(processArchive(false));
 }
 
-function archiveDailyLogs() {
-  const ss = SpreadsheetApp.openById(LOG_SS_ID);
-  const sheet = ss.getSheetByName("SYS_Access_Logs");
-  const data = sheet.getDataRange().getValues();
-  
-  if (data.length <= 1) return json({ status: "error", message: "No logs to archive" });
-
-  // Create Text File
-  const content = data.map(row => row.join(" | ")).join("\n");
-  const fileName = "SignOS_Logs_" + Utilities.formatDate(new Date(), "EST", "yyyy-MM-dd_HHmm") + ".txt";
-  
-  const folder = DriveApp.getFolderById(ARCHIVE_FOLDER_ID);
-  const file = folder.createFile(fileName, content);
-  
-  // Clear Sheet (Keep Header)
-  const lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    sheet.deleteRows(2, lastRow - 1);
-  }
-
-  return json({ 
-    status: "success", 
-    url: file.getUrl(), 
-    rows_archived: data.length - 1 
-  });
+function processArchive(isDestructive) {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const logSheet = ss.getSheetByName("SYS_Access_Logs");
+    const lastRow = logSheet.getLastRow();
+    if (lastRow < 2) return { status: "skipped" };
+    
+    const data = logSheet.getRange(2, 1, lastRow - 1, logSheet.getLastColumn()).getValues();
+    let content = "Timestamp | IP | User | Role | Action | Target | Meta\n=================================================\n";
+    data.forEach(r => content += r.join(" | ") + "\n");
+    
+    const name = `SignOS_Log_${isDestructive ? 'AUTO' : 'MANUAL'}_${Date.now()}.txt`;
+    const folder = DriveApp.getFolderById(ARCHIVE_FOLDER_ID);
+    const file = folder.createFile(name, content);
+    
+    const idxSheet = ss.getSheetByName("SYS_Archive_Index");
+    idxSheet.appendRow([new Date(), name, file.getUrl(), data.length, isDestructive ? "AUTO" : "MANUAL"]);
+    
+    if (isDestructive) logSheet.deleteRows(2, lastRow - 1);
+    
+    return { status: "success", url: file.getUrl(), rows_archived: data.length };
+  } catch(e) { return { status: "error", message: e.toString() }; }
 }
 
 // ==========================================
-// SYSTEM UTILITIES
+//  NOTEBOOKLM BRIDGE
 // ==========================================
 
-function json(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function syncVersionsFromGitHub() {
-  const ss = SpreadsheetApp.openById(DATA_SS_ID);
-  const sheet = ss.getSheetByName("SYS_Modules");
-  const data = sheet.getDataRange().getValues();
-  
-  const repoOwner = "SignStoreERP";
-  const devRepo = "signos-app";
-  const liveRepo = "signos-live";
-  
-  Logger.log("Starting Sync...");
-  
-  for (let i = 1; i < data.length; i++) {
-    const fileName = data[i][2]; 
-    if (fileName && fileName.toString().endsWith(".html")) {
-      
-      // SYNC DEV
-      try {
-        const devUrl = `https://raw.githubusercontent.com/${repoOwner}/${devRepo}/main/${fileName}`;
-        const devHtml = UrlFetchApp.fetch(devUrl).getContentText();
-        const devMatch = devHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
-        if (devMatch && devMatch[1]) {
-          sheet.getRange(i + 1, 5).setValue(devMatch[1]); // Col E
-        }
-      } catch (e) { Logger.log(`[DEV] Miss: ${fileName}`); }
-
-      // SYNC LIVE
-      try {
-        const liveUrl = `https://raw.githubusercontent.com/${repoOwner}/${liveRepo}/main/${fileName}`;
-        const liveHtml = UrlFetchApp.fetch(liveUrl).getContentText();
-        const liveMatch = liveHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
-        if (liveMatch && liveMatch[1]) {
-          sheet.getRange(i + 1, 4).setValue(liveMatch[1]); // Col D
-        }
-      } catch (e) { Logger.log(`[LIVE] Miss: ${fileName}`); }
-    }
-  }
-  return json({ status: "success" });
-}
-
-/**
- * NOTEBOOKLM BRIDGE (v3.0 - Markdown Edition)
- * Compiles codebase into a Markdown-formatted text file.
- * Uses code fences (```) for better AI syntax highlighting.
- */
 function generateNotebookLMBridge() {
   const ss = SpreadsheetApp.openById(DATA_SS_ID);
   const sheet = ss.getSheetByName("SYS_Modules");
   const data = sheet.getDataRange().getValues();
   
-  // 1. Markdown Header
   let fullContent = "# SIGNOS ERP - MASTER CODEBASE CONTEXT\n";
   fullContent += `**Last Sync:** ${new Date().toString()}\n`;
   fullContent += "---\n\n";
 
   const repoOwner = "SignStoreERP";
   const repoName = "signos-app"; 
-
   let count = 0;
 
-  // 2. Iterate Modules
   for (let i = 1; i < data.length; i++) {
-    const name = data[i][1]; // Display Name
-    const fileName = data[i][2]; // File Link
+    const name = data[i][1]; 
+    const fileName = data[i][2]; 
     
-    // Check for HTML or JS files
     if (fileName && (fileName.toString().endsWith(".html") || fileName.toString().endsWith(".js"))) {
       try {
         const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${fileName}`;
         const content = UrlFetchApp.fetch(url).getContentText();
-        
-        // Determine Language for Syntax Highlighting
         const ext = fileName.split('.').pop();
         const lang = ext === 'js' ? 'javascript' : 'html';
 
-        // 3. Construct Markdown Block
-        fullContent += `## ${name} (${fileName})\n`;
-        fullContent += `> Source: ${url}\n\n`;
-        fullContent += "```" + lang + "\n";
-        fullContent += content + "\n";
-        fullContent += "```\n\n";
-        fullContent += "---\n\n";
-        
+        fullContent += `## ${name} (${fileName})\n> Source: ${url}\n\n`;
+        fullContent += "```" + lang + "\n" + content + "\n```\n\n---\n\n";
         count++;
-        
-      } catch (e) {
-        fullContent += `> **ERROR FETCHING ${fileName}**\n\n---\n\n`;
-      }
+      } catch (e) {}
     }
   }
   
-  // 4. Update File (Same ID, New Content)
-  const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID); // Ensure this const is defined at top of script
+  const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID);
   const targetName = "SignOS_Master_Context.txt";
   const files = folder.getFilesByName(targetName);
-  
   let fileUrl = "";
 
   if (files.hasNext()) {
@@ -321,9 +332,69 @@ function generateNotebookLMBridge() {
     fileUrl = file.getUrl();
   }
   
-  return ContentService.createTextOutput(JSON.stringify({
-    status: "success",
-    message: `Synced ${count} modules (Markdown Mode).`,
-    url: fileUrl
-  })).setMimeType(ContentService.MimeType.JSON);
+  return returnJSON({ status: "success", message: `Synced ${count} modules.`, url: fileUrl });
 }
+
+// ==========================================
+//  UTILITIES & WEBHOOK
+// ==========================================
+
+function returnJSON(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function syncVersionsFromGitHub() {
+  const ss = SpreadsheetApp.openById(DATA_SS_ID);
+  const sheet = ss.getSheetByName("SYS_Modules");
+  const data = sheet.getDataRange().getValues();
+  
+  const repoOwner = "SignStoreERP";
+  const devRepo = "signos-app";
+  const liveRepo = "signos-live";
+  
+  for (let i = 1; i < data.length; i++) {
+    const fileName = data[i][2]; 
+    if (fileName && fileName.toString().endsWith(".html")) {
+      try {
+        const devUrl = `https://raw.githubusercontent.com/${repoOwner}/${devRepo}/main/${fileName}`;
+        const devHtml = UrlFetchApp.fetch(devUrl).getContentText();
+        const devMatch = devHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
+        if (devMatch && devMatch[1]) {
+          sheet.getRange(i + 1, 5).setValue(devMatch[1]); 
+        }
+      } catch (e) {}
+
+      try {
+        const liveUrl = `https://raw.githubusercontent.com/${repoOwner}/${liveRepo}/main/${fileName}`;
+        const liveHtml = UrlFetchApp.fetch(liveUrl).getContentText();
+        const liveMatch = liveHtml.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
+        if (liveMatch && liveMatch[1]) {
+          sheet.getRange(i + 1, 4).setValue(liveMatch[1]); 
+        }
+      } catch (e) {}
+    }
+  }
+  return returnJSON({ status: "success" });
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    if (!payload.commits) return returnJSON({status: "ignored"});
+    
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const logSheet = ss.getSheetByName("SYS_Changelog");
+    
+    const repoName = payload.repository.name.toLowerCase();
+    const envTag = (repoName.includes("live") || repoName.includes("prod")) ? "LIVE" : "DEV";
+
+    payload.commits.forEach(c => {
+      const ts = new Date(c.timestamp);
+      logSheet.appendRow([ts, c.author.name, c.id.substring(0, 7), c.message, c.added.length+c.modified.length, c.url, envTag]);
+    });
+    
+    syncVersionsFromGitHub(); 
+    return returnJSON({ status: "success" });
+  } catch(e) { return returnJSON({ status: "error" }); }
+}
+
