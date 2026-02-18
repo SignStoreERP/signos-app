@@ -3,41 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yard Signs (Modular Test v2)</title>
+    <title>Yard Signs (Modular) v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_yard_test.js"></script>
+    <style>
+        /* Status Animations matched to Calculator Standard */
+        .warn-pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans p-8">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <div class="max-w-md mx-auto bg-white shadow-xl rounded-xl border border-gray-200 overflow-hidden">
-        
-        <div class="bg-purple-900 text-white p-4 text-center">
-            <h1 class="text-xl font-black">🧪 TEST LAB: Yard Signs v2</h1>
-            <p class="text-[10px] uppercase opacity-75">Full Feature Parity Test</p>
+    <div class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+
+        <!-- 1. AUTH HEADER (Standardized) -->
+        <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center text-xs border-b border-gray-700">
+            <div class="flex gap-3">
+                <span class="tracking-wide">USER: <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span></span>
+                <span class="tracking-wide">ROLE: <span class="font-bold text-blue-400 uppercase" id="auth-role">---</span></span>
+            </div>
+            <button onclick="logout()" class="font-bold text-red-400 hover:text-white uppercase tracking-wider text-[10px] border border-red-900/50 hover:bg-red-900/50 px-2 py-1 rounded transition">Logout</button>
         </div>
 
+        <!-- 2. PRODUCT HEADER (Standardized) -->
+        <div class="bg-gray-900 px-6 py-4 text-white flex justify-between items-center">
+            <a href="#" onclick="goBack()" class="text-gray-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg> MENU
+            </a>
+            <div class="text-center">
+                <h2 class="text-lg font-bold" id="product-label">Yard Signs (Modular)</h2>
+                <div class="flex items-center justify-center gap-2 text-[10px] mt-0.5">
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span id="status-text" class="font-bold text-gray-400">CONNECTING...</span>
+                    <span id="version-display" class="text-orange-400 font-mono hidden">(Beta v2.0)</span>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="text-gray-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
+        </div>
+
+        <!-- INPUTS (Preserved from v2.0) -->
         <div class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="font-bold text-xs">Qty</label><input type="number" id="qty" value="10" class="w-full border p-2 font-bold text-lg" oninput="runCalc()"></div>
-                <div><label class="font-bold text-xs">Sides</label><select id="sides" class="w-full border p-2 font-bold h-[46px]" onchange="runCalc()"><option value="1">Single</option><option value="2">Double</option></select></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="10" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="runCalc()"></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px]" onchange="runCalc()"><option value="1">Single Sided</option><option value="2">Double Sided</option></select></div>
             </div>
-            
-            <div><label class="font-bold text-xs">Files</label><input type="number" id="files" value="1" class="w-full border p-2 font-bold text-lg" oninput="runCalc()"></div>
 
-            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-                <input type="checkbox" id="stakes" checked onchange="runCalc()"> <label class="font-bold text-xs">Include Stakes</label>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Files</label><input type="number" id="files" value="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg" oninput="runCalc()"></div>
+
+            <div class="flex items-center p-2 border rounded bg-gray-50 mt-2 h-[46px]">
+                <input type="checkbox" id="stakes" class="w-5 h-5 text-blue-600 rounded" checked onchange="runCalc()"> 
+                <label for="stakes" class="ml-2 text-xs font-bold text-gray-700">Include Wire Stakes</label>
             </div>
-            
+
             <!-- FEE TOGGLES -->
-            <div class="space-y-2">
+            <div class="space-y-2 pt-2">
                 <div class="flex items-center justify-between p-2 bg-purple-50 rounded border border-purple-100">
-                    <span class="font-bold text-xs text-purple-900">Include Design Fee?</span>
-                    <input type="checkbox" id="design" checked onchange="runCalc()" class="w-5 h-5">
+                    <span class="text-xs font-bold text-purple-900">Include Design Fee?</span>
+                    <input type="checkbox" id="design" checked onchange="runCalc()" class="w-5 h-5 text-purple-600">
                 </div>
                 <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
-                    <span class="font-bold text-xs text-gray-600">Charge Setup Per File?</span>
-                    <input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-5 h-5">
+                    <span class="text-xs font-bold text-gray-600">Charge Setup Per File?</span>
+                    <input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-5 h-5 text-gray-600">
                 </div>
             </div>
         </div>
@@ -45,16 +72,16 @@
         <!-- RESULTS -->
         <div class="bg-white p-6 border-t border-gray-200">
             <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold text-gray-400 uppercase">Base Unit Price</span>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Base Unit Price</span>
                 <span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
             </div>
 
             <!-- DISCOUNT TABLE -->
             <div class="mb-4 text-right">
-                <button onclick="document.getElementById('disc-table').classList.toggle('hidden')" class="text-[10px] font-bold text-blue-600 uppercase">Show Volume Discounts ▼</button>
+                <button onclick="document.getElementById('disc-table').classList.toggle('hidden')" class="text-[10px] font-bold text-blue-600 uppercase hover:underline">Show Volume Discounts ▼</button>
                 <div id="disc-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
                     <table class="w-full text-right">
-                        <thead class="text-gray-400 text-[9px] uppercase"><tr><th class="pr-4">Qty</th><th class="pr-4">Base Sign</th><th>You Pay</th></tr></thead>
+                        <thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200"><tr><th class="pr-4 pb-1">Qty</th><th class="pr-4 pb-1">Base Sign</th><th class="pb-1 text-blue-600">You Pay</th></tr></thead>
                         <tbody id="tier-rows" class="font-bold text-gray-700"></tbody>
                     </table>
                 </div>
@@ -72,7 +99,10 @@
             </div>
 
             <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
-                <div><span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span><div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded ml-1">MIN APPLIED</div></div>
+                <div>
+                    <span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span>
+                    <div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block ml-1">MINIMUM APPLIED</div>
+                </div>
                 <span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
             </div>
         </div>
@@ -89,12 +119,38 @@
     let backendData = {};
 
     window.onload = async function() {
+        // UI INIT
+        const u = sessionStorage.getItem('signos_user') || 'Guest';
+        const r = sessionStorage.getItem('signos_role') || 'VIEW';
+        document.getElementById('auth-user').innerText = u;
+        document.getElementById('auth-role').innerText = r;
+
+        const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+        const verDisplay = document.getElementById("version-display");
+
         try {
-            // Using the TEST tab we created
-            const res = await fetch(`${SCRIPT_URL}?tab=TEST_Yard_Logic&ip=${clientIP}&user=TEST&role=ADMIN&req=view_module`);
-            backendData = await res.json();
+            // Fetch TEST Backend Data
+            const res = await fetch(`${SCRIPT_URL}?tab=TEST_Yard_Logic&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+            const data = await res.json();
+            
+            if(data.error) throw new Error(data.error);
+            backendData = data;
+
+            // Update UI State
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+            statusDot.classList.remove("animate-pulse");
+            verDisplay.classList.remove('hidden');
+
             runCalc();
-        } catch(e) { alert("Backend Error: " + e.message); }
+
+        } catch(e) { 
+            statusText.innerText = "OFFLINE";
+            statusText.className = "font-bold text-red-500";
+            console.error(e);
+        }
     };
 
     function runCalc() {
@@ -110,22 +166,22 @@
             setupPerFile: document.getElementById('setup-per-file').checked
         };
 
-        // 2. RUN ENGINE
+        // 2. RUN ENGINE (External JS)
         const result = calculateYardSign(inputs, backendData);
         const ret = result.retail;
 
         // 3. Update UI
         const fmt = (n) => "$" + n.toFixed(2);
-        
+
         document.getElementById('ui-unit').innerText = ret.isCustom ? "CUSTOM" : fmt(ret.unitPrice);
         document.getElementById('ui-total').innerText = ret.isCustom ? "CONTACT US" : fmt(ret.grandTotal);
-        
+
         // Line Items
         document.getElementById('ui-print').innerText = fmt(ret.printTotal);
         document.getElementById('ui-stakes').innerText = fmt(ret.stakeTotal);
         document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
         document.getElementById('ui-design').innerText = fmt(ret.designFee);
-        
+
         document.getElementById('lbl-setup').innerText = inputs.setupPerFile ? `${inputs.files} Files` : "Flat";
         document.getElementById('row-design').classList.toggle('hidden', ret.designFee === 0);
         document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
