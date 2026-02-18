@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Simulator v1.3</title>
+    <title>Pricing Simulator v1.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
@@ -125,14 +125,13 @@
                 { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
                 { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
             ],
-            // NEW: Cost Drivers specific to Yard Signs
             costs: [
                 { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
                 { key: 'Cost_Ink_Base', label: 'Ink / SqFt ($)' },
-                { key: 'Cost_Stake', label: 'Stake Cost ($)' },
                 { key: 'Rate_Operator', label: 'Labor / Hr ($)' },
                 { key: 'Rate_Machine', label: 'Machine / Hr ($)' },
-                { key: 'Waste_Factor', label: 'Waste (1.x)' }
+                { key: 'Time_Setup_Base', label: 'Setup Mins' },       // NEW
+                { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' } // NEW
             ]
         },
         'ACM': { 
@@ -147,13 +146,11 @@
                 { id: 'shape', label: 'Shape', type: 'select', opts: [{v:'Rectangle', t:'Rectangle'}, {v:'Contour', t:'Contour'}] },
                 { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
             ],
-            // NEW: Cost Drivers specific to ACM
             costs: [
                 { key: 'Cost_Sheet_3mm', label: '3mm Sheet ($)' },
-                { key: 'Cost_Lam_SqFt', label: 'Lam / SqFt ($)' },
                 { key: 'Rate_CNC_Labor', label: 'CNC Labor ($)' },
-                { key: 'Rate_Machine_CNC', label: 'Router / Hr ($)' },
-                { key: 'Waste_Factor', label: 'Waste (1.x)' }
+                { key: 'Time_Setup_Base', label: 'Setup Mins' },       // NEW
+                { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' } // NEW
             ]
         }
     };
@@ -174,9 +171,7 @@
         btn.innerText = "LOADING...";
         btn.disabled = true;
 
-        // Render Frontend Controls
         renderControls(config.controls);
-        // Clear Cost Panel (will populate after fetch)
         document.getElementById('cost-container').innerHTML = `<span class="text-xs text-red-300 font-bold animate-pulse">Fetching backend data...</span>`;
 
         try {
@@ -188,10 +183,8 @@
             currentBackend = data;
             
             document.getElementById('data-source').innerText = `${config.tab} (${data.Sys_Version_Live || 'v?'})`;
-            
             if(typeof window[config.engine] !== 'function') throw new Error(`Logic Engine '${config.engine}' missing.`);
 
-            // RENDER COST SANDBOX INPUTS
             renderCostInputs(config.costs, data);
 
             btn.innerText = "RUN SIMULATION";
@@ -255,13 +248,16 @@
         container.innerHTML = "";
 
         costs.forEach(c => {
-            // Get value from backend, default to 0 if missing
-            const val = parseFloat(data[c.key]) || 0;
-            
+            // Get value from backend, default to 0 if missing. 
+            // Default Attendance to 1.0 if missing (100% attention)
+            let def = 0;
+            if(c.key.includes("Attendance")) def = 1.0; 
+            const val = parseFloat(data[c.key]) || def;
+
             const div = document.createElement('div');
             div.innerHTML = `
                 <label class="block text-[9px] font-bold text-red-700 uppercase mb-1 truncate" title="${c.key}">${c.label}</label>
-                <input type="number" id="cost-${c.key}" value="${val}" step="0.01" 
+                <input type="number" id="cost-${c.key}" value="${val}" step="${c.key.includes('Ratio') ? '0.1' : '0.01'}" 
                     class="w-24 border border-red-200 bg-red-50 p-1 rounded text-sm font-bold text-center text-red-900 focus:border-red-500 focus:bg-white outline-none transition"
                     onchange="runSimulation()">
             `;
@@ -275,12 +271,10 @@
         const config = MODULES[modKey];
         const engine = window[config.engine];
 
-        // 1. Get Range
         const start = parseInt(document.getElementById('range-start').value);
         const end = parseInt(document.getElementById('range-end').value);
         const step = parseInt(document.getElementById('range-step').value);
 
-        // 2. Build Inputs Object
         let inputs = { qty: 1 };
         config.controls.forEach(c => {
             const el = document.getElementById(`cfg-${c.id}`);
@@ -291,8 +285,7 @@
         if(!inputs.files) inputs.files = 1;
         if(!inputs.rounded) inputs.rounded = false; 
 
-        // 3. BUILD SANDBOX BACKEND
-        // Clone the live data, then overwrite with values from Red Inputs
+        // SANDBOX DATA INJECTION
         let simBackend = { ...currentBackend };
         config.costs.forEach(c => {
             const el = document.getElementById(`cost-${c.key}`);
@@ -301,7 +294,6 @@
             }
         });
 
-        // 4. Generate Points
         const labels = [];
         const retailPoints = [];
         const costPoints = [];
@@ -311,7 +303,6 @@
             labels.push(q);
             inputs.qty = q; 
 
-            // Pass the SANDBOX data, not live data
             const result = engine(inputs, simBackend);
             
             const unitRetail = result.retail.grandTotal / q;
@@ -338,7 +329,7 @@
                     {
                         label: 'Unit Retail ($)',
                         data: retail,
-                        borderColor: '#2563eb', // Blue
+                        borderColor: '#2563eb', 
                         backgroundColor: '#2563eb',
                         yAxisID: 'y',
                         tension: 0.1,
@@ -347,16 +338,16 @@
                     {
                         label: 'Unit Cost ($)',
                         data: cost,
-                        borderColor: '#ef4444', // Red
+                        borderColor: '#ef4444', 
                         backgroundColor: '#ef4444',
                         yAxisID: 'y',
-                        borderDash: [1], // Dashed Line
+                        borderDash: [1],
                         borderWidth: 2
                     },
                     {
                         label: 'Margin %',
                         data: margin,
-                        borderColor: '#fbbf24', // Yellow
+                        borderColor: '#fbbf24', 
                         backgroundColor: 'rgba(251, 191, 36, 0.5)',
                         yAxisID: 'y1',
                         type: 'bar',
@@ -371,26 +362,9 @@
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        title: { display: true, text: 'Price / Cost ($)' },
-                        grid: { color: '#f3f4f6' }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: { display: true, text: 'Margin (%)' },
-                        grid: { drawOnChartArea: false },
-                        min: 0,
-                        max: 100
-                    },
-                    x: {
-                        title: { display: true, text: 'Quantity' },
-                        grid: { display: false }
-                    }
+                    y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Price / Cost ($)' }, grid: { color: '#f3f4f6' } },
+                    y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Margin (%)' }, grid: { drawOnChartArea: false }, min: 0, max: 100 },
+                    x: { title: { display: true, text: 'Quantity' }, grid: { display: false } }
                 }
             }
         });
