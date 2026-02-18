@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS API v6.24 - Add Cost Matrix Logic
+// SignOS API v6.25 - MATRIX INTEGRATION ENGINE (v7.0)
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -46,8 +46,9 @@ function doGet(e) {
   // 6. NotebookLM Bridge
   if (params.req === "sync_codebase") return generateNotebookLMBridge();
 
-  // 7. DEFAULT: Config Fetch
-  return fetchConfig(params.tab || "PROD_Yard_Signs");
+  // 7. DEFAULT: Matrix Config Fetch (v7.0)
+  // Replaces standard fetchConfig with the new Matrix-aware engine
+  return fetchProductWithMatrix(params.tab || "PROD_Yard_Signs");
 }
 
 // ==========================================
@@ -421,9 +422,6 @@ function updateMatrixValue(p) {
   } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
 }
 
-  return returnJSON({ status: "success" });
-}
-
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
@@ -445,3 +443,71 @@ function doPost(e) {
   } catch(e) { return returnJSON({ status: "error" }); }
 }
 
+// ==========================================
+//  MATRIX INTEGRATION ENGINE (v7.0)
+// ==========================================
+
+function fetchProductWithMatrix(tabName) {
+  const ss = SpreadsheetApp.openById(DATA_SS_ID);
+  
+  // 1. Fetch Standard Product Data (Legacy Support)
+  let config = {};
+  try {
+    const prodSheet = ss.getSheetByName(tabName);
+    if (prodSheet) {
+      const data = prodSheet.getDataRange().getValues();
+      // Skip header, map Key (Col A) to Value (Col B)
+      for (let i = 1; i < data.length; i++) {
+        const key = data[i][0]; // FIX: Select Col A
+        const val = data[i][1]; // Select Col B
+        if (key) config[key] = val;
+      }
+    }
+  } catch(e) { console.warn("Legacy fetch failed: " + e); }
+
+  // 2. Fetch Matrix Overrides
+  try {
+    const matrixSheet = ss.getSheetByName("SYS_Cost_Matrix");
+    const defSheet = ss.getSheetByName("REF_Cost_Definitions");
+    
+    if (matrixSheet && defSheet) {
+      // Get Data
+      const mData = matrixSheet.getDataRange().getValues();
+      const dData = defSheet.getDataRange().getValues();
+      
+      // Find Column for this Product
+      // Logic: "PROD_Yard_Signs" -> "PROD_Yard"
+      const productID = tabName.replace("_Signs", "").replace("_Calculator", ""); 
+      const headers = mData[0]; // FIX: Select just the header row
+      const colIdx = headers.findIndex(h => h === productID || h === tabName);
+      
+      if (colIdx > -1) {
+        // Create Dictionary of Definitions (Row ID -> Default Value)
+        const defMap = {};
+        for (let i = 1; i < dData.length; i++) {
+          // Key: Col A (Cost_ID), Value: Col F (Default_Source_Ref)
+          // FIX: Select Col A [0] and Col F [5]
+          if(dData[i][0]) defMap[dData[i][0]] = dData[i][5]; 
+        }
+
+        // Loop Matrix Rows and Apply Logic
+        for (let r = 1; r < mData.length; r++) {
+          const costKey = mData[r][0];      // FIX: Select Col A (Cost Key)
+          const matrixVal = mData[r][colIdx]; // TRUE, FALSE, or Override
+          
+          if (matrixVal === false || String(matrixVal).toUpperCase() === "FALSE") {
+            config[costKey] = 0; // Hard disable
+          } else if (matrixVal === true || String(matrixVal).toUpperCase() === "TRUE") {
+            config[costKey] = defMap[costKey]; // Use Global Default
+          } else if (matrixVal !== "" && !isNaN(parseFloat(matrixVal))) {
+            config[costKey] = matrixVal; // Use Override
+          }
+        }
+      }
+    }
+  } catch(e) { 
+    return returnJSON({ error: "Matrix Logic Failed: " + e.toString() }); 
+  }
+
+  return returnJSON(config);
+}
