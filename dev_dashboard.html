@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Nexus | v6.0</title>
+    <title>SignOS Nexus | v6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="signos-core.js"></script>
@@ -193,20 +193,18 @@
         <aside class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex-shrink-0 flex flex-col z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] lg:shadow-none">
             
             <div class="p-6 border-b border-gray-100 bg-gray-50/50">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">System Heartbeat</h3>
-                    <button onclick="pingAPI()" class="text-[10px] text-blue-600 hover:text-blue-800 font-bold transition">REFRESH</button>
-                </div>
+                <button onclick="triggerContextSync()" id="btn-sync-context" class="w-full bg-white border border-blue-200 hover:border-blue-400 text-blue-700 font-bold py-3 px-4 rounded-lg shadow-sm hover:shadow-md transition flex items-center justify-center gap-2 group mb-3">
+                    <span id="icon-sync" class="text-lg transition group-hover:rotate-180 duration-700">🔄</span>
+                    <span id="lbl-sync-title">Sync Codebase to Drive</span>
+                </button>
                 
-                <div class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                    <div class="flex justify-between items-baseline">
-                        <div class="text-[10px] text-gray-400 uppercase font-bold">API Latency</div>
-                        <div class="text-xs text-gray-400 font-mono">ms</div>
+                <div class="flex justify-between items-center text-[10px] text-gray-400 font-mono px-1">
+                    <div class="flex items-center gap-1.5">
+                        <div id="ping-dot" class="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                        <span>API LATENCY:</span>
+                        <span id="ping-result" class="font-bold text-gray-600">---</span>
                     </div>
-                    <div id="ping-result" class="text-3xl font-black text-gray-700 mt-1">---</div>
-                    <div class="h-1.5 w-full bg-gray-100 mt-3 rounded-full overflow-hidden">
-                        <div id="ping-bar" class="h-full w-0 bg-emerald-500 transition-all duration-500"></div>
-                    </div>
+                    <button onclick="pingAPI()" class="hover:text-blue-600 underline">REFRESH</button>
                 </div>
             </div>
 
@@ -232,7 +230,7 @@
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-gray-100 text-center">
-                    <div class="text-[10px] text-gray-400 font-mono">SignOS ERP v6.0</div>
+                    <div class="text-[10px] text-gray-400 font-mono">SignOS ERP v6.1</div>
                     <div class="text-[10px] text-gray-300 font-mono mt-1">AUTHORIZED PERSONNEL ONLY</div>
                 </div>
             </div>
@@ -250,15 +248,12 @@
 
         // --- INITIALIZATION ---
         window.onload = function() {
-            // 1. User Identity
             const user = sessionStorage.getItem('signos_user') || 'GUEST';
             document.getElementById('nav-user').innerText = user;
 
-            // 2. Start Modules
             pingAPI();
             fetchRegistry();
 
-            // 3. IP Watcher
             if(typeof clientIP !== 'undefined' && clientIP !== 'Unknown') {
                  document.getElementById('nav-ip').innerText = clientIP;
             } else {
@@ -268,38 +263,87 @@
             }
         };
 
+        // --- SYNC FUNCTION ---
+        async function triggerContextSync() {
+            const btn = document.getElementById('btn-sync-context');
+            const icon = document.getElementById('icon-sync');
+            const title = document.getElementById('lbl-sync-title');
+
+            // Lock UI
+            btn.style.opacity = "0.7";
+            btn.style.pointerEvents = "none";
+            icon.classList.add('animate-spin');
+            title.innerText = "Compiling Context...";
+
+            try {
+                if(typeof SCRIPT_URL === 'undefined') throw new Error("API Config Missing");
+
+                const res = await fetch(`${SCRIPT_URL}?req=sync_master`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    // Success State
+                    icon.classList.remove('animate-spin');
+                    icon.innerText = "✅";
+                    title.innerText = "Sync Complete!";
+                    btn.classList.remove('text-blue-700', 'border-blue-200');
+                    btn.classList.add('text-green-700', 'border-green-300', 'bg-green-50');
+                    
+                    setTimeout(() => {
+                        window.open(data.url, '_blank');
+                        // Reset
+                        setTimeout(() => {
+                            icon.innerText = "🔄";
+                            title.innerText = "Sync Codebase to Drive";
+                            btn.className = "w-full bg-white border border-blue-200 hover:border-blue-400 text-blue-700 font-bold py-3 px-4 rounded-lg shadow-sm hover:shadow-md transition flex items-center justify-center gap-2 group mb-3";
+                            btn.style.opacity = "1";
+                            btn.style.pointerEvents = "auto";
+                        }, 2000);
+                    }, 500);
+                } else {
+                    throw new Error("API Failed");
+                }
+            } catch (e) {
+                console.error(e);
+                icon.classList.remove('animate-spin');
+                icon.innerText = "❌";
+                title.innerText = "Sync Failed";
+                btn.style.pointerEvents = "auto";
+            }
+        }
+
         // --- PING FUNCTION ---
         async function pingAPI() {
             const el = document.getElementById('ping-result');
-            const bar = document.getElementById('ping-bar');
+            const dot = document.getElementById('ping-dot');
             const start = Date.now();
             
-            el.className = "text-3xl font-black text-gray-400 animate-pulse";
             el.innerText = "...";
+            dot.className = "w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse";
 
             try {
                 if(typeof SCRIPT_URL !== 'undefined') {
                     await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
                 } else {
-                    await new Promise(r => setTimeout(r, 600)); // Sim
+                    await new Promise(r => setTimeout(r, 600)); 
                 }
                 const ms = Date.now() - start;
-                el.innerText = ms;
+                el.innerText = ms + "ms";
                 
-                // Color Logic
-                let color = "bg-emerald-500";
-                let text = "text-gray-700";
-
-                if(ms > 800) { color = "bg-orange-500"; text = "text-orange-600"; }
-                if(ms > 2000) { color = "bg-red-500"; text = "text-red-600"; }
-
-                el.className = `text-3xl font-black ${text}`;
-                bar.className = `h-full ${color} transition-all duration-500`;
-                bar.style.width = "100%";
+                if(ms < 800) {
+                    dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500";
+                    el.className = "font-bold text-emerald-600";
+                } else if(ms < 2000) {
+                    dot.className = "w-1.5 h-1.5 rounded-full bg-orange-500";
+                    el.className = "font-bold text-orange-600";
+                } else {
+                    dot.className = "w-1.5 h-1.5 rounded-full bg-red-500";
+                    el.className = "font-bold text-red-600";
+                }
 
             } catch(e) {
-                el.innerText = "ERR";
-                bar.className = "h-full bg-red-600";
+                el.innerText = "OFFLINE";
+                dot.className = "w-1.5 h-1.5 rounded-full bg-red-600";
             }
         }
 
@@ -324,19 +368,16 @@
                 }
 
                 data.forEach(row => {
-                    // Extract Data
                     const name = val(row, 'Display_Name');
                     const file = val(row, 'File_Link');
                     const vDev = val(row, 'Dev_Ver');
                     const vLive = val(row, 'Live_Ver');
                     const cat = val(row, 'Category') || 'SYSTEM';
 
-                    // Logic
                     const isSynced = vDev === vLive && vDev !== "";
                     const isNewer = vDev > vLive;
 
-                    // Styles
-                    let statusClass = "border-l-4 border-l-gray-300"; // Default
+                    let statusClass = "border-l-4 border-l-gray-300"; 
                     let statusDot = "";
 
                     if(isSynced) {
@@ -349,7 +390,6 @@
                         statusDot = `<span class="w-2 h-2 rounded-full bg-gray-300"></span>`;
                     }
 
-                    // Card HTML
                     const card = document.createElement('div');
                     card.className = `nexus-card rounded-lg flex flex-col lg:grid lg:grid-cols-12 items-center p-4 gap-4 ${statusClass} group`;
 
