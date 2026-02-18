@@ -3,476 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS Nexus | v6.3</title>
+    <title>Mission Control v2.0 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="signos-core.js"></script>
-    
     <style>
-        :root {
-            --bg-body: #f9fafb;     /* Gray 50 */
-            --bg-card: #ffffff;     /* White */
-            --border-subtle: #e5e7eb; /* Gray 200 */
-            --text-main: #111827;   /* Gray 900 */
-            --text-muted: #6b7280;  /* Gray 500 */
-            --brand-blue: #2563eb;
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-body);
-            color: var(--text-main);
-        }
-
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-        .subtle-grid {
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 24px 24px;
-        }
-
-        .nexus-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease-in-out;
-        }
-
-        .nexus-card:hover {
-            border-color: #d1d5db;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            transform: translateY(-1px);
-        }
-
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            100% { transform: scale(2); opacity: 0; }
-        }
-        .status-dot-pulse::before {
-            content: ''; position: absolute; width: 100%; height: 100%; top:0; left:0;
-            border-radius: 50%; background-color: inherit;
-            animation: pulse-ring 2s infinite; z-index: -1;
-        }
-        
-        @media (min-width: 1024px) {
-            ::-webkit-scrollbar { width: 8px; }
-            ::-webkit-scrollbar-track { background: transparent; }
-            ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-            ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-        }
+        .dash-card { transition: all 0.2s ease-in-out; }
+        .dash-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .pulse-dot { animation: pulse-ring 2s infinite; }
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-gray-50">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <nav class="h-14 bg-gray-900 text-white flex items-center justify-between px-4 lg:px-6 shrink-0 z-50 shadow-md">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shadow-lg shadow-blue-900/50">
-                <span class="text-lg">🛸</span>
+    <!-- HEADER INJECTED HERE (ID="main-card" wrapper not needed for full-screen dash) -->
+    <div id="header-mount"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- 1. LIVE PULSE STRIP -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <!-- Latency Monitor -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-emerald-500 flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">System Latency</p>
+                    <h3 class="text-2xl font-black text-gray-800 flex items-center gap-2">
+                        <span id="stat-ping">...</span> <span class="text-xs font-medium text-gray-400">ms</span>
+                    </h3>
+                </div>
+                <div class="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center pulse-dot">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
             </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-tight leading-none">SignOS <span class="text-gray-400 font-normal">NEXUS</span></h1>
-                <div class="text-[10px] text-blue-400 font-mono tracking-widest uppercase">Dev Ops Console</div>
+
+            <!-- Pending Bugs -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-red-500 flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pending Bugs</p>
+                    <h3 class="text-2xl font-black text-gray-800" id="stat-bugs">--</h3>
+                </div>
+                <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+            </div>
+
+            <!-- Deployment Sync -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Environment</p>
+                    <h3 class="text-xl font-black text-gray-800 flex items-center gap-2" id="stat-env">CHECKING</h3>
+                </div>
+                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                </div>
             </div>
         </div>
-        
-        <div class="hidden lg:flex items-center gap-6 text-xs font-mono">
-            <div class="flex items-center gap-2">
-                <span class="text-gray-500">USER:</span>
-                <span class="font-bold text-white" id="nav-user">...</span>
-            </div>
-            <div class="h-4 w-px bg-gray-700"></div>
-            <div class="flex items-center gap-2">
-                <span class="text-gray-500">IP:</span>
-                <span class="font-bold text-emerald-400" id="nav-ip">...</span>
-            </div>
-            <a href="menu.html" class="ml-4 bg-gray-800 hover:bg-red-900 text-gray-300 hover:text-white px-3 py-1.5 rounded transition border border-gray-700">
-                EXIT
+
+        <!-- 2. ECONOMICS DECK -->
+        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green-500"></span> Financial Physics
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <!-- Cost Matrix -->
+            <a href="admin_cost_matrix.html" class="dash-card bg-white rounded-xl p-6 border border-gray-200 group">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="p-3 bg-red-50 rounded-lg text-red-600 group-hover:bg-red-600 group-hover:text-white transition">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded">DATABASE</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Cost Matrix Engine</h3>
+                <p class="text-sm text-gray-500 mt-1">Toggle raw material costs, update hourly rates, and manage global markups.</p>
+            </a>
+
+            <!-- Simulator -->
+            <a href="admin_simulator.html" class="dash-card bg-white rounded-xl p-6 border border-gray-200 group">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="p-3 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded">SIMULATION</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Pricing Simulator</h3>
+                <p class="text-sm text-gray-500 mt-1">Run "What-If" scenarios on retail curves and visualize profit margins in real-time.</p>
             </a>
         </div>
-        
-        <a href="menu.html" class="lg:hidden text-xs font-bold text-gray-400 hover:text-white border border-gray-700 px-3 py-1 rounded">EXIT</a>
-    </nav>
 
-    <div class="flex-1 flex flex-col lg:flex-row lg:overflow-hidden relative">
-        
-        <main class="flex-1 flex flex-col gap-6 p-4 lg:p-8 overflow-y-auto subtle-grid pb-20 lg:pb-8">
-            
-            <section>
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-blue-600"></span> External Launch Bay
-                    </h2>
-                </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    
-                    <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="nexus-card p-3 rounded-lg group relative overflow-hidden border-l-4 border-l-gray-400 hover:border-l-gray-600">
-                        <div class="flex flex-col h-full justify-between gap-2">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xl opacity-80 group-hover:scale-110 transition">🐙</span>
-                                <span class="text-[9px] font-bold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full border border-gray-200">SOURCE</span>
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900 text-xs">GitHub Dev</div>
-                                <div class="text-[9px] text-gray-500">Repository</div>
-                            </div>
-                        </div>
-                    </a>
+        <!-- 3. OPS & DEV DECK -->
+        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span> Development & Ops
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <!-- Roadmap -->
+            <a href="admin_roadmap.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-orange-400 group">
+                <div class="text-orange-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🗺️</div>
+                <div class="font-bold text-gray-800 text-sm">Roadmap Tracker</div>
+                <div class="text-[10px] text-gray-400">Manage Features & Bugs</div>
+            </a>
 
-                    <a href="https://signstoreerp.github.io/signos-app/" target="_blank" class="nexus-card p-3 rounded-lg group relative overflow-hidden border-l-4 border-l-orange-500 bg-orange-50/10">
-                        <div class="flex flex-col h-full justify-between gap-2">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xl opacity-80 group-hover:scale-110 transition">🚧</span>
-                                <span class="text-[9px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full border border-orange-200">APP</span>
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900 text-xs group-hover:text-orange-600 transition">Launch Dev</div>
-                                <div class="text-[9px] text-gray-500">Testing Env</div>
-                            </div>
-                        </div>
-                    </a>
+            <!-- Dev Nexus -->
+            <a href="dev_dashboard.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-400 group">
+                <div class="text-purple-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🛸</div>
+                <div class="font-bold text-gray-800 text-sm">Dev Nexus</div>
+                <div class="text-[10px] text-gray-400">Version Control Center</div>
+            </a>
 
-                    <a href="https://docs.google.com/spreadsheets/d/1wiaj5rU5J2kv1SobfyysMFynDOsli4Nb6pDvIf3L9_Y/edit" target="_blank" class="nexus-card p-3 rounded-lg group relative overflow-hidden border-l-4 border-l-green-600">
-                        <div class="flex flex-col h-full justify-between gap-2">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xl opacity-80 group-hover:scale-110 transition">📊</span>
-                                <span class="text-[9px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full border border-green-200">DATA</span>
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900 text-xs">Backend Sheet</div>
-                                <div class="text-[9px] text-gray-500">Pricing DB</div>
-                            </div>
-                        </div>
-                    </a>
+            <!-- Changelog -->
+            <a href="admin_changelog.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-pink-400 group">
+                <div class="text-pink-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">📜</div>
+                <div class="font-bold text-gray-800 text-sm">System History</div>
+                <div class="text-[10px] text-gray-400">View Commit Logs</div>
+            </a>
 
-                    <a href="https://github.com/SignStoreERP/signos-live" target="_blank" class="nexus-card p-3 rounded-lg group relative overflow-hidden border-l-4 border-l-gray-400 hover:border-l-gray-600">
-                        <div class="flex flex-col h-full justify-between gap-2">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xl opacity-80 group-hover:scale-110 transition">🔒</span>
-                                <span class="text-[9px] font-bold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full border border-gray-200">SOURCE</span>
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900 text-xs">GitHub Live</div>
-                                <div class="text-[9px] text-gray-500">Repository</div>
-                            </div>
-                        </div>
-                    </a>
+            <!-- Logs -->
+            <a href="admin_viewer.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-slate-400 group">
+                <div class="text-slate-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">⚙️</div>
+                <div class="font-bold text-gray-800 text-sm">Access Logs</div>
+                <div class="text-[10px] text-gray-400">Security & Telemetry</div>
+            </a>
+        </div>
 
-                    <a href="https://signstoreerp.github.io/signos-live/" target="_blank" class="nexus-card p-3 rounded-lg group relative overflow-hidden border-l-4 border-l-emerald-500 bg-emerald-50/10">
-                        <div class="flex flex-col h-full justify-between gap-2">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xl opacity-80 group-hover:scale-110 transition">🚀</span>
-                                <span class="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full border border-emerald-200">APP</span>
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900 text-xs group-hover:text-emerald-600 transition">Launch Live</div>
-                                <div class="text-[9px] text-gray-500">Production Env</div>
-                            </div>
-                        </div>
-                    </a>
-
-                    <a href="https://notebooklm.google.com/" target="_blank" class="nexus-card p-3 rounded-lg group relative overflow-hidden border-l-4 border-l-purple-500">
-                        <div class="flex flex-col h-full justify-between gap-2">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xl opacity-80 group-hover:scale-110 transition">✨</span>
-                                <span class="text-[9px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full border border-purple-200">AI</span>
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900 text-xs">NotebookLM</div>
-                                <div class="text-[9px] text-gray-500">Project Intel</div>
-                            </div>
-                        </div>
-                    </a>
-
-                </div>
-            </section>
-
-            <section class="flex-1">
-                <div class="flex justify-between items-end mb-3 sticky top-0 bg-gray-50/95 backdrop-blur py-2 z-10 border-b border-gray-200">
-                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-gray-400"></span> Module Status
-                    </h2>
-                    <div class="flex gap-3 text-[10px] font-medium text-gray-500">
-                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Synced</div>
-                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Update Ready</div>
-                    </div>
-                </div>
-
-                <div class="hidden lg:grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold uppercase text-gray-400 border-b border-gray-200">
-                    <div class="col-span-4">Module / File</div>
-                    <div class="col-span-4 text-center">Development (Orange)</div>
-                    <div class="col-span-4 text-center">Production (Green)</div>
-                </div>
-
-                <div id="module-list" class="space-y-3 mt-3">
-                    <div class="nexus-card p-6 text-center">
-                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-                        <p class="text-xs text-gray-400 mt-2 font-mono">FETCHING REGISTRY...</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <aside class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex-shrink-0 flex flex-col z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] lg:shadow-none">
-            
-            <div class="p-6 border-b border-gray-100 bg-gray-50/50">
-                <button onclick="triggerContextSync()" id="btn-sync-context" class="w-full bg-white border border-blue-200 hover:border-blue-400 text-blue-700 font-bold py-3 px-4 rounded-lg shadow-sm hover:shadow-md transition flex items-center justify-center gap-2 group mb-3">
-                    <span id="icon-sync" class="text-lg transition group-hover:rotate-180 duration-700">🔄</span>
-                    <span id="lbl-sync-title">Sync Codebase to Drive</span>
-                </button>
-                
-                <div class="flex justify-between items-center text-[10px] text-gray-400 font-mono px-1">
-                    <div class="flex items-center gap-1.5">
-                        <div id="ping-dot" class="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
-                        <span>API LATENCY:</span>
-                        <span id="ping-result" class="font-bold text-gray-600">---</span>
-                    </div>
-                    <button onclick="pingAPI()" class="hover:text-blue-600 underline">REFRESH</button>
-                </div>
-            </div>
-
-            <div class="p-6 flex-1">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Internal Tools</h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <a href="admin_roadmap.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-blue-50 hover:border-blue-200 rounded-lg border border-gray-200 transition group shadow-sm">
-                        <span class="text-xl mb-2 group-hover:scale-110 transition">🗺️</span>
-                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-blue-600">Roadmap</span>
-                    </a>
-                    <a href="admin_viewer.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-purple-50 hover:border-purple-200 rounded-lg border border-gray-200 transition group shadow-sm">
-                        <span class="text-xl mb-2 group-hover:scale-110 transition">📜</span>
-                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-purple-600">Logs</span>
-                    </a>
-                    <a href="admin_changelog.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-orange-50 hover:border-orange-200 rounded-lg border border-gray-200 transition group shadow-sm">
-                        <span class="text-xl mb-2 group-hover:scale-110 transition">⏱️</span>
-                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-orange-600">History</span>
-                    </a>
-                    <a href="admin_backup.html" class="flex flex-col items-center justify-center p-4 bg-white hover:bg-emerald-50 hover:border-emerald-200 rounded-lg border border-gray-200 transition group shadow-sm">
-                        <span class="text-xl mb-2 group-hover:scale-110 transition">💾</span>
-                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-emerald-600">Backup</span>
-                    </a>
-                </div>
-
-                <div class="mt-8 pt-6 border-t border-gray-100 text-center">
-                    <div class="text-[10px] text-gray-400 font-mono">SignOS ERP v6.3</div>
-                    <div class="text-[10px] text-gray-300 font-mono mt-1">AUTHORIZED PERSONNEL ONLY</div>
-                </div>
-            </div>
-        </aside>
+        <!-- 4. MAINTENANCE DECK -->
+        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span> Maintenance
+        </h2>
+        <div class="bg-white rounded-xl border border-gray-200 p-1 flex divide-x divide-gray-100">
+            <a href="admin_backup.html" class="flex-1 p-4 hover:bg-gray-50 transition text-center group">
+                <div class="text-2xl mb-1 group-hover:-translate-y-1 transition">💾</div>
+                <div class="font-bold text-xs text-gray-700">Data Backup</div>
+            </a>
+            <a href="docs.html" class="flex-1 p-4 hover:bg-gray-50 transition text-center group">
+                <div class="text-2xl mb-1 group-hover:-translate-y-1 transition">📘</div>
+                <div class="font-bold text-xs text-gray-700">Documentation</div>
+            </a>
+            <a href="menu.html" class="flex-1 p-4 hover:bg-gray-50 transition text-center group">
+                <div class="text-2xl mb-1 group-hover:-translate-y-1 transition">🔙</div>
+                <div class="font-bold text-xs text-gray-700">Exit to Menu</div>
+            </a>
+        </div>
 
     </div>
 
-    <script>
-        // --- CONFIGURATION ---
-        const REPO_DEV = "https://github.com/SignStoreERP/signos-app/blob/main/";
-        const REPO_LIVE = "https://github.com/SignStoreERP/signos-live/blob/main/";
-        const REPO_HIST_DEV = "https://github.com/SignStoreERP/signos-app/commits/main/";
+<script>
+window.onload = function() {
+    // 1. Inject Header via Core
+    if(typeof injectHeader === 'function') {
+        const container = document.getElementById('header-mount');
+        // Manually injecting to target the specific mount point rather than body
+        // But core usually injects at top of body. Let's let Core do its thing.
+        injectHeader("Mission Control");
+    }
 
-        const val = (obj, key) => obj && (obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "");
+    // 2. Telemetry Pulse
+    runPulseCheck();
+};
 
-        // --- INITIALIZATION ---
-        window.onload = function() {
-            const user = sessionStorage.getItem('signos_user') || 'GUEST';
-            document.getElementById('nav-user').innerText = user;
+async function runPulseCheck() {
+    const pingEl = document.getElementById('stat-ping');
+    const bugEl = document.getElementById('stat-bugs');
+    const envEl = document.getElementById('stat-env');
 
-            pingAPI();
-            fetchRegistry();
+    // A. Env Check
+    if(typeof IS_DEV_ENV !== 'undefined') {
+        envEl.innerHTML = IS_DEV_ENV ? 
+            `<span class="text-orange-500">DEV / BETA</span>` : 
+            `<span class="text-green-600">LIVE / PROD</span>`;
+    }
 
-            if(typeof clientIP !== 'undefined' && clientIP !== 'Unknown') {
-                 document.getElementById('nav-ip').innerText = clientIP;
-            } else {
-                setTimeout(() => { 
-                    document.getElementById('nav-ip').innerText = (typeof clientIP !== 'undefined') ? clientIP : 'OFFLINE';
-                }, 1000);
-            }
-        };
+    // B. Latency Check
+    const start = Date.now();
+    try {
+        await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
+        const ms = Date.now() - start;
+        pingEl.innerText = ms;
+        if(ms > 2000) pingEl.classList.add('text-red-500');
+    } catch(e) {
+        pingEl.innerText = "ERR";
+    }
 
-        // --- SYNC FUNCTION ---
-        async function triggerContextSync() {
-            const btn = document.getElementById('btn-sync-context');
-            const icon = document.getElementById('icon-sync');
-            const title = document.getElementById('lbl-sync-title');
-
-            // Lock UI
-            btn.style.opacity = "0.7";
-            btn.style.pointerEvents = "none";
-            icon.classList.add('animate-spin');
-            title.innerText = "Compiling Context...";
-
-            try {
-                if(typeof SCRIPT_URL === 'undefined') throw new Error("API Config Missing");
-
-                const res = await fetch(`${SCRIPT_URL}?req=sync_codebase`);
-                const data = await res.json();
-
-                if (data.status === 'success') {
-                    // Success State
-                    icon.classList.remove('animate-spin');
-                    icon.innerText = "✅";
-                    title.innerText = "Sync Complete!";
-                    btn.classList.remove('text-blue-700', 'border-blue-200');
-                    btn.classList.add('text-green-700', 'border-green-300', 'bg-green-50');
-                    
-                    setTimeout(() => {
-                        window.open(data.url, '_blank');
-                        // Reset
-                        setTimeout(() => {
-                            icon.innerText = "🔄";
-                            title.innerText = "Sync Codebase to Drive";
-                            btn.className = "w-full bg-white border border-blue-200 hover:border-blue-400 text-blue-700 font-bold py-3 px-4 rounded-lg shadow-sm hover:shadow-md transition flex items-center justify-center gap-2 group mb-3";
-                            btn.style.opacity = "1";
-                            btn.style.pointerEvents = "auto";
-                        }, 2000);
-                    }, 500);
-                } else {
-                    throw new Error("API Failed");
-                }
-            } catch (e) {
-                console.error(e);
-                icon.classList.remove('animate-spin');
-                icon.innerText = "❌";
-                title.innerText = "Sync Failed";
-                btn.style.pointerEvents = "auto";
-            }
-        }
-
-        // --- PING FUNCTION ---
-        async function pingAPI() {
-            const el = document.getElementById('ping-result');
-            const dot = document.getElementById('ping-dot');
-            const start = Date.now();
-            
-            el.innerText = "...";
-            dot.className = "w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse";
-
-            try {
-                if(typeof SCRIPT_URL !== 'undefined') {
-                    await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
-                } else {
-                    await new Promise(r => setTimeout(r, 600)); 
-                }
-                const ms = Date.now() - start;
-                el.innerText = ms + "ms";
-                
-                if(ms < 800) {
-                    dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500";
-                    el.className = "font-bold text-emerald-600";
-                } else if(ms < 2000) {
-                    dot.className = "w-1.5 h-1.5 rounded-full bg-orange-500";
-                    el.className = "font-bold text-orange-600";
-                } else {
-                    dot.className = "w-1.5 h-1.5 rounded-full bg-red-500";
-                    el.className = "font-bold text-red-600";
-                }
-
-            } catch(e) {
-                el.innerText = "OFFLINE";
-                dot.className = "w-1.5 h-1.5 rounded-full bg-red-600";
-            }
-        }
-
-        // --- MODULE REGISTRY ---
-        async function fetchRegistry() {
-            const listEl = document.getElementById('module-list');
-            
-            try {
-                let data = [];
-                if(typeof SCRIPT_URL !== 'undefined') {
-                     const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Modules`);
-                     data = await res.json();
-                } else {
-                    console.warn("API Offline");
-                }
-
-                listEl.innerHTML = "";
-
-                if(!data || data.length === 0) {
-                    listEl.innerHTML = `<div class="text-center py-8 text-gray-400 bg-white border border-dashed border-gray-300 rounded-lg">No Modules Found via API</div>`;
-                    return;
-                }
-
-                data.forEach(row => {
-                    const name = val(row, 'Display_Name');
-                    const file = val(row, 'File_Link');
-                    const vDev = val(row, 'Dev_Ver');
-                    const vLive = val(row, 'Live_Ver');
-                    const cat = val(row, 'Category') || 'SYSTEM';
-
-                    const isSynced = vDev === vLive && vDev !== "";
-                    const isNewer = vDev > vLive;
-
-                    let statusClass = "border-l-4 border-l-gray-300"; 
-                    let statusDot = "";
-
-                    if(isSynced) {
-                        statusClass = "border-l-4 border-l-emerald-500 bg-emerald-50/30";
-                        statusDot = `<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm"></span>`;
-                    } else if (isNewer) {
-                        statusClass = "border-l-4 border-l-orange-500 bg-orange-50/30 shadow-md";
-                        statusDot = `<span class="relative w-2 h-2 rounded-full bg-orange-500 status-dot-pulse"></span>`;
-                    } else {
-                        statusDot = `<span class="w-2 h-2 rounded-full bg-gray-300"></span>`;
-                    }
-
-                    const card = document.createElement('div');
-                    card.className = `nexus-card rounded-lg flex flex-col lg:grid lg:grid-cols-12 items-center p-4 gap-4 ${statusClass} group`;
-
-                    card.innerHTML = `
-                        <div class="col-span-4 w-full flex items-center gap-4">
-                            <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded bg-gray-100 text-xl border border-gray-200">
-                                ${getIcon(cat)}
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2">
-                                    <h4 class="font-bold text-gray-800 text-sm truncate group-hover:text-blue-600 transition">${name}</h4>
-                                    ${statusDot}
-                                </div>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[10px] font-mono text-gray-500 truncate max-w-[140px]">${file}</span>
-                                    <a href="${REPO_HIST_DEV}${file}" target="_blank" class="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition" title="View History">CLOCK 🕒</a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-span-4 w-full bg-white rounded p-2 border border-orange-100 flex justify-between items-center group/dev hover:border-orange-300 hover:shadow-sm transition relative overflow-hidden">
-                            <div class="absolute inset-y-0 left-0 w-1 bg-orange-400"></div>
-                            <div class="pl-3">
-                                <div class="text-[9px] text-orange-600 font-bold uppercase tracking-wider">Dev Engine</div>
-                                <div class="font-mono text-sm font-bold text-gray-700">${vDev || '--'}</div>
-                            </div>
-                            <a href="${REPO_DEV}${file}" target="_blank" class="text-gray-400 hover:text-orange-500 px-2 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                            </a>
-                        </div>
-
-                        <div class="col-span-4 w-full bg-white rounded p-2 border border-emerald-100 flex justify-between items-center group/live hover:border-emerald-300 hover:shadow-sm transition relative overflow-hidden">
-                            <div class="absolute inset-y-0 left-0 w-1 bg-emerald-500"></div>
-                            <div class="pl-3">
-                                <div class="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Live Engine</div>
-                                <div class="font-mono text-sm font-bold text-gray-700">${vLive || '--'}</div>
-                            </div>
-                            <a href="${REPO_LIVE}${file}" target="_blank" class="text-gray-400 hover:text-emerald-500 px-2 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                            </a>
-                        </div>
-                    `;
-                    listEl.appendChild(card);
-                });
-
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        function getIcon(cat) {
-            const map = {
-                'Rigid Signs': '🛡️',
-                'Roll Media': '🖨️',
-                'Services': '🔧',
-                'SYSTEM': '⚙️',
-                'Admin': '🔑'
-            };
-            return map[cat] || '📦';
-        }
-    </script>
+    // C. Bug Count (Fetch Roadmap Data)
+    try {
+        const u = sessionStorage.getItem('signos_user') || 'Admin';
+        const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&user=${u}`);
+        const data = await res.json();
+        
+        // Count items where Category=Bug AND Status!=Live
+        const bugs = data.filter(r => r.Category === 'Bug' && r.Status !== 'Live').length;
+        bugEl.innerText = bugs;
+        if(bugs > 0) bugEl.classList.add('text-red-600');
+    } catch(e) {
+        bugEl.innerText = "-";
+    }
+}
+</script>
 </body>
 </html>
