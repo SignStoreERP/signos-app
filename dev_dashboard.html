@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v3.0 | SignOS Admin</title>
+    <title>Mission Control v3.1 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- CORE SYSTEM: Provides SCRIPT_URL, ClientIP, and Auth Logic -->
@@ -216,7 +216,7 @@ async function checkConnection() {
     }
 }
 
-// --- C. STATS FETCH (Fixed Logic) ---
+// --- C. STATS FETCH (Corrected Logic) ---
 async function fetchStats() {
     try {
         const u = sessionStorage.getItem('signos_user') || 'Admin';
@@ -227,21 +227,20 @@ async function fetchStats() {
         
         if (json.status !== "success" || !json.logs) throw new Error("No data");
 
-        // Parse: [Timestamp, IP, User, Role, Action, Target, Meta]
+        // Parse: [0:Timestamp, 1:IP, 2:User, 3:Role, 4:Action, 5:Target, 6:Meta]
         const rows = json.logs.slice(1); // Skip Header
         const today = new Date().toDateString();
         
         // Filter for TODAY using Column 0 (Timestamp)
-        const todaysLogs = rows.filter(r => r && r && new Date(r).toDateString() === today);
+        const todaysLogs = rows.filter(r => r && r[0] && new Date(r[0]).toDateString() === today);
 
-        // 1. Estimates (Action = view_module)
-        // Note: Column index 4 is 'Action'
-        const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
+        // 1. Estimates (Action = view_module at Index 4)
+        const estimates = todaysLogs.filter(r => r[4] === 'view_module').length;
         
-        // 2. Orders (Action = PRINT_ORDER or CHECKOUT)
-        const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
+        // 2. Orders (Action = PRINT_ORDER or CHECKOUT at Index 4)
+        const orders = todaysLogs.filter(r => r[4] === 'PRINT_ORDER' || r[4] === 'CHECKOUT').length;
         
-        // 3. Unique Staff (User = Column 2)
+        // 3. Unique Staff (User = Index 2)
         const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
 
         // Update UI
