@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v 2.2 | SignOS Admin</title>
+    <title>Mission Control v2.3 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -15,8 +15,9 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- HEADER INJECTED HERE -->
-    <div id="header-mount"></div>
+    <!-- HEADER INJECT TARGET -->
+    <!-- We use id="main-card" so signos-core.js knows exactly where to put the User/Logout bar -->
+    <div id="main-card"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
@@ -79,7 +80,7 @@
             <a href="admin_simulator.html" class="dash-card bg-white rounded-xl p-6 border border-gray-200 group">
                 <div class="flex items-start justify-between mb-4">
                     <div class="p-3 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2 2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     </div>
                     <span class="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded">SIMULATION</span>
                 </div>
@@ -136,11 +137,11 @@
                 <div class="text-[10px] text-gray-400">Manage Features & Bugs</div>
             </a>
 
-            <!-- Dev Nexus -->
-            <a href="dev_dashboard.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-400 group">
-                <div class="text-purple-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🛸</div>
-                <div class="font-bold text-gray-800 text-sm">Dev Nexus</div>
-                <div class="text-[10px] text-gray-400">Version Control Center</div>
+            <!-- GITHUB LINK (Replaces self-link) -->
+            <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-400 group">
+                <div class="text-purple-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🐙</div>
+                <div class="font-bold text-gray-800 text-sm">GitHub Repo</div>
+                <div class="text-[10px] text-gray-400">View Source Code</div>
             </a>
 
             <!-- Changelog -->
@@ -158,7 +159,7 @@
             </a>
         </div>
 
-        <!-- 5. MAINTENANCE DECK (RESTORED CONTEXT BUTTON) -->
+        <!-- 5. MAINTENANCE DECK -->
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-red-500"></span> Maintenance
         </h2>
@@ -168,7 +169,7 @@
                 <div class="font-bold text-xs text-gray-700">Data Backup</div>
             </a>
             
-            <!-- RESTORED: AI CONTEXT BRIDGE -->
+            <!-- AI CONTEXT BRIDGE -->
             <button onclick="triggerContextSync()" id="btn-sync" class="flex-1 p-4 hover:bg-gray-50 transition text-center group">
                 <div id="icon-sync" class="text-2xl mb-1 group-hover:-translate-y-1 transition">🧠</div>
                 <div id="lbl-sync" class="font-bold text-xs text-gray-700">Sync AI Context</div>
@@ -188,10 +189,13 @@
 
 <script>
 window.onload = function() {
+    // 1. INJECT HEADER (Ensured by ID='main-card')
     if(typeof injectHeader === 'function') {
-        const container = document.getElementById('header-mount');
         injectHeader("Mission Control");
+    } else {
+        console.warn("Core script missing or outdated.");
     }
+
     runPulseCheck();
     fetchOperationalStats();
 };
@@ -240,9 +244,9 @@ async function fetchOperationalStats() {
         const today = new Date().toDateString();
         const todaysLogs = rows.filter(r => new Date(r).toDateString() === today);
 
-        const estimates = todaysLogs.filter(r => r === 'view_module').length;
-        const orders = todaysLogs.filter(r => r === 'PRINT_ORDER' || r === 'CHECKOUT').length;
-        const uniqueUsers = new Set(todaysLogs.map(r => r)).size;
+        const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
+        const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
+        const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
 
         document.getElementById('stat-estimates').innerText = estimates;
         document.getElementById('stat-orders').innerText = orders;
@@ -256,7 +260,7 @@ async function fetchOperationalStats() {
     }
 }
 
-// --- RESTORED: NOTEBOOKLM BRIDGE LOGIC ---
+// --- NOTEBOOKLM BRIDGE LOGIC ---
 async function triggerContextSync() {
     const btn = document.getElementById('btn-sync');
     const icon = document.getElementById('icon-sync');
