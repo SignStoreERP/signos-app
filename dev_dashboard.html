@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control | SignOS Admin</title>
+    <title>Mission Control v2.6.3 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -212,20 +212,33 @@ async function runPulseCheck() {
     }
 
     // 2. PING CHECK (REMOVED NO-CORS to enable response reading)
-    const start = Date.now();
-    try {
-        if(typeof SCRIPT_URL === 'undefined') throw new Error("Core Missing");
-        await fetch(`${SCRIPT_URL}?req=ping`); // No more 'no-cors'
-        const ms = Date.now() - start;
-        pingEl.innerText = ms;
-        if(ms > 2000) pingEl.classList.add('text-red-500');
-    } catch(e) {
-        // Even with error, calculating time gives a rough idea, 
-        // but 'OFF' suggests it failed completely.
-        const ms = Date.now() - start;
-        pingEl.innerText = ms > 0 ? ms : "OFF";
-        pingEl.classList.add('text-red-500');
-    }
+const start = Date.now();
+const banner = document.getElementById('connection-banner');
+
+try {
+  // Removed 'no-cors' so we can actually read the response
+  const response = await fetch(`${SCRIPT_URL}?req=ping`);
+  const text = await response.text();
+
+  if (text === "pong") {
+    const ms = Date.now() - start;
+    pingEl.innerText = ms;
+    if (ms > 2000) pingEl.classList.add('text-red-500');
+    
+    // Update banner to Connected
+    banner.innerText = "Securely Connected";
+    banner.className = "bg-emerald-500 text-white text-center py-1 text-xs font-bold tracking-widest uppercase shadow-inner transition-colors duration-300";
+  } else {
+    throw new Error("Invalid backend response");
+  }
+} catch(e) {
+  pingEl.innerText = "OFF";
+  pingEl.classList.add('text-red-500');
+  
+  // Update banner to Failed
+  banner.innerText = "Connection Failed";
+  banner.className = "bg-red-500 text-white text-center py-1 text-xs font-bold tracking-widest uppercase shadow-inner transition-colors duration-300";
+}
 
     // 3. BUG CHECK
     try {
