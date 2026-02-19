@@ -1,33 +1,33 @@
-// retail_acm.js - Market Pricing Engine (ACM Signs)
+// retail_acm.js - Market Pricing Engine (ACM Signs - Strictly Backend Driven)
 function calculateRetail(inputs, data) {
-    // 1. Determine Base Curve Rates
-    const getCurve = (sqft, thick) => {
-        // FIXED: The variable here must match the parameter 'thick'
-        if (thick === "3mm") {
-            if (sqft < 3) return { rate: 24.00, min: 25.00 };
-            if (sqft < 6) return { rate: 18.00, min: 0 };
-            if (sqft < 12) return { rate: 16.00, min: 0 };
-            if (sqft < 32) return { rate: 15.00, min: 0 };
-            return { rate: 14.00, min: 0 };
-        } else {
-            if (sqft < 3) return { rate: 35.33, min: 26.50 };
-            if (sqft < 6) return { rate: 20.50, min: 0 };
-            if (sqft < 12) return { rate: 18.50, min: 0 };
-            if (sqft < 32) return { rate: 17.50, min: 0 };
-            return { rate: 16.50, min: 0 };
-        }
-    };
-
     const sqft = (inputs.w * inputs.h) / 144;
-    const curve = getCurve(sqft, inputs.thickness);
+    const prefix = inputs.thickness === "3mm" ? "ACM3" : "ACM6";
+    
+    // 1. Dynamic Curve Logic (Reads directly from Backend)
+    let curveRate = 0;
+    let curveMin = 0;
+    let tierIndex = 1;
+
+    // Loop through the tiers from the sheet until we find the appropriate SqFt bracket
+    while(data[`${prefix}_T${tierIndex}_Max`]) {
+        const maxSqft = parseFloat(data[`${prefix}_T${tierIndex}_Max`]);
+        if (sqft <= maxSqft) {
+            curveRate = parseFloat(data[`${prefix}_T${tierIndex}_Rate`]);
+            curveMin = parseFloat(data[`${prefix}_T${tierIndex}_Min`] || 0);
+            break; // We found the correct tier, stop searching
+        }
+        tierIndex++;
+    }
     
     // 2. Base Product Calculation
-    let unitBase = Math.max(sqft * curve.rate, curve.min);
+    let unitBase = Math.max(sqft * curveRate, curveMin);
 
-    // 3. Material & Print Multipliers
-    if (inputs.sides === 2) unitBase *= (1 + parseFloat(data.Retail_Adder_DS_Mult || 0.5));
+    // 3. Material Multipliers (From Backend)
+    if (inputs.sides === 2) {
+        unitBase *= (1 + parseFloat(data.Retail_Adder_DS_Mult || 0.5));
+    }
     
-    // FIXED: Black ACM only doubles the price if it is 6mm
+    // Black ACM strictly doubles the price only if it is 6mm
     if (inputs.color === 'Black' && inputs.thickness === '6mm') {
         unitBase *= parseFloat(data.Retail_Adder_Black_Mult || 2.0);
     }
@@ -51,7 +51,7 @@ function calculateRetail(inputs, data) {
     const appliedUnit = unitBase * (1 - discPct);
     const printTotal = appliedUnit * inputs.qty;
 
-    // 5. Flat Fees (Router)
+    // 5. Flat Fees (Router logic pulled from Blue Sheet via Backend)
     let routerFee = 0;
     if (inputs.shape === 'Easy') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30.00);
     if (inputs.shape === 'Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50.00);
