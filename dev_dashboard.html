@@ -3,92 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.6.3 | SignOS Admin</title>
+    <title>Mission Control v3.0 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- CORE SYSTEM: Provides SCRIPT_URL, ClientIP, and Auth Logic -->
     <script src="signos-core.js"></script>
+
     <style>
         .dash-card { transition: all 0.2s ease-in-out; }
         .dash-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .pulse-dot { animation: pulse-ring 2s infinite; }
-        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- HEADER TARGET -->
+    <!-- 1. HEADER INJECTION TARGET (Island Mode) -->
     <div id="main-card"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <!-- 1. LIVE SYSTEM PULSE -->
+        <!-- 2. SYSTEM HEALTH DECK -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <!-- Latency Monitor -->
-            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-emerald-500 flex items-center justify-between">
+            
+            <!-- LATENCY (PING) -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">System Latency</p>
                     <h3 class="text-2xl font-black text-gray-800 flex items-center gap-2">
                         <span id="stat-ping">...</span> <span class="text-xs font-medium text-gray-400">ms</span>
                     </h3>
                 </div>
-                <div class="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center pulse-dot">
-                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <div id="ping-dot" class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
             </div>
 
-            <!-- Pending Bugs -->
-            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-red-500 flex items-center justify-between">
-                <div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pending Bugs</p>
-                    <h3 class="text-2xl font-black text-gray-800" id="stat-bugs">--</h3>
-                </div>
-                <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-            </div>
-
-            <!-- Deployment Sync -->
-            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
+            <!-- ENVIRONMENT -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-purple-500 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Environment</p>
-                    <h3 class="text-xl font-black text-gray-800 flex items-center gap-2" id="stat-env">SYNCING</h3>
+                    <h3 class="text-xl font-black text-gray-800" id="stat-env">DETECTING...</h3>
                 </div>
-                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                <div class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                 </div>
+            </div>
+
+            <!-- STATUS -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-gray-300 flex items-center justify-between" id="status-card">
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">API Connection</p>
+                    <h3 class="text-xl font-black text-gray-400" id="api-status">CONNECTING</h3>
+                </div>
+                <div id="status-dot" class="h-3 w-3 rounded-full bg-yellow-400 animate-pulse"></div>
             </div>
         </div>
 
-        <!-- 2. ECONOMICS DECK -->
-        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-green-500"></span> Financial Physics
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Cost Matrix -->
-            <a href="admin_cost_matrix.html" class="dash-card bg-white rounded-xl p-6 border border-gray-200 group">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="p-3 bg-red-50 rounded-lg text-red-600 group-hover:bg-red-600 group-hover:text-white transition">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                    <span class="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded">DATABASE</span>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900">Cost Matrix Engine</h3>
-                <p class="text-sm text-gray-500 mt-1">Toggle raw material costs, update hourly rates, and manage global markups.</p>
-            </a>
-
-            <!-- Simulator -->
-            <a href="admin_simulator.html" class="dash-card bg-white rounded-xl p-6 border border-gray-200 group">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="p-3 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    </div>
-                    <span class="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded">SIMULATION</span>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900">Pricing Simulator</h3>
-                <p class="text-sm text-gray-500 mt-1">Run "What-If" scenarios on retail curves and visualize profit margins in real-time.</p>
-            </a>
-        </div>
-
-        <!-- 3. OPERATIONS DECK (LIVE STATS) -->
+        <!-- 3. LIVE OPERATIONS (TODAY) -->
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-blue-500"></span> Live Operations (24h)
         </h2>
@@ -100,7 +72,6 @@
                     <span class="text-xl">🧮</span>
                 </div>
                 <h3 class="text-3xl font-black text-gray-800 mt-2" id="stat-estimates">--</h3>
-                <p class="text-[10px] text-gray-400 mt-1">Calculators loaded today</p>
             </div>
 
             <!-- Orders -->
@@ -110,7 +81,6 @@
                     <span class="text-xl">🛒</span>
                 </div>
                 <h3 class="text-3xl font-black text-gray-800 mt-2" id="stat-orders">--</h3>
-                <p class="text-[10px] text-gray-400 mt-1">"Print Work Order" clicks</p>
             </div>
 
             <!-- Active Staff -->
@@ -120,13 +90,12 @@
                     <span class="text-xl">👥</span>
                 </div>
                 <h3 class="text-3xl font-black text-gray-800 mt-2" id="stat-users">--</h3>
-                <p class="text-[10px] text-gray-400 mt-1">Unique logins today</p>
             </div>
         </div>
 
-        <!-- 4. DEV & OPS DECK -->
+        <!-- 4. ADMIN TOOLKIT -->
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-purple-500"></span> Development & Ops
+            <span class="w-2 h-2 rounded-full bg-purple-500"></span> Administration
         </h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <!-- Roadmap -->
@@ -136,18 +105,11 @@
                 <div class="text-[10px] text-gray-400">Manage Features & Bugs</div>
             </a>
 
-            <!-- GITHUB LINK -->
-            <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-400 group">
-                <div class="text-purple-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🐙</div>
-                <div class="font-bold text-gray-800 text-sm">GitHub Repo</div>
-                <div class="text-[10px] text-gray-400">View Source Code</div>
-            </a>
-
-            <!-- Changelog -->
-            <a href="admin_changelog.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-pink-400 group">
-                <div class="text-pink-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">📜</div>
-                <div class="font-bold text-gray-800 text-sm">System History</div>
-                <div class="text-[10px] text-gray-400">View Commit Logs</div>
+            <!-- Cost Matrix -->
+            <a href="admin_cost_matrix.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-red-400 group">
+                <div class="text-red-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🧱</div>
+                <div class="font-bold text-gray-800 text-sm">Cost Matrix</div>
+                <div class="text-[10px] text-gray-400">Edit Backend Pricing</div>
             </a>
 
             <!-- Logs -->
@@ -156,9 +118,16 @@
                 <div class="font-bold text-gray-800 text-sm">Access Logs</div>
                 <div class="text-[10px] text-gray-400">Security & Telemetry</div>
             </a>
+
+            <!-- Changelog -->
+            <a href="admin_changelog.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-pink-400 group">
+                <div class="text-pink-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">📜</div>
+                <div class="font-bold text-gray-800 text-sm">System History</div>
+                <div class="text-[10px] text-gray-400">View Commit Logs</div>
+            </a>
         </div>
 
-        <!-- 5. MAINTENANCE DECK -->
+        <!-- 5. MAINTENANCE & AI -->
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-red-500"></span> Maintenance
         </h2>
@@ -188,115 +157,107 @@
 
 <script>
 window.onload = function() {
+    // 1. HEADER INJECTION (Standard)
     if(typeof injectHeader === 'function') {
         injectHeader("Mission Control");
     } else {
-        console.warn("Core script missing or outdated.");
+        console.error("Critical: signos-core.js not loaded.");
+        document.getElementById('api-status').innerText = "CORE MISSING";
+        return;
     }
 
-    // Run Asynchronously so one failure doesn't block the other
-    setTimeout(runPulseCheck, 100);
-    setTimeout(fetchOperationalStats, 500);
+    // 2. RUN CHECKS
+    determineEnvironment();
+    checkConnection();
+    fetchStats();
 };
 
-async function runPulseCheck() {
-    const pingEl = document.getElementById('stat-ping');
-    const bugEl = document.getElementById('stat-bugs');
-    const envEl = document.getElementById('stat-env');
-
-    // 1. ENV Check
+// --- A. ENVIRONMENT CHECK ---
+function determineEnvironment() {
+    const el = document.getElementById('stat-env');
+    // IS_DEV_ENV is defined in signos-core.js
     if(typeof IS_DEV_ENV !== 'undefined') {
-        envEl.innerHTML = IS_DEV_ENV ? 
+        el.innerHTML = IS_DEV_ENV ? 
             `<span class="text-orange-500">DEV / BETA</span>` : 
             `<span class="text-green-600">LIVE / PROD</span>`;
+    } else {
+        el.innerText = "UNKNOWN";
     }
-
-    // 2. PING CHECK (REMOVED NO-CORS to enable response reading)
-const start = Date.now();
-const banner = document.getElementById('connection-banner');
-
-try {
-  // Removed 'no-cors' so we can actually read the response
-  const response = await fetch(`${SCRIPT_URL}?req=ping`);
-  const text = await response.text();
-
-  if (text === "pong") {
-    const ms = Date.now() - start;
-    pingEl.innerText = ms;
-    if (ms > 2000) pingEl.classList.add('text-red-500');
-    
-    // Update banner to Connected
-    banner.innerText = "Securely Connected";
-    banner.className = "bg-emerald-500 text-white text-center py-1 text-xs font-bold tracking-widest uppercase shadow-inner transition-colors duration-300";
-  } else {
-    throw new Error("Invalid backend response");
-  }
-} catch(e) {
-  pingEl.innerText = "OFF";
-  pingEl.classList.add('text-red-500');
-  
-  // Update banner to Failed
-  banner.innerText = "Connection Failed";
-  banner.className = "bg-red-500 text-white text-center py-1 text-xs font-bold tracking-widest uppercase shadow-inner transition-colors duration-300";
 }
 
-    // 3. BUG CHECK
+// --- B. CONNECTION PING ---
+async function checkConnection() {
+    const pingEl = document.getElementById('stat-ping');
+    const statusEl = document.getElementById('api-status');
+    const dotEl = document.getElementById('status-dot');
+    const cardEl = document.getElementById('status-card');
+
+    const start = Date.now();
     try {
-        const u = sessionStorage.getItem('signos_user') || 'Admin';
-        const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&user=${u}&role=ADMIN`);
-        const data = await res.json();
+        // Simple Ping Request
+        await fetch(`${SCRIPT_URL}?req=ping`);
         
-        if (data.error) throw new Error(data.error);
+        const ms = Date.now() - start;
+        pingEl.innerText = ms;
         
-        const bugs = data.filter(r => r.Category === 'Bug' && r.Status !== 'Live').length;
-        bugEl.innerText = bugs;
-        if(bugs > 0) bugEl.classList.add('text-red-600');
+        // Success State
+        statusEl.innerText = "ONLINE";
+        statusEl.className = "text-xl font-black text-green-600";
+        dotEl.className = "h-3 w-3 rounded-full bg-green-500 pulse-dot";
+        cardEl.classList.replace("border-gray-300", "border-green-500");
+
     } catch(e) {
-        bugEl.innerText = "0"; 
-        console.warn("Bug fetch failed:", e);
+        // Error State
+        pingEl.innerText = "ERR";
+        statusEl.innerText = "OFFLINE";
+        statusEl.className = "text-xl font-black text-red-600";
+        dotEl.className = "h-3 w-3 rounded-full bg-red-500";
+        cardEl.classList.replace("border-gray-300", "border-red-500");
     }
 }
 
-async function fetchOperationalStats() {
+// --- C. STATS FETCH (Fixed Logic) ---
+async function fetchStats() {
     try {
-        if(typeof SCRIPT_URL === 'undefined') throw new Error("Core Library Missing");
-
         const u = sessionStorage.getItem('signos_user') || 'Admin';
         
+        // Request Live Logs (Authenticated)
         const response = await fetch(`${SCRIPT_URL}?req=get_live_logs&user=${u}&role=ADMIN`);
         const json = await response.json();
         
-        if (json.status !== "success" || !json.logs) throw new Error("No logs");
+        if (json.status !== "success" || !json.logs) throw new Error("No data");
 
-        const rows = json.logs.slice(1);
+        // Parse: [Timestamp, IP, User, Role, Action, Target, Meta]
+        const rows = json.logs.slice(1); // Skip Header
         const today = new Date().toDateString();
         
-        // --- LOGIC FIX: Access Index 0 for the Date ---
+        // Filter for TODAY using Column 0 (Timestamp)
         const todaysLogs = rows.filter(r => r && r && new Date(r).toDateString() === today);
 
-        // 1. Calculate Estimates (Action = view_module at index 4)
+        // 1. Estimates (Action = view_module)
+        // Note: Column index 4 is 'Action'
         const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
         
-        // 2. Calculate Orders (Action = PRINT_ORDER or CHECKOUT at index 4)
+        // 2. Orders (Action = PRINT_ORDER or CHECKOUT)
         const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
         
-        // 3. Calculate Active Staff (Unique Usernames in Index 2)
+        // 3. Unique Staff (User = Column 2)
         const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
 
+        // Update UI
         document.getElementById('stat-estimates').innerText = estimates;
         document.getElementById('stat-orders').innerText = orders;
         document.getElementById('stat-users').innerText = uniqueUsers;
 
     } catch (e) {
-        console.error("Stats Error:", e);
-        document.getElementById('stat-estimates').innerText = "ERR";
-        document.getElementById('stat-estimates').classList.add('text-red-500');
+        console.warn("Stats Failed:", e);
+        document.getElementById('stat-estimates').innerText = "0";
         document.getElementById('stat-orders').innerText = "0";
         document.getElementById('stat-users').innerText = "-";
     }
 }
 
-// --- NOTEBOOKLM BRIDGE LOGIC ---
+// --- D. AI BRIDGE (Manual Trigger) ---
 async function triggerContextSync() {
     const btn = document.getElementById('btn-sync');
     const icon = document.getElementById('icon-sync');
@@ -305,7 +266,7 @@ async function triggerContextSync() {
     btn.disabled = true;
     btn.classList.add('bg-blue-50');
     icon.innerHTML = `<div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>`;
-    lbl.innerText = "GENERATING...";
+    lbl.innerText = "SYNCING...";
 
     try {
         const res = await fetch(`${SCRIPT_URL}?req=sync_codebase`);
@@ -313,24 +274,22 @@ async function triggerContextSync() {
 
         if (data.status === 'success') {
             icon.innerHTML = "✅";
-            lbl.innerText = "OPENING DOC...";
-            
+            lbl.innerText = "DONE";
             setTimeout(() => {
-                window.open(data.url, '_blank');
+                window.open(data.url, '_blank'); // Open the txt file
                 setTimeout(() => {
                     icon.innerHTML = "🧠";
                     lbl.innerText = "Sync AI Context";
                     btn.disabled = false;
                     btn.classList.remove('bg-blue-50');
-                }, 1500);
+                }, 1000);
             }, 500);
         } else {
             throw new Error("API Failed");
         }
     } catch (e) {
-        console.error(e);
         icon.innerHTML = "❌";
-        lbl.innerText = "FAILED";
+        lbl.innerText = "ERROR";
         setTimeout(() => {
             icon.innerHTML = "🧠";
             lbl.innerText = "Retry Sync";
