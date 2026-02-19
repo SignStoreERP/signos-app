@@ -14,7 +14,7 @@ function calculateRetail(inputs, data) {
         if (sqft <= maxSqft) {
             curveRate = parseFloat(data[`${prefix}_T${tierIndex}_Rate`]);
             curveMin = parseFloat(data[`${prefix}_T${tierIndex}_Min`] || 0);
-            break; // We found the correct tier, stop searching
+            break; 
         }
         tierIndex++;
     }
@@ -27,19 +27,19 @@ function calculateRetail(inputs, data) {
         unitBase *= (1 + parseFloat(data.Retail_Adder_DS_Mult || 0.5));
     }
     
-    // Black ACM strictly doubles the price only if it is 6mm
     if (inputs.color === 'Black' && inputs.thickness === '6mm') {
         unitBase *= parseFloat(data.Retail_Adder_Black_Mult || 2.0);
     }
 
-    // 4. Volume Discounts (From Matrix)
+    // 4. Volume Discounts (Localized to Product Tab)
     let discPct = 0;
     let i = 1;
     const tierLog = [];
 
-    while(data[`Disc_T${i}_Qty`]) {
-        const tQty = parseFloat(data[`Disc_T${i}_Qty`]);
-        const tPct = parseFloat(data[`Disc_T${i}_Pct`] || 0);
+    // FIXED: Now correctly scans for "Tier_X_Qty" and "Tier_X_Disc"
+    while(data[`Tier_${i}_Qty`]) {
+        const tQty = parseFloat(data[`Tier_${i}_Qty`]);
+        const tPct = parseFloat(data[`Tier_${i}_Disc`] || 0);
         
         if (inputs.qty >= tQty) discPct = tPct;
         
@@ -51,7 +51,7 @@ function calculateRetail(inputs, data) {
     const appliedUnit = unitBase * (1 - discPct);
     const printTotal = appliedUnit * inputs.qty;
 
-    // 5. Flat Fees (Router logic pulled from Blue Sheet via Backend)
+    // 5. Flat Fees
     let routerFee = 0;
     if (inputs.shape === 'Easy') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30.00);
     if (inputs.shape === 'Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50.00);
