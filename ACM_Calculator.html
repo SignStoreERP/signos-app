@@ -307,9 +307,8 @@
 
             try {
                 if (typeof calculateACM === 'undefined') throw new Error("Logic File Missing");
-                
-                const fetchPromise = fetch(`${SCRIPT_URL}?tab=PROD_ACM_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
-                const res = await Promise.race([fetchPromise, timeout]);
+
+                const res = await fetch(`${SCRIPT_URL}?tab=PROD_ACM_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
                 const data = await res.json();
                 if(data.error) throw new Error(data.error);
                 backendData = data;
