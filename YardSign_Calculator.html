@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yard Signs Dual-Track v1.5</title>
+<title>Yard Sign Calculator v23.0</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -102,7 +102,7 @@ window.onload = async function() {
     const verDisplay = document.getElementById("version-display");
 
     try {
-        const res = await fetch(`${SCRIPT_URL}?tab=PROD_Yard_ERP&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+        const res = await fetch(`${SCRIPT_URL}?tab=PROD_Yard_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
         const data = await res.json();
 
         if(data.error) throw new Error(data.error);
