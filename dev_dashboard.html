@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.6.2 | SignOS Admin</title>
+    <title>Mission Control | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -50,7 +50,7 @@
             <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Environment</p>
-                    <h3 class="text-xl font-black text-gray-800 flex items-center gap-2" id="stat-env">CHECKING</h3>
+                    <h3 class="text-xl font-black text-gray-800 flex items-center gap-2" id="stat-env">SYNCING</h3>
                 </div>
                 <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                     <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
@@ -211,15 +211,17 @@ async function runPulseCheck() {
             `<span class="text-green-600">LIVE / PROD</span>`;
     }
 
-    // 2. PING CHECK (NotebookLM's fix: removed 'no-cors' for accurate latency)
+    // 2. PING CHECK (REMOVED NO-CORS to enable response reading)
     const start = Date.now();
     try {
         if(typeof SCRIPT_URL === 'undefined') throw new Error("Core Missing");
-        await fetch(`${SCRIPT_URL}?req=ping`); 
+        await fetch(`${SCRIPT_URL}?req=ping`); // No more 'no-cors'
         const ms = Date.now() - start;
         pingEl.innerText = ms;
         if(ms > 2000) pingEl.classList.add('text-red-500');
     } catch(e) {
+        // Even with error, calculating time gives a rough idea, 
+        // but 'OFF' suggests it failed completely.
         const ms = Date.now() - start;
         pingEl.innerText = ms > 0 ? ms : "OFF";
         pingEl.classList.add('text-red-500');
@@ -256,17 +258,16 @@ async function fetchOperationalStats() {
         const rows = json.logs.slice(1);
         const today = new Date().toDateString();
         
-        // --- THE REAL LOGIC FIXES ---
-        // Array Structure: [Time (0), IP (1), User (2), Role (3), Action (4), Target (5), Meta (6)]
-        
-        // Target r[0] for the Date
-        const todaysLogs = rows.filter(r => r && r[0] && new Date(r[0]).toDateString() === today);
+        // --- LOGIC FIX: Access Index 0 for the Date ---
+        const todaysLogs = rows.filter(r => r && r && new Date(r).toDateString() === today);
 
-        // Target r[4] for Actions
-        const estimates = todaysLogs.filter(r => r[4] === 'view_module').length;
-        const orders = todaysLogs.filter(r => r[4] === 'PRINT_ORDER' || r[4] === 'CHECKOUT').length;
+        // 1. Calculate Estimates (Action = view_module at index 4)
+        const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
         
-        // Target r[2] for Active Staff
+        // 2. Calculate Orders (Action = PRINT_ORDER or CHECKOUT at index 4)
+        const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
+        
+        // 3. Calculate Active Staff (Unique Usernames in Index 2)
         const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
 
         document.getElementById('stat-estimates').innerText = estimates;
