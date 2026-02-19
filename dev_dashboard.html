@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.4 | SignOS Admin</title>
+    <title>Mission Control v2.5 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -257,13 +257,13 @@ async function fetchOperationalStats() {
         const todaysLogs = rows.filter(r => r && new Date(r).toDateString() === today);
 
         // 1. Calculate Estimates (Action = view_module)
-        const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
+        const estimates = todaysLogs.filter(r => r === 'view_module').length;
         
         // 2. Calculate Orders (Action = PRINT_ORDER or CHECKOUT)
-        const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
+        const orders = todaysLogs.filter(r => r === 'PRINT_ORDER' || r === 'CHECKOUT').length;
         
         // 3. Calculate Active Staff (Unique Usernames in Index 2)
-        const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
+        const uniqueUsers = new Set(todaysLogs.map(r => r)).size;
 
         document.getElementById('stat-estimates').innerText = estimates;
         document.getElementById('stat-orders').innerText = orders;
