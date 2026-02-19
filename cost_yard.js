@@ -12,8 +12,8 @@ function calculateCost(inputs, data) {
     const areaSqFt = (24 * 18) / 144;
     const totalArea = areaSqFt * inputs.sides * inputs.qty;
     
-    // Matrix Variable: Cost_Ink_UV
-    const totalInkCost = totalArea * parseFloat(data.Cost_Ink_UV || 0.16);
+    // Matrix Variable: Cost_Ink_Latex
+    const totalInkCost = totalArea * parseFloat(data.Cost_Ink_Latex || 0.16);
 
     const costStakeUnit = inputs.hasStakes ? parseFloat(data.Cost_Stake || 0.65) : 0;
     const totalStakeCost = costStakeUnit * inputs.qty;
