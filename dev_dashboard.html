@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.6 | SignOS Admin</title>
+    <title>Mission Control v2.6.1 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -205,15 +205,17 @@ async function runPulseCheck() {
     const bugEl = document.getElementById('stat-bugs');
     const envEl = document.getElementById('stat-env');
 
+    // 1. ENV Check
     if(typeof IS_DEV_ENV !== 'undefined') {
-        envEl.innerHTML = IS_DEV_ENV ? 
-            `<span class="text-orange-500">DEV / BETA</span>` : 
+        envEl.innerHTML = IS_DEV_ENV ?
+            `<span class="text-orange-500">DEV / BETA</span>` :
             `<span class="text-green-600">LIVE / PROD</span>`;
     }
 
-    // PING CHECK
+    // 2. PING CHECK (Uses SCRIPT_URL from core)
     const start = Date.now();
     try {
+        if(typeof SCRIPT_URL === 'undefined') throw new Error("Core Missing");
         await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
         const ms = Date.now() - start;
         pingEl.innerText = ms;
@@ -223,19 +225,24 @@ async function runPulseCheck() {
         pingEl.classList.add('text-red-500');
     }
 
-    // BUG COUNT CHECK
+    // 3. BUG CHECK
     try {
         const u = sessionStorage.getItem('signos_user') || 'Admin';
         const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&user=${u}&role=ADMIN`);
         const data = await res.json();
-        
+
         if (data.error) throw new Error(data.error);
-        
-        const bugs = data.filter(r => r.Category === 'Bug' && r.Status !== 'Live').length;
-        bugEl.innerText = bugs;
-        if(bugs > 0) bugEl.classList.add('text-red-600');
+
+        // Safely filter bugs
+        if (Array.isArray(data)) {
+            const bugs = data.filter(r => r.Category === 'Bug' && r.Status !== 'Live').length;
+            bugEl.innerText = bugs;
+            if(bugs > 0) bugEl.classList.add('text-red-600');
+        } else {
+            throw new Error("Invalid data structure");
+        }
     } catch(e) {
-        bugEl.innerText = "0"; 
+        bugEl.innerText = "0";
         console.warn("Bug fetch failed:", e);
     }
 }
@@ -246,28 +253,27 @@ async function fetchOperationalStats() {
         if(typeof SCRIPT_URL === 'undefined') throw new Error("Core Library Missing");
 
         const u = sessionStorage.getItem('signos_user') || 'Admin';
-        console.log("Fetching logs...");
-        
+
+        // This request is working, so SCRIPT_URL is correct.
         const response = await fetch(`${SCRIPT_URL}?req=get_live_logs&user=${u}&role=ADMIN`);
         const json = await response.json();
-        
+
         if (json.status !== "success" || !json.logs) throw new Error("No logs");
 
-        // The API returns an Array of Arrays [ [Time, IP, User...], [...] ]
         const rows = json.logs.slice(1);
         const today = new Date().toDateString();
+
+        // --- RESTORED FIXES ---
+        // Log Row Structure: [Timestamp (0), IP (1), User (2), Role (3), Action (4), Target (5), Meta (6)]
         
-        // DEBUG: Print one row to console to verify structure
-        if(rows.length > 0) console.log("Sample Log Row:", rows[rows.length-1]);
+        // Target r[0] for the Date
+        const todaysLogs = rows.filter(r => r && r[0] && new Date(r[0]).toDateString() === today);
 
-        // LOGIC FIX 1: Explicitly target r[0] for the Timestamp
-        const todaysLogs = rows.filter(r => r && new Date(r[0]).toDateString() === today);
-
-        // LOGIC FIX 2: Target r[4] for 'Action', not r[1] (IP Address)
+        // Target r[4] for Action
         const estimates = todaysLogs.filter(r => r[4] === 'view_module').length;
         const orders = todaysLogs.filter(r => r[4] === 'PRINT_ORDER' || r[4] === 'CHECKOUT').length;
-        
-        // Active Staff (User is correctly at r[2])
+
+        // Target r[2] for User to get Unique Staff
         const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
 
         document.getElementById('stat-estimates').innerText = estimates;
@@ -276,14 +282,10 @@ async function fetchOperationalStats() {
 
     } catch (e) {
         console.error("Stats Error:", e);
-        document.getElementById('stat-estimates').innerText = "0"; 
+        document.getElementById('stat-estimates').innerText = "ERR";
+        document.getElementById('stat-estimates').classList.add('text-red-500');
         document.getElementById('stat-orders').innerText = "0";
         document.getElementById('stat-users').innerText = "-";
-        
-        if(e.message.includes("Core")) {
-             document.getElementById('stat-estimates').innerText = "ERR";
-             document.getElementById('stat-estimates').classList.add('text-red-500');
-        }
     }
 }
 
@@ -305,9 +307,10 @@ async function triggerContextSync() {
         if (data.status === 'success') {
             icon.innerHTML = "✅";
             lbl.innerText = "OPENING DOC...";
-            
+
             setTimeout(() => {
                 window.open(data.url, '_blank');
+                // Reset
                 setTimeout(() => {
                     icon.innerHTML = "🧠";
                     lbl.innerText = "Sync AI Context";
