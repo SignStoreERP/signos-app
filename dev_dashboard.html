@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.1 | SignOS Admin</title>
+    <title>Mission Control v 2.2 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -79,7 +79,7 @@
             <a href="admin_simulator.html" class="dash-card bg-white rounded-xl p-6 border border-gray-200 group">
                 <div class="flex items-start justify-between mb-4">
                     <div class="p-3 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2 2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     </div>
                     <span class="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded">SIMULATION</span>
                 </div>
@@ -158,7 +158,7 @@
             </a>
         </div>
 
-        <!-- 5. MAINTENANCE DECK -->
+        <!-- 5. MAINTENANCE DECK (RESTORED CONTEXT BUTTON) -->
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-red-500"></span> Maintenance
         </h2>
@@ -167,6 +167,13 @@
                 <div class="text-2xl mb-1 group-hover:-translate-y-1 transition">💾</div>
                 <div class="font-bold text-xs text-gray-700">Data Backup</div>
             </a>
+            
+            <!-- RESTORED: AI CONTEXT BRIDGE -->
+            <button onclick="triggerContextSync()" id="btn-sync" class="flex-1 p-4 hover:bg-gray-50 transition text-center group">
+                <div id="icon-sync" class="text-2xl mb-1 group-hover:-translate-y-1 transition">🧠</div>
+                <div id="lbl-sync" class="font-bold text-xs text-gray-700">Sync AI Context</div>
+            </button>
+
             <a href="docs.html" class="flex-1 p-4 hover:bg-gray-50 transition text-center group">
                 <div class="text-2xl mb-1 group-hover:-translate-y-1 transition">📘</div>
                 <div class="font-bold text-xs text-gray-700">Documentation</div>
@@ -181,13 +188,10 @@
 
 <script>
 window.onload = function() {
-    // 1. Inject Header via Core
     if(typeof injectHeader === 'function') {
         const container = document.getElementById('header-mount');
         injectHeader("Mission Control");
     }
-
-    // 2. Run Telemetry
     runPulseCheck();
     fetchOperationalStats();
 };
@@ -197,14 +201,12 @@ async function runPulseCheck() {
     const bugEl = document.getElementById('stat-bugs');
     const envEl = document.getElementById('stat-env');
 
-    // A. Env Check
     if(typeof IS_DEV_ENV !== 'undefined') {
         envEl.innerHTML = IS_DEV_ENV ? 
             `<span class="text-orange-500">DEV / BETA</span>` : 
             `<span class="text-green-600">LIVE / PROD</span>`;
     }
 
-    // B. Latency Check
     const start = Date.now();
     try {
         await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
@@ -215,13 +217,10 @@ async function runPulseCheck() {
         pingEl.innerText = "ERR";
     }
 
-    // C. Bug Count (Fetch Roadmap Data)
     try {
         const u = sessionStorage.getItem('signos_user') || 'Admin';
         const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&user=${u}`);
         const data = await res.json();
-        
-        // Count items where Category=Bug AND Status!=Live
         const bugs = data.filter(r => r.Category === 'Bug' && r.Status !== 'Live').length;
         bugEl.innerText = bugs;
         if(bugs > 0) bugEl.classList.add('text-red-600');
@@ -232,30 +231,19 @@ async function runPulseCheck() {
 
 async function fetchOperationalStats() {
     try {
-        // Fetch Live Logs (Last 24h)
         const response = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
         const json = await response.json();
         
         if (json.status !== "success" || !json.logs) throw new Error("No logs");
 
-        // Parse Logs (Skip Header Row)
         const rows = json.logs.slice(1);
-        
-        // Filter for "Today" only
         const today = new Date().toDateString();
-        // Log Row Structure: [Timestamp, IP, User, Role, Action, Target, Meta]
         const todaysLogs = rows.filter(r => new Date(r).toDateString() === today);
 
-        // 1. Calculate Estimates (Action = view_module)
-        const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
-        
-        // 2. Calculate Orders (Action = PRINT_ORDER or CHECKOUT)
-        const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
-        
-        // 3. Calculate Active Staff (Unique Usernames in Index 2)
-        const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
+        const estimates = todaysLogs.filter(r => r === 'view_module').length;
+        const orders = todaysLogs.filter(r => r === 'PRINT_ORDER' || r === 'CHECKOUT').length;
+        const uniqueUsers = new Set(todaysLogs.map(r => r)).size;
 
-        // Update UI
         document.getElementById('stat-estimates').innerText = estimates;
         document.getElementById('stat-orders').innerText = orders;
         document.getElementById('stat-users').innerText = uniqueUsers;
@@ -265,6 +253,51 @@ async function fetchOperationalStats() {
         document.getElementById('stat-estimates').innerText = "0";
         document.getElementById('stat-orders').innerText = "0";
         document.getElementById('stat-users').innerText = "-";
+    }
+}
+
+// --- RESTORED: NOTEBOOKLM BRIDGE LOGIC ---
+async function triggerContextSync() {
+    const btn = document.getElementById('btn-sync');
+    const icon = document.getElementById('icon-sync');
+    const lbl = document.getElementById('lbl-sync');
+
+    btn.disabled = true;
+    btn.classList.add('bg-blue-50');
+    icon.innerHTML = `<div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>`;
+    lbl.innerText = "GENERATING...";
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?req=sync_codebase`);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            icon.innerHTML = "✅";
+            lbl.innerText = "OPENING DOC...";
+            
+            setTimeout(() => {
+                window.open(data.url, '_blank');
+                // Reset
+                setTimeout(() => {
+                    icon.innerHTML = "🧠";
+                    lbl.innerText = "Sync AI Context";
+                    btn.disabled = false;
+                    btn.classList.remove('bg-blue-50');
+                }, 1500);
+            }, 500);
+        } else {
+            throw new Error("API Failed");
+        }
+    } catch (e) {
+        console.error(e);
+        icon.innerHTML = "❌";
+        lbl.innerText = "FAILED";
+        setTimeout(() => {
+            icon.innerHTML = "🧠";
+            lbl.innerText = "Retry Sync";
+            btn.disabled = false;
+            btn.classList.remove('bg-blue-50');
+        }, 2000);
     }
 }
 </script>
