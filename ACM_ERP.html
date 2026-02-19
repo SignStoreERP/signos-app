@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ACM Signs Dual-Track v1.1</title>
+<title>ACM Signs Dual-Track v1.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -138,7 +138,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v1.1)`;
+            verDisplay.innerText = `(v1.2)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -196,7 +196,21 @@ function runCalc() {
     
     document.getElementById('ui-min-text').innerText = `Shop Minimum: $${ret.minOrderValue}`;
     document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
-    document.getElementById('oversize-badge').classList.toggle('hidden', cost.bom.stock.id === "Oversized");
+
+    // Dynamic UI Oversize Warning
+    const maxW = parseFloat(backendData.Constraint_Max_W || 60);
+    const maxH = parseFloat(backendData.Constraint_Max_H || 120);
+    const isOversize = cost.bom.stock.id === "Oversized";
+    
+    const warnBanner = document.getElementById('oversize-badge');
+    if (isOversize) {
+        warnBanner.innerText = `⚠️ OVERSIZED: EXCEEDS ${maxW}" x ${maxH}"`;
+        warnBanner.classList.remove('hidden');
+        document.getElementById('ui-unit').innerText = "CUSTOM";
+        document.getElementById('ui-total').innerText = "CONTACT US";
+    } else {
+        warnBanner.classList.add('hidden');
+    }
 
     let rowsHtml = "";
     ret.tiers.forEach(tier => {
