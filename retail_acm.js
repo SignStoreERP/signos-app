@@ -1,8 +1,9 @@
 // retail_acm.js - Market Pricing Engine (ACM Signs)
 function calculateRetail(inputs, data) {
-    // 1. Determine Base Curve Rates (Hardcoded mirror of Master_Retail_Curves for speed)
+    // 1. Determine Base Curve Rates
     const getCurve = (sqft, thick) => {
-        if (thickness === "3mm") {
+        // FIXED: The variable here must match the parameter 'thick'
+        if (thick === "3mm") {
             if (sqft < 3) return { rate: 24.00, min: 25.00 };
             if (sqft < 6) return { rate: 18.00, min: 0 };
             if (sqft < 12) return { rate: 16.00, min: 0 };
@@ -25,7 +26,11 @@ function calculateRetail(inputs, data) {
 
     // 3. Material & Print Multipliers
     if (inputs.sides === 2) unitBase *= (1 + parseFloat(data.Retail_Adder_DS_Mult || 0.5));
-    if (inputs.color === 'Black') unitBase *= parseFloat(data.Retail_Adder_Black_Mult || 2.0);
+    
+    // FIXED: Black ACM only doubles the price if it is 6mm
+    if (inputs.color === 'Black' && inputs.thickness === '6mm') {
+        unitBase *= parseFloat(data.Retail_Adder_Black_Mult || 2.0);
+    }
 
     // 4. Volume Discounts (From Matrix)
     let discPct = 0;
