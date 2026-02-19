@@ -60,11 +60,19 @@ function calculateACM(inputs, data) {
 
     return {
         retail: {
-            grandTotal: retailTotal,
-            unitPrice: retailTotal / inputs.qty
+            unitPrice: totalUnit,
+            grandTotal: totalQuote,
+            isOversized: false,
+            breakdown: {
+                material: costMat,    // Add this
+                laminate: costLam,    // Add this
+                finish: costFinish    // Add this
+            },
+            fees: {
+                setup: feeSetup,
+                design: feeDesign
+            }
         },
-        cost: {
-            total: totalCost
-        }
-    };
+        // ... cost object
+};
 }
