@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.10)
- * Updated for Sandbox Cost Drivers
+ * PURE PHYSICS ENGINE: ACM Signs (v2.12)
+ * Updated for Sandbox Cost Drivers with Gemini Bug Fixes
  */
 
 function calculateACM(inputs, data) {
@@ -28,7 +28,9 @@ function calculateACM(inputs, data) {
 
     // --- COST ---
     const waste = parseFloat(data.Waste_Factor || 1.2);
-    const costMat = (sheetsNeeded * stockSheets.cost); 
+    
+    // FIX APPLIED: Added [0] index to pull the cost of the 4x8 sheet
+    const costMat = (sheetsNeeded * stockSheets[0].cost); 
     
     const costLam = (totalArea / 144) * parseFloat(data.Cost_Lam_SqFt || 0.36) * waste;
     
@@ -58,21 +60,24 @@ function calculateACM(inputs, data) {
 
     const totalCost = costMat + costLam + costRunMach + costRunOp + costCNC + costSetup;
 
+    // FIX APPLIED: Mapped return object values to the actual variables calculated above
     return {
         retail: {
-            unitPrice: totalUnit,
-            grandTotal: totalQuote,
+            unitPrice: unitPrice,
+            grandTotal: retailTotal,
             isOversized: false,
             breakdown: {
-                material: costMat,    // Add this
-                laminate: costLam,    // Add this
-                finish: costFinish    // Add this
+                material: costMat,    
+                laminate: costLam,    
+                finish: costCNC       
             },
             fees: {
-                setup: feeSetup,
-                design: feeDesign
+                setup: setupFee,
+                design: 0
             }
         },
-        // ... cost object
-};
+        cost: {
+            total: totalCost
+        }
+    };
 }
