@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yard Signs Dual-Track v1.3</title>
+<title>Yard Signs Dual-Track v1.4</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -18,9 +18,10 @@
 .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
 </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans">
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
-<div id="main-card" class="max-w-md mx-auto w-full bg-white shadow-2xl overflow-hidden min-h-screen sm:min-h-0 sm:my-10 sm:rounded-xl border border-gray-200">
+<!-- Main Card: Island Mode on ALL screens now -->
+<div id="main-card" class="max-w-md m-4 sm:mx-auto sm:my-10 bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200">
 
 <!-- PROFIT GUARD -->
 <div id="profit-warn" class="hidden bg-red-600 text-white text-center py-2 px-4 text-sm font-bold uppercase border-b-4 border-red-800 warn-pulse">
@@ -49,7 +50,10 @@
 
 <!-- DISCOUNT TABLE -->
 <div class="mb-4 text-right">
-<button onclick="document.getElementById('disc-table').classList.toggle('hidden')" class="text-[10px] font-bold text-blue-600 uppercase hover:underline">Show Volume Discounts ▼</button>
+<button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wide inline-flex items-center gap-1 ml-auto">
+  Show Volume Discounts
+  <svg id="disc-arrow" class="w-3 h-3 transition-transform duration-200 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+</button>
 <div id="disc-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
 <table class="w-full text-right">
 <thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200"><tr><th class="pr-4 pb-1">Qty</th><th class="pr-4 pb-1">Base Sign</th><th class="pb-1 text-blue-600">You Pay</th></tr></thead>
@@ -112,7 +116,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v1.3)`;
+            verDisplay.innerText = `(v1.4)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -126,6 +130,18 @@ window.onload = async function() {
         console.error(e);
     }
 };
+
+// UI Toggles
+function toggleDiscounts() {
+    const table = document.getElementById('disc-table');
+    const arrow = document.getElementById('disc-arrow');
+    table.classList.toggle('hidden');
+    if (table.classList.contains('hidden')) {
+        arrow.classList.add('rotate-90');
+    } else {
+        arrow.classList.remove('rotate-90');
+    }
+}
 
 function runCalc() {
     if(!backendData.Item_Name) return;
