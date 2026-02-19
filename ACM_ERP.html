@@ -3,28 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ACM Signs Dual-Track v1.0</title>
+<title>ACM Signs Dual-Track v1.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
 <!-- DUAL-TRACK LOGIC ENGINES -->
 <script src="retail_acm.js"></script>
 <script src="cost_acm.js"></script>
-
-<style>
-.warn-pulse { animation: pulse-red 2s infinite; }
-@keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
-</style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
 <!-- Main Card: Island Mode, Perfectly Centered -->
 <div id="main-card" class="max-w-md mx-auto my-4 sm:my-10 w-[calc(100%-2rem)] sm:w-full bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200">
-
-<!-- PROFIT GUARD -->
-<div id="profit-warn" class="hidden bg-red-600 text-white text-center py-2 px-4 text-sm font-bold uppercase border-b-4 border-red-800 warn-pulse">
-🛑 LOSS ALERT: PRICING BELOW COST
-</div>
 
 <!-- INPUTS -->
 <div class="p-6 space-y-4">
@@ -56,7 +46,7 @@
 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Color</label>
 <select id="color" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
 <option value="White">White</option>
-<option value="Black">Black (x2 Cost)</option>
+<option value="Black">Black (6mm = x2 Cost)</option>
 </select>
 </div>
 <div>
@@ -148,7 +138,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v1.0)`;
+            verDisplay.innerText = `(v1.1)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -191,12 +181,6 @@ function runCalc() {
     const ret = calculateRetail(inputs, backendData);
     const cost = calculateCost(inputs, backendData);
 
-    // PROFIT GUARD
-    const margin = ret.grandTotal - cost.financials.total;
-    const profitWarn = document.getElementById('profit-warn');
-    if (margin < 0) profitWarn.classList.remove('hidden');
-    else profitWarn.classList.add('hidden');
-
     const fmt = (n) => "$" + n.toFixed(2);
 
     document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
@@ -212,7 +196,7 @@ function runCalc() {
     
     document.getElementById('ui-min-text').innerText = `Shop Minimum: $${ret.minOrderValue}`;
     document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
-    document.getElementById('oversize-badge').classList.toggle('hidden', cost.bom.stock.id !== "Oversized");
+    document.getElementById('oversize-badge').classList.toggle('hidden', cost.bom.stock.id === "Oversized");
 
     let rowsHtml = "";
     ret.tiers.forEach(tier => {
