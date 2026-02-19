@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.5 | SignOS Admin</title>
+    <title>Mission Control v2.6 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -226,7 +226,6 @@ async function runPulseCheck() {
     // BUG COUNT CHECK
     try {
         const u = sessionStorage.getItem('signos_user') || 'Admin';
-        // Add user/role to ensure API allows the read
         const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&user=${u}&role=ADMIN`);
         const data = await res.json();
         
@@ -236,47 +235,55 @@ async function runPulseCheck() {
         bugEl.innerText = bugs;
         if(bugs > 0) bugEl.classList.add('text-red-600');
     } catch(e) {
-        bugEl.innerText = "0"; // Default to 0 if API fails
+        bugEl.innerText = "0"; 
         console.warn("Bug fetch failed:", e);
     }
 }
 
 async function fetchOperationalStats() {
     try {
-        // ADDED AUTH PARAMS TO URL
+        // USE CENTRAL URL from signos-core.js
+        if(typeof SCRIPT_URL === 'undefined') throw new Error("Core Library Missing");
+
         const u = sessionStorage.getItem('signos_user') || 'Admin';
+        console.log("Fetching logs...");
+        
         const response = await fetch(`${SCRIPT_URL}?req=get_live_logs&user=${u}&role=ADMIN`);
         const json = await response.json();
         
         if (json.status !== "success" || !json.logs) throw new Error("No logs");
 
+        // The API returns an Array of Arrays [ [Time, IP, User...], [...] ]
         const rows = json.logs.slice(1);
         const today = new Date().toDateString();
-        // Log Row Structure: [Timestamp, IP, User, Role, Action, Target, Meta]
-        // Safe check for valid date in index 0
-        const todaysLogs = rows.filter(r => r && new Date(r).toDateString() === today);
+        
+        // DEBUG: Print one row to console to verify structure
+        if(rows.length > 0) console.log("Sample Log Row:", rows[rows.length-1]);
 
-        // 1. Calculate Estimates (Action = view_module)
-        const estimates = todaysLogs.filter(r => r === 'view_module').length;
+        // LOGIC FIX 1: Explicitly target r[0] for the Timestamp
+        const todaysLogs = rows.filter(r => r && new Date(r[0]).toDateString() === today);
+
+        // LOGIC FIX 2: Target r[4] for 'Action', not r[1] (IP Address)
+        const estimates = todaysLogs.filter(r => r[4] === 'view_module').length;
+        const orders = todaysLogs.filter(r => r[4] === 'PRINT_ORDER' || r[4] === 'CHECKOUT').length;
         
-        // 2. Calculate Orders (Action = PRINT_ORDER or CHECKOUT)
-        const orders = todaysLogs.filter(r => r === 'PRINT_ORDER' || r === 'CHECKOUT').length;
-        
-        // 3. Calculate Active Staff (Unique Usernames in Index 2)
-        const uniqueUsers = new Set(todaysLogs.map(r => r)).size;
+        // Active Staff (User is correctly at r[2])
+        const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
 
         document.getElementById('stat-estimates').innerText = estimates;
         document.getElementById('stat-orders').innerText = orders;
         document.getElementById('stat-users').innerText = uniqueUsers;
 
     } catch (e) {
-        console.warn("Stats Error:", e);
-        document.getElementById('stat-estimates').innerText = "0";
+        console.error("Stats Error:", e);
+        document.getElementById('stat-estimates').innerText = "0"; 
         document.getElementById('stat-orders').innerText = "0";
         document.getElementById('stat-users').innerText = "-";
         
-        // Visual Error Indication
-        document.getElementById('stat-estimates').classList.add('text-red-300');
+        if(e.message.includes("Core")) {
+             document.getElementById('stat-estimates').innerText = "ERR";
+             document.getElementById('stat-estimates').classList.add('text-red-500');
+        }
     }
 }
 
@@ -301,7 +308,6 @@ async function triggerContextSync() {
             
             setTimeout(() => {
                 window.open(data.url, '_blank');
-                // Reset
                 setTimeout(() => {
                     icon.innerHTML = "🧠";
                     lbl.innerText = "Sync AI Context";
