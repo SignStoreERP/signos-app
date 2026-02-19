@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yard Signs Dual-Track v1.1</title>
+<title>Yard Signs Dual-Track v1.3</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -30,27 +30,13 @@
 <!-- INPUTS -->
 <div class="p-6 space-y-4">
 <div class="grid grid-cols-2 gap-4">
-<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="10" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Sides</label><select id="sides" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px]" onchange="runCalc()"><option value="1">Single Sided</option><option value="2">Double Sided</option></select></div>
 </div>
 
-<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1"># Designs</label><input type="number" id="files" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
-
 <div class="flex items-center p-2 border rounded bg-gray-50 mt-2 h-[46px]">
 <input type="checkbox" id="stakes" class="w-5 h-5 text-blue-600 rounded" checked onchange="runCalc()">
-<label for="stakes" class="ml-2 text-xs font-bold text-gray-700">Include Wire Stakes</label>
-</div>
-
-<!-- FEE TOGGLES -->
-<div class="space-y-2 pt-2">
-<div class="flex items-center justify-between p-2 bg-purple-50 rounded border border-purple-100">
-<span class="text-[10px] font-bold text-purple-900">Include Design Fee?</span>
-<input type="checkbox" id="design" checked onchange="runCalc()" class="w-5 h-5 text-purple-600">
-</div>
-<div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
-<span class="text-[10px] font-bold text-gray-600">Charge Setup Per File?</span>
-<input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-5 h-5 text-gray-600">
-</div>
+<label for="stakes" class="ml-2 text-xs font-bold text-gray-700">Include 10"x30" Wire Stakes</label>
 </div>
 </div>
 
@@ -75,18 +61,16 @@
 <div class="border-t border-gray-100 my-3"></div>
 
 <!-- LINE ITEMS -->
-<div class="space-y-1 text-xs text-gray-600">
-<div class="flex justify-between"><span>Prints:</span><span id="ui-print" class="font-bold">$0.00</span></div>
-<div class="flex justify-between"><span>Stakes:</span><span id="ui-stakes" class="font-bold">$0.00</span></div>
-<div class="border-t border-dashed border-gray-200 my-1 pt-1"></div>
-<div class="flex justify-between text-blue-700"><span>Setup (<span id="lbl-setup">Flat</span>):</span><span id="ui-setup" class="font-bold">$0.00</span></div>
-<div class="flex justify-between text-purple-700" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
+<div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
+<div class="flex justify-between"><span>Printed Signs:</span><span id="ui-print" class="font-bold">$0.00</span></div>
+<div class="flex justify-between"><span>Hardware (Stakes):</span><span id="ui-stakes" class="font-bold">$0.00</span></div>
 </div>
 
 <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
 <div>
-<span class="text-xs font-bold text-gray-400 uppercase">Total Quote</span>
-<div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block ml-1">MINIMUM APPLIED</div>
+<span class="text-xs font-bold text-gray-400 uppercase block">Total Quote</span>
+<span class="text-[9px] font-bold text-gray-400 uppercase block mt-1" id="ui-min-text">Shop Minimum: $50</span>
+<div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
 </div>
 <span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
 </div>
@@ -128,7 +112,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(Dual-Track Test)`;
+            verDisplay.innerText = `(v1.3)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -149,10 +133,7 @@ function runCalc() {
     const inputs = {
         qty: parseFloat(document.getElementById('qty').value) || 1,
         sides: parseInt(document.getElementById('sides').value),
-        files: parseFloat(document.getElementById('files').value) || 1,
-        hasStakes: document.getElementById('stakes').checked,
-        incDesign: document.getElementById('design').checked,
-        setupPerFile: document.getElementById('setup-per-file').checked
+        hasStakes: document.getElementById('stakes').checked
     };
 
     // EXECUTE DUAL-TRACK ARCHITECTURE
@@ -162,32 +143,28 @@ function runCalc() {
     // PROFIT GUARD
     const margin = ret.grandTotal - cost.financials.total;
     const profitWarn = document.getElementById('profit-warn');
-    if (margin < 0 && !ret.isCustom) profitWarn.classList.remove('hidden');
+    if (margin < 0) profitWarn.classList.remove('hidden');
     else profitWarn.classList.add('hidden');
 
     const fmt = (n) => "$" + n.toFixed(2);
 
-    document.getElementById('ui-unit').innerText = ret.isCustom ? "CUSTOM" : fmt(ret.unitPrice);
-    document.getElementById('ui-total').innerText = ret.isCustom ? "CONTACT US" : fmt(ret.grandTotal);
-
+    document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+    document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
     document.getElementById('ui-print').innerText = fmt(ret.printTotal);
     document.getElementById('ui-stakes').innerText = fmt(ret.stakeTotal);
-    document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
-    document.getElementById('ui-design').innerText = fmt(ret.designFee);
-
-    document.getElementById('lbl-setup').innerText = inputs.setupPerFile ? `${inputs.files} Files` : "Flat";
-    document.getElementById('row-design').classList.toggle('hidden', ret.designFee === 0);
+    
+    document.getElementById('ui-min-text').innerText = `Shop Minimum: $${ret.minOrderValue}`;
     document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
     let rowsHtml = "";
     ret.tiers.forEach(tier => {
-        if(tier.base === 0) return;
-        rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+</td><td class="pr-4 py-1 text-gray-400">$${tier.base.toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
+        const pctDisplay = `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.pct*100).toFixed(0)}%</span>`;
+        rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+ ${pctDisplay}</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
     });
     document.getElementById('tier-rows').innerHTML = rowsHtml;
 
     const sideTxt = inputs.sides === 1 ? "ONE" : "TWO";
-    const stakeTxt = inputs.hasStakes ? "with 10\" x 24\" wire H-frame step stakes" : "NO Stakes";
+    const stakeTxt = inputs.hasStakes ? "with 10\" x 30\" wire H-frame step stakes" : "NO Stakes";
     document.getElementById('job-desc').value = `(x${inputs.qty}) 24" x 18" 4mm Coroplast Signs with direct print latex ink on ${sideTxt} side(s) ${stakeTxt}.`;
 }
 </script>
