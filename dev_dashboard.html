@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.0 | SignOS Admin</title>
+    <title>Mission Control v2.1 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -15,12 +15,12 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- HEADER INJECTED HERE (ID="main-card" wrapper not needed for full-screen dash) -->
+    <!-- HEADER INJECTED HERE -->
     <div id="header-mount"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <!-- 1. LIVE PULSE STRIP -->
+        <!-- 1. LIVE SYSTEM PULSE -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <!-- Latency Monitor -->
             <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-emerald-500 flex items-center justify-between">
@@ -62,7 +62,7 @@
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-green-500"></span> Financial Physics
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <!-- Cost Matrix -->
             <a href="admin_cost_matrix.html" class="dash-card bg-white rounded-xl p-6 border border-gray-200 group">
                 <div class="flex items-start justify-between mb-4">
@@ -88,11 +88,47 @@
             </a>
         </div>
 
-        <!-- 3. OPS & DEV DECK -->
+        <!-- 3. OPERATIONS DECK (LIVE STATS) -->
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-blue-500"></span> Development & Ops
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span> Live Operations (24h)
         </h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <!-- Estimates -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col justify-between">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estimates Run</span>
+                    <span class="text-xl">🧮</span>
+                </div>
+                <h3 class="text-3xl font-black text-gray-800 mt-2" id="stat-estimates">--</h3>
+                <p class="text-[10px] text-gray-400 mt-1">Calculators loaded today</p>
+            </div>
+
+            <!-- Orders -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col justify-between">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Orders Generated</span>
+                    <span class="text-xl">🛒</span>
+                </div>
+                <h3 class="text-3xl font-black text-gray-800 mt-2" id="stat-orders">--</h3>
+                <p class="text-[10px] text-gray-400 mt-1">"Print Work Order" clicks</p>
+            </div>
+
+            <!-- Active Staff -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col justify-between">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Active Staff</span>
+                    <span class="text-xl">👥</span>
+                </div>
+                <h3 class="text-3xl font-black text-gray-800 mt-2" id="stat-users">--</h3>
+                <p class="text-[10px] text-gray-400 mt-1">Unique logins today</p>
+            </div>
+        </div>
+
+        <!-- 4. DEV & OPS DECK -->
+        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-purple-500"></span> Development & Ops
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <!-- Roadmap -->
             <a href="admin_roadmap.html" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-orange-400 group">
                 <div class="text-orange-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🗺️</div>
@@ -122,7 +158,7 @@
             </a>
         </div>
 
-        <!-- 4. MAINTENANCE DECK -->
+        <!-- 5. MAINTENANCE DECK -->
         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-red-500"></span> Maintenance
         </h2>
@@ -148,13 +184,12 @@ window.onload = function() {
     // 1. Inject Header via Core
     if(typeof injectHeader === 'function') {
         const container = document.getElementById('header-mount');
-        // Manually injecting to target the specific mount point rather than body
-        // But core usually injects at top of body. Let's let Core do its thing.
         injectHeader("Mission Control");
     }
 
-    // 2. Telemetry Pulse
+    // 2. Run Telemetry
     runPulseCheck();
+    fetchOperationalStats();
 };
 
 async function runPulseCheck() {
@@ -192,6 +227,44 @@ async function runPulseCheck() {
         if(bugs > 0) bugEl.classList.add('text-red-600');
     } catch(e) {
         bugEl.innerText = "-";
+    }
+}
+
+async function fetchOperationalStats() {
+    try {
+        // Fetch Live Logs (Last 24h)
+        const response = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
+        const json = await response.json();
+        
+        if (json.status !== "success" || !json.logs) throw new Error("No logs");
+
+        // Parse Logs (Skip Header Row)
+        const rows = json.logs.slice(1);
+        
+        // Filter for "Today" only
+        const today = new Date().toDateString();
+        // Log Row Structure: [Timestamp, IP, User, Role, Action, Target, Meta]
+        const todaysLogs = rows.filter(r => new Date(r).toDateString() === today);
+
+        // 1. Calculate Estimates (Action = view_module)
+        const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
+        
+        // 2. Calculate Orders (Action = PRINT_ORDER or CHECKOUT)
+        const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
+        
+        // 3. Calculate Active Staff (Unique Usernames in Index 2)
+        const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
+
+        // Update UI
+        document.getElementById('stat-estimates').innerText = estimates;
+        document.getElementById('stat-orders').innerText = orders;
+        document.getElementById('stat-users').innerText = uniqueUsers;
+
+    } catch (e) {
+        console.warn("Stats Error:", e);
+        document.getElementById('stat-estimates').innerText = "0";
+        document.getElementById('stat-orders').innerText = "0";
+        document.getElementById('stat-users').innerText = "-";
     }
 }
 </script>
