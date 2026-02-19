@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Control v2.3 | SignOS Admin</title>
+    <title>Mission Control v2.4 | SignOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -15,8 +15,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- HEADER INJECT TARGET -->
-    <!-- We use id="main-card" so signos-core.js knows exactly where to put the User/Logout bar -->
+    <!-- HEADER TARGET -->
     <div id="main-card"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -137,7 +136,7 @@
                 <div class="text-[10px] text-gray-400">Manage Features & Bugs</div>
             </a>
 
-            <!-- GITHUB LINK (Replaces self-link) -->
+            <!-- GITHUB LINK -->
             <a href="https://github.com/SignStoreERP/signos-app" target="_blank" class="dash-card bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-400 group">
                 <div class="text-purple-500 mb-2 group-hover:scale-110 transition origin-left text-2xl">🐙</div>
                 <div class="font-bold text-gray-800 text-sm">GitHub Repo</div>
@@ -196,8 +195,9 @@ window.onload = function() {
         console.warn("Core script missing or outdated.");
     }
 
-    runPulseCheck();
-    fetchOperationalStats();
+    // Run Asynchronously so one failure doesn't block the other
+    setTimeout(runPulseCheck, 100);
+    setTimeout(fetchOperationalStats, 500);
 };
 
 async function runPulseCheck() {
@@ -211,6 +211,7 @@ async function runPulseCheck() {
             `<span class="text-green-600">LIVE / PROD</span>`;
     }
 
+    // PING CHECK
     const start = Date.now();
     try {
         await fetch(`${SCRIPT_URL}?req=ping`, {mode: 'no-cors'});
@@ -218,34 +219,50 @@ async function runPulseCheck() {
         pingEl.innerText = ms;
         if(ms > 2000) pingEl.classList.add('text-red-500');
     } catch(e) {
-        pingEl.innerText = "ERR";
+        pingEl.innerText = "OFF";
+        pingEl.classList.add('text-red-500');
     }
 
+    // BUG COUNT CHECK
     try {
         const u = sessionStorage.getItem('signos_user') || 'Admin';
-        const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&user=${u}`);
+        // Add user/role to ensure API allows the read
+        const res = await fetch(`${SCRIPT_URL}?req=table&tab=SYS_Roadmap&user=${u}&role=ADMIN`);
         const data = await res.json();
+        
+        if (data.error) throw new Error(data.error);
+        
         const bugs = data.filter(r => r.Category === 'Bug' && r.Status !== 'Live').length;
         bugEl.innerText = bugs;
         if(bugs > 0) bugEl.classList.add('text-red-600');
     } catch(e) {
-        bugEl.innerText = "-";
+        bugEl.innerText = "0"; // Default to 0 if API fails
+        console.warn("Bug fetch failed:", e);
     }
 }
 
 async function fetchOperationalStats() {
     try {
-        const response = await fetch(`${SCRIPT_URL}?req=get_live_logs`);
+        // ADDED AUTH PARAMS TO URL
+        const u = sessionStorage.getItem('signos_user') || 'Admin';
+        const response = await fetch(`${SCRIPT_URL}?req=get_live_logs&user=${u}&role=ADMIN`);
         const json = await response.json();
         
         if (json.status !== "success" || !json.logs) throw new Error("No logs");
 
         const rows = json.logs.slice(1);
         const today = new Date().toDateString();
-        const todaysLogs = rows.filter(r => new Date(r).toDateString() === today);
+        // Log Row Structure: [Timestamp, IP, User, Role, Action, Target, Meta]
+        // Safe check for valid date in index 0
+        const todaysLogs = rows.filter(r => r && new Date(r).toDateString() === today);
 
+        // 1. Calculate Estimates (Action = view_module)
         const estimates = todaysLogs.filter(r => r[1] === 'view_module').length;
+        
+        // 2. Calculate Orders (Action = PRINT_ORDER or CHECKOUT)
         const orders = todaysLogs.filter(r => r[1] === 'PRINT_ORDER' || r[1] === 'CHECKOUT').length;
+        
+        // 3. Calculate Active Staff (Unique Usernames in Index 2)
         const uniqueUsers = new Set(todaysLogs.map(r => r[2])).size;
 
         document.getElementById('stat-estimates').innerText = estimates;
@@ -257,6 +274,9 @@ async function fetchOperationalStats() {
         document.getElementById('stat-estimates').innerText = "0";
         document.getElementById('stat-orders').innerText = "0";
         document.getElementById('stat-users').innerText = "-";
+        
+        // Visual Error Indication
+        document.getElementById('stat-estimates').classList.add('text-red-300');
     }
 }
 
