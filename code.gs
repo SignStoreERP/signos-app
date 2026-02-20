@@ -327,7 +327,7 @@ function generateNotebookLMBridge() {
   }
   
   const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID);
-  const targetName = "SignOS_Master_Context.txt";
+  const targetName = "SignOS_DEV_Context.txt";
   const files = folder.getFilesByName(targetName);
   let fileUrl = "";
 
@@ -580,5 +580,23 @@ function commitMatrixBatch(p) {
     return returnJSON({ status: "error", message: e.toString() });
   } finally {
     lock.releaseLock();
+  }
+}
+
+// ==========================================
+// AUTOMATION WRAPPERS (For Time-Driven Triggers)
+// ==========================================
+
+function archiveDailyLogs() {
+  // Simulates a SuperUser API request so the trigger can run in the background
+  try {
+    manualExport({ 
+      user: "SYSTEM_AUTO", 
+      role: "SUPER", 
+      ip: "Background_Trigger" 
+    });
+    console.log("Auto-Archive Successful");
+  } catch(e) {
+    console.error("Auto-Archive Failed: " + e.message);
   }
 }
