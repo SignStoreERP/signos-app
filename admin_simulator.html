@@ -90,7 +90,7 @@
       </div>
       <svg id="retail-icon" class="chevron w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
     </div>
-    <div class="panel-content flex items-center gap-4 mt-2 pb-1" id="retail-container"></div>
+    <div class="panel-content flex flex-wrap items-end gap-x-6 gap-y-3 mt-2 pb-1" id="retail-container"></div>
   </div>
 
   <div class="bg-red-50 border-b border-red-100 px-6 py-3 shrink-0 shadow-inner relative z-10">
@@ -163,12 +163,14 @@
         { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
       ],
       retails: [
-        { key: 'Retail_Price_Sign_SS', label: 'Base Sign ($)' },
+        { heading: 'Print Base (Coroplast)', key: 'Retail_Price_Sign_SS', label: 'Base Sign ($)' },
         { key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
         { key: 'Tier_1_Price', label: 'Tier 1 Base ($)' },
-        { key: 'Retail_Stake_T1_Price', label: 'Stake 1-49 ($)' },
-        { key: 'Retail_Stake_T2_Qty', label: 'Stake T2 Trigger' },
-        { key: 'Retail_Stake_T2_Price', label: 'Stake T2 ($)' }
+        { heading: 'Hardware (Wire Stakes)', key: 'Retail_Stake_T1_Price', label: 'Stake 1-49 ($)' },
+        { key: 'Retail_Stake_T2_Qty', label: 'Stake T2 Qty' },
+        { key: 'Retail_Stake_T2_Price', label: 'Stake T2 ($)' },
+        { key: 'Retail_Stake_T3_Qty', label: 'Stake T3 Qty' },
+        { key: 'Retail_Stake_T3_Price', label: 'Stake T3 ($)' }
       ],
       costs: [
         { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
@@ -197,10 +199,10 @@
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
       ],
       retails: [
-        { key: 'ACM3_T1_Rate', label: '3mm Tiny ($/SF)' },
+        { heading: 'Market Variables', key: 'ACM3_T1_Rate', label: '3mm Tiny ($/SF)' },
         { key: 'ACM3_T2_Rate', label: '3mm Small ($/SF)' },
         { key: 'ACM3_T3_Rate', label: '3mm Med ($/SF)' },
-        { key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
+        { heading: 'Router Constraints', key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
         { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' }
       ],
       costs: [
@@ -338,7 +340,15 @@
     const container = document.getElementById('retail-container');
     container.innerHTML = "";
     if(!retails) return;
+    
     retails.forEach(r => {
+      if (r.heading) {
+        const headWrap = document.createElement('div');
+        headWrap.className = "w-full text-[10px] font-black text-blue-900 uppercase mt-1 mb-[-4px] border-b border-blue-200 pb-1";
+        headWrap.innerText = r.heading;
+        container.appendChild(headWrap);
+      }
+
       const val = parseFloat(data[r.key]) || 0;
       const div = document.createElement('div');
       div.innerHTML = `
@@ -530,15 +540,27 @@ function renderChart(labels, retail, cost, margin) {
           <div class="flex justify-between" title="Strict market value based on square footage and Blue Sheet tiers.">
             <span class="cursor-help border-b border-dotted border-gray-400">Base Print:</span> 
             <span>${fmt(data.retail.printTotal)}</span>
-          </div>
-          <div class="flex justify-between" title="Calculated hardware cost plus any Router/CNC adders.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Hardware/Adders:</span> 
-            <span>${fmt((data.retail.stakeTotal || 0) + (data.retail.routerFee || 0))}</span>
-          </div>
+          </div>`;
+
+    // INDIVIDUAL RETAIL LINE ITEMS
+    if (data.retail.stakeTotal !== undefined && data.retail.stakeTotal > 0) {
+      retailHTML += `<div class="flex justify-between"><span>Wire Stakes:</span> <span>${fmt(data.retail.stakeTotal)}</span></div>`;
+    }
+    if (data.retail.routerFee !== undefined && data.retail.routerFee > 0) {
+      retailHTML += `<div class="flex justify-between"><span>CNC Router Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>`;
+    }
+    
+    retailHTML += `
           <div class="flex justify-between">
-            <span>Setup & Design:</span> 
-            <span>${fmt((data.retail.setupFee || 0) + (data.retail.designFee || 0))}</span>
-          </div>
+            <span>Setup Fee:</span> 
+            <span>${fmt(data.retail.setupFee || 0)}</span>
+          </div>`;
+          
+    if (data.retail.designFee !== undefined && data.retail.designFee > 0) {
+      retailHTML += `<div class="flex justify-between"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>`;
+    }
+
+    retailHTML += `
           <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
             <span>Total Retail:</span> 
             <span>${fmt(data.retail.grandTotal)}</span>
@@ -586,6 +608,7 @@ function renderChart(labels, retail, cost, margin) {
             <span>${fmt(b.costOp)}</span>
           </div>
 
+          <!-- THE BOLT-ON FACTORS -->
           <div class="border-t border-gray-200 mt-2 pt-1"></div>
           <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
           
