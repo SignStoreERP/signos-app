@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing Simulator v1.6</title>
+  <title>Pricing Simulator v1.8</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="signos-core.js"></script>
@@ -15,11 +15,11 @@
     input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
     .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
-    
+
     /* Smooth Accordion Transitions */
     .panel-content {
       transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin 0.3s ease-in-out;
-      max-height: 250px; /* Tall enough to fit inputs with wrapped rows */
+      max-height: 600px; /* INCREASED HEIGHT TO PREVENT CUTOFF */
       opacity: 1;
       overflow-x: auto;
       overflow-y: hidden;
@@ -30,12 +30,8 @@
       margin-top: 0;
       pointer-events: none;
     }
-    .chevron {
-      transition: transform 0.3s ease-in-out;
-    }
-    .chevron.closed {
-      transform: rotate(-90deg);
-    }
+    .chevron { transition: transform 0.3s ease-in-out; }
+    .chevron.closed { transform: rotate(-90deg); }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-auto">
@@ -120,7 +116,7 @@
         <button onclick="document.getElementById('receipt-panel').classList.add('hidden')" class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none transition-colors">✕</button>
       </div>
       <div class="flex flex-col space-y-6" id="rec-content">
-        </div>
+      </div>
     </div>
 
     <div id="loader" class="absolute inset-0 flex items-center justify-center bg-white/80 z-50 hidden">
@@ -148,7 +144,7 @@
 <script>
   let chartInstance = null;
   let currentBackend = {};
-  let simulationData = []; 
+  let simulationData = [];
 
   // --- 1. MODULE DEFINITIONS ---
   const MODULES = {
@@ -157,7 +153,7 @@
       engine: 'calculateYardSign',
       controls: [
         { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
-        { id: 'hasStakes', label: 'Wire Stakes', type: 'toggle', def: true }, 
+        { id: 'hasStakes', label: 'Wire Stakes', type: 'toggle', def: true },
         { id: 'files', label: 'Files', type: 'number', def: 1 },
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
         { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
@@ -197,17 +193,19 @@
         { id: 'color', label: 'Color', type: 'select', opts: [{v:'White', t:'White'}, {v:'Black', t:'Black'}] },
         { id: 'shape', label: 'Cutting Method', type: 'select', opts: [{v:'Rectangle', t:'Square / Shear'}, {v:'CNC Simple', t:'CNC (Simple)'}, {v:'CNC Complex', t:'CNC (Complex)'}] },
         { id: 'rounded', label: 'Rounded Corners', type: 'toggle', def: false },
+        { id: 'files', label: 'Files', type: 'number', def: 1 },
+        { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
       ],
       retails: [
-        { heading: 'Market Base ($/SqFt)', key: 'Retail_ACM3_SqFt', label: '3mm Rate ($)' },
-        { key: 'Retail_ACM6_SqFt', label: '6mm Rate ($)' },
+        { heading: 'Market Base ($/SqFt)', key: 'ACM3_T1_Rate', label: '3mm Rate ($)' },
+        { key: 'ACM6_T1_Rate', label: '6mm Rate ($)' },
         { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
         { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)' },
-        { heading: 'Adders & Services', key: 'Retail_Fee_CNC_Simple', label: 'CNC Simple Fee ($)' },
-        { key: 'Retail_Fee_CNC_Complex', label: 'CNC Complex Fee ($)' },
-        { key: 'Retail_Fee_Round_Setup', label: 'Round Corner Setup ($)' },
-        { key: 'Retail_Price_Round_Corner', label: 'Round Corner Per/Ea ($)' }
+        { heading: 'Router Constraints', key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
+        { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' },
+        { heading: 'Flat Fees', key: 'Retail_Fee_Setup', label: 'Setup Fee ($)' },
+        { key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
       ],
       costs: [
         { key: 'Cost_Stock_3mm_4x8', label: '3mm 4x8 Sheet ($)' },
@@ -217,13 +215,17 @@
         { key: 'Rate_CNC_Labor', label: 'CNC Operator ($/Hr)' },
         { key: 'Rate_Machine_CNC', label: 'Router Mach ($/Hr)' },
         { key: 'Rate_Machine_Flatbed', label: 'Printer Mach ($/Hr)' },
+        { key: 'Machine_Speed_LF_Hr', label: 'Print Spd (LF/hr)' },
         { key: 'Time_Shear_Setup', label: 'Shear Setup (Mins)' },
         { key: 'Time_Shear_Cut', label: 'Shear Cut (Mins/Ea)' },
         { key: 'Time_Round_Setup', label: 'Corner Setup (Mins)' },
         { key: 'Time_Round_Corner', label: 'Cut Corner (Mins/Ea)' },
         { key: 'Time_Setup_CNC', label: 'CNC Setup (Mins)' },
         { key: 'Time_CNC_Easy_SqFt', label: 'CNC Easy (Mins/SqFt)' },
-        { key: 'Time_CNC_Complex_SqFt', label: 'CNC Complex (Mins/SqFt)' }
+        { key: 'Time_CNC_Complex_SqFt', label: 'CNC Complex (Mins/SqFt)' },
+        { key: 'Waste_Factor', label: 'Waste (1.x)' },
+        { key: 'Factor_Risk', label: 'Risk (1.x)' },
+        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
       ]
     }
   };
@@ -392,21 +394,24 @@
       else if(c.type === 'number') inputs[c.id] = parseFloat(el.value);
       else if(c.type === 'select') inputs[c.id] = isNaN(parseFloat(el.value)) ? el.value : parseFloat(el.value);
     });
-
-    // --- NEW: DYNAMIC ACM LOGIC ---
+    
+    // --- DYNAMIC ACM LOGIC ---
     if (modKey === 'ACM') {
-        const roundedToggleWrap = document.getElementById('cfg-rounded').closest('div').parentElement;
+      const roundedEl = document.getElementById('cfg-rounded');
+      if (roundedEl) {
+        const roundedToggleWrap = roundedEl.closest('div').parentElement;
         if (inputs.shape !== 'Rectangle') {
             roundedToggleWrap.style.opacity = '0.3';
             roundedToggleWrap.style.pointerEvents = 'none';
             inputs.rounded = false; // Force false for math
-            document.getElementById('cfg-rounded').checked = false;
+            roundedEl.checked = false;
         } else {
             roundedToggleWrap.style.opacity = '1';
             roundedToggleWrap.style.pointerEvents = 'auto';
         }
+      }
     }
-    
+
     if(!inputs.files) inputs.files = 1;
     if(!inputs.rounded) inputs.rounded = false;
 
@@ -458,7 +463,7 @@
     document.getElementById('receipt-panel').classList.add('hidden'); 
   }
 
-function renderChart(labels, retail, cost, margin) {
+  function renderChart(labels, retail, cost, margin) {
     const ctx = document.getElementById('priceChart').getContext('2d');
     if(chartInstance) chartInstance.destroy();
 
@@ -478,7 +483,7 @@ function renderChart(labels, retail, cost, margin) {
         interaction: { mode: 'index', intersect: false },
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            const dataIndex = elements[0].index; 
+            const dataIndex = elements[0].index;
             renderReceipt(dataIndex);
           }
         },
@@ -552,10 +557,12 @@ function renderChart(labels, retail, cost, margin) {
     URL.revokeObjectURL(url);
   }
 
-  // --- RECEIPT RENDERER ---
+  // --- CONTEXT-AWARE RECEIPT RENDERER ---
   function renderReceipt(index) {
     const data = simulationData[index];
     if (!data) return;
+
+    const modKey = document.getElementById('sim-module').value;
 
     document.getElementById('receipt-panel').classList.remove('hidden');
     document.getElementById('rec-qty').innerText = data.qty;
@@ -571,15 +578,15 @@ function renderChart(labels, retail, cost, margin) {
             <span>${fmt(data.retail.printTotal)}</span>
           </div>`;
 
-    // INDIVIDUAL RETAIL LINE ITEMS
-    if (data.retail.stakeTotal !== undefined && data.retail.stakeTotal > 0) {
-      retailHTML += `<div class="flex justify-between"><span>Wire Stakes:</span> <span>${fmt(data.retail.stakeTotal)}</span></div>`;
-    }
-    if (data.retail.routerFee !== undefined && data.retail.routerFee > 0) {
-      retailHTML += `<div class="flex justify-between text-orange-700"><span>CNC Router Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>`;
-    }
-    if (data.retail.roundedFee !== undefined && data.retail.roundedFee > 0) {
-      retailHTML += `<div class="flex justify-between text-purple-700"><span>Rounded Corners:</span> <span>${fmt(data.retail.roundedFee)}</span></div>`;
+    // Dynamic Retail Items Based on Product
+    if (modKey === 'YARD') {
+      if (data.retail.stakeTotal !== undefined && data.retail.stakeTotal > 0) {
+        retailHTML += `<div class="flex justify-between"><span>Wire Stakes:</span> <span>${fmt(data.retail.stakeTotal)}</span></div>`;
+      }
+    } else if (modKey === 'ACM') {
+      if (data.retail.routerFee !== undefined && data.retail.routerFee > 0) {
+        retailHTML += `<div class="flex justify-between"><span>CNC Router Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>`;
+      }
     }
     
     retailHTML += `
@@ -609,17 +616,20 @@ function renderChart(labels, retail, cost, margin) {
     if (data.cost.breakdown) {
       const b = data.cost.breakdown;
       costHTML += `
-          <div class="flex justify-between" title="Pure cost of substrate (Quantity x Base Cost).">
-            <span class="cursor-help border-b border-dotted border-gray-400">Raw Blanks/Material:</span> 
+          <div class="flex justify-between" title="Pure cost of raw substrate.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Raw Blanks:</span> 
             <span>${fmt(b.rawBlanks)}</span>
           </div>`;
           
-      if (b.stakeCost !== undefined && b.stakeCost > 0) {
-        costHTML += `
-          <div class="flex justify-between">
-            <span>Stakes:</span> 
-            <span>${fmt(b.stakeCost)}</span>
-          </div>`;
+      // Dynamic Cost Items Based on Product
+      if (modKey === 'YARD') {
+          if (b.stakeCost !== undefined && b.stakeCost > 0) {
+            costHTML += `
+              <div class="flex justify-between">
+                <span>Stakes:</span> 
+                <span>${fmt(b.stakeCost)}</span>
+              </div>`;
+          }
       }
 
       costHTML += `
@@ -632,20 +642,22 @@ function renderChart(labels, retail, cost, margin) {
             <span>${fmt(b.costSetup)}</span>
           </div>`;
 
-      // NEW ACM COST ADDITIONS
-      if (b.costCut !== undefined) {
-        costHTML += `
-          <div class="flex justify-between" title="Labor and machine time for either Shear cuts or CNC Routing.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Cutting Time:</span> 
-            <span>${fmt(b.costCut)}</span>
-          </div>`;
-      }
-      if (b.costRound !== undefined && b.costRound > 0) {
-        costHTML += `
-          <div class="flex justify-between" title="Operator labor for corner rounding punches.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Corner Punching:</span> 
-            <span>${fmt(b.costRound)}</span>
-          </div>`;
+      // Specific ACM Cutting Data
+      if (modKey === 'ACM') {
+          if (b.costCut !== undefined && b.costCut > 0) {
+              costHTML += `
+              <div class="flex justify-between" title="Labor and machine time for either Shear cuts or CNC Routing.">
+                <span class="cursor-help border-b border-dotted border-gray-400">Cutting Time:</span> 
+                <span>${fmt(b.costCut)}</span>
+              </div>`;
+          }
+          if (b.costRound !== undefined && b.costRound > 0) {
+              costHTML += `
+              <div class="flex justify-between" title="Operator labor for corner rounding punches.">
+                <span class="cursor-help border-b border-dotted border-gray-400">Corner Punching:</span> 
+                <span>${fmt(b.costRound)}</span>
+              </div>`;
+          }
       }
 
       costHTML += `
