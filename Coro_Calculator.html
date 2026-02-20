@@ -3,14 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Coroplast Signs v8.0</title>
+<title>Coroplast Signs v8.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
+
+<!-- DUAL-TRACK LOGIC ENGINES -->
 <script src="retail_coro.js"></script>
 <script src="cost_coro.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
+<!-- Main Card -->
 <div id="main-card" class="max-w-md mx-auto my-4 sm:my-10 w-[calc(100%-2rem)] sm:w-full bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200">
 
 <!-- INPUTS -->
@@ -37,32 +40,6 @@
 </select>
 </div>
 </div>
-
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">H-Stakes</label>
-<select id="stakes" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
-<option value="None">None</option>
-<option value="Std">Standard (10x30)</option>
-<option value="HD">Heavy Duty Step</option>
-</select>
-</div>
-<div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Grommets</label>
-<select id="grommets" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
-<option value="None">None</option>
-<option value="Corners">Corners Only (4)</option>
-<option value="24in">Every 24 Inches</option>
-<option value="12in">Every 12 Inches</option>
-</select>
-</div>
-</div>
-
-<div class="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100">
-<label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="contour" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Contour Cut</label>
-<label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="gloss" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Gloss Finish</label>
-<label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer bg-purple-50 p-2 rounded border border-purple-200 hover:bg-purple-100 transition"><input type="checkbox" id="design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design</label>
-</div>
 </div>
 
 <!-- RESULTS -->
@@ -72,6 +49,7 @@
 <span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
 </div>
 
+<!-- DISCOUNT TABLE -->
 <div class="mb-4 text-right">
 <button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wide inline-flex items-center gap-1 ml-auto">
   Show Volume Discounts
@@ -90,12 +68,6 @@
 <!-- LINE ITEMS -->
 <div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
 <div class="flex justify-between"><span>Printed Signs:</span><span id="ui-print" class="font-bold">$0.00</span></div>
-<div class="flex justify-between hidden" id="row-stakes"><span>Hardware (Stakes):</span><span id="ui-stakes" class="font-bold">$0.00</span></div>
-<div class="flex justify-between hidden" id="row-grom"><span>Grommets (<span id="ui-grom-qty">0</span>):</span><span id="ui-grom" class="font-bold">$0.00</span></div>
-<div class="flex justify-between hidden text-orange-700" id="row-contour"><span>Contour Cut:</span><span id="ui-contour" class="font-bold">$0.00</span></div>
-<div class="flex justify-between hidden text-blue-700" id="row-gloss"><span>Gloss Finish:</span><span id="ui-gloss" class="font-bold">$0.00</span></div>
-<div class="flex justify-between hidden text-purple-700" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
-<div class="flex justify-between"><span>Setup Fee:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
 </div>
 
 <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
@@ -111,7 +83,7 @@
 <!-- DESCRIPTION GENERATOR -->
 <div class="bg-gray-50 p-4 border-t border-gray-200">
 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-<textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
+<textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-16 text-gray-600 font-mono outline-none" readonly></textarea>
 </div>
 
 </div>
@@ -120,7 +92,7 @@
 let backendData = {};
 
 window.onload = async function() {
-    injectHeader("Custom Coroplast");
+    injectHeader("Coroplast Signs");
 
     const u = sessionStorage.getItem('signos_user') || 'Guest';
     const r = sessionStorage.getItem('signos_role') || 'VIEW';
@@ -144,7 +116,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v8.0)`;
+            verDisplay.innerText = `(v8.2)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -178,63 +150,29 @@ function runCalc() {
         w: parseFloat(document.getElementById('w').value) || 24,
         h: parseFloat(document.getElementById('h').value) || 18,
         thickness: document.getElementById('thickness').value,
-        sides: parseInt(document.getElementById('sides').value),
-        stakeType: document.getElementById('stakes').value,
-        gromMode: document.getElementById('grommets').value,
-        isContour: document.getElementById('contour').checked,
-        isGloss: document.getElementById('gloss').checked,
-        incDesign: document.getElementById('design').checked
+        sides: parseInt(document.getElementById('sides').value)
     };
 
     const ret = calculateRetail(inputs, backendData);
-
     const fmt = (n) => "$" + n.toFixed(2);
-    const toggleRow = (id, val) => {
-        if(val > 0) { document.getElementById(id).classList.remove('hidden'); }
-        else { document.getElementById(id).classList.add('hidden'); }
-    }
 
     document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
     document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
     document.getElementById('ui-print').innerText = fmt(ret.printTotal);
     
-    toggleRow('row-stakes', ret.stakesTotal);
-    document.getElementById('ui-stakes').innerText = fmt(ret.stakesTotal);
-    
-    toggleRow('row-grom', ret.gromTotal);
-    document.getElementById('ui-grom').innerText = fmt(ret.gromTotal);
-    document.getElementById('ui-grom-qty').innerText = ret.gromCount;
-
-    toggleRow('row-contour', ret.contourTotal);
-    document.getElementById('ui-contour').innerText = fmt(ret.contourTotal);
-
-    toggleRow('row-gloss', ret.glossTotal);
-    document.getElementById('ui-gloss').innerText = fmt(ret.glossTotal);
-
-    toggleRow('row-design', ret.feeDesign);
-    document.getElementById('ui-design').innerText = fmt(ret.feeDesign);
-    
-    document.getElementById('ui-setup').innerText = fmt(ret.feeSetup);
+    let rowsHtml = "";
+    ret.tiers.forEach(tier => {
+        const pctDisplay = tier.pct > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.pct*100).toFixed(0)}%</span>` : "";
+        rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+ ${pctDisplay}</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
+    });
+    document.getElementById('tier-rows').innerHTML = rowsHtml;
     
     document.getElementById('ui-min-text').innerText = `Shop Minimum: $${ret.minOrderValue}`;
     document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-    let rowsHtml = "";
-    ret.tiers.forEach(tier => {
-        const pctDisplay = `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.pct*100).toFixed(0)}%</span>`;
-        rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+ ${pctDisplay}</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
-    });
-    document.getElementById('tier-rows').innerHTML = rowsHtml;
-
     // Generate Text
     const sideTxt = inputs.sides === 1 ? "ONE" : "TWO";
-    const finishArr = [];
-    if(inputs.stakeType !== 'None') finishArr.push(`${inputs.stakeType} Stakes`);
-    if(inputs.gromMode !== 'None') finishArr.push(`Grommets (${inputs.gromMode})`);
-    if(inputs.isContour) finishArr.push("Contour Cut");
-    if(inputs.isGloss) finishArr.push("Gloss Finish");
-    
-    document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} Custom Coroplast. Printed on ${sideTxt} side(s).\nExtras: ${finishArr.length > 0 ? finishArr.join(", ") : "None"}.`;
+    document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} Custom Coroplast Sign(s). Printed on ${sideTxt} side(s).`;
 }
 </script>
 </body>
