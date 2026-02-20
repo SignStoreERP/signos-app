@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing Simulator v1.8</title>
+  <title>Pricing Simulator v1.8 (Responsive)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="signos-core.js"></script>
@@ -34,12 +34,12 @@
     .chevron.closed { transform: rotate(-90deg); }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-auto">
+<body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-auto p-2 md:p-0">
 
-<div id="main-card" class="flex-1 flex flex-col bg-white shadow-xl m-4 rounded-xl border border-gray-200">
+<div id="main-card" class="flex-1 flex flex-col bg-white shadow-xl md:m-4 rounded-xl border border-gray-200">
 
-  <div class="bg-white border-b border-gray-200 px-6 py-4 grid grid-cols-12 gap-4 shrink-0 items-end z-20 relative rounded-t-xl">
-    <div class="col-span-3">
+  <div class="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:grid md:grid-cols-12 gap-4 shrink-0 md:items-end z-20 relative rounded-t-xl">
+    <div class="w-full md:col-span-3">
       <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Engine</label>
       <select id="sim-module" class="w-full border border-gray-300 rounded p-2 text-sm font-bold bg-white focus:border-blue-500 outline-none" onchange="loadModuleData()">
         <option value="YARD">Yard Signs (Coro)</option>
@@ -47,20 +47,20 @@
       </select>
     </div>
 
-    <div class="col-span-6 flex gap-4">
+    <div class="w-full md:col-span-6 flex gap-4">
       <div class="flex-1 bg-gray-50 p-2 rounded border border-gray-200">
         <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Simulation Range (Qty)</label>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <input type="number" id="range-start" value="1" class="w-16 border rounded p-1 text-center text-sm font-bold" placeholder="Start">
-          <span class="text-gray-300 font-bold">-</span>
+          <span class="text-gray-300 font-bold hidden sm:inline">-</span>
           <input type="number" id="range-end" value="100" class="w-16 border rounded p-1 text-center text-sm font-bold" placeholder="End">
-          <span class="text-gray-400 text-[10px] uppercase font-bold ml-2">Step:</span>
+          <span class="text-gray-400 text-[10px] uppercase font-bold sm:ml-2">Step:</span>
           <input type="number" id="range-step" value="5" class="w-12 border rounded p-1 text-center text-sm font-bold">
         </div>
       </div>
     </div>
 
-    <div class="col-span-3 text-right flex flex-col gap-2">
+    <div class="w-full md:col-span-3 text-right flex flex-col gap-2">
       <button onclick="runSimulation()" id="btn-run" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition w-full disabled:opacity-50 disabled:cursor-not-allowed text-xs tracking-wider">
         RE-CALCULATE
       </button>
@@ -71,49 +71,49 @@
     </div>
   </div>
 
-  <div class="bg-gray-50 border-b border-gray-200 px-6 py-2 shrink-0 overflow-x-auto relative z-10">
-    <div class="flex items-center gap-6" id="config-container"></div>
+  <div class="bg-gray-50 border-b border-gray-200 px-4 md:px-6 py-3 shrink-0 relative z-10">
+    <div class="flex flex-wrap items-center gap-4 md:gap-6" id="config-container"></div>
   </div>
 
-  <div class="bg-blue-50 border-b border-blue-100 px-6 py-3 shrink-0 shadow-inner relative z-10">
+  <div class="bg-blue-50 border-b border-blue-100 px-4 md:px-6 py-3 shrink-0 shadow-inner relative z-10">
     <div class="flex items-center justify-between cursor-pointer" onclick="togglePanel('retail-container', 'retail-icon')">
-      <div class="flex items-center gap-2">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
         <h3 class="text-[9px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           Retail Drivers (Sandbox)
         </h3>
-        <span class="text-[9px] text-blue-400 font-medium ml-2">Market value and discount breaks.</span>
+        <span class="text-[9px] text-blue-400 font-medium sm:ml-2">Market value and discount breaks.</span>
       </div>
-      <svg id="retail-icon" class="chevron w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      <svg id="retail-icon" class="chevron w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
     </div>
-    <div class="panel-content flex flex-wrap items-end gap-x-6 gap-y-3 mt-2 pb-1" id="retail-container"></div>
+    <div class="panel-content flex flex-wrap items-end gap-x-4 md:gap-x-6 gap-y-3 mt-2 pb-1" id="retail-container"></div>
   </div>
 
-  <div class="bg-red-50 border-b border-red-100 px-6 py-3 shrink-0 shadow-inner relative z-10">
+  <div class="bg-red-50 border-b border-red-100 px-4 md:px-6 py-3 shrink-0 shadow-inner relative z-10">
     <div class="flex items-center justify-between cursor-pointer" onclick="togglePanel('cost-container', 'cost-icon')">
-      <div class="flex items-center gap-2">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
         <h3 class="text-[9px] font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
           Backend Cost Drivers (Sandbox)
         </h3>
-        <span class="text-[9px] text-red-400 font-medium ml-2">Shop physics and hard material costs.</span>
+        <span class="text-[9px] text-red-400 font-medium sm:ml-2">Shop physics and hard material costs.</span>
       </div>
-      <svg id="cost-icon" class="chevron w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      <svg id="cost-icon" class="chevron w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
     </div>
-    <div class="panel-content flex items-center gap-4 mt-2 pb-1" id="cost-container"></div>
+    <div class="panel-content flex flex-wrap items-end gap-x-4 md:gap-x-6 gap-y-3 mt-2 pb-1" id="cost-container"></div>
   </div>
 
-  <div class="flex-1 p-6 relative bg-white flex flex-col min-h-[500px]">
+  <div class="flex-1 p-4 md:p-6 relative bg-white flex flex-col min-h-[400px] md:min-h-[500px]">
     <div class="chart-container flex-1 w-full relative">
       <canvas id="priceChart"></canvas>
     </div>
     
-    <div id="receipt-panel" class="hidden absolute top-6 right-6 z-40 w-96 max-w-[90%] bg-white/95 backdrop-blur flex flex-col rounded-xl border border-gray-300 p-5 shadow-2xl overflow-y-auto max-h-[calc(100%-3rem)] transition-all">
+    <div id="receipt-panel" class="hidden absolute top-2 right-2 md:top-6 md:right-6 z-40 w-[calc(100%-1rem)] sm:w-96 max-w-[95%] sm:max-w-[90%] bg-white/95 backdrop-blur flex flex-col rounded-xl border border-gray-300 p-4 md:p-5 shadow-2xl overflow-y-auto max-h-[85%] transition-all">
       <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 shrink-0">
         <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">
           Math Receipt (Qty: <span id="rec-qty" class="text-blue-600">--</span>)
         </h3>
-        <button onclick="document.getElementById('receipt-panel').classList.add('hidden')" class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none transition-colors">✕</button>
+        <button onclick="document.getElementById('receipt-panel').classList.add('hidden')" class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none transition-colors p-1">✕</button>
       </div>
       <div class="flex flex-col space-y-6" id="rec-content">
       </div>
@@ -127,12 +127,12 @@
     </div>
   </div>
 
-  <div class="bg-gray-900 text-white px-6 py-2 flex justify-between text-[10px] font-mono shrink-0 items-center rounded-b-xl">
+  <div class="bg-gray-900 text-white px-4 md:px-6 py-3 flex flex-col sm:flex-row justify-between text-[10px] font-mono shrink-0 items-center rounded-b-xl gap-2 sm:gap-0">
     <div>
       <span class="text-gray-500">SOURCE:</span>
       <span id="data-source" class="text-blue-400 font-bold ml-2">---</span>
     </div>
-    <div class="flex gap-6">
+    <div class="flex flex-wrap justify-center gap-4 md:gap-6">
       <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-600 rounded-sm"></span> RETAIL UNIT</div>
       <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm border border-red-400 border-dashed"></span> COST UNIT</div>
       <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-400 rounded-sm opacity-50"></span> MARGIN %</div>
