@@ -92,7 +92,8 @@ function calculateYardSign(inputs, data) {
         cost: {
             total: totalCost,
             breakdown: {
-                totalMat: totalMat + totalStakeCost,
+                totalMat: totalMat,             // Just the Coroplast
+                stakeCost: totalStakeCost,      // Just the Stakes
                 totalInk: totalInk,
                 costSetup: costSetupCost,
                 runHrs: totalRunHrs,
@@ -105,4 +106,5 @@ function calculateYardSign(inputs, data) {
             margin: (grandTotal - totalCost) / grandTotal
         }
     };
+
 }
