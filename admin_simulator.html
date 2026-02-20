@@ -404,13 +404,12 @@
     if (data.cost.breakdown) {
       const b = data.cost.breakdown;
       costHTML += `
-          <div class="flex justify-between" title="Base material cost multiplied by the shop Waste Factor.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Blanks (w/ Waste):</span> 
-            <span>${fmt(b.totalMat)}</span>
+          <div class="flex justify-between" title="Pure cost of Coroplast sheets (Quantity x Base Cost).">
+            <span class="cursor-help border-b border-dotted border-gray-400">Raw Blanks:</span> 
+            <span>${fmt(b.rawBlanks)}</span>
           </div>`;
           
-      // Only show Stake Cost if it exists
-      if (b.stakeCost !== undefined) {
+      if (b.stakeCost !== undefined && b.stakeCost > 0) {
         costHTML += `
           <div class="flex justify-between">
             <span>Stakes:</span> 
@@ -431,11 +430,36 @@
             <span class="cursor-help border-b border-dotted border-gray-400">Machine Run (${b.runHrs ? b.runHrs.toFixed(2) : 0}h):</span> 
             <span>${fmt(b.costMachine)}</span>
           </div>
-          <div class="flex justify-between" title="Operator labor adjusted by the Attendance Ratio (Operator doesn't stare at printer 100% of the time).">
+          <div class="flex justify-between" title="Operator labor adjusted by the Attendance Ratio.">
             <span class="cursor-help border-b border-dotted border-gray-400">Operator (Attn Ratio):</span> 
             <span>${fmt(b.costOp)}</span>
           </div>
+
+          <!-- THE BOLT-ON FACTORS -->
+          <div class="border-t border-gray-200 mt-2 pt-1"></div>
+          <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
+          
+          <div class="flex justify-between text-red-600" title="Physical material expected to be lost to drops or cuts. This IS added to your total cost.">
+            <span class="cursor-help border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 10}%):</span> 
+            <span>+ ${fmt(b.wasteCost)}</span>
+          </div>
+          <div class="flex justify-between text-orange-500 opacity-80" title="Suggested financial buffer for mistakes. This is an INDICATOR ONLY and is NOT added to your hard cost.">
+            <span class="cursor-help border-b border-dotted border-orange-300">Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> 
+            <span>(+ ${fmt(b.riskCost)})</span>
+          </div>
       `;
+    } else {
+      costHTML += `<div class="text-gray-400 italic">Detailed breakdown object not returned.</div>`;
+    }
+
+    costHTML += `
+          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
+            <span>Total Hard Cost:</span> 
+            <span>${fmt(data.cost.total)}</span>
+          </div>
+        </div>
+      </div>
+    `;
     } else {
       costHTML += `<div class="text-gray-400 italic">Detailed breakdown object not returned.</div>`;
     }
