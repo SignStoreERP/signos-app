@@ -115,25 +115,28 @@
     
     // --- 1. MODULE DEFINITIONS ---
     const MODULES = {
-        'YARD': { 
-            tab: 'PROD_Yard_Signs', 
-            engine: 'calculateYardSign',
-            controls: [
-                { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
-                { id: 'stakes', label: 'Wire Stakes', type: 'toggle', def: true },
-                { id: 'files', label: 'Files', type: 'number', def: 1 },
-                { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
-                { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
-            ],
-            costs: [
-                { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
-                { key: 'Cost_Ink_Base', label: 'Ink / SqFt ($)' },
-                { key: 'Rate_Operator', label: 'Labor / Hr ($)' },
-                { key: 'Rate_Machine', label: 'Machine / Hr ($)' },
-                { key: 'Time_Setup_Base', label: 'Setup Mins' },       // NEW
-                { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' } // NEW
-            ]
-        },
+      'YARD': {
+        tab: 'PROD_Yard_Signs',
+        engine: 'calculateYardSign',
+        controls: [
+          { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
+          { id: 'stakes', label: 'Wire Stakes', type: 'toggle', def: true },
+          { id: 'files', label: 'Files', type: 'number', def: 1 },
+          { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
+          { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
+        ],
+        costs: [
+          { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
+          { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
+          { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
+          { key: 'Rate_Machine_Flatbed', label: 'R1000 ($/Hr)' },
+          { key: 'Time_Setup_Job', label: 'Setup (Mins)' },
+          { key: 'Time_Handling', label: 'Handling (Mins)' },
+          { key: 'Waste_Factor', label: 'Waste (1.x)' },
+          { key: 'Factor_Risk', label: 'Risk (1.x)' },
+          { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' } 
+        ]
+      },
         'ACM': { 
             tab: 'PROD_ACM_Signs', 
             engine: 'calculateACM',
