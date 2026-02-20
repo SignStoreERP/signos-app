@@ -1,29 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing Simulator v1.7</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="signos-core.js"></script>
+<body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-auto">
 
-  <!-- IMPORT LOGIC ENGINES -->
-  <script src="logic_yard.js"></script>
-  <script src="logic_acm.js"></script>
+<div id="main-card" class="flex-1 flex flex-col bg-white shadow-xl m-4 rounded-xl border border-gray-200">
 
-  <style>
-    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
-    .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
-  </style>
-</head>
-<body class="bg-gray-100 h-screen flex flex-col font-sans overflow-hidden">
-
-<!-- HEADER -->
-<div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white shadow-xl m-4 rounded-xl border border-gray-200 overflow-hidden">
-
-  <!-- TOP TOOLBAR -->
   <div class="bg-white border-b border-gray-200 px-6 py-4 grid grid-cols-12 gap-4 shrink-0 items-end z-20 relative">
     <div class="col-span-3">
       <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Engine</label>
@@ -57,43 +35,43 @@
     </div>
   </div>
 
-  <!-- OPTIONS PANEL (Gray) -->
   <div class="bg-gray-50 border-b border-gray-200 px-6 py-2 shrink-0 overflow-x-auto relative z-10">
     <div class="flex items-center gap-6" id="config-container"></div>
   </div>
 
-  <!-- RETAIL SANDBOX PANEL (Blue) -->
-  <div class="bg-blue-50 border-b border-blue-100 px-6 py-3 shrink-0 overflow-y-auto max-h-48 shadow-inner relative z-10">
-    <div class="flex items-center gap-2 mb-2">
-      <h3 class="text-[9px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        Retail Drivers (Sandbox)
-      </h3>
-      <span class="text-[9px] text-blue-400 font-medium ml-2">Market value and discount breaks.</span>
+  <div class="bg-blue-50 border-b border-blue-100 px-6 py-3 shrink-0 shadow-inner relative z-10">
+    <div class="flex items-center justify-between cursor-pointer mb-2" onclick="document.getElementById('retail-container').classList.toggle('hidden')">
+      <div class="flex items-center gap-2">
+        <h3 class="text-[9px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Retail Drivers (Sandbox)
+        </h3>
+        <span class="text-[9px] text-blue-400 font-medium ml-2">Market value and discount breaks. (Click to toggle)</span>
+      </div>
+      <div class="text-blue-500 font-bold text-lg leading-none select-none">+/-</div>
     </div>
-    <!-- Adjusted container to wrap elements onto new lines -->
-    <div class="flex flex-wrap items-end gap-x-6 gap-y-3" id="retail-container"></div>
+    <div class="flex items-center gap-4 overflow-x-auto pb-1" id="retail-container"></div>
   </div>
 
-  <!-- COST SANDBOX PANEL (Red) -->
-  <div class="bg-red-50 border-b border-red-100 px-6 py-3 shrink-0 overflow-x-auto shadow-inner relative z-10">
-    <div class="flex items-center gap-2 mb-2">
-      <h3 class="text-[9px] font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-        Backend Cost Drivers (Sandbox)
-      </h3>
-      <span class="text-[9px] text-red-400 font-medium ml-2">Shop physics and hard material costs.</span>
+  <div class="bg-red-50 border-b border-red-100 px-6 py-3 shrink-0 shadow-inner relative z-10">
+    <div class="flex items-center justify-between cursor-pointer mb-2" onclick="document.getElementById('cost-container').classList.toggle('hidden')">
+      <div class="flex items-center gap-2">
+        <h3 class="text-[9px] font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+          Backend Cost Drivers (Sandbox)
+        </h3>
+        <span class="text-[9px] text-red-400 font-medium ml-2">Shop physics and hard material costs. (Click to toggle)</span>
+      </div>
+      <div class="text-red-500 font-bold text-lg leading-none select-none">+/-</div>
     </div>
-    <div class="flex items-center gap-4" id="cost-container"></div>
+    <div class="flex items-center gap-4 overflow-x-auto pb-1" id="cost-container"></div>
   </div>
 
-  <!-- CHART AREA -->
-  <div class="flex-1 p-6 relative bg-white overflow-hidden flex flex-col">
-    <div class="chart-container flex-1 w-full min-h-[40vh] relative">
+  <div class="flex-1 p-6 relative bg-white flex flex-col min-h-[500px]">
+    <div class="chart-container flex-1 w-full relative">
       <canvas id="priceChart"></canvas>
     </div>
     
-    <!-- MATH RECEIPT PANEL -->
     <div id="receipt-panel" class="hidden absolute top-6 right-6 z-40 w-96 max-w-[90%] bg-white/95 backdrop-blur flex flex-col rounded-xl border border-gray-300 p-5 shadow-2xl overflow-y-auto max-h-[calc(100%-3rem)] transition-all">
       <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 shrink-0">
         <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">
@@ -102,8 +80,7 @@
         <button onclick="document.getElementById('receipt-panel').classList.add('hidden')" class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none transition-colors">✕</button>
       </div>
       <div class="flex flex-col space-y-6" id="rec-content">
-        <!-- Receipt Details Injected Here -->
-      </div>
+        </div>
     </div>
 
     <div id="loader" class="absolute inset-0 flex items-center justify-center bg-white/80 z-50 hidden">
@@ -114,8 +91,7 @@
     </div>
   </div>
 
-  <!-- STATS FOOTER -->
-  <div class="bg-gray-900 text-white px-6 py-2 flex justify-between text-[10px] font-mono shrink-0 items-center">
+  <div class="bg-gray-900 text-white px-6 py-2 flex justify-between text-[10px] font-mono shrink-0 items-center rounded-b-xl">
     <div>
       <span class="text-gray-500">SOURCE:</span>
       <span id="data-source" class="text-blue-400 font-bold ml-2">---</span>
@@ -128,481 +104,3 @@
   </div>
 
 </div>
-
-<script>
-  let chartInstance = null;
-  let currentBackend = {};
-  let simulationData = []; 
-
-  // --- 1. MODULE DEFINITIONS ---
-  const MODULES = {
-    'YARD': {
-      tab: 'PROD_Yard_Signs',
-      engine: 'calculateYardSign',
-      controls: [
-        { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
-        { id: 'hasStakes', label: 'Wire Stakes', type: 'toggle', def: true }, 
-        { id: 'files', label: 'Files', type: 'number', def: 1 },
-        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
-        { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
-      ],
-      retails: [
-        { heading: 'Print Base (Coroplast)', key: 'Retail_Price_Sign_SS', label: 'Base Sign ($)' },
-        { key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
-        { key: 'Tier_1_Price', label: 'Tier 1 Base ($)' },
-        { heading: 'Hardware (Wire Stakes)', key: 'Retail_Stake_T1_Price', label: 'Stake 1-49 ($)' },
-        { key: 'Retail_Stake_T2_Qty', label: 'Stake T2 Qty' },
-        { key: 'Retail_Stake_T2_Price', label: 'Stake T2 ($)' },
-        { key: 'Retail_Stake_T3_Qty', label: 'Stake T3 Qty' },
-        { key: 'Retail_Stake_T3_Price', label: 'Stake T3 ($)' }
-      ],
-      costs: [
-        { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
-        { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
-        { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
-        { key: 'Rate_Machine_Flatbed', label: 'R1000 ($/Hr)' },
-        { key: 'Machine_Speed_LF_Hr', label: 'Print Spd (LF/hr)' },
-        { key: 'Printer_Bed_Capacity', label: 'Bed Qty (Nesting)' },
-        { key: 'Time_Setup_Job', label: 'Setup (Mins)' },
-        { key: 'Time_Handling', label: 'Handling (Mins)' },
-        { key: 'Waste_Factor', label: 'Waste (1.x)' },
-        { key: 'Factor_Risk', label: 'Risk (1.x)' },
-        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
-      ]
-    },
-    'ACM': {
-      tab: 'PROD_ACM_Signs',
-      engine: 'calculateACM',
-      controls: [
-        { id: 'w', label: 'Width', type: 'number', def: 24 },
-        { id: 'h', label: 'Height', type: 'number', def: 18 },
-        { id: 'thickness', label: 'Material', type: 'select', opts: [{v:'3mm', t:'3mm Std'}, {v:'6mm', t:'6mm HD'}] },
-        { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
-        { id: 'lam', label: 'Laminate', type: 'select', opts: [{v:'Gloss', t:'Gloss'}, {v:'Matte', t:'Matte'}] },
-        { id: 'shape', label: 'Shape', type: 'select', opts: [{v:'Rectangle', t:'Rectangle'}, {v:'Contour', t:'Contour'}] },
-        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
-      ],
-      retails: [
-        { heading: 'Market Variables', key: 'ACM3_T1_Rate', label: '3mm Tiny ($/SF)' },
-        { key: 'ACM3_T2_Rate', label: '3mm Small ($/SF)' },
-        { key: 'ACM3_T3_Rate', label: '3mm Med ($/SF)' },
-        { heading: 'Router Constraints', key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
-        { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' }
-      ],
-      costs: [
-        { key: 'Cost_Stock_3mm_4x8', label: '3mm 4x8 Sheet ($)' },
-        { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
-        { key: 'Rate_CNC_Labor', label: 'CNC Labor ($/Hr)' },
-        { key: 'Time_Shear_Base', label: 'Shear Setup (Mins)' }
-      ]
-    }
-  };
-
-  window.onload = function() {
-    if(typeof injectHeader === 'function') injectHeader("Pricing Simulator");
-    loadModuleData();
-  };
-
-  // --- 2. LOAD DATA & RENDER UI ---
-  async function loadModuleData() {
-    const modKey = document.getElementById('sim-module').value;
-    const config = MODULES[modKey];
-    const btn = document.getElementById('btn-run');
-    
-    document.getElementById('receipt-panel').classList.add('hidden'); 
-
-    btn.innerText = "LOADING...";
-    btn.disabled = true;
-
-    renderControls(config.controls);
-    document.getElementById('cost-container').innerHTML = `<span class="text-xs text-red-300 font-bold animate-pulse">Fetching backend data...</span>`;
-    document.getElementById('retail-container').innerHTML = `<span class="text-xs text-blue-300 font-bold animate-pulse">Fetching backend data...</span>`;
-
-    try {
-      const u = sessionStorage.getItem('signos_user') || 'Admin';
-      const res = await fetch(`${SCRIPT_URL}?req=view_module&tab=${config.tab}&user=${u}`);
-      const data = await res.json();
-
-      if(data.error) throw new Error(data.error);
-      currentBackend = data;
-
-      document.getElementById('data-source').innerText = `${config.tab}`;
-      
-      renderCostInputs(config.costs, data);
-      renderRetailInputs(config.retails, data);
-      
-      btn.innerText = "RUN SIMULATION";
-      btn.disabled = false;
-      
-      // UPDATE STATUS HEADER
-      const statusText = document.getElementById("status-text");
-      const statusDot = document.getElementById("status-dot");
-      if(statusText) {
-        statusText.innerText = "ONLINE";
-        statusText.className = "font-bold text-green-500";
-        if(statusDot) {
-          statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-          statusDot.classList.remove("animate-pulse");
-        }
-      }
-
-      runSimulation();
-
-    } catch(e) {
-      alert("Load Error: " + e.message);
-      btn.innerText = "ERROR";
-    }
-  }
-
-  function resetDefaults() {
-    const modKey = document.getElementById('sim-module').value;
-    const config = MODULES[modKey];
-    renderControls(config.controls);
-    renderCostInputs(config.costs, currentBackend);
-    renderRetailInputs(config.retails, currentBackend);
-    runSimulation();
-  }
-
-  function renderControls(controls) {
-    const container = document.getElementById('config-container');
-    container.innerHTML = "";
-    controls.forEach(c => {
-      const wrap = document.createElement('div');
-      if(c.type === 'number') {
-        wrap.innerHTML = `
-          <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>
-          <input type="number" id="cfg-${c.id}" value="${c.def}" class="w-16 border border-gray-300 p-1 rounded text-sm font-bold text-center text-gray-700 focus:border-gray-500 outline-none">
-        `;
-      } else if (c.type === 'select') {
-        const opts = c.opts.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
-        wrap.innerHTML = `
-          <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>
-          <select id="cfg-${c.id}" class="border border-gray-300 p-1 rounded text-sm font-bold bg-white w-28 text-gray-700 focus:border-gray-500 outline-none">${opts}</select>
-        `;
-      } else if (c.type === 'toggle') {
-        const checked = c.def ? 'checked' : '';
-        wrap.innerHTML = `
-          <div class="flex items-center gap-2 mt-4">
-            <div class="relative inline-block w-8 align-middle select-none">
-              <input type="checkbox" id="cfg-${c.id}" ${checked} class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
-              <label for="cfg-${c.id}" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
-            </div>
-            <span class="text-[10px] font-bold text-gray-600 uppercase">${c.label}</span>
-          </div>
-        `;
-      }
-      container.appendChild(wrap);
-    });
-  }
-
-  function renderCostInputs(costs, data) {
-    const container = document.getElementById('cost-container');
-    container.innerHTML = "";
-    if(!costs) return;
-    costs.forEach(c => {
-      let def = 0;
-      if(c.key.includes("Attendance")) def = 1.0;
-      const val = parseFloat(data[c.key]) || def;
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <label class="block text-[9px] font-bold text-red-700 uppercase mb-1 truncate" title="${c.key}">${c.label}</label>
-        <input type="number" id="cost-${c.key}" value="${val}" step="${c.key.includes('Ratio') ? '0.1' : '0.01'}"
-          class="w-24 border border-red-200 bg-red-50 p-1 rounded text-sm font-bold text-center text-red-900 focus:border-red-500 focus:bg-white outline-none transition"
-          onchange="runSimulation()">
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  // UPDATED RETAIL INPUT RENDERER
-  function renderRetailInputs(retails, data) {
-    const container = document.getElementById('retail-container');
-    container.innerHTML = "";
-    if(!retails) return;
-    
-    retails.forEach(r => {
-      if (r.heading) {
-        const headWrap = document.createElement('div');
-        headWrap.className = "w-full text-[10px] font-black text-blue-900 uppercase mt-1 mb-[-4px] border-b border-blue-200 pb-1";
-        headWrap.innerText = r.heading;
-        container.appendChild(headWrap);
-      }
-
-      const val = parseFloat(data[r.key]) || 0;
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <label class="block text-[9px] font-bold text-blue-800 uppercase mb-1 truncate" title="${r.key}">${r.label}</label>
-        <input type="number" id="ret-${r.key}" value="${val}" step="0.01"
-          class="w-24 border border-blue-200 bg-blue-50 p-1 rounded text-sm font-bold text-center text-blue-900 focus:border-blue-500 focus:bg-white outline-none transition"
-          onchange="runSimulation()">
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  // --- 3. SIMULATION ENGINE ---
-  function runSimulation() {
-    const modKey = document.getElementById('sim-module').value;
-    const config = MODULES[modKey];
-    const engine = window[config.engine];
-
-    const start = parseInt(document.getElementById('range-start').value);
-    const end = parseInt(document.getElementById('range-end').value);
-    const step = parseInt(document.getElementById('range-step').value);
-
-    let inputs = { qty: 1 };
-    config.controls.forEach(c => {
-      const el = document.getElementById(`cfg-${c.id}`);
-      if(c.type === 'toggle') inputs[c.id] = el.checked;
-      else if(c.type === 'number') inputs[c.id] = parseFloat(el.value);
-      else if(c.type === 'select') inputs[c.id] = isNaN(parseFloat(el.value)) ? el.value : parseFloat(el.value);
-    });
-    if(!inputs.files) inputs.files = 1;
-    if(!inputs.rounded) inputs.rounded = false;
-
-    // SANDBOX DATA INJECTION (Combines Base + Red Cost Overrides + Blue Retail Overrides)
-    let simBackend = { ...currentBackend };
-    
-    if (config.costs) {
-      config.costs.forEach(c => {
-        const el = document.getElementById(`cost-${c.key}`);
-        if(el) simBackend[c.key] = parseFloat(el.value);
-      });
-    }
-    
-    if (config.retails) {
-      config.retails.forEach(r => {
-        const el = document.getElementById(`ret-${r.key}`);
-        if(el) simBackend[r.key] = parseFloat(el.value);
-      });
-    }
-
-    const labels = [];
-    const retailPoints = [];
-    const costPoints = [];
-    const marginPoints = [];
-    simulationData = []; 
-
-    for (let q = start; q <= end; q += step) {
-      labels.push(q);
-      inputs.qty = q;
-
-      const result = engine(inputs, simBackend);
-
-      simulationData.push({
-        qty: q,
-        retail: result.retail,
-        cost: result.cost
-      });
-
-      const unitRetail = result.retail.grandTotal / q;
-      const unitCost = result.cost.total / q;
-      const margin = ((unitRetail - unitCost) / unitRetail) * 100;
-
-      retailPoints.push(unitRetail.toFixed(2));
-      costPoints.push(unitCost.toFixed(2));
-      marginPoints.push(margin.toFixed(1));
-    }
-
-    renderChart(labels, retailPoints, costPoints, marginPoints);
-    document.getElementById('receipt-panel').classList.add('hidden'); 
-  }
-
-  function renderChart(labels, retail, cost, margin) {
-    const ctx = document.getElementById('priceChart').getContext('2d');
-    if(chartInstance) chartInstance.destroy();
-
-    chartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Unit Retail ($)', data: retail, borderColor: '#2563eb', backgroundColor: '#2563eb', yAxisID: 'y', tension: 0.1, borderWidth: 3 },
-          { label: 'Unit Cost ($)', data: cost, borderColor: '#ef4444', backgroundColor: '#ef4444', yAxisID: 'y', borderDash:[1], borderWidth: 2 },
-          { label: 'Margin %', data: margin, borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.5)', yAxisID: 'y1', type: 'bar', barThickness: 'flex', maxBarThickness: 40, opacity: 0.5 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        onClick: (event, elements) => {
-          if (elements.length > 0) {
-            const dataIndex = elements.index;
-            renderReceipt(dataIndex);
-          }
-        },
-        onHover: (event, chartElement) => {
-          event.native.target.style.cursor = chartElement ? 'pointer' : 'default';
-        },
-        scales: {
-          y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Price / Cost ($)' }, grid: { color: '#f3f4f6' } },
-          y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Margin (%)' }, grid: { drawOnChartArea: false }, min: 0, max: 100 },
-          x: { title: { display: true, text: 'Quantity' }, grid: { display: false } }
-        }
-      }
-    });
-  }
-
-  // --- DATA EXPORT FEATURE ---
-  function exportData() {
-    if(simulationData.length === 0) { alert("No data to export."); return; }
-    
-    const modKey = document.getElementById('sim-module').options[document.getElementById('sim-module').selectedIndex].text;
-    const rawKey = document.getElementById('sim-module').value;
-    const config = MODULES[rawKey];
-    
-    let out = `SIGNOS PRICING SIMULATION EXPORT\n`;
-    out += `Module: ${modKey} (${config.tab})\n`;
-    out += `Date: ${new Date().toLocaleString()}\n`;
-    out += `========================================\n\n`;
-    
-    out += `--- ACTIVE VARIABLES ---\n\n`;
-    out += `[RETAIL DRIVERS]\n`;
-    if (config.retails) {
-      config.retails.forEach(r => {
-        const val = document.getElementById(`ret-${r.key}`).value;
-        out += `${r.label.padEnd(25)} : ${val}\n`;
-      });
-    } else { out += `No overrides set.\n`; }
-    
-    out += `\n[COST DRIVERS]\n`;
-    if (config.costs) {
-      config.costs.forEach(c => {
-        const val = document.getElementById(`cost-${c.key}`).value;
-        out += `${c.label.padEnd(25)} : ${val}\n`;
-      });
-    }
-    
-    out += `\n========================================\n`;
-    out += ` QTY  | RETAIL EA  | COST EA    | MARGIN %\n`;
-    out += `----------------------------------------\n`;
-    
-    simulationData.forEach(d => {
-      const uRet = d.retail.grandTotal / d.qty;
-      const uCost = d.cost.total / d.qty;
-      const margin = ((uRet - uCost) / uRet) * 100;
-      
-      const qStr = d.qty.toString().padEnd(4);
-      const rStr = `$${uRet.toFixed(2)}`.padEnd(10);
-      const cStr = `$${uCost.toFixed(2)}`.padEnd(10);
-      const mStr = `${margin.toFixed(1)}%`;
-      
-      out += ` ${qStr} | ${rStr} | ${cStr} | ${mStr}\n`;
-    });
-    
-    const blob = new Blob([out], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `SignOS_Sim_${rawKey}_${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  // --- RECEIPT RENDERER ---
-  function renderReceipt(index) {
-    const data = simulationData[index];
-    if (!data) return;
-
-    document.getElementById('receipt-panel').classList.remove('hidden');
-    document.getElementById('rec-qty').innerText = data.qty;
-
-    const fmt = (n) => "$" + parseFloat(n || 0).toFixed(2);
-
-    let retailHTML = `
-      <div>
-        <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
-        <div class="space-y-1 text-xs text-gray-700">
-          <div class="flex justify-between" title="Strict market value based on square footage and Blue Sheet tiers.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Base Print:</span> 
-            <span>${fmt(data.retail.printTotal)}</span>
-          </div>
-          <div class="flex justify-between" title="Calculated hardware cost plus any Router/CNC adders.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Hardware/Adders:</span> 
-            <span>${fmt((data.retail.stakeTotal || 0) + (data.retail.routerFee || 0))}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Setup & Design:</span> 
-            <span>${fmt((data.retail.setupFee || 0) + (data.retail.designFee || 0))}</span>
-          </div>
-          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
-            <span>Total Retail:</span> 
-            <span>${fmt(data.retail.grandTotal)}</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    let costHTML = `
-      <div>
-        <h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
-        <div class="space-y-1 text-xs text-gray-700">`;
-
-    if (data.cost.breakdown) {
-      const b = data.cost.breakdown;
-      costHTML += `
-          <div class="flex justify-between" title="Pure cost of Coroplast sheets (Quantity x Base Cost).">
-            <span class="cursor-help border-b border-dotted border-gray-400">Raw Blanks:</span> 
-            <span>${fmt(b.rawBlanks)}</span>
-          </div>`;
-          
-      if (b.stakeCost !== undefined && b.stakeCost > 0) {
-        costHTML += `
-          <div class="flex justify-between">
-            <span>Stakes:</span> 
-            <span>${fmt(b.stakeCost)}</span>
-          </div>`;
-      }
-
-      costHTML += `
-          <div class="flex justify-between" title="Calculated by exact square footage and Matrix Ink Cost.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Ink:</span> 
-            <span>${fmt(b.totalInk)}</span>
-          </div>
-          <div class="flex justify-between" title="One-time flat fee for job setup and material handling.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Setup Labor:</span> 
-            <span>${fmt(b.costSetup)}</span>
-          </div>
-          <div class="flex justify-between" title="Total hours the substrate sits on the printer/router bed.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Machine Run (${b.runHrs ? b.runHrs.toFixed(2) : 0}h):</span> 
-            <span>${fmt(b.costMachine)}</span>
-          </div>
-          <div class="flex justify-between" title="Operator labor adjusted by the Attendance Ratio.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Operator (Attn Ratio):</span> 
-            <span>${fmt(b.costOp)}</span>
-          </div>
-
-          <!-- THE BOLT-ON FACTORS -->
-          <div class="border-t border-gray-200 mt-2 pt-1"></div>
-          <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
-          
-          <div class="flex justify-between text-red-600" title="Physical material expected to be lost to drops or cuts. This IS added to your total cost.">
-            <span class="cursor-help border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 10}%):</span> 
-            <span>+ ${fmt(b.wasteCost)}</span>
-          </div>
-          <div class="flex justify-between text-orange-500 opacity-80" title="Suggested financial buffer for mistakes. This is an INDICATOR ONLY and is NOT added to your hard cost.">
-            <span class="cursor-help border-b border-dotted border-orange-300">Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> 
-            <span>(+ ${fmt(b.riskCost)})</span>
-          </div>
-      `;
-    } else {
-      costHTML += `<div class="text-gray-400 italic">Detailed breakdown object not returned.</div>`;
-    }
-
-    costHTML += `
-          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
-            <span>Total Hard Cost:</span> 
-            <span>${fmt(data.cost.total)}</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('rec-content').innerHTML = retailHTML + costHTML;
-  }
-</script>
-</body>
-</html>
