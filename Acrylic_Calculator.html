@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acrylic Signs v4.0</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="signos-core.js"></script>
+
+<!-- DUAL-TRACK LOGIC ENGINES -->
+<script src="retail_acrylic.js"></script>
+<script src="cost_acrylic.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col">
+
+<!-- Main Card -->
+<div id="main-card" class="max-w-md mx-auto my-4 sm:my-10 w-[calc(100%-2rem)] sm:w-full bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200">
+
+<!-- INPUTS -->
+<div class="p-6 space-y-4">
+<div class="grid grid-cols-3 gap-3">
+<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="24" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="18" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Material</label>
+<select id="thickness" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
+<option value="125">1/8" Clear</option>
+<option value="187">3/16" Clear</option>
+</select>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Print Mode</label>
+<select id="mode" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
+<option value="2nd_Std">2nd Surf (Wht Back)</option>
+<option value="2nd_Block">2nd Surf (Blockout)</option>
+<option value="1st_Surf">1st Surf (Direct)</option>
+</select>
+</div>
+</div>
+
+<div class="space-y-2 border-t border-gray-100 pt-2">
+<!-- Paint Toggle -->
+<div class="flex flex-col bg-gray-50 border border-gray-200 rounded">
+<div class="flex items-center justify-between p-2">
+<span class="text-[10px] font-bold text-gray-700 uppercase">Paint Background?</span>
+<input type="checkbox" id="paint" onchange="toggleBox('box-paint'); runCalc()" class="w-4 h-4 text-blue-600 rounded">
+</div>
+<div id="box-paint" class="hidden p-2 border-t border-gray-200 bg-white rounded-b">
+<div class="flex gap-2">
+<input type="text" id="paint-code" list="sw-colors" placeholder="SW Code or Custom" class="flex-1 border p-1 rounded text-xs font-bold" oninput="updateSwatch('paint'); runCalc()">
+<input type="color" id="paint-swatch" value="#ffffff" class="w-8 h-8 rounded border cursor-pointer" oninput="runCalc()">
+</div>
+<datalist id="sw-colors"></datalist>
+<div id="paint-name" class="text-[9px] text-gray-400 mt-1 font-bold"></div>
+</div>
+</div>
+
+<!-- PMS Toggle -->
+<div class="flex flex-col bg-pink-50 border border-pink-200 rounded">
+<div class="flex items-center justify-between p-2">
+<span class="text-[10px] font-bold text-pink-900 uppercase">Match PMS Spot Color?</span>
+<input type="checkbox" id="pms" onchange="toggleBox('box-pms'); runCalc()" class="w-4 h-4 text-pink-600 rounded">
+</div>
+<div id="box-pms" class="hidden p-2 border-t border-pink-200 bg-white rounded-b">
+<div class="flex gap-2">
+<input type="text" id="pms-code" placeholder="PMS Code (e.g. 186 C)" class="flex-1 border p-1 rounded text-xs font-bold" oninput="runCalc()">
+<input type="color" id="pms-swatch" value="#C0142C" class="w-8 h-8 rounded border cursor-pointer" oninput="runCalc()">
+</div>
+</div>
+</div>
+
+<!-- Hardware Toggle -->
+<div class="flex flex-col bg-gray-50 border border-gray-200 rounded">
+<div class="flex items-center justify-between p-2">
+<span class="text-[10px] font-bold text-gray-700 uppercase">Include Standoffs?</span>
+<input type="checkbox" id="hw" onchange="toggleBox('box-hw'); runCalc()" class="w-4 h-4 text-blue-600 rounded">
+</div>
+<div id="box-hw" class="hidden p-2 border-t border-gray-200 bg-white rounded-b flex gap-2">
+<select id="hw-qty" class="border text-xs p-1 rounded w-1/3 font-bold" onchange="runCalc()"><option value="4">4 Qty</option><option value="6">6 Qty</option></select>
+<select id="hw-col" class="border text-xs p-1 rounded w-2/3 font-bold" onchange="runCalc()"><option value="Silver">Silver</option><option value="Black">Black</option></select>
+</div>
+</div>
+
+<div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100">
+<label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="contour" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Contour Cut</label>
+<label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer bg-purple-50 p-2 rounded border border-purple-200 hover:bg-purple-100 transition"><input type="checkbox" id="design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design</label>
+</div>
+</div>
+</div>
+
+<!-- RESULTS -->
+<div class="bg-white p-6 border-t border-gray-200">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Base Unit Price</span>
+<span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
+</div>
+
+<!-- DISCOUNT TABLE -->
+<div class="mb-4 text-right">
+<button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wide inline-flex items-center gap-1 ml-auto">
+  Show Volume Discounts
+  <svg id="disc-arrow" class="w-3 h-3 transition-transform duration-200 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+</button>
+<div id="disc-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
+<table class="w-full text-right">
+<thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200"><tr><th class="pr-4 pb-1">Qty</th><th class="pr-4 pb-1">Base Sign</th><th class="pb-1 text-blue-600">You Pay</th></tr></thead>
+<tbody id="tier-rows" class="font-bold text-gray-700"></tbody>
+</table>
+</div>
+</div>
+
+<div class="border-t border-gray-100 my-3"></div>
+
+<!-- LINE ITEMS -->
+<div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
+<div class="flex justify-between"><span>Printed Signs:</span><span id="ui-print" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-indigo-700 hidden" id="row-paint"><span>Paint Booth Prep/Run:</span><span id="ui-paint" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-pink-700 hidden" id="row-pms"><span>PMS Ink Mixing:</span><span id="ui-pms" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-orange-700 hidden" id="row-contour"><span>CNC Contour Fee:</span><span id="ui-contour" class="font-bold">$0.00</span></div>
+<div class="flex justify-between hidden" id="row-hw"><span>Standoff Hardware:</span><span id="ui-hw" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
+<div class="flex justify-between"><span>Setup Fee:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
+</div>
+
+<div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
+<div>
+<span class="text-xs font-bold text-gray-400 uppercase block">Total Quote</span>
+<span class="text-[9px] font-bold text-gray-400 uppercase block mt-1" id="ui-min-text">Shop Minimum: $75</span>
+<div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+</div>
+<span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
+</div>
+</div>
+
+<!-- DESCRIPTION GENERATOR -->
+<div class="bg-gray-50 p-4 border-t border-gray-200">
+<label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+<textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
+</div>
+
+</div>
+
+<script>
+// SW Color DB logic brought from old file
+const SW_COLORS = [
+{code:"SW7005", name:"Pure White", hex:"#EDECE6"}, {code:"SW6258", name:"Tricorn Black", hex:"#2F2F30"},
+{code:"SW7069", name:"Iron Ore", hex:"#434341"}, {code:"SW7048", name:"Urbane Bronze", hex:"#54504A"},
+{code:"SW6244", name:"Naval", hex:"#2F3D4C"}, {code:"SW6883", name:"Raucous Orange", hex:"#D66032"},
+{code:"SW6868", name:"Real Red", hex:"#C92E39"}, {code:"SW6902", name:"Decisive Yellow", hex:"#F3CF3C"},
+{code:"SW6711", name:"Parakeet", hex:"#80BD4E"}, {code:"SW6501", name:"Manitou Blue", hex:"#4C6A89"}
+];
+
+let backendData = {};
+
+window.onload = async function() {
+    injectHeader("Acrylic Signs");
+    initColors();
+
+    const u = sessionStorage.getItem('signos_user') || 'Guest';
+    const r = sessionStorage.getItem('signos_role') || 'VIEW';
+
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
+    const verDisplay = document.getElementById("version-display");
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?tab=PROD_Acrylic_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+        const data = await res.json();
+
+        if(data.error) throw new Error(data.error);
+        backendData = data;
+
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+            statusDot.classList.remove("animate-pulse");
+        }
+
+        if(verDisplay) {
+            verDisplay.innerText = `(v4.0)`;
+            verDisplay.classList.remove('hidden');
+        }
+
+        runCalc();
+
+    } catch(e) {
+        if(statusText) {
+            statusText.innerText = "OFFLINE";
+            statusText.className = "font-bold text-red-500";
+        }
+        console.error(e);
+    }
+};
+
+function initColors() {
+    const list = document.getElementById('sw-colors');
+    SW_COLORS.forEach(c => {
+        let opt = document.createElement('option');
+        opt.value = c.code; opt.innerText = c.name; list.appendChild(opt);
+    });
+}
+
+function updateSwatch(type) {
+    if(type === 'paint') {
+        const code = document.getElementById('paint-code').value.toUpperCase();
+        const swatch = document.getElementById('paint-swatch');
+        const nameLabel = document.getElementById('paint-name');
+        const match = SW_COLORS.find(c => c.code === code);
+        if (match) { swatch.value = match.hex; nameLabel.innerText = match.name; }
+        else { nameLabel.innerText = "Custom/Unknown"; }
+    }
+}
+
+function toggleBox(id) {
+    document.getElementById(id).classList.toggle('hidden');
+}
+
+function toggleDiscounts() {
+    const table = document.getElementById('disc-table');
+    const arrow = document.getElementById('disc-arrow');
+    table.classList.toggle('hidden');
+    if (table.classList.contains('hidden')) {
+        arrow.classList.add('rotate-90');
+    } else {
+        arrow.classList.remove('rotate-90');
+    }
+}
+
+function runCalc() {
+    if(!backendData.Item_Name) return;
+
+    const inputs = {
+        qty: parseFloat(document.getElementById('qty').value) || 1,
+        w: parseFloat(document.getElementById('w').value) || 24,
+        h: parseFloat(document.getElementById('h').value) || 18,
+        thickness: document.getElementById('thickness').value,
+        mode: document.getElementById('mode').value,
+        hasPaint: document.getElementById('paint').checked,
+        hasPMS: document.getElementById('pms').checked,
+        hasStandoffs: document.getElementById('hw').checked,
+        standoffQty: parseInt(document.getElementById('hw-qty').value),
+        isContour: document.getElementById('contour').checked,
+        incDesign: document.getElementById('design').checked
+    };
+
+    const ret = calculateRetail(inputs, backendData);
+
+    const fmt = (n) => "$" + n.toFixed(2);
+    const toggleRow = (id, val) => {
+        if(val > 0) { document.getElementById(id).classList.remove('hidden'); }
+        else { document.getElementById(id).classList.add('hidden'); }
+    }
+
+    document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+    document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
+    document.getElementById('ui-print').innerText = fmt(ret.printTotal);
+    
+    toggleRow('row-paint', ret.paintTotal);
+    document.getElementById('ui-paint').innerText = fmt(ret.paintTotal);
+
+    toggleRow('row-pms', ret.pmsTotal);
+    document.getElementById('ui-pms').innerText = fmt(ret.pmsTotal);
+
+    toggleRow('row-contour', ret.contourTotal);
+    document.getElementById('ui-contour').innerText = fmt(ret.contourTotal);
+
+    toggleRow('row-hw', ret.standoffTotal);
+    document.getElementById('ui-hw').innerText = fmt(ret.standoffTotal);
+
+    toggleRow('row-design', ret.feeDesign);
+    document.getElementById('ui-design').innerText = fmt(ret.feeDesign);
+    
+    document.getElementById('ui-setup').innerText = fmt(ret.feeSetup);
+    
+    document.getElementById('ui-min-text').innerText = `Shop Minimum: $${ret.minOrderValue}`;
+    document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+
+    let rowsHtml = "";
+    ret.tiers.forEach(tier => {
+        const pctDisplay = tier.pct > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(tier.pct*100).toFixed(0)}%</span>` : "";
+        rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+ ${pctDisplay}</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
+    });
+    document.getElementById('tier-rows').innerHTML = rowsHtml;
+
+    // Generate Text
+    const finishTxt = [];
+    if(inputs.mode === '2nd_Std') finishTxt.push("2nd Surface Print (Color+White)");
+    else if(inputs.mode === '2nd_Block') finishTxt.push("2nd Surface Blockout (Day/Night)");
+    else finishTxt.push("1st Surface Direct Print");
+
+    if(inputs.hasPaint) finishTxt.push(`Painted Background (${document.getElementById('paint-code').value || 'Custom'})`);
+    if(inputs.hasPMS) finishTxt.push(`PMS Match (${document.getElementById('pms-code').value || 'TBD'})`);
+    if(inputs.isContour) finishTxt.push("Contour Cut Shape");
+    if(inputs.hasStandoffs) finishTxt.push(`${document.getElementById('hw-qty').value} ${document.getElementById('hw-col').value} Standoffs`);
+
+    const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness === '187' ? '3/16"' : '1/8"'} Acrylic Sign.\n${finishTxt.join(". ")}.`;
+    document.getElementById('job-desc').value = desc;
+}
+</script>
+</body>
+</html>
