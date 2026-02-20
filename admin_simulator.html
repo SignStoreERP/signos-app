@@ -362,7 +362,7 @@
     });
   }
 
-  // --- NEW: RECEIPT RENDERER ---
+// --- NEW: RECEIPT RENDERER ---
   function renderReceipt(index) {
     const data = simulationData[index];
     if (!data) return;
@@ -435,7 +435,6 @@
             <span>${fmt(b.costOp)}</span>
           </div>
 
-          <!-- THE BOLT-ON FACTORS -->
           <div class="border-t border-gray-200 mt-2 pt-1"></div>
           <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
           
@@ -455,22 +454,6 @@
     costHTML += `
           <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
             <span>Total Hard Cost:</span> 
-            <span>${fmt(data.cost.total)}</span>
-          </div>
-        </div>
-      </div>
-    `;
-    } else {
-      costHTML += `<div class="text-gray-400 italic">Detailed breakdown object not returned.</div>`;
-    }
-
-    costHTML += `
-          <div class="flex justify-between text-orange-600 border-t border-gray-200 pt-1 mt-1" title="Added percentage to account for potential shop errors, drops, or reprints.">
-            <span class="cursor-help border-b border-dotted border-orange-400">Risk Buffer:</span> 
-            <span>${fmt(data.cost.breakdown ? data.cost.breakdown.riskCost : 0)}</span>
-          </div>
-          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
-            <span>Total Cost:</span> 
             <span>${fmt(data.cost.total)}</span>
           </div>
         </div>
