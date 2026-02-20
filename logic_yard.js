@@ -1,15 +1,25 @@
 /**
- * PURE PHYSICS ENGINE: Yard Signs (v3.0 - Dual Track)
- * Generates Matrix-driven BOM and Retail outputs
+ * PURE PHYSICS ENGINE: Yard Signs (v3.1 - Dual Track)
+ * Implements 3-Tier Stake Pricing Logic
  */
 
 function calculateYardSign(inputs, data) {
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
     const baseSS = parseFloat(data.Retail_Price_Sign_SS || 25.00);
     const adderDS = parseFloat(data.Retail_Price_Sign_DS || 2.50);
-    const stakePrice = parseFloat(data.Retail_Price_Stake || 2.50);
 
-    // Tier Logic
+    // Dynamic Stake Pricing (3 Tiers)
+    const stk1Price = parseFloat(data.Retail_Stake_T1_Price || 2.00);
+    const stkT2Q = parseFloat(data.Retail_Stake_T2_Qty || 50);
+    const stkT2P = parseFloat(data.Retail_Stake_T2_Price || 1.75);
+    const stkT3Q = parseFloat(data.Retail_Stake_T3_Qty || 100);
+    const stkT3P = parseFloat(data.Retail_Stake_T3_Price || 1.50);
+
+    let activeStakePrice = stk1Price;
+    if (inputs.qty >= stkT3Q) activeStakePrice = stkT3P;
+    else if (inputs.qty >= stkT2Q) activeStakePrice = stkT2P;
+
+    // Print Tier Logic
     let appliedBase = baseSS;
     let i = 1;
     const tierLog = [];
@@ -18,7 +28,12 @@ function calculateYardSign(inputs, data) {
         const tPrice = parseFloat(data[`Tier_${i}_Price`] || 0);
         if (inputs.qty >= tQty) appliedBase = tPrice;
         
-        const rowUnit = tPrice + (inputs.sides===2 ? adderDS : 0) + (inputs.hasStakes ? stakePrice : 0);
+        // Calculate the specific stake price for THIS tier in the discount table
+        let rowStakePrice = stk1Price;
+        if (tQty >= stkT3Q) rowStakePrice = stkT3P;
+        else if (tQty >= stkT2Q) rowStakePrice = stkT2P;
+
+        const rowUnit = tPrice + (inputs.sides === 2 ? adderDS : 0) + (inputs.hasStakes ? rowStakePrice : 0);
         tierLog.push({ q: tQty, base: tPrice, unit: rowUnit });
         i++;
     }
@@ -26,7 +41,7 @@ function calculateYardSign(inputs, data) {
     const isCustom = (appliedBase === 0);
     const unitPrint = appliedBase + (inputs.sides === 2 ? adderDS : 0);
     const totalPrint = unitPrint * inputs.qty;
-    const unitStake = inputs.hasStakes ? stakePrice : 0;
+    const unitStake = inputs.hasStakes ? activeStakePrice : 0;
     const totalStake = unitStake * inputs.qty;
 
     // Fees
@@ -45,11 +60,11 @@ function calculateYardSign(inputs, data) {
     let blankCost = parseFloat(data.Cost_Blank_Standard || 0.65);
     if (inputs.qty >= bulkTrigger) blankCost = parseFloat(data.Cost_Blank_Bulk || 0.65);
 
-    // SEPARATE RAW BLANKS AND WASTE
+    // Separate Raw Blanks and Waste
     const rawBlanks = blankCost * inputs.qty;
     const wastePct = parseFloat(data.Waste_Factor || 1.10);
     const wasteCost = rawBlanks * (wastePct - 1);
-    const totalMat = rawBlanks + wasteCost; // Total physical material consumed
+    const totalMat = rawBlanks + wasteCost; 
 
     // Ink 
     const areaSqFt = (24*18)/144;
@@ -78,10 +93,10 @@ function calculateYardSign(inputs, data) {
     // Totals & Risk
     const subTotal = totalMat + totalInk + totalStakeCost + costMachine + costOpPrint + costSetupCost;
     
-    // RISK IS NOW JUST AN INDICATOR, EXCLUDED FROM TOTAL
+    // Risk is just an indicator
     const riskFactor = parseFloat(data.Factor_Risk || 1.05);
     const riskBuffer = subTotal * (riskFactor - 1);
-    const totalCost = subTotal; // <-- NO LONGER ADDS RISK TO YOUR BOTTOM LINE
+    const totalCost = subTotal; 
 
     return {
         retail: {
@@ -98,17 +113,17 @@ function calculateYardSign(inputs, data) {
         cost: {
             total: totalCost,
             breakdown: {
-                rawBlanks: rawBlanks,           // PURE BLANK COST
-                wasteCost: wasteCost,           // PURE WASTE COST
-                wastePct: (wastePct - 1) * 100, // PERCENTAGE FOR UI
+                rawBlanks: rawBlanks,
+                wasteCost: wasteCost,           
+                wastePct: (wastePct - 1) * 100, 
                 stakeCost: totalStakeCost,
                 totalInk: totalInk,
                 costSetup: costSetupCost,
                 runHrs: totalRunHrs,
                 costMachine: costMachine,
                 costOp: costOpPrint,
-                riskCost: riskBuffer,           // NOW AN INDICATOR ONLY
-                riskPct: (riskFactor - 1) * 100 // PERCENTAGE FOR UI
+                riskCost: riskBuffer,           
+                riskPct: (riskFactor - 1) * 100 
             }
         },
         metrics: {
