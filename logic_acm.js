@@ -1,83 +1,164 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v2.12)
- * Updated for Sandbox Cost Drivers with Gemini Bug Fixes
+ * PURE PHYSICS ENGINE: ACM Signs (v3.2 - Dual Track)
+ * Implements Qty Breaks, Shear vs CNC Physics, and Corner Rounding.
  */
 
 function calculateACM(inputs, data) {
+    // --- 1. RETAIL ENGINE (MARKET VALUE) ---
+    const sqft = (inputs.w * inputs.h) / 144;
+    const totalSqFt = sqft * inputs.qty;
+
+    // Base Rate per SqFt (Safely checks for explicit keys, curve keys, or defaults)
+    let baseSqFtRate = inputs.thickness === '6mm' 
+        ? parseFloat(data.Retail_ACM6_SqFt || data.ACM6_T5_Rate || 16.50) 
+        : parseFloat(data.Retail_ACM3_SqFt || data.ACM3_T5_Rate || 14.00);
+
+    // Black ACM 6mm Exception (Double Price per Blue Sheet)
+    if (inputs.color === 'Black' && inputs.thickness === '6mm') {
+        baseSqFtRate *= 2;
+    }
+
+    // 1-9 vs 10+ Tier Logic
+    let discPct = 0;
+    const t1Qty = parseFloat(data.Tier_1_Qty || 10);
+    if (inputs.qty >= t1Qty) {
+        discPct = parseFloat(data.Tier_1_Disc || 0.05); // e.g. 5% off for 10+
+    }
+    const activeRate = baseSqFtRate * (1 - discPct);
     
-    // 1. Sheet Optimization Logic (Simplified for Headless)
-    // In real app, this has the SVG generation. For Headless Sim, we just need math.
-    const stockSheets = [
-        {name: "4x8", w: 48, h: 96, cost: parseFloat(data.Cost_Sheet_3mm || 52.09)},
-        {name: "4x10", w: 48, h: 120, cost: parseFloat(data.Cost_Stock_3mm_4x10 || 69.44)},
-        {name: "5x10", w: 60, h: 120, cost: parseFloat(data.Cost_Stock_3mm_5x10 || 75.75)}
+    let retailPrint = activeRate * totalSqFt;
+
+    // Double Sided Adder
+    if (inputs.sides === 2) {
+        const dsAdder = inputs.thickness === '6mm' 
+            ? parseFloat(data.Retail_Adder_DS_6mm || 8.25) 
+            : parseFloat(data.Retail_Adder_DS_3mm || 7.00);
+        retailPrint += (dsAdder * totalSqFt);
+    }
+
+    // Shape / CNC Fees (Match exact keys from PROD_ACM_Signs)
+    let routerFee = 0;
+    if (inputs.shape === 'CNC Simple') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30);
+    if (inputs.shape === 'CNC Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50);
+
+    // Rounded Corners are intentionally EXCLUDED from Retail math based on requirements
+    
+    // File & Design Fees
+    const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
+    const feeSetupBase = parseFloat(data.Retail_Fee_Setup || 15);
+    const feeSetup = inputs.setupPerFile ? (feeSetupBase * inputs.files) : feeSetupBase;
+
+    const grandTotalRaw = retailPrint + routerFee + feeDesign + feeSetup;
+    const minOrder = parseFloat(data.Retail_Min_Order || 50);
+    const grandTotal = Math.max(grandTotalRaw, minOrder);
+
+    // UI Tier Log
+    const tierLog = [
+        { q: 1, base: baseSqFtRate, unit: (baseSqFtRate * sqft) + (inputs.sides === 2 ? (inputs.thickness==='6mm'?8.25:7)*sqft : 0) },
+        { q: t1Qty, base: baseSqFtRate * (1 - (data.Tier_1_Disc||0.05)), unit: (baseSqFtRate * (1 - (data.Tier_1_Disc||0.05)) * sqft) + (inputs.sides === 2 ? (inputs.thickness==='6mm'?8.25:7)*sqft : 0) }
     ];
-    
-    const signArea = inputs.w * inputs.h;
-    const totalArea = signArea * inputs.qty;
-    const sheetArea = 48 * 96; // Standard 4x8 reference
-    const sheetsNeeded = Math.ceil(totalArea / sheetArea); // Crude approx for sim speed
-    
-    // --- RETAIL ---
-    const baseRate = parseFloat(data.Retail_Price_3mm_Base || 14);
-    const unitPrice = (baseRate * (inputs.w * inputs.h / 144));
-    let retailTotal = unitPrice * inputs.qty;
-    
-    const setupFee = parseFloat(data.Retail_Fee_Setup || 25);
-    retailTotal += setupFee;
 
-    // --- COST ---
-    const waste = parseFloat(data.Waste_Factor || 1.2);
-    
-    // FIX APPLIED: Added [0] index to pull the cost of the 4x8 sheet
-    const costMat = (sheetsNeeded * stockSheets[0].cost); 
-    
-    const costLam = (totalArea / 144) * parseFloat(data.Cost_Lam_SqFt || 0.36) * waste;
-    
-    // Labor & Machine
-    const speedPrint = parseFloat(data.Speed_Print_LF || 25); 
-    const feedLen = inputs.h < 60 ? inputs.w : inputs.h; // Optimize rotation
-    const runHrs = (feedLen * inputs.qty) / 12 / speedPrint;
-    
-    const rateMach = parseFloat(data.Rate_Machine_Print || 45);
+    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    // Materials
+    let sheetCost = inputs.thickness === '6mm' 
+        ? parseFloat(data.Cost_Stock_6mm_4x8 || 72.10) 
+        : parseFloat(data.Cost_Stock_3mm_4x8 || 52.09);
+        
+    const costPerSqFt = sheetCost / 32; // 4x8 sheet = 32 sqft
+    const wastePct = parseFloat(data.Waste_Factor || 1.20);
+    const rawMat = costPerSqFt * totalSqFt;
+    const wasteCost = rawMat * (wastePct - 1);
+    const totalMat = rawMat + wasteCost;
+
+    const totalInk = totalSqFt * inputs.sides * parseFloat(data.Cost_Ink_Latex || 0.16);
+
+    // Labor Rates
     const rateOp = parseFloat(data.Rate_Operator || 25);
-    const rateCNC = parseFloat(data.Rate_CNC_Labor || 45);
+    const rateCNC = parseFloat(data.Rate_CNC_Labor || 25); // Updated fallback to $25
     const rateMachCNC = parseFloat(data.Rate_Machine_CNC || 35);
-    
-    // NEW: Attendance Ratio
-    const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 1.0);
-    
-    const costRunMach = runHrs * rateMach;
-    const costRunOp = runHrs * rateOp * attnRatio;
-    
-    // CNC Time (Full Attention usually, or maybe ratio applies?)
-    // Let's assume CNC needs full attention for loading/unloading
-    const timeCNC = (inputs.qty * 10) / 60; // 10 mins per sheet avg
-    const costCNC = timeCNC * (rateCNC + rateMachCNC);
-    
-    const setupHrs = parseFloat(data.Time_Setup_Base || 5) / 60;
-    const costSetup = setupHrs * rateOp;
+    const rateMachPrint = parseFloat(data.Rate_Machine_Flatbed || 45);
 
-    const totalCost = costMat + costLam + costRunMach + costRunOp + costCNC + costSetup;
+    let costCutSetup = 0;
+    let costCutLabor = 0;
+    let costCutMach = 0;
+    let costRound = 0;
+    let runHrsCNC = 0;
 
-    // FIX APPLIED: Mapped return object values to the actual variables calculated above
+    // Cutting Physics
+    if (inputs.shape === 'Rectangle') {
+        // Shear Cut (2 cuts per sign)
+        const shearSetupMins = parseFloat(data.Time_Shear_Setup || 5);
+        const shearPerCut = parseFloat(data.Time_Shear_Cut || 1);
+        costCutSetup = (shearSetupMins / 60) * rateOp;
+        costCutLabor = ((inputs.qty * 2 * shearPerCut) / 60) * rateOp;
+
+        // Rounding Physics (4 corners per sign)
+        if (inputs.rounded) {
+            const roundSetup = parseFloat(data.Time_Round_Setup || 5);
+            const roundPerCut = parseFloat(data.Time_Round_Corner || 0.5);
+            const totalRoundMins = roundSetup + (inputs.qty * 4 * roundPerCut);
+            costRound = (totalRoundMins / 60) * rateOp;
+        }
+    } else {
+        // CNC Router Physics
+        const cncSetupMins = parseFloat(data.Time_Setup_CNC || 10);
+        costCutSetup = (cncSetupMins / 60) * rateCNC;
+
+        const routeTimeSqFt = inputs.shape === 'CNC Complex' 
+            ? parseFloat(data.Time_CNC_Complex_SqFt || 2) 
+            : parseFloat(data.Time_CNC_Easy_SqFt || 1);
+        
+        runHrsCNC = (totalSqFt * routeTimeSqFt) / 60;
+        costCutLabor = runHrsCNC * rateCNC;
+        costCutMach = runHrsCNC * rateMachCNC;
+    }
+
+    // Print Speed Physics
+    const speedPrint = parseFloat(data.Machine_Speed_LF_Hr || 25); 
+    const linearFeet = (inputs.h / 12) * inputs.qty; // Simplified feed length
+    const printHrs = (linearFeet / speedPrint) * inputs.sides;
+    const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
+    const costPrintOp = printHrs * rateOp * attnRatio;
+    const costPrintMach = printHrs * rateMachPrint;
+
+    // Totals & Risk Indicator
+    const subTotal = totalMat + totalInk + costCutSetup + costCutLabor + costCutMach + costRound + costPrintOp + costPrintMach;
+    const riskFactor = parseFloat(data.Factor_Risk || 1.05);
+    const riskBuffer = subTotal * (riskFactor - 1);
+    
+    // Risk is just an indicator
+    const totalCost = subTotal;
+
     return {
         retail: {
-            unitPrice: unitPrice,
-            grandTotal: retailTotal,
-            isOversized: false,
-            breakdown: {
-                material: costMat,    
-                laminate: costLam,    
-                finish: costCNC       
-            },
-            fees: {
-                setup: setupFee,
-                design: 0
-            }
+            unitPrice: (retailPrint + routerFee) / inputs.qty,
+            printTotal: retailPrint,
+            routerFee: routerFee,
+            setupFee: feeSetup,
+            designFee: feeDesign,
+            grandTotal: grandTotal,
+            isMinApplied: grandTotalRaw < minOrder,
+            tiers: tierLog
         },
         cost: {
-            total: totalCost
+            total: totalCost,
+            breakdown: {
+                rawBlanks: rawMat,
+                wasteCost: wasteCost,           
+                wastePct: (wastePct - 1) * 100, 
+                totalInk: totalInk,
+                costSetup: costCutSetup,
+                costCut: costCutLabor + costCutMach,
+                costRound: costRound,
+                runHrs: runHrsCNC + printHrs,
+                costMachine: costPrintMach + costCutMach,
+                costOp: costPrintOp + costCutLabor + costRound,
+                riskCost: riskBuffer,           
+                riskPct: (riskFactor - 1) * 100 
+            }
+        },
+        metrics: {
+            margin: (grandTotal - totalCost) / grandTotal
         }
     };
 }
