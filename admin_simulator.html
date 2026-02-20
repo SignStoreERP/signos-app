@@ -396,7 +396,7 @@
     document.getElementById('receipt-panel').classList.add('hidden'); 
   }
 
-  function renderChart(labels, retail, cost, margin) {
+function renderChart(labels, retail, cost, margin) {
     const ctx = document.getElementById('priceChart').getContext('2d');
     if(chartInstance) chartInstance.destroy();
 
@@ -416,12 +416,13 @@
         interaction: { mode: 'index', intersect: false },
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            const dataIndex = elements.index;
+            // FIX: Grab the index from the first clicked element in the array
+            const dataIndex = elements[0].index; 
             renderReceipt(dataIndex);
           }
         },
         onHover: (event, chartElement) => {
-          event.native.target.style.cursor = chartElement ? 'pointer' : 'default';
+          event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
         },
         scales: {
           y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Price / Cost ($)' }, grid: { color: '#f3f4f6' } },
