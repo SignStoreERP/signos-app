@@ -19,7 +19,7 @@
     /* Smooth Accordion Transitions */
     .panel-content {
       transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin 0.3s ease-in-out;
-      max-height: 200px; /* Tall enough to fit inputs */
+      max-height: 250px; /* Tall enough to fit inputs with wrapped rows */
       opacity: 1;
       overflow-x: auto;
       overflow-y: hidden;
@@ -194,22 +194,36 @@
         { id: 'h', label: 'Height', type: 'number', def: 18 },
         { id: 'thickness', label: 'Material', type: 'select', opts: [{v:'3mm', t:'3mm Std'}, {v:'6mm', t:'6mm HD'}] },
         { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
-        { id: 'lam', label: 'Laminate', type: 'select', opts: [{v:'Gloss', t:'Gloss'}, {v:'Matte', t:'Matte'}] },
-        { id: 'shape', label: 'Shape', type: 'select', opts: [{v:'Rectangle', t:'Rectangle'}, {v:'Contour', t:'Contour'}] },
+        { id: 'color', label: 'Color', type: 'select', opts: [{v:'White', t:'White'}, {v:'Black', t:'Black'}] },
+        { id: 'shape', label: 'Cutting Method', type: 'select', opts: [{v:'Rectangle', t:'Square / Shear'}, {v:'CNC Simple', t:'CNC (Simple)'}, {v:'CNC Complex', t:'CNC (Complex)'}] },
+        { id: 'rounded', label: 'Rounded Corners', type: 'toggle', def: false },
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
       ],
       retails: [
-        { heading: 'Market Variables', key: 'ACM3_T1_Rate', label: '3mm Tiny ($/SF)' },
-        { key: 'ACM3_T2_Rate', label: '3mm Small ($/SF)' },
-        { key: 'ACM3_T3_Rate', label: '3mm Med ($/SF)' },
-        { heading: 'Router Constraints', key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
-        { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' }
+        { heading: 'Market Base ($/SqFt)', key: 'Retail_ACM3_SqFt', label: '3mm Rate ($)' },
+        { key: 'Retail_ACM6_SqFt', label: '6mm Rate ($)' },
+        { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
+        { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)' },
+        { heading: 'Adders & Services', key: 'Retail_Fee_CNC_Simple', label: 'CNC Simple Fee ($)' },
+        { key: 'Retail_Fee_CNC_Complex', label: 'CNC Complex Fee ($)' },
+        { key: 'Retail_Fee_Round_Setup', label: 'Round Corner Setup ($)' },
+        { key: 'Retail_Price_Round_Corner', label: 'Round Corner Per/Ea ($)' }
       ],
       costs: [
         { key: 'Cost_Stock_3mm_4x8', label: '3mm 4x8 Sheet ($)' },
+        { key: 'Cost_Stock_6mm_4x8', label: '6mm 4x8 Sheet ($)' },
         { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
-        { key: 'Rate_CNC_Labor', label: 'CNC Labor ($/Hr)' },
-        { key: 'Time_Shear_Base', label: 'Shear Setup (Mins)' }
+        { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
+        { key: 'Rate_CNC_Labor', label: 'CNC Operator ($/Hr)' },
+        { key: 'Rate_Machine_CNC', label: 'Router Mach ($/Hr)' },
+        { key: 'Rate_Machine_Flatbed', label: 'Printer Mach ($/Hr)' },
+        { key: 'Time_Shear_Setup', label: 'Shear Setup (Mins)' },
+        { key: 'Time_Shear_Cut', label: 'Shear Cut (Mins/Ea)' },
+        { key: 'Time_Round_Setup', label: 'Corner Setup (Mins)' },
+        { key: 'Time_Round_Corner', label: 'Cut Corner (Mins/Ea)' },
+        { key: 'Time_Setup_CNC', label: 'CNC Setup (Mins)' },
+        { key: 'Time_CNC_Easy_SqFt', label: 'CNC Easy (Mins/SqFt)' },
+        { key: 'Time_CNC_Complex_SqFt', label: 'CNC Complex (Mins/SqFt)' }
       ]
     }
   };
@@ -378,6 +392,21 @@
       else if(c.type === 'number') inputs[c.id] = parseFloat(el.value);
       else if(c.type === 'select') inputs[c.id] = isNaN(parseFloat(el.value)) ? el.value : parseFloat(el.value);
     });
+
+    // --- NEW: DYNAMIC ACM LOGIC ---
+    if (modKey === 'ACM') {
+        const roundedToggleWrap = document.getElementById('cfg-rounded').closest('div').parentElement;
+        if (inputs.shape !== 'Rectangle') {
+            roundedToggleWrap.style.opacity = '0.3';
+            roundedToggleWrap.style.pointerEvents = 'none';
+            inputs.rounded = false; // Force false for math
+            document.getElementById('cfg-rounded').checked = false;
+        } else {
+            roundedToggleWrap.style.opacity = '1';
+            roundedToggleWrap.style.pointerEvents = 'auto';
+        }
+    }
+    
     if(!inputs.files) inputs.files = 1;
     if(!inputs.rounded) inputs.rounded = false;
 
@@ -547,7 +576,10 @@ function renderChart(labels, retail, cost, margin) {
       retailHTML += `<div class="flex justify-between"><span>Wire Stakes:</span> <span>${fmt(data.retail.stakeTotal)}</span></div>`;
     }
     if (data.retail.routerFee !== undefined && data.retail.routerFee > 0) {
-      retailHTML += `<div class="flex justify-between"><span>CNC Router Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>`;
+      retailHTML += `<div class="flex justify-between text-orange-700"><span>CNC Router Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>`;
+    }
+    if (data.retail.roundedFee !== undefined && data.retail.roundedFee > 0) {
+      retailHTML += `<div class="flex justify-between text-purple-700"><span>Rounded Corners:</span> <span>${fmt(data.retail.roundedFee)}</span></div>`;
     }
     
     retailHTML += `
@@ -577,8 +609,8 @@ function renderChart(labels, retail, cost, margin) {
     if (data.cost.breakdown) {
       const b = data.cost.breakdown;
       costHTML += `
-          <div class="flex justify-between" title="Pure cost of Coroplast sheets (Quantity x Base Cost).">
-            <span class="cursor-help border-b border-dotted border-gray-400">Raw Blanks:</span> 
+          <div class="flex justify-between" title="Pure cost of substrate (Quantity x Base Cost).">
+            <span class="cursor-help border-b border-dotted border-gray-400">Raw Blanks/Material:</span> 
             <span>${fmt(b.rawBlanks)}</span>
           </div>`;
           
@@ -598,7 +630,25 @@ function renderChart(labels, retail, cost, margin) {
           <div class="flex justify-between" title="One-time flat fee for job setup and material handling.">
             <span class="cursor-help border-b border-dotted border-gray-400">Setup Labor:</span> 
             <span>${fmt(b.costSetup)}</span>
-          </div>
+          </div>`;
+
+      // NEW ACM COST ADDITIONS
+      if (b.costCut !== undefined) {
+        costHTML += `
+          <div class="flex justify-between" title="Labor and machine time for either Shear cuts or CNC Routing.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Cutting Time:</span> 
+            <span>${fmt(b.costCut)}</span>
+          </div>`;
+      }
+      if (b.costRound !== undefined && b.costRound > 0) {
+        costHTML += `
+          <div class="flex justify-between" title="Operator labor for corner rounding punches.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Corner Punching:</span> 
+            <span>${fmt(b.costRound)}</span>
+          </div>`;
+      }
+
+      costHTML += `
           <div class="flex justify-between" title="Total hours the substrate sits on the printer/router bed.">
             <span class="cursor-help border-b border-dotted border-gray-400">Machine Run (${b.runHrs ? b.runHrs.toFixed(2) : 0}h):</span> 
             <span>${fmt(b.costMachine)}</span>
@@ -608,7 +658,6 @@ function renderChart(labels, retail, cost, margin) {
             <span>${fmt(b.costOp)}</span>
           </div>
 
-          <!-- THE BOLT-ON FACTORS -->
           <div class="border-t border-gray-200 mt-2 pt-1"></div>
           <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
           
