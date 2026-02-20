@@ -124,7 +124,7 @@
       engine: 'calculateYardSign',
       controls: [
         { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
-        { id: 'stakes', label: 'Wire Stakes', type: 'toggle', def: true },
+        { id: 'hasStakes', label: 'Wire Stakes', type: 'toggle', def: true }, // <--- CHANGED THIS ID
         { id: 'files', label: 'Files', type: 'number', def: 1 },
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
         { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
@@ -376,10 +376,22 @@
       <div>
         <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
         <div class="space-y-1 text-xs text-gray-700">
-          <div class="flex justify-between"><span>Base Print:</span> <span>${fmt(data.retail.printTotal)}</span></div>
-          <div class="flex justify-between"><span>Hardware/Adders:</span> <span>${fmt(data.retail.stakeTotal || data.retail.routerFee || 0)}</span></div>
-          <div class="flex justify-between"><span>Setup & Design:</span> <span>${fmt((data.retail.setupFee || 0) + (data.retail.designFee || 0))}</span></div>
-          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
+          <div class="flex justify-between" title="Strict market value based on square footage and Blue Sheet tiers.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Base Print:</span> 
+            <span>${fmt(data.retail.printTotal)}</span>
+          </div>
+          <div class="flex justify-between" title="Calculated hardware cost plus any Router/CNC adders.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Hardware/Adders:</span> 
+            <span>${fmt((data.retail.stakeTotal || 0) + (data.retail.routerFee || 0))}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Setup & Design:</span> 
+            <span>${fmt((data.retail.setupFee || 0) + (data.retail.designFee || 0))}</span>
+          </div>
+          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
+            <span>Total Retail:</span> 
+            <span>${fmt(data.retail.grandTotal)}</span>
+          </div>
         </div>
       </div>
     `;
@@ -392,19 +404,51 @@
     if (data.cost.breakdown) {
       const b = data.cost.breakdown;
       costHTML += `
-          <div class="flex justify-between"><span>Materials (w/ Waste):</span> <span>${fmt(b.totalMat)}</span></div>
-          <div class="flex justify-between"><span>Ink:</span> <span>${fmt(b.totalInk)}</span></div>
-          <div class="flex justify-between"><span>Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
-          <div class="flex justify-between"><span>Machine Run (${b.runHrs ? b.runHrs.toFixed(2) : 0}h):</span> <span>${fmt(b.costMachine)}</span></div>
-          <div class="flex justify-between"><span>Operator (Attn Ratio):</span> <span>${fmt(b.costOp)}</span></div>
+          <div class="flex justify-between" title="Base material cost multiplied by the shop Waste Factor.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Blanks (w/ Waste):</span> 
+            <span>${fmt(b.totalMat)}</span>
+          </div>`;
+          
+      // Only show Stake Cost if it exists
+      if (b.stakeCost !== undefined) {
+        costHTML += `
+          <div class="flex justify-between">
+            <span>Stakes:</span> 
+            <span>${fmt(b.stakeCost)}</span>
+          </div>`;
+      }
+
+      costHTML += `
+          <div class="flex justify-between" title="Calculated by exact square footage and Matrix Ink Cost.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Ink:</span> 
+            <span>${fmt(b.totalInk)}</span>
+          </div>
+          <div class="flex justify-between" title="One-time flat fee for job setup and material handling.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Setup Labor:</span> 
+            <span>${fmt(b.costSetup)}</span>
+          </div>
+          <div class="flex justify-between" title="Total hours the substrate sits on the printer/router bed.">
+            <span class="cursor-help border-b border-dotted border-gray-400">Machine Run (${b.runHrs ? b.runHrs.toFixed(2) : 0}h):</span> 
+            <span>${fmt(b.costMachine)}</span>
+          </div>
+          <div class="flex justify-between" title="Operator labor adjusted by the Attendance Ratio (Operator doesn't stare at printer 100% of the time).">
+            <span class="cursor-help border-b border-dotted border-gray-400">Operator (Attn Ratio):</span> 
+            <span>${fmt(b.costOp)}</span>
+          </div>
       `;
     } else {
-      costHTML += `<div class="text-gray-400 italic">Detailed breakdown object not returned by logic engine.</div>`;
+      costHTML += `<div class="text-gray-400 italic">Detailed breakdown object not returned.</div>`;
     }
 
     costHTML += `
-          <div class="flex justify-between text-orange-600 border-t border-gray-200 pt-1 mt-1"><span>Risk Buffer:</span> <span>${fmt(data.cost.breakdown ? data.cost.breakdown.riskCost : 0)}</span></div>
-          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Cost:</span> <span>${fmt(data.cost.total)}</span></div>
+          <div class="flex justify-between text-orange-600 border-t border-gray-200 pt-1 mt-1" title="Added percentage to account for potential shop errors, drops, or reprints.">
+            <span class="cursor-help border-b border-dotted border-orange-400">Risk Buffer:</span> 
+            <span>${fmt(data.cost.breakdown ? data.cost.breakdown.riskCost : 0)}</span>
+          </div>
+          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
+            <span>Total Cost:</span> 
+            <span>${fmt(data.cost.total)}</span>
+          </div>
         </div>
       </div>
     `;
