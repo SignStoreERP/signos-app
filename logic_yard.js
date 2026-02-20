@@ -55,7 +55,7 @@ function calculateYardSign(inputs, data) {
 
     const areaSqFt = (24*18)/144;
     const totalArea = areaSqFt * inputs.sides * inputs.qty;
-    const totalInk = totalArea * parseFloat(data.Cost_Ink_Base || 0.16);
+    const totalInk = totalArea * parseFloat(data.Cost_Ink_Latex || 0.16);
 
     const costStakeUnit = inputs.hasStakes ? parseFloat(data.Cost_Stake || 0.65) : 0;
     const totalStakeCost = costStakeUnit * inputs.qty;
@@ -68,7 +68,7 @@ function calculateYardSign(inputs, data) {
     const totalRunHrs = ((lfPerSet / bedCap / speed) * inputs.sides) * inputs.qty;
     
     // COSTS
-    const costMachine = totalRunHrs * parseFloat(data.Rate_Machine || 45);
+    const costMachine = totalRunHrs * parseFloat(data.Rate_Machine_Flatbed || 45);
     
     // NEW: Attendance Ratio Support
     // If key missing, defaults to 1.0 (100% attendance / constant monitoring)
@@ -76,10 +76,12 @@ function calculateYardSign(inputs, data) {
     const costOp = totalRunHrs * parseFloat(data.Rate_Operator || 25) * attnRatio;
 
     // Setup uses full attention (Ratio 1.0 always)
-    const setupHrs = (parseFloat(data.Time_Setup_Base||15) + (parseFloat(data.Time_Setup_Adder||2) * inputs.files)) / 60;
+    const setupHrs = (parseFloat(data.Time_Setup_Job || 15) + parseFloat(data.Time_Handling || 5)) / 60;
     const costSetup = setupHrs * parseFloat(data.Rate_Operator || 25);
 
-    const totalCost = totalMat + totalInk + totalStakeCost + costMachine + costOp + costSetup;
+    const subTotal = totalMat + totalInk + totalStakeCost + costMachine + costOp + costSetup;
+    const risk = parseFloat(data.Factor_Risk || 1.05);
+    const totalCost = subTotal * risk;
 
     return {
         retail: {
