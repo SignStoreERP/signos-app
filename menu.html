@@ -141,20 +141,28 @@
                 // 3. Final Gate
                 if (!isAllowed) return;
 
-                // Version Logic
+                // Version & Factory Status Logic
                 const liveVer = val(mod, 'Live_Ver');
                 const devVer = val(mod, 'Dev_Ver');
+                const devStatus = val(mod, 'Dev_Status') || 'Unknown';
+
                 let verText = "";
                 let verClass = "";
 
                 if (IS_DEV_ENV) {
-                    if (!devVer || devVer === '') return;
-                    verText = `DEV ${devVer}`;
-                    verClass = "bg-orange-100 text-orange-800 border-orange-200";
+                // In the Factory: Show the Workflow Status
+                    verText = devStatus.toUpperCase();
+    
+                    if (devStatus === 'Live') verClass = "bg-green-100 text-green-800 border-green-200";
+                    else if (devStatus === 'Ready for Approval') verClass = "bg-blue-100 text-blue-800 border-blue-200 animate-pulse";
+                    else if (devStatus === 'In Development') verClass = "bg-orange-100 text-orange-800 border-orange-200";
+                else verClass = "bg-gray-100 text-gray-500 border-gray-200";
+    
                 } else {
+                    // In the Storefront: Just show the clean version number
                     if (!liveVer || liveVer === '') return;
-                    verText = `v${liveVer.replace('v','')}`; // Shorten for mobile
-                    verClass = "bg-green-100 text-green-800 border-green-200";
+                    verText = `v${liveVer.replace('v','')}`;
+                    verClass = "bg-gray-100 text-gray-800 border-gray-200 shadow-sm";
                 }
 
                 // Render Item
@@ -278,5 +286,6 @@
 </script>
 </body>
 </html>
+
 
 
