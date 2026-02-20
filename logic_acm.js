@@ -10,8 +10,8 @@ function calculateACM(inputs, data) {
 
     // Base Rate per SqFt (Safely checks for explicit keys, curve keys, or defaults)
     let baseSqFtRate = inputs.thickness === '6mm' 
-        ? parseFloat(data.Retail_ACM6_SqFt || data.ACM6_T5_Rate || 16.50) 
-        : parseFloat(data.Retail_ACM3_SqFt || data.ACM3_T5_Rate || 14.00);
+        ? parseFloat(data.ACM6_T1_Rate || data.ACM6_T5_Rate || 16.50) 
+        : parseFloat(data.ACM3_T1_Rate || data.ACM3_T5_Rate || 14.00);
 
     // Black ACM 6mm Exception (Double Price per Blue Sheet)
     if (inputs.color === 'Black' && inputs.thickness === '6mm') {
@@ -144,7 +144,7 @@ function calculateACM(inputs, data) {
             total: totalCost,
             breakdown: {
                 rawBlanks: rawMat,
-                wasteCost: wasteCost,           
+                wasteCost: wasteCost,            
                 wastePct: (wastePct - 1) * 100, 
                 totalInk: totalInk,
                 costSetup: costCutSetup,
@@ -153,7 +153,7 @@ function calculateACM(inputs, data) {
                 runHrs: runHrsCNC + printHrs,
                 costMachine: costPrintMach + costCutMach,
                 costOp: costPrintOp + costCutLabor + costRound,
-                riskCost: riskBuffer,           
+                riskCost: riskBuffer,            
                 riskPct: (riskFactor - 1) * 100 
             }
         },
