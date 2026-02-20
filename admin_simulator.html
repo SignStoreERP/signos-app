@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing Simulator v1.6</title>
+  <title>Pricing Simulator v1.7</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="signos-core.js"></script>
@@ -63,7 +63,7 @@
   </div>
 
   <!-- RETAIL SANDBOX PANEL (Blue) -->
-  <div class="bg-blue-50 border-b border-blue-100 px-6 py-3 shrink-0 overflow-x-auto shadow-inner relative z-10">
+  <div class="bg-blue-50 border-b border-blue-100 px-6 py-3 shrink-0 overflow-y-auto max-h-48 shadow-inner relative z-10">
     <div class="flex items-center gap-2 mb-2">
       <h3 class="text-[9px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -71,7 +71,8 @@
       </h3>
       <span class="text-[9px] text-blue-400 font-medium ml-2">Market value and discount breaks.</span>
     </div>
-    <div class="flex items-center gap-4" id="retail-container"></div>
+    <!-- Adjusted container to wrap elements onto new lines -->
+    <div class="flex flex-wrap items-end gap-x-6 gap-y-3" id="retail-container"></div>
   </div>
 
   <!-- COST SANDBOX PANEL (Red) -->
@@ -146,12 +147,14 @@
         { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
       ],
       retails: [
-        { key: 'Retail_Price_Sign_SS', label: 'Base Sign ($)' },
+        { heading: 'Print Base (Coroplast)', key: 'Retail_Price_Sign_SS', label: 'Base Sign ($)' },
         { key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
         { key: 'Tier_1_Price', label: 'Tier 1 Base ($)' },
-        { key: 'Retail_Stake_T1_Price', label: 'Stake 1-49 ($)' },
-        { key: 'Retail_Stake_T2_Qty', label: 'Stake T2 Trigger' },
-        { key: 'Retail_Stake_T2_Price', label: 'Stake T2 ($)' }
+        { heading: 'Hardware (Wire Stakes)', key: 'Retail_Stake_T1_Price', label: 'Stake 1-49 ($)' },
+        { key: 'Retail_Stake_T2_Qty', label: 'Stake T2 Qty' },
+        { key: 'Retail_Stake_T2_Price', label: 'Stake T2 ($)' },
+        { key: 'Retail_Stake_T3_Qty', label: 'Stake T3 Qty' },
+        { key: 'Retail_Stake_T3_Price', label: 'Stake T3 ($)' }
       ],
       costs: [
         { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
@@ -180,10 +183,10 @@
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
       ],
       retails: [
-        { key: 'ACM3_T1_Rate', label: '3mm Tiny ($/SF)' },
+        { heading: 'Market Variables', key: 'ACM3_T1_Rate', label: '3mm Tiny ($/SF)' },
         { key: 'ACM3_T2_Rate', label: '3mm Small ($/SF)' },
         { key: 'ACM3_T3_Rate', label: '3mm Med ($/SF)' },
-        { key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
+        { heading: 'Router Constraints', key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
         { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' }
       ],
       costs: [
@@ -311,11 +314,20 @@
     });
   }
 
+  // UPDATED RETAIL INPUT RENDERER
   function renderRetailInputs(retails, data) {
     const container = document.getElementById('retail-container');
     container.innerHTML = "";
     if(!retails) return;
+    
     retails.forEach(r => {
+      if (r.heading) {
+        const headWrap = document.createElement('div');
+        headWrap.className = "w-full text-[10px] font-black text-blue-900 uppercase mt-1 mb-[-4px] border-b border-blue-200 pb-1";
+        headWrap.innerText = r.heading;
+        container.appendChild(headWrap);
+      }
+
       const val = parseFloat(data[r.key]) || 0;
       const div = document.createElement('div');
       div.innerHTML = `
@@ -396,7 +408,7 @@
     document.getElementById('receipt-panel').classList.add('hidden'); 
   }
 
-function renderChart(labels, retail, cost, margin) {
+  function renderChart(labels, retail, cost, margin) {
     const ctx = document.getElementById('priceChart').getContext('2d');
     if(chartInstance) chartInstance.destroy();
 
@@ -406,7 +418,7 @@ function renderChart(labels, retail, cost, margin) {
         labels: labels,
         datasets: [
           { label: 'Unit Retail ($)', data: retail, borderColor: '#2563eb', backgroundColor: '#2563eb', yAxisID: 'y', tension: 0.1, borderWidth: 3 },
-          { label: 'Unit Cost ($)', data: cost, borderColor: '#ef4444', backgroundColor: '#ef4444', yAxisID: 'y', borderDash: [1], borderWidth: 2 },
+          { label: 'Unit Cost ($)', data: cost, borderColor: '#ef4444', backgroundColor: '#ef4444', yAxisID: 'y', borderDash:[1], borderWidth: 2 },
           { label: 'Margin %', data: margin, borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.5)', yAxisID: 'y1', type: 'bar', barThickness: 'flex', maxBarThickness: 40, opacity: 0.5 }
         ]
       },
@@ -416,13 +428,12 @@ function renderChart(labels, retail, cost, margin) {
         interaction: { mode: 'index', intersect: false },
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            // FIX: Grab the index from the first clicked element in the array
-            const dataIndex = elements[0].index; 
+            const dataIndex = elements.index;
             renderReceipt(dataIndex);
           }
         },
         onHover: (event, chartElement) => {
-          event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+          event.native.target.style.cursor = chartElement ? 'pointer' : 'default';
         },
         scales: {
           y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Price / Cost ($)' }, grid: { color: '#f3f4f6' } },
