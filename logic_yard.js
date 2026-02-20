@@ -45,8 +45,11 @@ function calculateYardSign(inputs, data) {
     let blankCost = parseFloat(data.Cost_Blank_Standard || 0.65);
     if (inputs.qty >= bulkTrigger) blankCost = parseFloat(data.Cost_Blank_Bulk || 0.65);
 
-    const waste = parseFloat(data.Waste_Factor || 1.10);
-    const totalMat = (blankCost * waste) * inputs.qty;
+    // SEPARATE RAW BLANKS AND WASTE
+    const rawBlanks = blankCost * inputs.qty;
+    const wastePct = parseFloat(data.Waste_Factor || 1.10);
+    const wasteCost = rawBlanks * (wastePct - 1);
+    const totalMat = rawBlanks + wasteCost; // Total physical material consumed
 
     // Ink 
     const areaSqFt = (24*18)/144;
@@ -74,8 +77,11 @@ function calculateYardSign(inputs, data) {
 
     // Totals & Risk
     const subTotal = totalMat + totalInk + totalStakeCost + costMachine + costOpPrint + costSetupCost;
-    const riskBuffer = subTotal * (parseFloat(data.Factor_Risk || 1.05) - 1);
-    const totalCost = subTotal + riskBuffer;
+    
+    // RISK IS NOW JUST AN INDICATOR, EXCLUDED FROM TOTAL
+    const riskFactor = parseFloat(data.Factor_Risk || 1.05);
+    const riskBuffer = subTotal * (riskFactor - 1);
+    const totalCost = subTotal; // <-- NO LONGER ADDS RISK TO YOUR BOTTOM LINE
 
     return {
         retail: {
@@ -92,19 +98,21 @@ function calculateYardSign(inputs, data) {
         cost: {
             total: totalCost,
             breakdown: {
-                totalMat: totalMat,             // Just the Coroplast
-                stakeCost: totalStakeCost,      // Just the Stakes
+                rawBlanks: rawBlanks,           // PURE BLANK COST
+                wasteCost: wasteCost,           // PURE WASTE COST
+                wastePct: (wastePct - 1) * 100, // PERCENTAGE FOR UI
+                stakeCost: totalStakeCost,
                 totalInk: totalInk,
                 costSetup: costSetupCost,
                 runHrs: totalRunHrs,
                 costMachine: costMachine,
                 costOp: costOpPrint,
-                riskCost: riskBuffer
+                riskCost: riskBuffer,           // NOW AN INDICATOR ONLY
+                riskPct: (riskFactor - 1) * 100 // PERCENTAGE FOR UI
             }
         },
         metrics: {
             margin: (grandTotal - totalCost) / grandTotal
         }
     };
-
 }
