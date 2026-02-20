@@ -197,6 +197,18 @@
       renderCostInputs(config.costs, data);
       btn.innerText = "RUN SIMULATION";
       btn.disabled = false;
+
+      // UPDATE STATUS HEADER
+      const statusText = document.getElementById("status-text");
+      const statusDot = document.getElementById("status-dot");
+      if(statusText) {
+        statusText.innerText = "ONLINE";
+        statusText.className = "font-bold text-green-500";
+        if(statusDot) {
+          statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+          statusDot.classList.remove("animate-pulse");
+        }
+      }
       
       runSimulation();
 
@@ -335,7 +347,7 @@
         interaction: { mode: 'index', intersect: false },
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            const dataIndex = elements.index;
+            const dataIndex = elements[0].index;
             renderReceipt(dataIndex);
           }
         },
