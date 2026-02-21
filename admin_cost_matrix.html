@@ -139,7 +139,7 @@ function renderMatrix() {
 
   if(matrix.length === 0) return;
 
-  const firstRow = matrix;
+  const firstRow = matrix[0];
   const products = Object.keys(firstRow).filter(k => k !== 'Cost_ID');
 
   let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[350px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
