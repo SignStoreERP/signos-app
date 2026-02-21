@@ -309,7 +309,8 @@
       const el = document.getElementById(`cfg-${c.id}`);
       if(c.type === 'toggle') inputs[c.id] = el.checked;
       else if(c.type === 'number') inputs[c.id] = parseFloat(el.value);
-      else if(c.type === 'select') inputs[c.id] = isNaN(parseFloat(el.value)) ? el.value : parseFloat(el.value);
+      // STRICT EXTRACTION: Prevents '13oz' or '3mm' from being corrupted into purely numbers
+      else if(c.type === 'select') inputs[c.id] = isNaN(Number(el.value)) ? el.value : Number(el.value);
     });
     
     // EXECUTE DYNAMIC UI LOGIC IF IT EXISTS
