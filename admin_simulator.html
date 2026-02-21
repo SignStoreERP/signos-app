@@ -350,9 +350,12 @@
       const result = engine(inputs, simBackend);
       simulationData.push({ qty: q, retail: result.retail, cost: result.cost });
 
-      // SAFE EXTRACTION: Checks for grandTotal first, falls back to quoteTotal (Banners), or a flat number
-      const retailTotal = result.retail?.grandTotal || result.retail?.quoteTotal || result.retail || 0;
-      const costTotal = result.cost?.total || result.cost?.grandTotal || result.cost || 0;
+      // BULLETPROOF EXTRACTION: Catches grandTotal, quoteTotal, printBase, total, or flat numbers safely
+      const r = result.retail;
+      const c = result.cost;
+      
+      const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
+      const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
 
       const unitRetail = retailTotal / q;
       const unitCost = costTotal / q; 
@@ -363,7 +366,7 @@
       retailPoints.push(unitRetail.toFixed(2)); 
       costPoints.push(unitCost.toFixed(2));
       marginPoints.push(margin.toFixed(1)); 
-  }
+    }
 
     renderChart(labels, retailPoints, costPoints, marginPoints);
     document.getElementById('receipt-panel').classList.add('hidden'); 
@@ -439,9 +442,15 @@
     out += `----------------------------------------\n`;
     
     simulationData.forEach(d => {
-      const uRet = d.retail.grandTotal / d.qty;
-      const uCost = d.cost.total / d.qty;
-      const margin = ((uRet - uCost) / uRet) * 100;
+      const r = d.retail;
+      const c = d.cost;
+      
+      const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
+      const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
+
+      const uRet = retailTotal / d.qty;
+      const uCost = costTotal / d.qty;
+      const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
       
       const qStr = d.qty.toString().padEnd(4);
       const rStr = `$${uRet.toFixed(2)}`.padEnd(10);
