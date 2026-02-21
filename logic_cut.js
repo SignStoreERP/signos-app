@@ -1,16 +1,19 @@
 /**
- * PURE PHYSICS ENGINE: Cut Vinyl Lettering (v1.0 - Dual Track)
- * Implements Plotter Run Time, Transfer Tape, and Weeding/Masking Labor.
+ * PURE PHYSICS ENGINE: Cut Vinyl Lettering (v2.1 - Dual Track)
+ * Implements Application-based mapping (Flat, Vehicle, Backlit) to Cast/Translucent.
  */
 
 function calculateCutVinyl(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
     const totalSqFt = sqft * inputs.qty;
 
+    // Route Application to Pricing Tier
+    const isTranslucent = (inputs.material === 'Backlit');
+
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
-    const baseRate = inputs.material === '751' 
-        ? parseFloat(data.Retail_Price_751_SqFt || 18) 
-        : parseFloat(data.Retail_Price_651_SqFt || 12);
+    const baseRate = isTranslucent 
+        ? parseFloat(data.Retail_Price_Translucent || 14) 
+        : parseFloat(data.Retail_Price_Cast || 18);
 
     // Volume Tiers
     let discPct = 0;
@@ -54,7 +57,10 @@ function calculateCutVinyl(inputs, data) {
     const wastePct = parseFloat(data.Waste_Factor || 1.20);
 
     // Material Costs
-    const costVinylRaw = inputs.material === '751' ? parseFloat(data.Cost_Vinyl_751 || 0.95) : parseFloat(data.Cost_Vinyl_651 || 0.46);
+    const costVinylRaw = isTranslucent 
+        ? parseFloat(data.Cost_Vinyl_Translucent || 1.25) 
+        : parseFloat(data.Cost_Vinyl_Cast || 0.95);
+        
     const costTapeRaw = parseFloat(data.Cost_Transfer_Tape || 0.15);
     
     const costVinyl = totalSqFt * costVinylRaw * wastePct;
@@ -80,7 +86,7 @@ function calculateCutVinyl(inputs, data) {
     const weedHrs = (totalSqFt * weedSpeed) / 60;
     const costWeedOp = weedHrs * rateShop;
 
-    const maskSpeed = parseFloat(data.Time_Mask_SqFt || 1); // 1 min per sqft
+    const maskSpeed = parseFloat(data.Time_Mask_SqFt || 1); 
     const maskHrs = (totalSqFt * maskSpeed) / 60;
     const costMaskOp = maskHrs * rateShop;
 
@@ -126,15 +132,15 @@ window.CUT_CONFIG = {
     controls: [
       { id: 'w', label: 'Width', type: 'number', def: 12 },
       { id: 'h', label: 'Height', type: 'number', def: 6 },
-      { id: 'material', label: 'Series', type: 'select', opts: [{v:'651', t:'Oracal 651'}, {v:'751', t:'Oracal 751 (Cast)'}] },
+      { id: 'material', label: 'Application', type: 'select', opts: [{v:'Flat', t:'Flat App (751)'}, {v:'Vehicle', t:'Vehicle (951)'}, {v:'Backlit', t:'Backlit (8500/8800)'}] },
       { id: 'complexity', label: 'Weeding', type: 'select', opts: [{v:'Simple', t:'Simple (Large)'}, {v:'Complex', t:'Complex (Small/Serifs)'}] },
       { id: 'files', label: 'Files', type: 'number', def: 1 },
       { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
       { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
     retails: [
-      { heading: 'Material Rates ($/SqFt)', key: 'Retail_Price_651_SqFt', label: '651 Rate ($)' },
-      { key: 'Retail_Price_751_SqFt', label: '751 Rate ($)' },
+      { heading: 'Material Rates ($/SqFt)', key: 'Retail_Price_Cast', label: 'Cast Rate (751/951)' },
+      { key: 'Retail_Price_Translucent', label: 'Translucent Rate (8500/8800)' },
       { heading: 'Finishing Markups', key: 'Retail_Weed_Complex_Add', label: 'Complex Weed ($/SqFt)' },
       { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
       { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)' },
@@ -142,8 +148,8 @@ window.CUT_CONFIG = {
       { key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
     ],
     costs: [
-      { key: 'Cost_Vinyl_651', label: 'Oracal 651 ($/SqFt)' },
-      { key: 'Cost_Vinyl_751', label: 'Oracal 751 ($/SqFt)' },
+      { key: 'Cost_Vinyl_Cast', label: 'Cast Cost ($/SqFt)' },
+      { key: 'Cost_Vinyl_Translucent', label: 'Trans Cost ($/SqFt)' },
       { key: 'Cost_Transfer_Tape', label: 'App Tape ($/SqFt)' },
       { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
       { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
@@ -176,16 +182,16 @@ window.CUT_CONFIG = {
       if (data.cost.breakdown) {
         const b = data.cost.breakdown;
         costHTML += `
-            <div class="flex justify-between" title="Raw cost of vinyl media."><span class="cursor-help border-b border-dotted border-gray-400">Vinyl Material:</span> <span>${fmt(b.rawVinyl)}</span></div>
-            <div class="flex justify-between" title="Raw cost of transfer/app tape."><span class="cursor-help border-b border-dotted border-gray-400">Transfer Tape:</span> <span>${fmt(b.rawTape)}</span></div>
-            <div class="flex justify-between" title="One-time flat fee for job setup."><span class="cursor-help border-b border-dotted border-gray-400">Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
-            <div class="flex justify-between" title="Plotter run time + 25% Operator Attendance."><span class="cursor-help border-b border-dotted border-gray-400">Plotter Run:</span> <span>${fmt(b.costCut)}</span></div>
-            <div class="flex justify-between" title="Manual Shop Labor to strip background vinyl."><span class="cursor-help border-b border-dotted border-gray-400">Weeding Labor:</span> <span>${fmt(b.costWeed)}</span></div>
-            <div class="flex justify-between" title="Manual Shop Labor to apply transfer tape."><span class="cursor-help border-b border-dotted border-gray-400">Masking Labor:</span> <span>${fmt(b.costMask)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Vinyl Material:</span> <span>${fmt(b.rawVinyl)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Transfer Tape:</span> <span>${fmt(b.rawTape)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Plotter Run:</span> <span>${fmt(b.costCut)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Weeding Labor:</span> <span>${fmt(b.costWeed)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Masking Labor:</span> <span>${fmt(b.costMask)}</span></div>
             <div class="border-t border-gray-200 mt-2 pt-1"></div>
             <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
-            <div class="flex justify-between text-red-600" title="Physical material lost to weeding and setup. This IS added to your total cost."><span class="cursor-help border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 10}%):</span> <span>(Calculated Above)</span></div>
-            <div class="flex justify-between text-orange-500 opacity-80" title="Suggested financial buffer for mistakes. This is an INDICATOR ONLY and is NOT added to your hard cost."><span class="cursor-help border-b border-dotted border-orange-300">Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> <span>(+ ${fmt(b.riskCost)})</span></div>
+            <div class="flex justify-between text-red-600"><span class="border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 10}%):</span> <span>(Calculated Above)</span></div>
+            <div class="flex justify-between text-orange-500 opacity-80"><span class="border-b border-dotted border-orange-300">Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> <span>(+ ${fmt(b.riskCost)})</span></div>
         `;
       }
       costHTML += `<div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div></div></div>`;
