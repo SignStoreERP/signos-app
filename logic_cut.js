@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Cut Vinyl Lettering (v2.1 - Dual Track)
- * Implements Application-based mapping (Flat, Vehicle, Backlit) to Cast/Translucent.
+ * PURE PHYSICS ENGINE: Cut Vinyl Lettering (v2.2 - Dual Track)
+ * Implements explicit unit-cost transparency for the Simulator Math Receipts.
  */
 
 function calculateCutVinyl(inputs, data) {
@@ -9,6 +9,7 @@ function calculateCutVinyl(inputs, data) {
 
     // Route Application to Pricing Tier
     const isTranslucent = (inputs.material === 'Backlit');
+    const matLabel = isTranslucent ? "Translucent (8500/8800)" : "Cast (751/951)";
 
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
     const baseRate = isTranslucent 
@@ -103,12 +104,15 @@ function calculateCutVinyl(inputs, data) {
             designFee: feeDesign,
             grandTotal: grandTotal,
             isMinApplied: grandTotalRaw < minOrder,
-            tiers: simTiers
+            tiers: simTiers,
+            baseRate: baseRate,     // Explicitly exposed for receipt
+            matLabel: matLabel      // Explicitly exposed for receipt
         },
         cost: {
             total: subTotal,
             breakdown: {
                 rawVinyl: costVinyl,
+                unitVinyl: costVinylRaw, // Explicitly exposed for receipt
                 rawTape: costTape,
                 costSetup: costSetup,
                 costCut: costCutOp + costCutMach,
@@ -167,7 +171,7 @@ window.CUT_CONFIG = {
         <div>
           <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
           <div class="space-y-1 text-xs text-gray-700">
-            <div class="flex justify-between" title="Based on base material rate x sqft."><span class="cursor-help border-b border-dotted border-gray-400">Base Vinyl:</span> <span>${fmt(data.retail.printTotal)}</span></div>
+            <div class="flex justify-between" title="Based on base material rate x sqft."><span class="cursor-help border-b border-dotted border-gray-400">Vinyl Base (${data.retail.matLabel} @ ${fmt(data.retail.baseRate)}/sf):</span> <span>${fmt(data.retail.printTotal)}</span></div>
             ${data.retail.weedFee > 0 ? `<div class="flex justify-between text-pink-700"><span>Complex Weeding Adder:</span> <span>${fmt(data.retail.weedFee)}</span></div>` : ''}
             <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
             ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
@@ -182,7 +186,7 @@ window.CUT_CONFIG = {
       if (data.cost.breakdown) {
         const b = data.cost.breakdown;
         costHTML += `
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Vinyl Material:</span> <span>${fmt(b.rawVinyl)}</span></div>
+            <div class="flex justify-between"><span class="cursor-help border-b border-dotted border-gray-400">Vinyl Material (${data.retail.matLabel} @ ${fmt(b.unitVinyl)}/sf):</span> <span>${fmt(b.rawVinyl)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Transfer Tape:</span> <span>${fmt(b.rawTape)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Plotter Run:</span> <span>${fmt(b.costCut)}</span></div>
