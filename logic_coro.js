@@ -51,6 +51,12 @@ function calculateCoro(inputs, data) {
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
+    // UI Tier Log (Required by Simulator)
+    const tierLog = [
+        { q: 1, base: baseSqFtRate, unit: (retailPrint + contourFee + stakeFee + grommetFee) / inputs.qty },
+        { q: t1Qty, base: baseSqFtRate * (1 - (data.Tier_1_Disc||0.05)), unit: ((retailPrint * (1 - (data.Tier_1_Disc||0.05))) + contourFee + stakeFee + grommetFee) / inputs.qty }
+    ];
+
     // --- 2. COST ENGINE (PHYSICS & BOM) ---
     const costSheet = inputs.thickness === '10mm' ? parseFloat(data.Cost_Stock_10mm_4x8 || 33.49) : parseFloat(data.Cost_Stock_4mm_4x8 || 8.40);
     const costPerSqFt = costSheet / 32; 
@@ -95,7 +101,8 @@ function calculateCoro(inputs, data) {
             setupFee: feeSetup,
             designFee: feeDesign,
             grandTotal: grandTotal,
-            isMinApplied: grandTotalRaw < minOrder
+            isMinApplied: grandTotalRaw < minOrder,
+            tiers: tierLog
         },
         cost: {
             total: subTotal,
@@ -121,7 +128,7 @@ function calculateCoro(inputs, data) {
 // ==========================================
 // SIMULATOR CONFIGURATION SCHEMA
 // ==========================================
-const CORO_CONFIG = {
+window.CORO_CONFIG = {
     tab: 'PROD_Coroplast_Signs',
     engine: calculateCoro,
     controls: [
