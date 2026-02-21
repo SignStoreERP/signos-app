@@ -343,26 +343,27 @@
     const marginPoints = [];
     simulationData = []; 
 
-    for (let q = start; q <= end; q += step) {
-      labels.push(q);
+    for (let q = start; q <= end; q += step) { 
+      labels.push(q); 
       inputs.qty = q;
-
+    
       const result = engine(inputs, simBackend);
+      simulationData.push({ qty: q, retail: result.retail, cost: result.cost });
 
-      simulationData.push({
-        qty: q,
-        retail: result.retail,
-        cost: result.cost
-      });
+      // SAFE EXTRACTION: Checks for grandTotal first, falls back to quoteTotal (Banners), or a flat number
+      const retailTotal = result.retail?.grandTotal || result.retail?.quoteTotal || result.retail || 0;
+      const costTotal = result.cost?.total || result.cost?.grandTotal || result.cost || 0;
 
-      const unitRetail = result.retail.grandTotal / q;
-      const unitCost = result.cost.total / q;
-      const margin = ((unitRetail - unitCost) / unitRetail) * 100;
+      const unitRetail = retailTotal / q;
+      const unitCost = costTotal / q; 
+    
+      // SAFE MARGIN CALCULATION: Prevents divide-by-zero if unitRetail is 0
+      const margin = unitRetail > 0 ? ((unitRetail - unitCost) / unitRetail) * 100 : 0;
 
-      retailPoints.push(unitRetail.toFixed(2));
+      retailPoints.push(unitRetail.toFixed(2)); 
       costPoints.push(unitCost.toFixed(2));
-      marginPoints.push(margin.toFixed(1));
-    }
+      marginPoints.push(margin.toFixed(1)); 
+  }
 
     renderChart(labels, retailPoints, costPoints, marginPoints);
     document.getElementById('receipt-panel').classList.add('hidden'); 
