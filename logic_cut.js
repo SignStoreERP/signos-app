@@ -1,21 +1,36 @@
 /**
- * PURE PHYSICS ENGINE: Cut Vinyl Lettering (v2.2 - Dual Track)
- * Implements explicit unit-cost transparency for the Simulator Math Receipts.
+ * PURE PHYSICS ENGINE: Cut Vinyl Lettering (v2.3 - Dual Track)
+ * Un-groups materials to provide specific Simulator options for 751, 951, 8500, and 8800.
  */
 
 function calculateCutVinyl(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
     const totalSqFt = sqft * inputs.qty;
 
-    // Route Application to Pricing Tier
-    const isTranslucent = (inputs.material === 'Backlit');
-    const matLabel = isTranslucent ? "Translucent (8500/8800)" : "Cast (751/951)";
+    // Route Application to Specific Pricing Tier
+    let baseRate = 0;
+    let costVinylRaw = 0;
+    let matLabel = "";
+
+    if (inputs.material === 'Flat') {
+        baseRate = parseFloat(data.Retail_Price_751 || 18);
+        costVinylRaw = parseFloat(data.Cost_Vinyl_751 || 0.95);
+        matLabel = "Oracal 751";
+    } else if (inputs.material === 'Vehicle') {
+        baseRate = parseFloat(data.Retail_Price_951 || 22);
+        costVinylRaw = parseFloat(data.Cost_Vinyl_951 || 1.25);
+        matLabel = "Oracal 951";
+    } else if (inputs.material === 'Backlit_8500') {
+        baseRate = parseFloat(data.Retail_Price_8500 || 20);
+        costVinylRaw = parseFloat(data.Cost_Vinyl_8500 || 1.25);
+        matLabel = "Oracal 8500";
+    } else if (inputs.material === 'Backlit_8800') {
+        baseRate = parseFloat(data.Retail_Price_8800 || 25);
+        costVinylRaw = parseFloat(data.Cost_Vinyl_8800 || 1.60);
+        matLabel = "Oracal 8800";
+    }
 
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
-    const baseRate = isTranslucent 
-        ? parseFloat(data.Retail_Price_Translucent || 14) 
-        : parseFloat(data.Retail_Price_Cast || 18);
-
     // Volume Tiers
     let discPct = 0;
     let currentBestTier = 0;
@@ -56,12 +71,6 @@ function calculateCutVinyl(inputs, data) {
 
     // --- 2. COST ENGINE (PHYSICS & BOM) ---
     const wastePct = parseFloat(data.Waste_Factor || 1.20);
-
-    // Material Costs
-    const costVinylRaw = isTranslucent 
-        ? parseFloat(data.Cost_Vinyl_Translucent || 1.25) 
-        : parseFloat(data.Cost_Vinyl_Cast || 0.95);
-        
     const costTapeRaw = parseFloat(data.Cost_Transfer_Tape || 0.15);
     
     const costVinyl = totalSqFt * costVinylRaw * wastePct;
@@ -105,14 +114,14 @@ function calculateCutVinyl(inputs, data) {
             grandTotal: grandTotal,
             isMinApplied: grandTotalRaw < minOrder,
             tiers: simTiers,
-            baseRate: baseRate,     // Explicitly exposed for receipt
-            matLabel: matLabel      // Explicitly exposed for receipt
+            baseRate: baseRate,     
+            matLabel: matLabel      
         },
         cost: {
             total: subTotal,
             breakdown: {
                 rawVinyl: costVinyl,
-                unitVinyl: costVinylRaw, // Explicitly exposed for receipt
+                unitVinyl: costVinylRaw, 
                 rawTape: costTape,
                 costSetup: costSetup,
                 costCut: costCutOp + costCutMach,
@@ -136,15 +145,17 @@ window.CUT_CONFIG = {
     controls: [
       { id: 'w', label: 'Width', type: 'number', def: 12 },
       { id: 'h', label: 'Height', type: 'number', def: 6 },
-      { id: 'material', label: 'Application', type: 'select', opts: [{v:'Flat', t:'Flat App (751)'}, {v:'Vehicle', t:'Vehicle (951)'}, {v:'Backlit', t:'Backlit (8500/8800)'}] },
+      { id: 'material', label: 'Application', type: 'select', opts: [{v:'Flat', t:'Flat App (751)'}, {v:'Vehicle', t:'Vehicle (951)'}, {v:'Backlit_8500', t:'Backlit Std (8500)'}, {v:'Backlit_8800', t:'Backlit Prem (8800)'}] },
       { id: 'complexity', label: 'Weeding', type: 'select', opts: [{v:'Simple', t:'Simple (Large)'}, {v:'Complex', t:'Complex (Small/Serifs)'}] },
       { id: 'files', label: 'Files', type: 'number', def: 1 },
       { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
       { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
     retails: [
-      { heading: 'Material Rates ($/SqFt)', key: 'Retail_Price_Cast', label: 'Cast Rate (751/951)' },
-      { key: 'Retail_Price_Translucent', label: 'Translucent Rate (8500/8800)' },
+      { heading: 'Material Rates ($/SqFt)', key: 'Retail_Price_751', label: '751 Rate ($)' },
+      { key: 'Retail_Price_951', label: '951 Rate ($)' },
+      { key: 'Retail_Price_8500', label: '8500 Rate ($)' },
+      { key: 'Retail_Price_8800', label: '8800 Rate ($)' },
       { heading: 'Finishing Markups', key: 'Retail_Weed_Complex_Add', label: 'Complex Weed ($/SqFt)' },
       { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
       { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)' },
@@ -152,8 +163,10 @@ window.CUT_CONFIG = {
       { key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
     ],
     costs: [
-      { key: 'Cost_Vinyl_Cast', label: 'Cast Cost ($/SqFt)' },
-      { key: 'Cost_Vinyl_Translucent', label: 'Trans Cost ($/SqFt)' },
+      { key: 'Cost_Vinyl_751', label: '751 Cost ($/SqFt)' },
+      { key: 'Cost_Vinyl_951', label: '951 Cost ($/SqFt)' },
+      { key: 'Cost_Vinyl_8500', label: '8500 Cost ($/SqFt)' },
+      { key: 'Cost_Vinyl_8800', label: '8800 Cost ($/SqFt)' },
       { key: 'Cost_Transfer_Tape', label: 'App Tape ($/SqFt)' },
       { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
       { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
