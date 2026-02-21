@@ -127,23 +127,43 @@ Show Volume Discounts
 let backendData = {};
 
 window.onload = async function() {
-  injectHeader("Decals & Stickers");
-  
-  const u = sessionStorage.getItem('signos_user') || 'Guest';
-  const r = sessionStorage.getItem('signos_role') || 'VIEW';
+    injectHeader("Decals & Stickers");
 
-  try {
-    const res = await fetch(`${SCRIPT_URL}?tab=PROD_Decals&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
-    const data = await res.json();
-    
-    if(data.error) throw new Error(data.error);
-    backendData = data;
-    
-    runCalc();
-    
-  } catch(e) {
-    console.error("Backend fetch failed:", e);
-  }
+    const u = sessionStorage.getItem('signos_user') || 'Guest';
+    const r = sessionStorage.getItem('signos_role') || 'VIEW';
+
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
+    const verDisplay = document.getElementById("version-display");
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?tab=PROD_Decals&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+        const data = await res.json();
+
+        if(data.error) throw new Error(data.error);
+        backendData = data;
+
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+            statusDot.classList.remove("animate-pulse");
+        }
+
+        if(verDisplay) {
+            verDisplay.innerText = `(v4.2)`;
+            verDisplay.classList.remove('hidden');
+        }
+
+        runCalc();
+
+    } catch(e) {
+        if(statusText) {
+            statusText.innerText = "OFFLINE";
+            statusText.className = "font-bold text-red-500";
+        }
+        console.error("Backend fetch failed:", e);
+    }
 };
 
 function toggleDiscounts() {
