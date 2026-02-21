@@ -8,7 +8,19 @@
     <script src="signos-core.js"></script>
     <style>
         .matrix-cell { transition: all 0.2s; }
-        .matrix-cell:hover { background-color: #f8fafc; }
+        
+        /* 1. Zebra Striping (Alternating row colors) */
+        tbody tr:nth-child(even),
+        tbody tr:nth-child(even) .sticky-col { 
+            background-color: #f8fafc; /* Very light slate-50 */
+        }
+
+        /* 2. Crosshair Highlight (Row and Column Hover) */
+        tbody tr:hover, 
+        tbody tr:hover .sticky-col,
+        .col-highlight { 
+            background-color: #f1f5f9 !important; /* Slightly darker slate-100 */
+        }
         
         /* Staged Change Highlighting */
         .staged-change { background-color: #fef9c3 !important; position: relative; }
@@ -139,13 +151,13 @@ function renderMatrix() {
 
   if(matrix.length === 0) return;
 
-  const firstRow = matrix[0];
+  const firstRow = matrix[0]; // Header fix
   const products = Object.keys(firstRow).filter(k => k !== 'Cost_ID');
 
   let headerHTML = `<th class="p-4 sticky-col z-30-corner min-w-[350px] border-b border-r border-gray-200 bg-gray-50">COST VARIABLE</th>`;
-  products.forEach(prod => {
+  products.forEach((prod, i) => {
     const label = prod.replace('PROD_', '').replace('_', ' ');
-    headerHTML += `<th class="p-4 sticky-header min-w-[100px] text-center border-l border-gray-200">${label}</th>`;
+    headerHTML += `<th class="p-4 sticky-header min-w-[100px] text-center border-l border-gray-200 col-idx-${i}">${label}</th>`;
   });
   thead.innerHTML = headerHTML;
 
@@ -178,19 +190,19 @@ function renderMatrix() {
       </div>
     </td>`;
 
-    products.forEach(prod => {
+    products.forEach((prod, i) => {
       const val = matrixRow[prod];
-      rowHTML += renderCell(prod, costID, val, defaultVal);
+      rowHTML += renderCell(prod, costID, val, defaultVal, i);
     });
 
     const tr = document.createElement('tr');
     tr.innerHTML = rowHTML;
-    tr.className = "hover:bg-gray-50 transition";
+    tr.className = "transition-colors duration-200";
     tbody.appendChild(tr);
   });
 }
 
-function renderCell(prod, cost, val, defaultVal) {
+function renderCell(prod, cost, val, defaultVal, colIndex) {
   const isTrue = (val === true || String(val).toUpperCase() === 'TRUE');
   const isFalse = (val === false || String(val).toUpperCase() === 'FALSE');
   const cellKey = `${prod}|${cost}`;
@@ -209,7 +221,7 @@ function renderCell(prod, cost, val, defaultVal) {
       styleClass = "bg-yellow-50 border-yellow-400 text-yellow-900 font-bold";
   }
 
-  return `<td class="p-3 border-l border-gray-100 matrix-cell align-middle text-center" id="cell-${cellKey}">
+  return `<td class="p-3 border-l border-gray-100 matrix-cell align-middle text-center col-idx-${colIndex}" id="cell-${cellKey}">
     <input type="number" step="0.01" placeholder="${defaultVal}" value="${inputVal}"
       onchange="handleSmartInput('${prod}', '${cost}', this.value, this)"
       class="w-16 text-center border rounded text-xs py-1 outline-none transition-colors shadow-sm ${styleClass}"
@@ -293,6 +305,29 @@ function handleSmartInput(prod, cost, value, el) {
             btn.disabled = false;
         }
     }
+
+    // --- CROSSHAIR HIGHLIGHT LOGIC ---
+    document.addEventListener('mouseover', function(e) {
+        const cell = e.target.closest('td, th');
+        if (!cell) return;
+        
+        // Clear previous column highlights
+        document.querySelectorAll('.col-highlight').forEach(el => el.classList.remove('col-highlight'));
+        
+        // Find the specific column class (e.g., col-idx-2) and highlight all matches
+        const colClass = Array.from(cell.classList).find(c => c.startsWith('col-idx-'));
+        if (colClass) {
+            document.querySelectorAll('.' + colClass).forEach(el => el.classList.add('col-highlight'));
+        }
+    });
+
+    // Clear highlighting when the mouse leaves the table
+    document.addEventListener('mouseout', function(e) {
+        if (!e.target.closest('table')) {
+            document.querySelectorAll('.col-highlight').forEach(el => el.classList.remove('col-highlight'));
+        }
+    });
+
 </script>
 </body>
 </html>
