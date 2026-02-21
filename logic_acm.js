@@ -1,5 +1,5 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v3.3 - Dual Track)
+ * PURE PHYSICS ENGINE: ACM Signs (v3.2 - Dual Track)
  * Implements Qty Breaks, Shear vs CNC Physics, and Corner Rounding.
  */
 
@@ -9,8 +9,8 @@ function calculateACM(inputs, data) {
     const totalSqFt = sqft * inputs.qty;
 
     let baseSqFtRate = inputs.thickness === '6mm' 
-        ? parseFloat(data.Retail_ACM6_SqFt || data.ACM6_T5_Rate || 16.50) 
-        : parseFloat(data.Retail_ACM3_SqFt || data.ACM3_T5_Rate || 14.00);
+        ? parseFloat(data.ACM6_T1_Rate || data.ACM6_T5_Rate || 16.50) 
+        : parseFloat(data.ACM3_T1_Rate || data.ACM3_T5_Rate || 14.00);
 
     if (inputs.color === 'Black' && inputs.thickness === '6mm') baseSqFtRate *= 2;
 
@@ -130,7 +130,7 @@ function calculateACM(inputs, data) {
 // ==========================================
 // SIMULATOR CONFIGURATION SCHEMA
 // ==========================================
-const ACM_CONFIG = {
+window.ACM_CONFIG = {
     tab: 'PROD_ACM_Signs',
     engine: calculateACM,
     controls: [
@@ -146,8 +146,8 @@ const ACM_CONFIG = {
       { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
     retails: [
-      { heading: 'Market Base ($/SqFt)', key: 'Retail_ACM3_SqFt', label: '3mm Rate ($)' },
-      { key: 'Retail_ACM6_SqFt', label: '6mm Rate ($)' },
+      { heading: 'Market Base ($/SqFt)', key: 'ACM3_T1_Rate', label: '3mm Rate ($)' },
+      { key: 'ACM6_T1_Rate', label: '6mm Rate ($)' },
       { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
       { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)' },
       { heading: 'Router Constraints', key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
