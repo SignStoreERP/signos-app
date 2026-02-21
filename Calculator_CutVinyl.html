@@ -33,9 +33,10 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <div>
 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Application</label>
 <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="initColors(); runCalc()">
-<option value="Flat">Flat Surface (751)</option>
-<option value="Vehicle">Vehicle App (951)</option>
-<option value="Backlit">Backlit Sign (8500+)</option>
+  <option value="Flat">Flat Surface (751)</option>
+  <option value="Vehicle">Vehicle App (951)</option>
+  <option value="Backlit_8500">Backlit Std (8500)</option>
+  <option value="Backlit_8800">Backlit Premium (8800)</option>
 </select>
 </div>
 <div>
@@ -140,7 +141,10 @@ const COLORS_TRANS = [
 
 function initColors() {
     const mat = document.getElementById('material').value;
-    const isTranslucent = (mat === 'Backlit');
+    
+    // Updated logic: checks if the string contains 'Backlit' so both 8500 and 8800 trigger the translucent colors
+    const isTranslucent = (mat.includes('Backlit')); 
+    
     const colorArray = isTranslucent ? COLORS_TRANS : COLORS_CAST;
     
     document.getElementById('lbl-color-title').innerText = isTranslucent ? "Translucent Colors" : "Cast Vinyl Colors";
