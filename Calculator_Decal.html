@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Decal Calculator v4.1</title>
+<title>Decal Calculator v4.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -11,10 +11,9 @@
 <script src="logic_decal.js"></script>
 
 <style>
-.warn-pulse { animation: pulse-red 2s infinite; }
-@keyframes pulse-red { 0% { background-color: #FECACA; } 50% { background-color: #F87171; } 100% { background-color: #FECACA; } }
 .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
 .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
@@ -49,19 +48,28 @@
 </div>
 
 <div class="space-y-2 border-t border-gray-100 pt-2">
-<div class="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded">
-<span class="text-[10px] font-bold text-blue-900 uppercase">Apply Laminate?</span>
-<div class="relative inline-block w-9 align-middle select-none">
-<input type="checkbox" id="has-lam" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" checked onchange="runCalc()"/>
-<label for="has-lam" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-</div>
+<div class="grid grid-cols-2 gap-4">
+  <div class="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded">
+    <span class="text-[10px] font-bold text-blue-900 uppercase">Laminate?</span>
+    <div class="relative inline-block w-9 align-middle select-none">
+      <input type="checkbox" id="has-lam" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" checked onchange="runCalc()"/>
+      <label for="has-lam" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+    </div>
+  </div>
+  <div class="flex items-center justify-between p-2 bg-teal-50 border border-teal-200 rounded">
+    <span class="text-[10px] font-bold text-teal-900 uppercase">Pre-Mask?</span>
+    <div class="relative inline-block w-9 align-middle select-none">
+      <input type="checkbox" id="has-mask" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="runCalc()"/>
+      <label for="has-mask" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+    </div>
+  </div>
 </div>
 
-<div class="grid grid-cols-2 gap-2">
+<div class="grid grid-cols-2 gap-2 mt-2">
 <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Charge Setup/File</label>
 <label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer bg-purple-50 p-2 rounded border border-purple-200 hover:bg-purple-100 transition"><input type="checkbox" id="inc-design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
 </div>
-<div class="flex items-center gap-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border rounded p-1 text-center text-sm font-bold" oninput="runCalc()"></div>
+<div class="flex items-center gap-2 mt-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border rounded p-1 text-center text-sm font-bold" oninput="runCalc()"></div>
 </div>
 </div>
 
@@ -93,6 +101,7 @@ Show Volume Discounts
 <div class="flex justify-between"><span>Base Print:</span><span id="ui-print" class="font-bold">$0.00</span></div>
 <div class="flex justify-between text-blue-700 hidden" id="row-contour"><span>Contour Cut Adder:</span><span id="ui-contour" class="font-bold">$0.00</span></div>
 <div class="flex justify-between text-pink-700 hidden" id="row-weed"><span>Complex Weeding Adder:</span><span id="ui-weed" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-teal-700 hidden" id="row-mask"><span>Pre-Mask Adder:</span><span id="ui-mask" class="font-bold">$0.00</span></div>
 <div class="flex justify-between text-gray-700"><span>Job Setup:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
 <div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
 </div>
@@ -118,100 +127,84 @@ Show Volume Discounts
 let backendData = {};
 
 window.onload = async function() {
-injectHeader("Decals & Stickers");
+  injectHeader("Decals & Stickers");
+  
+  const u = sessionStorage.getItem('signos_user') || 'Guest';
+  const r = sessionStorage.getItem('signos_role') || 'VIEW';
 
-const u = sessionStorage.getItem('signos_user') || 'Guest';
-const r = sessionStorage.getItem('signos_role') || 'VIEW';
-
-const statusText = document.getElementById("status-text");
-const statusDot = document.getElementById("status-dot");
-const verDisplay = document.getElementById("version-display");
-
-try {
-const res = await fetch(`${SCRIPT_URL}?tab=PROD_Decals&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
-const data = await res.json();
-
-if(data.error) throw new Error(data.error);
-backendData = data;
-
-if(statusText) {
-statusText.innerText = "ONLINE";
-statusText.className = "font-bold text-green-500";
-statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-statusDot.classList.remove("animate-pulse");
-}
-
-if(verDisplay) {
-verDisplay.innerText = `(v4.1)`;
-verDisplay.classList.remove('hidden');
-}
-
-runCalc();
-
-} catch(e) {
-if(statusText) {
-statusText.innerText = "OFFLINE";
-statusText.className = "font-bold text-red-500";
-}
-console.error(e);
-}
+  try {
+    const res = await fetch(`${SCRIPT_URL}?tab=PROD_Decals&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+    const data = await res.json();
+    
+    if(data.error) throw new Error(data.error);
+    backendData = data;
+    
+    runCalc();
+    
+  } catch(e) {
+    console.error("Backend fetch failed:", e);
+  }
 };
 
 function toggleDiscounts() {
-const table = document.getElementById('disc-table');
-const arrow = document.getElementById('disc-arrow');
-table.classList.toggle('hidden');
-if (table.classList.contains('hidden')) arrow.classList.add('rotate-90');
-else arrow.classList.remove('rotate-90');
+  const table = document.getElementById('disc-table');
+  const arrow = document.getElementById('disc-arrow');
+  table.classList.toggle('hidden');
+  if (table.classList.contains('hidden')) arrow.classList.add('rotate-90');
+  else arrow.classList.remove('rotate-90');
 }
 
 function runCalc() {
-if(!backendData.Item_Name) return;
+  if(!backendData.Item_Name) return;
 
-const inputs = {
-qty: parseFloat(document.getElementById('qty').value) || 1,
-w: parseFloat(document.getElementById('w').value) || 4,
-h: parseFloat(document.getElementById('h').value) || 4,
-material: document.getElementById('material').value,
-shape: document.getElementById('shape').value,
-lam: document.getElementById('has-lam').checked,
-files: parseFloat(document.getElementById('files').value) || 1,
-setupPerFile: document.getElementById('setup-per-file').checked,
-incDesign: document.getElementById('inc-design').checked
-};
+  const inputs = {
+    qty: parseFloat(document.getElementById('qty').value) || 1,
+    w: parseFloat(document.getElementById('w').value) || 4,
+    h: parseFloat(document.getElementById('h').value) || 4,
+    material: document.getElementById('material').value,
+    shape: document.getElementById('shape').value,
+    lam: document.getElementById('has-lam').checked,
+    mask: document.getElementById('has-mask').checked,
+    files: parseFloat(document.getElementById('files').value) || 1,
+    setupPerFile: document.getElementById('setup-per-file').checked,
+    incDesign: document.getElementById('inc-design').checked
+  };
 
-const result = calculateDecal(inputs, backendData);
-const ret = result.retail;
-const fmt = (n) => "$" + n.toFixed(2);
+  const result = calculateDecal(inputs, backendData);
+  const ret = result.retail;
+  const fmt = (n) => "$" + n.toFixed(2);
 
-document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
-document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-document.getElementById('ui-print').innerText = fmt(ret.printTotal);
+  document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+  document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
+  document.getElementById('ui-print').innerText = fmt(ret.printTotal);
 
-if (ret.contourFee > 0) { document.getElementById('row-contour').classList.remove('hidden'); document.getElementById('ui-contour').innerText = fmt(ret.contourFee); }
-else document.getElementById('row-contour').classList.add('hidden');
+  if (ret.contourFee > 0) { document.getElementById('row-contour').classList.remove('hidden'); document.getElementById('ui-contour').innerText = fmt(ret.contourFee); }
+  else document.getElementById('row-contour').classList.add('hidden');
 
-if (ret.weedFee > 0) { document.getElementById('row-weed').classList.remove('hidden'); document.getElementById('ui-weed').innerText = fmt(ret.weedFee); }
-else document.getElementById('row-weed').classList.add('hidden');
+  if (ret.weedFee > 0) { document.getElementById('row-weed').classList.remove('hidden'); document.getElementById('ui-weed').innerText = fmt(ret.weedFee); }
+  else document.getElementById('row-weed').classList.add('hidden');
 
-document.getElementById('ui-setup').innerText = fmt(ret.setupFee || 0);
-if (ret.designFee > 0) { document.getElementById('row-design').classList.remove('hidden'); document.getElementById('ui-design').innerText = fmt(ret.designFee); }
-else document.getElementById('row-design').classList.add('hidden');
+  if (ret.maskFee > 0) { document.getElementById('row-mask').classList.remove('hidden'); document.getElementById('ui-mask').innerText = fmt(ret.maskFee); }
+  else document.getElementById('row-mask').classList.add('hidden');
 
-const minOrder = parseFloat(backendData.Retail_Min_Order || 35);
-document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
-document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+  document.getElementById('ui-setup').innerText = fmt(ret.setupFee || 0);
+  if (ret.designFee > 0) { document.getElementById('row-design').classList.remove('hidden'); document.getElementById('ui-design').innerText = fmt(ret.designFee); }
+  else document.getElementById('row-design').classList.add('hidden');
 
-let rowsHtml = "";
-ret.tiers.forEach(tier => {
-    const trPct = (ret.printTotal / ((inputs.w * inputs.h / 144) * inputs.qty) - tier.base) / (ret.printTotal / ((inputs.w * inputs.h / 144) * inputs.qty));
-    const pctDisplay = trPct > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(trPct*100).toFixed(0)}%</span>` : "";
-    rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+ ${pctDisplay}</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
-});
-document.getElementById('tier-rows').innerHTML = rowsHtml;
+  const minOrder = parseFloat(backendData.Retail_Min_Order || 35);
+  document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
+  document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Custom Decals. Material: ${inputs.material === 'Cast' ? '3M Cast Air Release' : 'Standard Calendered'}. Cut: ${inputs.shape}. ${inputs.lam ? 'Laminated.' : ''}`;
-document.getElementById('job-desc').value = desc;
+  let rowsHtml = "";
+  ret.tiers.forEach(tier => {
+      const trPct = (ret.printTotal / ((inputs.w * inputs.h / 144) * inputs.qty) - tier.base) / (ret.printTotal / ((inputs.w * inputs.h / 144) * inputs.qty));
+      const pctDisplay = trPct > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(trPct*100).toFixed(0)}%</span>` : "";
+      rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+ ${pctDisplay}</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
+  });
+  document.getElementById('tier-rows').innerHTML = rowsHtml;
+
+  const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Custom Decals. Material: ${inputs.material === 'Cast' ? '3M Cast Air Release' : 'Standard Calendered'}. Cut: ${inputs.shape}. ${inputs.lam ? 'Laminated.' : ''} ${inputs.mask ? 'Pre-Mask Applied.' : ''}`;
+  document.getElementById('job-desc').value = desc;
 }
 </script>
 </body>
