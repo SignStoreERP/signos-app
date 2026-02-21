@@ -1,5 +1,5 @@
 /**
- * PURE PHYSICS ENGINE: Yard Signs (v3.2 - Dual Track)
+ * PURE PHYSICS ENGINE: Yard Signs (v3.1 - Dual Track)
  * Implements 3-Tier Stake Pricing Logic
  */
 
@@ -125,7 +125,7 @@ function calculateYardSign(inputs, data) {
 // ==========================================
 // SIMULATOR CONFIGURATION SCHEMA
 // ==========================================
-const YARD_CONFIG = {
+window.YARD_CONFIG = {
     tab: 'PROD_Yard_Signs',
     engine: calculateYardSign,
     controls: [
