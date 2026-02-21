@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cut Vinyl Calculator v4.0</title>
+<title>Cut Vinyl Calculator v4.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -29,22 +29,13 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="6" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
 </div>
 
-<!-- COLOR PICKER -->
-<div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Vinyl Color</label>
-<div class="relative">
-<input type="text" id="vinyl-color" placeholder="Select Color below..." readonly class="w-full border p-2 pl-10 rounded font-bold text-sm bg-gray-50 text-gray-700 outline-none">
-<div class="absolute top-2.5 left-2.5 w-5 h-5 rounded border border-gray-300 shadow-sm" id="selected-swatch" style="background-color: #fff;"></div>
-</div>
-<div id="color-grid" class="grid grid-cols-8 gap-1 mt-2 max-h-24 overflow-y-auto border p-1.5 rounded bg-gray-50 custom-scroll"></div>
-</div>
-
 <div class="grid grid-cols-2 gap-4">
 <div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Series</label>
-<select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
-<option value="651">Oracal 651 (Standard)</option>
-<option value="751">Oracal 751 (Cast)</option>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Application</label>
+<select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="initColors(); runCalc()">
+<option value="Flat">Flat Surface (751)</option>
+<option value="Vehicle">Vehicle App (951)</option>
+<option value="Backlit">Backlit Sign (8500+)</option>
 </select>
 </div>
 <div>
@@ -54,6 +45,16 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <option value="Complex">Complex (Small/Serifs)</option>
 </select>
 </div>
+</div>
+
+<!-- DYNAMIC COLOR PICKER -->
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1" id="lbl-color-title">Cast Vinyl Colors</label>
+<div class="relative">
+<input type="text" id="vinyl-color" placeholder="Select Color below..." readonly class="w-full border p-2 pl-10 rounded font-bold text-sm bg-gray-50 text-gray-700 outline-none">
+<div class="absolute top-2.5 left-2.5 w-5 h-5 rounded border border-gray-300 shadow-sm" id="selected-swatch" style="background-color: #fff;"></div>
+</div>
+<div id="color-grid" class="grid grid-cols-8 gap-1 mt-2 max-h-32 overflow-y-auto border p-1.5 rounded bg-gray-50 custom-scroll"></div>
 </div>
 
 <!-- Toggles -->
@@ -117,18 +118,39 @@ Show Volume Discounts
 <script>
 let backendData = {};
 
-const COLORS = [
-{c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"},
-{c:"031", n:"Red", h:"#C0142C"}, {c:"049", n:"King Blue", h:"#002359"},
-{c:"067", n:"Blue", h:"#005697"}, {c:"063", n:"Lime", h:"#81B930"},
-{c:"090", n:"Silver", h:"#8A8D8F"}, {c:"091", n:"Gold", h:"#897238"},
-{c:"021", n:"Yellow", h:"#FED100"}, {c:"034", n:"Orange", h:"#E54909"},
-{c:"041", n:"Pink", h:"#CC4F81"}, {c:"080", n:"Brown", h:"#52341C"}
+const COLORS_CAST = [
+{c:"010", n:"White", h:"#FFFFFF"}, {c:"020", n:"Golden Yellow", h:"#FFC806"}, {c:"219", n:"Yellow", h:"#FFD600"}, {c:"032", n:"Light Red", h:"#D9282C"}, 
+{c:"030", n:"Dark Red", h:"#82181C"}, {c:"305", n:"Geranium Red", h:"#E11C2B"}, {c:"047", n:"Orange Red", h:"#DD331D"}, {c:"034", n:"Orange", h:"#E54909"}, 
+{c:"402", n:"Cyclamen", h:"#9E2659"}, {c:"049", n:"King Blue", h:"#002359"}, {c:"050", n:"Dark Blue", h:"#002D58"}, {c:"057", n:"Traffic Blue", h:"#005B98"}, 
+{c:"051", n:"Gentian Blue", h:"#00458B"}, {c:"052", n:"Azure Blue", h:"#005697"}, {c:"053", n:"Light Blue", h:"#5E94D3"}, {c:"056", n:"Ice Blue", h:"#98C4E3"}, 
+{c:"067", n:"Blue Green", h:"#00685A"}, {c:"060", n:"Dark Green", h:"#00442D"}, {c:"061", n:"Green", h:"#006B3F"}, {c:"062", n:"Light Green", h:"#008546"}, 
+{c:"064", n:"Yellow Green", h:"#4CA337"}, {c:"063", n:"Lime-Tree Green", h:"#81B930"}, {c:"070", n:"Black", h:"#000000"}, {c:"073", n:"Dark Grey", h:"#4D5054"}, 
+{c:"071", n:"Grey", h:"#737679"}, {c:"076", n:"Telegrey", h:"#8D9092"}, {c:"090", n:"Silver Grey", h:"#8A8D8F"}, {c:"091", n:"Gold", h:"#897238"}, 
+{c:"093", n:"Anthracite", h:"#3E4145"}, {c:"944", n:"Red Gold", h:"#965A3D"}, {c:"932", n:"Graphite", h:"#363636"}, {c:"369", n:"Red Brown", h:"#5E3128"}
+];
+
+const COLORS_TRANS = [
+{c:"010", n:"White", h:"#F5F5F5"}, {c:"020", n:"Golden Yellow", h:"#FFC500"}, {c:"021", n:"Yellow", h:"#FFD600"}, {c:"025", n:"Brimstone", h:"#FFEE00"}, 
+{c:"031", n:"Red", h:"#BF0D26"}, {c:"032", n:"Light Red", h:"#D62629"}, {c:"034", n:"Orange", h:"#E34A0A"}, {c:"085", n:"Pale Pink", h:"#F2C4CE"}, 
+{c:"041", n:"Pink", h:"#CC4F81"}, {c:"053", n:"Light Blue", h:"#5DA0D9"}, {c:"052", n:"Azure Blue", h:"#005A9C"}, {c:"051", n:"Gentian Blue", h:"#004B91"}, 
+{c:"057", n:"Traffic Blue", h:"#0063A5"}, {c:"049", n:"King Blue", h:"#002D62"}, {c:"063", n:"Lime-Tree", h:"#89C540"}, {c:"061", n:"Green", h:"#00764A"}, 
+{c:"060", n:"Dark Green", h:"#004E35"}, {c:"079", n:"Red Brown", h:"#632A1D"}, {c:"070", n:"Black", h:"#000000"}, {c:"074", n:"Middle Grey", h:"#9EA2A4"}, 
+{c:"073", n:"Dark Grey", h:"#525559"}, {c:"090", n:"Silver Grey", h:"#96989A"}, {c:"091", n:"Gold", h:"#9C8346"}
 ];
 
 function initColors() {
+    const mat = document.getElementById('material').value;
+    const isTranslucent = (mat === 'Backlit');
+    const colorArray = isTranslucent ? COLORS_TRANS : COLORS_CAST;
+    
+    document.getElementById('lbl-color-title').innerText = isTranslucent ? "Translucent Colors" : "Cast Vinyl Colors";
+    document.getElementById('vinyl-color').value = ""; // Clear selection on switch
+    document.getElementById('selected-swatch').style.backgroundColor = "#fff";
+    
     const grid = document.getElementById('color-grid');
-    COLORS.forEach(col => {
+    grid.innerHTML = ""; // Clear existing grid
+    
+    colorArray.forEach(col => {
         const div = document.createElement('div');
         div.className = "w-full h-6 rounded cursor-pointer border border-gray-200 hover:border-blue-500 hover:shadow-md transition";
         div.style.backgroundColor = col.h;
@@ -168,7 +190,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v4.0)`;
+            verDisplay.innerText = `(v4.2)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -237,7 +259,12 @@ function runCalc() {
     });
     document.getElementById('tier-rows').innerHTML = rowsHtml;
 
-    const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Cut Vinyl Graphics.\nSeries: Oracal ${inputs.material}. Color: ${color}.\nWeeding: ${inputs.complexity}. App Tape applied.`;
+    let seriesLabel = "";
+    if (inputs.material === 'Flat') seriesLabel = "Oracal 751 (Flat App)";
+    else if (inputs.material === 'Vehicle') seriesLabel = "Oracal 951 (Vehicle App)";
+    else seriesLabel = "Oracal 8500/8800 (Backlit App)";
+
+    const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Cut Vinyl Graphics.\nApplication: ${seriesLabel}. Color: ${color}.\nWeeding: ${inputs.complexity}. App Tape applied.`;
     document.getElementById('job-desc').value = desc;
 }
 </script>
