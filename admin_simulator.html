@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing Simulator v1.8 (Responsive)</title>
+  <title>Pricing Simulator v2.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="signos-core.js"></script>
 
+  <!-- HEADLESS LOGIC ENGINES (Provide Math & Configs) -->
   <script src="logic_yard.js"></script>
   <script src="logic_acm.js"></script>
 
@@ -17,50 +18,40 @@
     .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
 
     /* Smooth Accordion Transitions */
-    .panel-content {
-      transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin 0.3s ease-in-out;
-      max-height: 600px; /* INCREASED HEIGHT TO PREVENT CUTOFF */
-      opacity: 1;
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
-    .panel-content.closed {
-      max-height: 0;
-      opacity: 0;
-      margin-top: 0;
-      pointer-events: none;
-    }
+    .panel-content { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin 0.3s ease-in-out; max-height: 600px; opacity: 1; overflow-x: auto; overflow-y: hidden; }
+    .panel-content.closed { max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; }
     .chevron { transition: transform 0.3s ease-in-out; }
     .chevron.closed { transform: rotate(-90deg); }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-auto p-2 md:p-0">
+<body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-auto">
 
-<div id="main-card" class="flex-1 flex flex-col bg-white shadow-xl md:m-4 rounded-xl border border-gray-200">
+<div id="main-card" class="flex-1 flex flex-col bg-white shadow-xl m-4 rounded-xl border border-gray-200">
 
-  <div class="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:grid md:grid-cols-12 gap-4 shrink-0 md:items-end z-20 relative rounded-t-xl">
-    <div class="w-full md:col-span-3">
+  <div class="bg-white border-b border-gray-200 px-6 py-4 grid grid-cols-12 gap-4 shrink-0 items-end z-20 relative rounded-t-xl">
+    <div class="col-span-3">
       <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Engine</label>
       <select id="sim-module" class="w-full border border-gray-300 rounded p-2 text-sm font-bold bg-white focus:border-blue-500 outline-none" onchange="loadModuleData()">
+        <!-- New modules only require an <option> added here -->
         <option value="YARD">Yard Signs (Coro)</option>
         <option value="ACM">ACM Signs (Metal)</option>
       </select>
     </div>
 
-    <div class="w-full md:col-span-6 flex gap-4">
+    <div class="col-span-6 flex gap-4">
       <div class="flex-1 bg-gray-50 p-2 rounded border border-gray-200">
         <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Simulation Range (Qty)</label>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2">
           <input type="number" id="range-start" value="1" class="w-16 border rounded p-1 text-center text-sm font-bold" placeholder="Start">
-          <span class="text-gray-300 font-bold hidden sm:inline">-</span>
+          <span class="text-gray-300 font-bold">-</span>
           <input type="number" id="range-end" value="100" class="w-16 border rounded p-1 text-center text-sm font-bold" placeholder="End">
-          <span class="text-gray-400 text-[10px] uppercase font-bold sm:ml-2">Step:</span>
+          <span class="text-gray-400 text-[10px] uppercase font-bold ml-2">Step:</span>
           <input type="number" id="range-step" value="5" class="w-12 border rounded p-1 text-center text-sm font-bold">
         </div>
       </div>
     </div>
 
-    <div class="w-full md:col-span-3 text-right flex flex-col gap-2">
+    <div class="col-span-3 text-right flex flex-col gap-2">
       <button onclick="runSimulation()" id="btn-run" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition w-full disabled:opacity-50 disabled:cursor-not-allowed text-xs tracking-wider">
         RE-CALCULATE
       </button>
@@ -71,52 +62,51 @@
     </div>
   </div>
 
-  <div class="bg-gray-50 border-b border-gray-200 px-4 md:px-6 py-3 shrink-0 relative z-10">
-    <div class="flex flex-wrap items-center gap-4 md:gap-6" id="config-container"></div>
+  <div class="bg-gray-50 border-b border-gray-200 px-6 py-2 shrink-0 overflow-x-auto relative z-10">
+    <div class="flex items-center gap-6" id="config-container"></div>
   </div>
 
-  <div class="bg-blue-50 border-b border-blue-100 px-4 md:px-6 py-3 shrink-0 shadow-inner relative z-10">
+  <div class="bg-blue-50 border-b border-blue-100 px-6 py-3 shrink-0 shadow-inner relative z-10">
     <div class="flex items-center justify-between cursor-pointer" onclick="togglePanel('retail-container', 'retail-icon')">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+      <div class="flex items-center gap-2">
         <h3 class="text-[9px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           Retail Drivers (Sandbox)
         </h3>
-        <span class="text-[9px] text-blue-400 font-medium sm:ml-2">Market value and discount breaks.</span>
+        <span class="text-[9px] text-blue-400 font-medium ml-2">Market value and discount breaks.</span>
       </div>
-      <svg id="retail-icon" class="chevron w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      <svg id="retail-icon" class="chevron w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
     </div>
-    <div class="panel-content flex flex-wrap items-end gap-x-4 md:gap-x-6 gap-y-3 mt-2 pb-1" id="retail-container"></div>
+    <div class="panel-content flex flex-wrap items-end gap-x-6 gap-y-3 mt-2 pb-1" id="retail-container"></div>
   </div>
 
-  <div class="bg-red-50 border-b border-red-100 px-4 md:px-6 py-3 shrink-0 shadow-inner relative z-10">
+  <div class="bg-red-50 border-b border-red-100 px-6 py-3 shrink-0 shadow-inner relative z-10">
     <div class="flex items-center justify-between cursor-pointer" onclick="togglePanel('cost-container', 'cost-icon')">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+      <div class="flex items-center gap-2">
         <h3 class="text-[9px] font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
           Backend Cost Drivers (Sandbox)
         </h3>
-        <span class="text-[9px] text-red-400 font-medium sm:ml-2">Shop physics and hard material costs.</span>
+        <span class="text-[9px] text-red-400 font-medium ml-2">Shop physics and hard material costs.</span>
       </div>
-      <svg id="cost-icon" class="chevron w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      <svg id="cost-icon" class="chevron w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
     </div>
-    <div class="panel-content flex flex-wrap items-end gap-x-4 md:gap-x-6 gap-y-3 mt-2 pb-1" id="cost-container"></div>
+    <div class="panel-content flex flex-wrap items-center gap-4 mt-2 pb-1" id="cost-container"></div>
   </div>
 
-  <div class="flex-1 p-4 md:p-6 relative bg-white flex flex-col min-h-[400px] md:min-h-[500px]">
+  <div class="flex-1 p-6 relative bg-white flex flex-col min-h-[500px]">
     <div class="chart-container flex-1 w-full relative">
       <canvas id="priceChart"></canvas>
     </div>
     
-    <div id="receipt-panel" class="hidden absolute top-2 right-2 md:top-6 md:right-6 z-40 w-[calc(100%-1rem)] sm:w-96 max-w-[95%] sm:max-w-[90%] bg-white/95 backdrop-blur flex flex-col rounded-xl border border-gray-300 p-4 md:p-5 shadow-2xl overflow-y-auto max-h-[85%] transition-all">
+    <div id="receipt-panel" class="hidden absolute top-6 right-6 z-40 w-96 max-w-[90%] bg-white/95 backdrop-blur flex flex-col rounded-xl border border-gray-300 p-5 shadow-2xl overflow-y-auto max-h-[calc(100%-3rem)] transition-all">
       <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 shrink-0">
         <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">
           Math Receipt (Qty: <span id="rec-qty" class="text-blue-600">--</span>)
         </h3>
-        <button onclick="document.getElementById('receipt-panel').classList.add('hidden')" class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none transition-colors p-1">✕</button>
+        <button onclick="document.getElementById('receipt-panel').classList.add('hidden')" class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none transition-colors">✕</button>
       </div>
-      <div class="flex flex-col space-y-6" id="rec-content">
-      </div>
+      <div class="flex flex-col space-y-6" id="rec-content"></div>
     </div>
 
     <div id="loader" class="absolute inset-0 flex items-center justify-center bg-white/80 z-50 hidden">
@@ -127,12 +117,12 @@
     </div>
   </div>
 
-  <div class="bg-gray-900 text-white px-4 md:px-6 py-3 flex flex-col sm:flex-row justify-between text-[10px] font-mono shrink-0 items-center rounded-b-xl gap-2 sm:gap-0">
+  <div class="bg-gray-900 text-white px-6 py-2 flex justify-between text-[10px] font-mono shrink-0 items-center rounded-b-xl">
     <div>
       <span class="text-gray-500">SOURCE:</span>
       <span id="data-source" class="text-blue-400 font-bold ml-2">---</span>
     </div>
-    <div class="flex flex-wrap justify-center gap-4 md:gap-6">
+    <div class="flex gap-6">
       <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-600 rounded-sm"></span> RETAIL UNIT</div>
       <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm border border-red-400 border-dashed"></span> COST UNIT</div>
       <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-400 rounded-sm opacity-50"></span> MARGIN %</div>
@@ -146,90 +136,6 @@
   let currentBackend = {};
   let simulationData = [];
 
-  // --- 1. MODULE DEFINITIONS ---
-  const MODULES = {
-    'YARD': {
-      tab: 'PROD_Yard_Signs',
-      engine: 'calculateYardSign',
-      controls: [
-        { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
-        { id: 'hasStakes', label: 'Wire Stakes', type: 'toggle', def: true },
-        { id: 'files', label: 'Files', type: 'number', def: 1 },
-        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false },
-        { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
-      ],
-      retails: [
-        { heading: 'Print Base (Coroplast)', key: 'Retail_Price_Sign_SS', label: 'Base Sign ($)' },
-        { key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
-        { key: 'Tier_1_Price', label: 'Tier 1 Base ($)' },
-        { heading: 'Hardware (Wire Stakes)', key: 'Retail_Stake_T1_Price', label: 'Stake 1-49 ($)' },
-        { key: 'Retail_Stake_T2_Qty', label: 'Stake T2 Qty' },
-        { key: 'Retail_Stake_T2_Price', label: 'Stake T2 ($)' },
-        { key: 'Retail_Stake_T3_Qty', label: 'Stake T3 Qty' },
-        { key: 'Retail_Stake_T3_Price', label: 'Stake T3 ($)' }
-      ],
-      costs: [
-        { key: 'Cost_Blank_Standard', label: 'Blank Cost ($)' },
-        { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
-        { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
-        { key: 'Rate_Machine_Flatbed', label: 'R1000 ($/Hr)' },
-        { key: 'Machine_Speed_LF_Hr', label: 'Print Spd (LF/hr)' },
-        { key: 'Printer_Bed_Capacity', label: 'Bed Qty (Nesting)' },
-        { key: 'Time_Setup_Job', label: 'Setup (Mins)' },
-        { key: 'Time_Handling', label: 'Handling (Mins)' },
-        { key: 'Waste_Factor', label: 'Waste (1.x)' },
-        { key: 'Factor_Risk', label: 'Risk (1.x)' },
-        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
-      ]
-    },
-    'ACM': {
-      tab: 'PROD_ACM_Signs',
-      engine: 'calculateACM',
-      controls: [
-        { id: 'w', label: 'Width', type: 'number', def: 24 },
-        { id: 'h', label: 'Height', type: 'number', def: 18 },
-        { id: 'thickness', label: 'Material', type: 'select', opts: [{v:'3mm', t:'3mm Std'}, {v:'6mm', t:'6mm HD'}] },
-        { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
-        { id: 'color', label: 'Color', type: 'select', opts: [{v:'White', t:'White'}, {v:'Black', t:'Black'}] },
-        { id: 'shape', label: 'Cutting Method', type: 'select', opts: [{v:'Rectangle', t:'Square / Shear'}, {v:'CNC Simple', t:'CNC (Simple)'}, {v:'CNC Complex', t:'CNC (Complex)'}] },
-        { id: 'rounded', label: 'Rounded Corners', type: 'toggle', def: false },
-        { id: 'files', label: 'Files', type: 'number', def: 1 },
-        { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
-        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
-      ],
-      retails: [
-        { heading: 'Market Base ($/SqFt)', key: 'ACM3_T1_Rate', label: '3mm Rate ($)' },
-        { key: 'ACM6_T1_Rate', label: '6mm Rate ($)' },
-        { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
-        { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)' },
-        { heading: 'Router Constraints', key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
-        { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' },
-        { heading: 'Flat Fees', key: 'Retail_Fee_Setup', label: 'Setup Fee ($)' },
-        { key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
-      ],
-      costs: [
-        { key: 'Cost_Stock_3mm_4x8', label: '3mm 4x8 Sheet ($)' },
-        { key: 'Cost_Stock_6mm_4x8', label: '6mm 4x8 Sheet ($)' },
-        { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
-        { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
-        { key: 'Rate_CNC_Labor', label: 'CNC Operator ($/Hr)' },
-        { key: 'Rate_Machine_CNC', label: 'Router Mach ($/Hr)' },
-        { key: 'Rate_Machine_Flatbed', label: 'Printer Mach ($/Hr)' },
-        { key: 'Machine_Speed_LF_Hr', label: 'Print Spd (LF/hr)' },
-        { key: 'Time_Shear_Setup', label: 'Shear Setup (Mins)' },
-        { key: 'Time_Shear_Cut', label: 'Shear Cut (Mins/Ea)' },
-        { key: 'Time_Round_Setup', label: 'Corner Setup (Mins)' },
-        { key: 'Time_Round_Corner', label: 'Cut Corner (Mins/Ea)' },
-        { key: 'Time_Setup_CNC', label: 'CNC Setup (Mins)' },
-        { key: 'Time_CNC_Easy_SqFt', label: 'CNC Easy (Mins/SqFt)' },
-        { key: 'Time_CNC_Complex_SqFt', label: 'CNC Complex (Mins/SqFt)' },
-        { key: 'Waste_Factor', label: 'Waste (1.x)' },
-        { key: 'Factor_Risk', label: 'Risk (1.x)' },
-        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
-      ]
-    }
-  };
-
   window.onload = function() {
     if(typeof injectHeader === 'function') injectHeader("Pricing Simulator");
     loadModuleData();
@@ -241,12 +147,18 @@
     document.getElementById(iconId).classList.toggle('closed');
   }
 
-  // --- 2. LOAD DATA & RENDER UI ---
-  async function loadModuleData() {
+  // --- GET ACTIVE CONFIG ---
+  function getActiveConfig() {
     const modKey = document.getElementById('sim-module').value;
-    const config = MODULES[modKey];
-    const btn = document.getElementById('btn-run');
+    return window[modKey + '_CONFIG'];
+  }
+
+  // --- LOAD DATA & RENDER UI ---
+  async function loadModuleData() {
+    const config = getActiveConfig();
+    if (!config) { alert("Logic configuration missing for this module."); return; }
     
+    const btn = document.getElementById('btn-run');
     document.getElementById('receipt-panel').classList.add('hidden'); 
 
     btn.innerText = "LOADING...";
@@ -272,7 +184,7 @@
       btn.innerText = "RUN SIMULATION";
       btn.disabled = false;
       
-      // UPDATE STATUS HEADER
+      // STATUS UPDATE
       const statusText = document.getElementById("status-text");
       const statusDot = document.getElementById("status-dot");
       if(statusText) {
@@ -293,8 +205,7 @@
   }
 
   function resetDefaults() {
-    const modKey = document.getElementById('sim-module').value;
-    const config = MODULES[modKey];
+    const config = getActiveConfig();
     renderControls(config.controls);
     renderCostInputs(config.costs, currentBackend);
     renderRetailInputs(config.retails, currentBackend);
@@ -309,20 +220,20 @@
       if(c.type === 'number') {
         wrap.innerHTML = `
           <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>
-          <input type="number" id="cfg-${c.id}" value="${c.def}" class="w-16 border border-gray-300 p-1 rounded text-sm font-bold text-center text-gray-700 focus:border-gray-500 outline-none">
+          <input type="number" id="cfg-${c.id}" value="${c.def}" class="w-16 border border-gray-300 p-1 rounded text-sm font-bold text-center text-gray-700 focus:border-gray-500 outline-none" onchange="runSimulation()">
         `;
       } else if (c.type === 'select') {
         const opts = c.opts.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
         wrap.innerHTML = `
           <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>
-          <select id="cfg-${c.id}" class="border border-gray-300 p-1 rounded text-sm font-bold bg-white w-28 text-gray-700 focus:border-gray-500 outline-none">${opts}</select>
+          <select id="cfg-${c.id}" class="border border-gray-300 p-1 rounded text-sm font-bold bg-white w-28 text-gray-700 focus:border-gray-500 outline-none" onchange="runSimulation()">${opts}</select>
         `;
       } else if (c.type === 'toggle') {
         const checked = c.def ? 'checked' : '';
         wrap.innerHTML = `
           <div class="flex items-center gap-2 mt-4">
             <div class="relative inline-block w-8 align-middle select-none">
-              <input type="checkbox" id="cfg-${c.id}" ${checked} class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
+              <input type="checkbox" id="cfg-${c.id}" ${checked} class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="runSimulation()"/>
               <label for="cfg-${c.id}" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
             </div>
             <span class="text-[10px] font-bold text-gray-600 uppercase">${c.label}</span>
@@ -379,9 +290,8 @@
 
   // --- 3. SIMULATION ENGINE ---
   function runSimulation() {
-    const modKey = document.getElementById('sim-module').value;
-    const config = MODULES[modKey];
-    const engine = window[config.engine];
+    const config = getActiveConfig();
+    const engine = config.engine;
 
     const start = parseInt(document.getElementById('range-start').value);
     const end = parseInt(document.getElementById('range-end').value);
@@ -395,27 +305,15 @@
       else if(c.type === 'select') inputs[c.id] = isNaN(parseFloat(el.value)) ? el.value : parseFloat(el.value);
     });
     
-    // --- DYNAMIC ACM LOGIC ---
-    if (modKey === 'ACM') {
-      const roundedEl = document.getElementById('cfg-rounded');
-      if (roundedEl) {
-        const roundedToggleWrap = roundedEl.closest('div').parentElement;
-        if (inputs.shape !== 'Rectangle') {
-            roundedToggleWrap.style.opacity = '0.3';
-            roundedToggleWrap.style.pointerEvents = 'none';
-            inputs.rounded = false; // Force false for math
-            roundedEl.checked = false;
-        } else {
-            roundedToggleWrap.style.opacity = '1';
-            roundedToggleWrap.style.pointerEvents = 'auto';
-        }
-      }
+    // EXECUTE DYNAMIC UI LOGIC IF IT EXISTS
+    if (typeof config.dynamicUI === 'function') {
+      inputs = config.dynamicUI(inputs);
     }
 
     if(!inputs.files) inputs.files = 1;
     if(!inputs.rounded) inputs.rounded = false;
 
-    // SANDBOX DATA INJECTION (Combines Base + Red Cost Overrides + Blue Retail Overrides)
+    // SANDBOX DATA INJECTION 
     let simBackend = { ...currentBackend };
     
     if (config.costs) {
@@ -483,7 +381,7 @@
         interaction: { mode: 'index', intersect: false },
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            const dataIndex = elements[0].index;
+            const dataIndex = elements.index;
             renderReceipt(dataIndex);
           }
         },
@@ -499,13 +397,12 @@
     });
   }
 
-  // --- DATA EXPORT FEATURE ---
   function exportData() {
     if(simulationData.length === 0) { alert("No data to export."); return; }
     
+    const config = getActiveConfig();
     const modKey = document.getElementById('sim-module').options[document.getElementById('sim-module').selectedIndex].text;
     const rawKey = document.getElementById('sim-module').value;
-    const config = MODULES[rawKey];
     
     let out = `SIGNOS PRICING SIMULATION EXPORT\n`;
     out += `Module: ${modKey} (${config.tab})\n`;
@@ -557,145 +454,22 @@
     URL.revokeObjectURL(url);
   }
 
-  // --- CONTEXT-AWARE RECEIPT RENDERER ---
+  // --- DYNAMIC RECEIPT RENDERER ---
   function renderReceipt(index) {
     const data = simulationData[index];
     if (!data) return;
-
-    const modKey = document.getElementById('sim-module').value;
 
     document.getElementById('receipt-panel').classList.remove('hidden');
     document.getElementById('rec-qty').innerText = data.qty;
 
     const fmt = (n) => "$" + parseFloat(n || 0).toFixed(2);
-
-    let retailHTML = `
-      <div>
-        <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
-        <div class="space-y-1 text-xs text-gray-700">
-          <div class="flex justify-between" title="Strict market value based on square footage and Blue Sheet tiers.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Base Print:</span> 
-            <span>${fmt(data.retail.printTotal)}</span>
-          </div>`;
-
-    // Dynamic Retail Items Based on Product
-    if (modKey === 'YARD') {
-      if (data.retail.stakeTotal !== undefined && data.retail.stakeTotal > 0) {
-        retailHTML += `<div class="flex justify-between"><span>Wire Stakes:</span> <span>${fmt(data.retail.stakeTotal)}</span></div>`;
-      }
-    } else if (modKey === 'ACM') {
-      if (data.retail.routerFee !== undefined && data.retail.routerFee > 0) {
-        retailHTML += `<div class="flex justify-between"><span>CNC Router Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>`;
-      }
-    }
     
-    retailHTML += `
-          <div class="flex justify-between">
-            <span>Setup Fee:</span> 
-            <span>${fmt(data.retail.setupFee || 0)}</span>
-          </div>`;
-          
-    if (data.retail.designFee !== undefined && data.retail.designFee > 0) {
-      retailHTML += `<div class="flex justify-between"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>`;
-    }
-
-    retailHTML += `
-          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
-            <span>Total Retail:</span> 
-            <span>${fmt(data.retail.grandTotal)}</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    let costHTML = `
-      <div>
-        <h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
-        <div class="space-y-1 text-xs text-gray-700">`;
-
-    if (data.cost.breakdown) {
-      const b = data.cost.breakdown;
-      costHTML += `
-          <div class="flex justify-between" title="Pure cost of raw substrate.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Raw Blanks:</span> 
-            <span>${fmt(b.rawBlanks)}</span>
-          </div>`;
-          
-      // Dynamic Cost Items Based on Product
-      if (modKey === 'YARD') {
-          if (b.stakeCost !== undefined && b.stakeCost > 0) {
-            costHTML += `
-              <div class="flex justify-between">
-                <span>Stakes:</span> 
-                <span>${fmt(b.stakeCost)}</span>
-              </div>`;
-          }
-      }
-
-      costHTML += `
-          <div class="flex justify-between" title="Calculated by exact square footage and Matrix Ink Cost.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Ink:</span> 
-            <span>${fmt(b.totalInk)}</span>
-          </div>
-          <div class="flex justify-between" title="One-time flat fee for job setup and material handling.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Setup Labor:</span> 
-            <span>${fmt(b.costSetup)}</span>
-          </div>`;
-
-      // Specific ACM Cutting Data
-      if (modKey === 'ACM') {
-          if (b.costCut !== undefined && b.costCut > 0) {
-              costHTML += `
-              <div class="flex justify-between" title="Labor and machine time for either Shear cuts or CNC Routing.">
-                <span class="cursor-help border-b border-dotted border-gray-400">Cutting Time:</span> 
-                <span>${fmt(b.costCut)}</span>
-              </div>`;
-          }
-          if (b.costRound !== undefined && b.costRound > 0) {
-              costHTML += `
-              <div class="flex justify-between" title="Operator labor for corner rounding punches.">
-                <span class="cursor-help border-b border-dotted border-gray-400">Corner Punching:</span> 
-                <span>${fmt(b.costRound)}</span>
-              </div>`;
-          }
-      }
-
-      costHTML += `
-          <div class="flex justify-between" title="Total hours the substrate sits on the printer/router bed.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Machine Run (${b.runHrs ? b.runHrs.toFixed(2) : 0}h):</span> 
-            <span>${fmt(b.costMachine)}</span>
-          </div>
-          <div class="flex justify-between" title="Operator labor adjusted by the Attendance Ratio.">
-            <span class="cursor-help border-b border-dotted border-gray-400">Operator (Attn Ratio):</span> 
-            <span>${fmt(b.costOp)}</span>
-          </div>
-
-          <div class="border-t border-gray-200 mt-2 pt-1"></div>
-          <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
-          
-          <div class="flex justify-between text-red-600" title="Physical material expected to be lost to drops or cuts. This IS added to your total cost.">
-            <span class="cursor-help border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 10}%):</span> 
-            <span>+ ${fmt(b.wasteCost)}</span>
-          </div>
-          <div class="flex justify-between text-orange-500 opacity-80" title="Suggested financial buffer for mistakes. This is an INDICATOR ONLY and is NOT added to your hard cost.">
-            <span class="cursor-help border-b border-dotted border-orange-300">Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> 
-            <span>(+ ${fmt(b.riskCost)})</span>
-          </div>
-      `;
+    const config = getActiveConfig();
+    if (typeof config.renderReceipt === 'function') {
+        document.getElementById('rec-content').innerHTML = config.renderReceipt(data, fmt);
     } else {
-      costHTML += `<div class="text-gray-400 italic">Detailed breakdown object not returned.</div>`;
+        document.getElementById('rec-content').innerHTML = `<div class="col-span-2 text-center text-red-500 font-bold">Receipt template not defined for this module.</div>`;
     }
-
-    costHTML += `
-          <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1">
-            <span>Total Hard Cost:</span> 
-            <span>${fmt(data.cost.total)}</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('rec-content').innerHTML = retailHTML + costHTML;
   }
 </script>
 </body>
