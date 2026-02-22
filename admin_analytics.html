@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Scatter Analytics v2.1</title>
+<title>Profit Scatter Analytics v2.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="signos-core.js"></script>
@@ -91,10 +91,6 @@ let currentBackend = {};
 let currentViewMode = 'margin'; 
 let scatterData = []; 
 let profitChart = null;
-
-// The Quantity Arrays - Dynamically swapped based on product
-const YARD_QUANTITIES = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
-const RIGID_QUANTITIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Granular focus for large boards
 
 const STANDARD_DIMS = [12, 18, 24, 36, 48, 72, 96];
 
@@ -208,8 +204,27 @@ function runAnalysis() {
     }
 
     const isYard = (modKey === 'YARD');
-    const testQtys = isYard ? YARD_QUANTITIES : RIGID_QUANTITIES;
     const configsToTest = generateRigidConfigs(modKey);
+
+    // ==========================================
+    // THE 1000-POINT NORMALIZER ENGINE
+    // ==========================================
+    const TARGET_DATA_POINTS = 1000;
+    const pointsPerConfig = Math.ceil(TARGET_DATA_POINTS / configsToTest.length);
+    
+    let testQtys = [];
+    if (isYard) {
+        // Spread the requested number of points out between Qty 1 and 1000
+        const step = 1000 / pointsPerConfig;
+        for(let i = 0; i < pointsPerConfig; i++) {
+            testQtys.push(Math.floor((i * step) + 1));
+        }
+    } else {
+        // Standard walk-in progression
+        for(let i = 1; i <= pointsPerConfig; i++) {
+            testQtys.push(i);
+        }
+    }
 
     setTimeout(() => {
         configsToTest.forEach(config => {
@@ -231,8 +246,6 @@ function runAnalysis() {
                     const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
                     const profit = uRet - uCost;
                     
-                    // X-Axis Contextual Logic:
-                    // If Yard Sign, plot Quantity. If Anything Else, plot SqFt.
                     const xAxisValue = isYard ? q : sqft;
 
                     scatterData.push({
