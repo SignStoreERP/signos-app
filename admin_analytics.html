@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Scatter Analytics v2.3</title>
+<title>Profit Heatmap Analytics v3.0</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="signos-core.js"></script>
@@ -22,269 +22,379 @@
 .seg-btn { @apply flex-1 py-1.5 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center; }
 .seg-active { @apply text-blue-700; }
 .seg-inactive { @apply text-slate-500 hover:text-slate-800; }
+.wizard-card { @apply bg-white p-6 rounded-xl shadow-sm border-2 border-gray-200 hover:border-blue-500 hover:shadow-md cursor-pointer transition-all duration-200 flex flex-col items-center justify-center gap-3 text-center; }
+.wizard-card.active { @apply border-blue-600 bg-blue-50 shadow-inner; }
 </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-hidden">
 
-<div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white m-4 rounded-xl shadow-2xl border border-gray-300 overflow-hidden">
-    
-    <div class="bg-gray-900 px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 z-40">
-        
-        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-full sm:w-auto">
-                <span class="text-[10px] font-bold text-gray-400 uppercase ml-2 tracking-widest">Product:</span>
-                <select id="sim-module" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition w-full sm:w-auto" onchange="populatePresets()">
-                    <option value="CORO">Custom Coroplast</option>
-                    <option value="ACM">ACM Signs</option>
-                    <option value="PVC">PVC Signs</option>
-                    <option value="FOAM">Foam Core</option>
-                    <option value="YARD">Yard Signs</option>
-                    <option value="BANNERS">Vinyl Banners</option>
-                    <option value="DECALS">Decals & Stickers</option>
-                </select>
-            </div>
+<div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white m-4 rounded-xl shadow-2xl border border-gray-300 overflow-hidden relative">
 
-            <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-full sm:w-auto">
-                <span class="text-[10px] font-bold text-gray-400 uppercase ml-2 tracking-widest">View:</span>
-                <select id="sim-preset" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition w-full sm:w-auto" onchange="loadModuleData()">
-                    </select>
-            </div>
-
-            <div id="loader" class="hidden items-center gap-2 text-yellow-400 text-[10px] font-bold uppercase tracking-widest animate-pulse ml-2">
-                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                Processing...
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-            <div class="relative flex bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-48 shrink-0 overflow-hidden">
-                <div id="slider-pill" class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded shadow border border-slate-200/50 transition-transform duration-300 ease-out z-0 translate-x-0"></div>
-                <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
-                <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Profit $</div>
+    <div id="step-1" class="absolute inset-0 flex flex-col p-8 overflow-auto z-30 bg-gray-50">
+        <div class="max-w-4xl mx-auto w-full">
+            <h2 class="text-2xl font-black text-gray-800 mb-2">Select a Product</h2>
+            <p class="text-sm text-gray-500 mb-8">Choose a product to analyze margin heatmaps across size and volume dimensions.</p>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div onclick="selectProduct('YARD', this)" class="wizard-card product-card">
+                    <span class="text-3xl">🪧</span>
+                    <span class="font-bold text-gray-700">Yard Signs</span>
+                </div>
+                <div onclick="selectProduct('CORO', this)" class="wizard-card product-card">
+                    <span class="text-3xl">📦</span>
+                    <span class="font-bold text-gray-700">Custom Coro</span>
+                </div>
+                <div onclick="selectProduct('ACM', this)" class="wizard-card product-card">
+                    <span class="text-3xl">🏢</span>
+                    <span class="font-bold text-gray-700">ACM Boards</span>
+                </div>
+                <div onclick="selectProduct('PVC', this)" class="wizard-card product-card">
+                    <span class="text-3xl">📋</span>
+                    <span class="font-bold text-gray-700">PVC Signs</span>
+                </div>
+                <div onclick="selectProduct('FOAM', this)" class="wizard-card product-card">
+                    <span class="text-3xl">🖼️</span>
+                    <span class="font-bold text-gray-700">Foam Core</span>
+                </div>
+                <div onclick="selectProduct('BANNERS', this)" class="wizard-card product-card">
+                    <span class="text-3xl">🚩</span>
+                    <span class="font-bold text-gray-700">Banners</span>
+                </div>
+                <div onclick="selectProduct('DECALS', this)" class="wizard-card product-card">
+                    <span class="text-3xl">🏷️</span>
+                    <span class="font-bold text-gray-700">Decals</span>
+                </div>
             </div>
             
-            <button onclick="runAnalysis()" id="btn-run" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded shadow transition text-[10px] uppercase tracking-widest shrink-0">
-                Run Engine
+            <button id="btn-next-1" onclick="goToStep2()" disabled class="mt-8 w-full py-4 bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest rounded-lg shadow-lg transition">Next: Configure Presets &rarr;</button>
+        </div>
+    </div>
+
+    <div id="step-2" class="absolute inset-0 flex flex-col p-8 overflow-auto z-20 bg-gray-50 hidden">
+        <div class="max-w-3xl mx-auto w-full">
+            <button onclick="goToStep1()" class="text-xs font-bold text-gray-500 uppercase tracking-widest hover:text-blue-600 mb-6 flex items-center gap-1">&larr; Back to Products</button>
+            
+            <h2 class="text-2xl font-black text-gray-800 mb-2">Configure Analysis Protocol</h2>
+            <p class="text-sm text-gray-500 mb-8" id="step-2-desc">Select the print variations to apply to the matrix generator.</p>
+
+            <div id="preset-grid" class="grid grid-cols-2 gap-4 mb-6"></div>
+
+            <div id="cnc-toggle-container" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center hidden">
+                <div>
+                    <h3 class="font-bold text-gray-700">Add CNC / Contour Routing</h3>
+                    <p class="text-xs text-gray-500">Injects shape complexity and router labor times into the physics engine.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-cnc" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+
+            <button id="btn-launch" onclick="launchEngine()" disabled class="mt-8 w-full py-4 bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest rounded-lg shadow-lg transition flex items-center justify-center gap-2">
+                🚀 Launch Physics Engine
             </button>
         </div>
     </div>
 
-    <div id="insights-panel" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-gray-200 shrink-0 z-20">
-        <div class="bg-white p-3 rounded-lg shadow-sm border border-green-200 flex flex-col justify-center">
-            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Highest Margin Sweet Spot</span>
-            <div id="insight-best" class="text-sm font-black text-green-700 leading-tight truncate">--</div>
-            <div id="insight-best-sub" class="text-xs text-gray-500 mt-1 truncate">--</div>
-        </div>
-        <div class="bg-white p-3 rounded-lg shadow-sm border border-red-200 flex flex-col justify-center">
-            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Danger Zone (Lowest Margin)</span>
-            <div id="insight-worst" class="text-sm font-black text-red-600 leading-tight truncate">--</div>
-            <div id="insight-worst-sub" class="text-xs text-gray-500 mt-1 truncate">--</div>
-        </div>
-        <div class="bg-white p-3 rounded-lg shadow-sm border border-blue-200 flex flex-col justify-center">
-            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Data Points Analyzed</span>
-            <div id="insight-count" class="text-sm font-black text-blue-600 leading-tight truncate">--</div>
-            <div id="insight-count-sub" class="text-xs text-gray-500 mt-1 truncate">Simulations generated</div>
-        </div>
+    <div id="step-loading" class="absolute inset-0 z-40 bg-gray-900 flex flex-col items-center justify-center hidden">
+        <svg class="w-16 h-16 text-blue-500 animate-spin mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <h2 class="text-xl font-black text-white uppercase tracking-widest animate-pulse">Running Simulations</h2>
+        <p class="text-gray-400 text-sm mt-2" id="loading-sub">Fetching backend matrix and calculating permutations...</p>
     </div>
 
-    <div class="flex-1 relative bg-white p-4 w-full h-full min-h-0">
-        <canvas id="analyticsChart"></canvas>
-        <div id="empty-state" class="absolute inset-0 flex items-center justify-center bg-white/80 z-10 backdrop-blur-sm">
-            <div class="text-center text-gray-500 text-sm font-bold uppercase tracking-widest">Select a product to generate graph</div>
+    <div id="step-dashboard" class="absolute inset-0 flex flex-col z-10 bg-white hidden">
+        
+        <div class="bg-gray-900 px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0">
+            <div class="flex items-center gap-4">
+                <button onclick="resetWizard()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded border border-gray-600 text-[10px] font-bold uppercase tracking-widest transition">&larr; Start Over</button>
+                <div class="h-6 w-px bg-gray-700"></div>
+                <h2 id="dash-title" class="text-white font-bold text-sm tracking-wide">Analysis Results</h2>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div id="qty-filter-container" class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase ml-2 tracking-widest">Simulated Qty:</span>
+                    <select id="dash-qty-filter" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition" onchange="renderChart()">
+                        <option value="1">Qty 1</option>
+                        <option value="5">Qty 5</option>
+                        <option value="10">Qty 10</option>
+                        <option value="25">Qty 25</option>
+                        <option value="50">Qty 50</option>
+                    </select>
+                </div>
+
+                <div class="relative flex bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-48 shrink-0 overflow-hidden">
+                    <div id="slider-pill" class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded shadow border border-slate-200/50 transition-transform duration-300 ease-out z-0 translate-x-0"></div>
+                    <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
+                    <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Profit $</div>
+                </div>
+            </div>
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-gray-200 shrink-0">
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-green-200 flex flex-col justify-center">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Highest Margin Sweet Spot</span>
+                <div id="insight-best" class="text-sm font-black text-green-700 leading-tight truncate">--</div>
+                <div id="insight-best-sub" class="text-xs text-gray-500 mt-1 truncate">--</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-red-200 flex flex-col justify-center">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Danger Zone (Lowest Margin)</span>
+                <div id="insight-worst" class="text-sm font-black text-red-600 leading-tight truncate">--</div>
+                <div id="insight-worst-sub" class="text-xs text-gray-500 mt-1 truncate">--</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-blue-200 flex flex-col justify-center">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Configurations Plotted</span>
+                <div id="insight-count" class="text-sm font-black text-blue-600 leading-tight truncate">--</div>
+                <div id="insight-count-sub" class="text-xs text-gray-500 mt-1 truncate">Based on selected Quantity</div>
+            </div>
+        </div>
+
+        <div class="flex-1 relative bg-white p-4 w-full h-full min-h-0">
+            <canvas id="analyticsChart"></canvas>
+        </div>
+
     </div>
 
 </div>
 
 <script>
+// --- STATE MANAGEMENT ---
+let activeState = {
+    product: null,
+    preset: null,
+    cnc: false
+};
 let currentBackend = {};
-let currentViewMode = 'margin'; 
 let scatterData = []; 
 let profitChart = null;
+let currentViewMode = 'margin'; 
 
-// ==============================================
-// CONFIGURATION GENERATORS
-// ==============================================
-
-function generateYardConfigs(presetKey) {
-    let configs = [];
-    let sides = [1, 2];
-    if(presetKey === 'SS') sides = [1];
-    if(presetKey === 'DS') sides = [2];
-
-    sides.forEach(s => {
-        [false, true].forEach(stakes => {
-            configs.push({
-                label: `24x18 ${s}S ${stakes ? 'w/ Stakes' : 'No Stakes'}`,
-                inputs: { w: 24, h: 18, sides: s, hasStakes: stakes }
-            });
-        });
-    });
-    return configs;
-}
-
-function generateRigidConfigs(modKey, presetKey) {
-    let configs = [];
-    let thicknesses = [];
-    let sides = presetKey.includes('SS') ? [1] : (presetKey.includes('DS') ? [2] : [1, 2]);
-    let sizes = [];
-
-    // Filter Sizes based on Preset
-    if (presetKey.includes('MATRIX')) {
-        const dims = [12, 18, 24, 36, 48, 72, 96];
-        dims.forEach(w => {
-            dims.forEach(h => {
-                if (w >= h && w <= 96 && h <= 48) sizes.push([w,h]);
-            });
-        });
-    } else {
-        sizes = [[18,12], [24,18], [36,24], [96,48]]; // Standard Walk-in Sizes
-    }
-
-    // Filter Thickness based on Product & Preset
-    if (modKey === 'CORO') thicknesses = presetKey.includes('4MM') ? ['4mm'] : (presetKey.includes('10MM') ? ['10mm'] : ['4mm', '10mm']);
-    if (modKey === 'ACM' || modKey === 'PVC') thicknesses = presetKey.includes('3MM') ? ['3mm'] : (presetKey.includes('6MM') ? ['6mm'] : ['3mm', '6mm']);
-    if (modKey === 'FOAM') thicknesses = ['3/16"'];
-
-    sizes.forEach(sz => {
-        thicknesses.forEach(th => {
-            sides.forEach(sd => {
-                configs.push({
-                    label: `${sz[0]}x${sz[1]} ${th} ${sd}S`,
-                    inputs: { w: sz[0], h: sz[1], thickness: th, sides: sd, shape: 'Rectangle', rounded: false, files: 1, incDesign: false, setupPerFile: false }
-                });
-            });
-        });
-    });
-    return configs;
-}
-
-function generateBannerConfigs(presetKey) {
-    let configs = [];
-    let materials = ['13oz', '18oz'];
-    let sizes = [[48,24], [72,36], [96,48], [120,48]]; // 2x4, 3x6, 4x8, 4x10
-
-    if (presetKey === '13OZ') materials = ['13oz'];
-    if (presetKey === '18OZ') materials = ['18oz'];
-
-    sizes.forEach(sz => {
-        materials.forEach(mat => {
-            let sidesArr = (mat === '18oz') ? [1, 2] : [1];
-            sidesArr.forEach(sd => {
-               configs.push({
-                   label: `${sz[0]/12}x${sz[1]/12} ${mat} ${sd}S`,
-                   inputs: { w: sz[0], h: sz[1], material: mat, sides: sd, polePockets: false, windSlits: false, files: 1 }
-               });
-            });
-        });
-    });
-    return configs;
-}
-
-function generateDecalConfigs(presetKey) {
-    let configs = [];
-    let sizes = [[4,4], [12,12], [24,24]];
-    let materials = ['Calendered', 'Cast'];
-    
-    if (presetKey === 'CAL') materials = ['Calendered'];
-    if (presetKey === 'CAST') materials = ['Cast'];
-
-    sizes.forEach(sz => {
-        materials.forEach(mat => {
-            configs.push({
-                label: `${sz[0]}x${sz[1]} ${mat} Decal`,
-                inputs: { w: sz[0], h: sz[1], material: mat, shape: 'Complex', masking: false, files: 1 }
-            });
-        });
-    });
-    return configs;
-}
-
-// ==============================================
-// MODULE MATRIX DICTIONARY
-// ==============================================
-
+// --- MODULE MATRIX DICTIONARY ---
 const MODULE_MATRICES = {
     'YARD': { 
-        tab: 'PROD_Yard_Signs', engine: typeof calculateYardSign !== 'undefined' ? calculateYardSign : null, xAxis: 'qty',
-        presets: {
-            'ALL': { label: 'All Yard Configurations', gen: (k) => generateYardConfigs(k) },
-            'SS': { label: 'Single Sided Only', gen: (k) => generateYardConfigs(k) },
-            'DS': { label: 'Double Sided Only', gen: (k) => generateYardConfigs(k) }
-        }
+        tab: 'PROD_Yard_Signs', engine: typeof calculateYardSign !== 'undefined' ? calculateYardSign : null,
+        presets: [
+            { id: 'DS_STAKE', label: 'Double Sided w/ Stakes', sides: 2, stakes: true },
+            { id: 'SS_STAKE', label: 'Single Sided w/ Stakes', sides: 1, stakes: true },
+            { id: 'SS_FLAT', label: 'Single Sided (No Stakes)', sides: 1, stakes: false }
+        ]
     },
-    'CORO': { 
-        tab: 'PROD_Coroplast_Signs', engine: typeof calculateCoro !== 'undefined' ? calculateCoro : null, xAxis: 'sqft',
-        presets: {
-            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('CORO', k) },
-            'MATRIX': { label: 'Full Area Matrix (All Combos)', gen: (k) => generateRigidConfigs('CORO', k) },
-            '4MM': { label: '4mm Only (Standard Sizes)', gen: (k) => generateRigidConfigs('CORO', k) },
-            '10MM': { label: '10mm Only (Standard Sizes)', gen: (k) => generateRigidConfigs('CORO', k) }
-        }
-    },
-    'ACM': { 
-        tab: 'PROD_ACM_Signs', engine: typeof calculateACM !== 'undefined' ? calculateACM : null, xAxis: 'sqft',
-        presets: {
-            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('ACM', k) },
-            'MATRIX': { label: 'Full Area Matrix (All Combos)', gen: (k) => generateRigidConfigs('ACM', k) },
-            '3MM': { label: '3mm Only', gen: (k) => generateRigidConfigs('ACM', k) },
-            '6MM': { label: '6mm Only', gen: (k) => generateRigidConfigs('ACM', k) }
-        }
-    },
-    'PVC': { 
-        tab: 'PROD_PVC_Signs', engine: typeof calculatePVC !== 'undefined' ? calculatePVC : null, xAxis: 'sqft',
-        presets: {
-            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('PVC', k) },
-            'MATRIX': { label: 'Full Area Matrix', gen: (k) => generateRigidConfigs('PVC', k) }
-        }
-    },
-    'FOAM': { 
-        tab: 'PROD_Foam_Signs', engine: typeof calculateFoam !== 'undefined' ? calculateFoam : null, xAxis: 'sqft',
-        presets: {
-            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('FOAM', k) },
-            'MATRIX': { label: 'Full Area Matrix', gen: (k) => generateRigidConfigs('FOAM', k) }
-        }
-    },
-    'BANNERS': {
-        tab: 'PROD_Vinyl_Banners', engine: typeof calculateBanner !== 'undefined' ? calculateBanner : null, xAxis: 'qty',
-        presets: {
-            'ALL': { label: 'Standard Sizes (All Media)', gen: (k) => generateBannerConfigs(k) },
-            '13OZ': { label: '13oz Standard Scrim', gen: (k) => generateBannerConfigs(k) },
-            '18OZ': { label: '18oz Heavy Duty', gen: (k) => generateBannerConfigs(k) }
-        }
-    },
-    'DECALS': {
-        tab: 'PROD_Decals', engine: typeof calculateDecal !== 'undefined' ? calculateDecal : null, xAxis: 'qty',
-        presets: {
-            'ALL': { label: 'Standard Decal Sizes', gen: (k) => generateDecalConfigs(k) },
-            'CAL': { label: 'Calendered (Standard) Only', gen: (k) => generateDecalConfigs(k) },
-            'CAST': { label: 'Cast (Premium) Only', gen: (k) => generateDecalConfigs(k) }
-        }
-    }
+    'CORO': { tab: 'PROD_Coroplast_Signs', engine: typeof calculateCoro !== 'undefined' ? calculateCoro : null },
+    'ACM':  { tab: 'PROD_ACM_Signs', engine: typeof calculateACM !== 'undefined' ? calculateACM : null },
+    'PVC':  { tab: 'PROD_PVC_Signs', engine: typeof calculatePVC !== 'undefined' ? calculatePVC : null },
+    'FOAM': { tab: 'PROD_Foam_Signs', engine: typeof calculateFoam !== 'undefined' ? calculateFoam : null },
+    'BANNERS': { tab: 'PROD_Vinyl_Banners', engine: typeof calculateBanner !== 'undefined' ? calculateBanner : null },
+    'DECALS': { tab: 'PROD_Decals', engine: typeof calculateDecal !== 'undefined' ? calculateDecal : null }
 };
 
 window.onload = function() {
-    // TRUE re-enables the Back/Menu button globally
-    if(typeof injectHeader === 'function') injectHeader("Profit Scatter Analytics", true);
-    populatePresets(); 
+    if(typeof injectHeader === 'function') injectHeader("Profit Heatmap Analytics", true);
 };
 
-function populatePresets() {
-    const modKey = document.getElementById('sim-module').value;
-    const presetsObj = MODULE_MATRICES[modKey].presets;
-    const presetSelect = document.getElementById('sim-preset');
+// ==========================================
+// WIZARD NAVIGATION
+// ==========================================
+
+function selectProduct(key, element) {
+    activeState.product = key;
+    activeState.preset = null;
     
-    presetSelect.innerHTML = '';
-    
-    Object.keys(presetsObj).forEach(key => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = presetsObj[key].label;
-        presetSelect.appendChild(opt);
-    });
-    
-    loadModuleData();
+    // UI Highlights
+    document.querySelectorAll('.product-card').forEach(c => c.classList.remove('active'));
+    element.classList.add('active');
+    document.getElementById('btn-next-1').disabled = false;
 }
+
+function goToStep2() {
+    document.getElementById('step-1').classList.add('hidden');
+    document.getElementById('step-2').classList.remove('hidden');
+    
+    const isYard = (activeState.product === 'YARD');
+    document.getElementById('cnc-toggle-container').classList.toggle('hidden', isYard);
+    document.getElementById('btn-launch').disabled = true;
+
+    // Render Preset Cards
+    const grid = document.getElementById('preset-grid');
+    grid.innerHTML = '';
+
+    if (isYard) {
+        MODULE_MATRICES['YARD'].presets.forEach(p => {
+            grid.innerHTML += `<div onclick="selectPreset('${p.id}', this)" class="wizard-card preset-card"><span class="font-bold text-gray-700">${p.label}</span></div>`;
+        });
+    } else {
+        grid.innerHTML += `<div onclick="selectPreset('SS', this)" class="wizard-card preset-card"><span class="font-bold text-gray-700">Single Sided</span></div>`;
+        grid.innerHTML += `<div onclick="selectPreset('DS', this)" class="wizard-card preset-card"><span class="font-bold text-gray-700">Double Sided</span></div>`;
+    }
+}
+
+function selectPreset(key, element) {
+    activeState.preset = key;
+    document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+    element.classList.add('active');
+    document.getElementById('btn-launch').disabled = false;
+}
+
+function goToStep1() {
+    document.getElementById('step-2').classList.add('hidden');
+    document.getElementById('step-1').classList.remove('hidden');
+}
+
+function resetWizard() {
+    activeState = { product: null, preset: null, cnc: false };
+    document.querySelectorAll('.wizard-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('btn-next-1').disabled = true;
+    document.getElementById('btn-launch').disabled = true;
+    document.getElementById('toggle-cnc').checked = false;
+    
+    document.getElementById('step-dashboard').classList.add('hidden');
+    document.getElementById('step-1').classList.remove('hidden');
+}
+
+// ==========================================
+// DATA GENERATION & API
+// ==========================================
+
+async function launchEngine() {
+    activeState.cnc = document.getElementById('toggle-cnc').checked;
+    
+    document.getElementById('step-2').classList.add('hidden');
+    document.getElementById('step-loading').classList.remove('hidden');
+
+    const modKey = activeState.product;
+    const matrixDef = MODULE_MATRICES[modKey];
+
+    if(!matrixDef.engine) {
+        alert(`Error: Logic engine missing for ${modKey}. Check your script tags.`);
+        resetWizard();
+        return;
+    }
+
+    try {
+        const apiUrl = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
+        const u = sessionStorage.getItem('signos_user') || 'Admin';
+        
+        const res = await fetch(`${apiUrl}?req=view_module&tab=${matrixDef.tab}&user=${u}`);
+        const data = await res.json();
+        
+        if(data.error) throw new Error(data.error);
+        currentBackend = data;
+
+        // Run math on a slight timeout so the DOM updates the loader animation
+        setTimeout(() => processCalculations(), 100);
+
+    } catch (e) {
+        console.error(e);
+        alert("Backend Load Error: " + e.message);
+        resetWizard();
+    }
+}
+
+function processCalculations() {
+    scatterData = [];
+    const modKey = activeState.product;
+    const isYard = (modKey === 'YARD');
+    const engine = MODULE_MATRICES[modKey].engine;
+
+    // SHOTGUN VARIABLES (Solves the missing cost bugs by providing exhaustive terminology)
+    let baseInputs = {
+        files: 1,
+        incDesign: false,
+        setupPerFile: false,
+        isCNC: activeState.cnc,
+        router: activeState.cnc,
+        isContour: activeState.cnc,
+        cutType: activeState.cnc ? 'Contour' : 'Standard',
+        shape: activeState.cnc ? 'Complex' : 'Rectangle'
+    };
+
+    if (isYard) {
+        const pDef = MODULE_MATRICES['YARD'].presets.find(p => p.id === activeState.preset);
+        baseInputs.sides = pDef.sides;
+        baseInputs.isDoubleSided = (pDef.sides === 2);
+        baseInputs.doubleSided = (pDef.sides === 2);
+        baseInputs.hasStakes = pDef.stakes;
+        baseInputs.stakes = pDef.stakes;
+        baseInputs.hardware = pDef.stakes ? 'step_stake' : 'none';
+        baseInputs.w = 24;
+        baseInputs.h = 18;
+    } else {
+        const sides = activeState.preset === 'DS' ? 2 : 1;
+        baseInputs.sides = sides;
+        baseInputs.isDoubleSided = (sides === 2);
+        baseInputs.doubleSided = (sides === 2);
+    }
+
+    // Determine what quantities to test
+    // For Spatial Heatmaps, we need standard arrays to flip through
+    const TEST_QTYS = isYard ? 
+        Array.from({length: 100}, (_, i) => Math.floor(i * (1000/100) + 1)) : // 100 points up to 1000 for Yard
+        [1, 5, 10, 25, 50]; // Distinct volume breaks for Dimension Heatmap
+
+    // Determine what dimensions to test
+    const dims = [12, 18, 24, 30, 36, 42, 48, 60, 72, 84, 96];
+    let sizeMatrix = [];
+
+    if (isYard) {
+        sizeMatrix.push({ w: 24, h: 18 });
+    } else {
+        dims.forEach(w => {
+            dims.forEach(h => {
+                if (w >= h && w <= 96 && h <= 48) sizeMatrix.push({ w, h });
+            });
+        });
+    }
+
+    // RUN THE LOOPS
+    sizeMatrix.forEach(sz => {
+        TEST_QTYS.forEach(q => {
+            let payload = { ...baseInputs, w: sz.w, h: sz.h, qty: q };
+            
+            // Accommodate Roll Media required parameters
+            if (modKey === 'BANNERS') payload.material = '13oz'; 
+            if (modKey === 'DECALS') payload.material = 'Calendered';
+
+            try {
+                const result = engine(payload, currentBackend);
+                
+                const r = result.retail;
+                const c = result.cost || result.inHouse; 
+                const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
+                const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
+                
+                const uRet = retailTotal / q;
+                const uCost = costTotal / q;
+                const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
+                const profit = uRet - uCost;
+                
+                scatterData.push({
+                    w: sz.w,
+                    h: sz.h,
+                    qty: q,
+                    margin: margin,
+                    profit: profit,
+                    retail: uRet,
+                    cost: uCost,
+                    label: `${sz.w}x${sz.h} (Qty ${q})`
+                });
+            } catch (e) {
+                // Ignore silent math errors for unsupported combos
+            }
+        });
+    });
+
+    // Setup Dashboard UI
+    document.getElementById('dash-title').innerText = `${MODULE_MATRICES[modKey].tab.replace('PROD_','').replace('_',' ')} Analysis`;
+    document.getElementById('qty-filter-container').classList.toggle('hidden', isYard);
+    
+    document.getElementById('step-loading').classList.add('hidden');
+    document.getElementById('step-dashboard').classList.remove('hidden');
+    
+    renderChart();
+}
+
+// ==========================================
+// VISUALIZATION ENGINE
+// ==========================================
 
 function setViewMode(mode) {
     currentViewMode = mode;
@@ -301,139 +411,55 @@ function setViewMode(mode) {
         btnMargin.className = "seg-btn seg-inactive";
         pill.style.transform = "translateX(100%)";
     }
-    
-    if (scatterData.length > 0) renderChart();
-}
-
-async function loadModuleData() {
-    const modKey = document.getElementById('sim-module').value;
-    const matrixDef = MODULE_MATRICES[modKey];
-    if (!matrixDef) return;
-
-    document.getElementById('empty-state').classList.add('hidden');
-    document.getElementById('loader').classList.replace('hidden', 'flex');
-
-    try {
-        const apiUrl = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
-        const u = sessionStorage.getItem('signos_user') || 'Admin';
-        
-        const res = await fetch(`${apiUrl}?req=view_module&tab=${matrixDef.tab}&user=${u}`);
-        const data = await res.json();
-        
-        if(data.error) throw new Error(data.error);
-        currentBackend = data;
-
-        runAnalysis();
-
-    } catch (e) {
-        console.error(e);
-        alert("Load Error: " + e.message);
-        document.getElementById('loader').classList.replace('flex', 'hidden');
-    }
-}
-
-function runAnalysis() {
-    const modKey = document.getElementById('sim-module').value;
-    const presetKey = document.getElementById('sim-preset').value;
-    const matrixDef = MODULE_MATRICES[modKey];
-    
-    document.getElementById('loader').classList.replace('hidden', 'flex');
-    scatterData = []; 
-
-    if(!matrixDef.engine) {
-        alert(`Error: Logic engine missing for ${modKey}. Check your script tags.`);
-        document.getElementById('loader').classList.replace('flex', 'hidden');
-        return;
-    }
-
-    // Fire the specific generator for this product and preset
-    const configsToTest = matrixDef.presets[presetKey].gen(presetKey);
-
-    const TARGET_DATA_POINTS = 1000;
-    const pointsPerConfig = Math.max(1, Math.ceil(TARGET_DATA_POINTS / configsToTest.length));
-    
-    let testQtys = [];
-    if (matrixDef.xAxis === 'qty') {
-        // Logarithmic Spread for Volume Products
-        const maxQty = 1000;
-        const step = maxQty / pointsPerConfig;
-        for(let i = 0; i < pointsPerConfig; i++) {
-            testQtys.push(Math.floor((i * step) + 1));
-        }
-    } else {
-        // Clean Vertical Clustering for Rigid Area Products
-        const maxQ = Math.min(pointsPerConfig, 15); 
-        for(let i = 1; i <= maxQ; i++) {
-            testQtys.push(i);
-        }
-    }
-
-    setTimeout(() => {
-        configsToTest.forEach(config => {
-            const sqft = (config.inputs.w * config.inputs.h) / 144;
-
-            testQtys.forEach(q => {
-                let inputs = { ...config.inputs, qty: q };
-                
-                try {
-                    const result = matrixDef.engine(inputs, currentBackend);
-                    
-                    const r = result.retail;
-                    const c = result.cost || result.inHouse; 
-                    const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
-                    const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
-                    
-                    const uRet = retailTotal / q;
-                    const uCost = costTotal / q;
-                    const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
-                    const profit = uRet - uCost;
-                    
-                    const xAxisValue = matrixDef.xAxis === 'qty' ? q : sqft;
-
-                    scatterData.push({
-                        x: xAxisValue,
-                        y_margin: margin,
-                        y_profit: profit,
-                        label: config.label,
-                        retail: uRet,
-                        cost: uCost,
-                        qty: q,
-                        sqft: sqft
-                    });
-
-                } catch (e) {
-                    // Skip invalid calculations silently
-                }
-            });
-        });
-
-        generateInsights(); 
-        renderChart();
-        document.getElementById('loader').classList.replace('flex', 'hidden');
-    }, 100);
+    renderChart();
 }
 
 function getPointColor(marginPct) {
-    if (marginPct < 0) return 'rgba(220, 38, 38, 0.7)'; 
-    if (marginPct < 50) return 'rgba(248, 113, 113, 0.7)'; 
-    if (marginPct < 65) return 'rgba(250, 204, 21, 0.7)'; 
-    if (marginPct < 75) return 'rgba(74, 222, 128, 0.7)'; 
-    return 'rgba(22, 163, 74, 0.7)'; 
+    if (marginPct < 0) return 'rgba(220, 38, 38, 0.9)'; // Dark Red
+    if (marginPct < 50) return 'rgba(248, 113, 113, 0.9)'; // Light Red
+    if (marginPct < 65) return 'rgba(250, 204, 21, 0.9)'; // Yellow
+    if (marginPct < 75) return 'rgba(74, 222, 128, 0.9)'; // Light Green
+    return 'rgba(22, 163, 74, 0.9)'; // Dark Green
 }
 
 function renderChart() {
+    const isYard = (activeState.product === 'YARD');
+    const isMargin = (currentViewMode === 'margin');
     const ctx = document.getElementById('analyticsChart').getContext('2d');
-    const isMargin = currentViewMode === 'margin';
-    const modKey = document.getElementById('sim-module').value;
-    const xAxisType = MODULE_MATRICES[modKey].xAxis;
+    
+    let activeData = scatterData;
+    
+    // Filter data if using Spatial Dimension Heatmap
+    if (!isYard) {
+        const selectedQty = parseInt(document.getElementById('dash-qty-filter').value);
+        activeData = scatterData.filter(d => d.qty === selectedQty);
+    }
 
-    const chartPoints = scatterData.map(d => ({
-        x: d.x,
-        y: isMargin ? d.y_margin : d.y_profit,
+    // Update Insights
+    if (activeData.length > 0) {
+        let best = activeData[0], worst = activeData[0];
+        activeData.forEach(d => {
+            if (d.margin > best.margin) best = d;
+            if (d.margin < worst.margin) worst = d;
+        });
+
+        document.getElementById('insight-best').innerText = best.label;
+        document.getElementById('insight-best-sub').innerText = `${best.margin.toFixed(1)}% Margin | $${best.profit.toFixed(2)} Profit`;
+        
+        document.getElementById('insight-worst').innerText = worst.label;
+        document.getElementById('insight-worst-sub').innerText = `${worst.margin.toFixed(1)}% Margin | $${worst.profit.toFixed(2)} Profit`;
+        
+        document.getElementById('insight-count').innerText = activeData.length.toLocaleString();
+    }
+
+    // Map to Chart Points
+    const chartPoints = activeData.map(d => ({
+        x: isYard ? d.qty : d.w, // X-Axis logic
+        y: isYard ? (isMargin ? d.margin : d.profit) : d.h, // Y-Axis logic
         raw: d 
     }));
 
-    const pointColors = chartPoints.map(d => getPointColor(d.raw.y_margin));
+    const pointColors = chartPoints.map(d => getPointColor(d.raw.margin));
 
     if (profitChart) profitChart.destroy();
 
@@ -441,13 +467,14 @@ function renderChart() {
         type: 'scatter',
         data: {
             datasets: [{
-                label: 'Pricing Configurations',
+                label: 'Simulations',
                 data: chartPoints,
                 backgroundColor: pointColors,
-                borderColor: 'rgba(255,255,255,0.5)',
+                borderColor: 'rgba(255,255,255,0.2)',
                 borderWidth: 1,
-                pointRadius: 6,
-                pointHoverRadius: 9
+                pointStyle: isYard ? 'circle' : 'rectRounded',
+                pointRadius: isYard ? 5 : 12, // Large blocks for heatmap
+                pointHoverRadius: isYard ? 8 : 15
             }]
         },
         options: {
@@ -455,16 +482,17 @@ function renderChart() {
             maintainAspectRatio: false,
             scales: {
                 x: {
-                    type: xAxisType === 'qty' ? 'logarithmic' : 'linear',
-                    title: { 
-                        display: true, 
-                        text: xAxisType === 'qty' ? 'Order Quantity (Log Scale)' : 'Square Footage per Unit', 
-                        font: { weight: 'bold' } 
-                    },
-                    ticks: { callback: function(value) { return Number(value.toString()); } }
+                    type: isYard ? 'logarithmic' : 'linear',
+                    min: isYard ? undefined : 0,
+                    max: isYard ? undefined : 100,
+                    title: { display: true, text: isYard ? 'Order Quantity (Log Scale)' : 'Width (Inches)', font: { weight: 'bold' } },
+                    ticks: { stepSize: isYard ? undefined : 12, callback: function(value) { return Number(value.toString()); } }
                 },
                 y: {
-                    title: { display: true, text: isMargin ? 'Margin %' : 'Unit Profit $', font: { weight: 'bold' } }
+                    min: isYard ? undefined : 0,
+                    max: isYard ? undefined : 52,
+                    title: { display: true, text: isYard ? (isMargin ? 'Margin %' : 'Profit $') : 'Height (Inches)', font: { weight: 'bold' } },
+                    ticks: { stepSize: isYard ? undefined : 12 }
                 }
             },
             plugins: {
@@ -476,10 +504,9 @@ function renderChart() {
                         label: function(context) {
                             const raw = context.raw.raw;
                             return [
-                                `${raw.label}`,
-                                `Quantity: ${raw.qty} | Area: ${raw.sqft.toFixed(2)} sqft`,
-                                `Margin: ${raw.y_margin.toFixed(1)}%`,
-                                `Profit: $${raw.y_profit.toFixed(2)}/ea`,
+                                `Dims: ${raw.w}" x ${raw.h}" | Qty: ${raw.qty}`,
+                                `Margin: ${raw.margin.toFixed(1)}%`,
+                                `Unit Profit: $${raw.profit.toFixed(2)}`,
                                 `Retail: $${raw.retail.toFixed(2)} | Cost: $${raw.cost.toFixed(2)}`
                             ];
                         }
@@ -488,28 +515,6 @@ function renderChart() {
             }
         }
     });
-}
-
-function generateInsights() {
-    if (scatterData.length === 0) return;
-
-    let bestPoint = scatterData[0];
-    let worstPoint = scatterData[0];
-
-    scatterData.forEach(d => {
-        if (d.y_margin > bestPoint.y_margin) bestPoint = d;
-        if (d.y_margin < worstPoint.y_margin) worstPoint = d;
-    });
-
-    document.getElementById('insights-panel').classList.remove('hidden');
-    
-    document.getElementById('insight-best').innerText = `${bestPoint.label}`;
-    document.getElementById('insight-best-sub').innerText = `Qty ${bestPoint.qty} | ${bestPoint.y_margin.toFixed(1)}% Margin | $${bestPoint.y_profit.toFixed(2)} Profit`;
-    
-    document.getElementById('insight-worst').innerText = `${worstPoint.label}`;
-    document.getElementById('insight-worst-sub').innerText = `Qty ${worstPoint.qty} | ${worstPoint.y_margin.toFixed(1)}% Margin | $${worstPoint.y_profit.toFixed(2)} Profit`;
-    
-    document.getElementById('insight-count').innerText = scatterData.length.toLocaleString();
 }
 </script>
 </body>
