@@ -1,6 +1,7 @@
 /**
- * PURE PHYSICS ENGINE: Acrylic Signs (v5.0 - Dual Track)
+ * PURE PHYSICS ENGINE: Acrylic Signs (v5.1 - Dual Track)
  * Implements Direct Print (Flatbed) vs Vinyl Application (Roll + Plotter + Mounting) physics.
+ * v5.1: Added Color logic to substrates and exposed all Roll/Labor variables to Simulator.
  */
 
 function calculateAcrylic(inputs, data) {
@@ -10,7 +11,6 @@ function calculateAcrylic(inputs, data) {
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
     let baseRate = 0;
     
-    // Evaluate Blue Sheet Volume Curves
     if (inputs.thickness === '0.25') {
         if (totalSqFt <= parseFloat(data.ACR_14_T1_Max || 10)) baseRate = parseFloat(data.ACR_14_T1_Rate || 40);
         else if (totalSqFt <= parseFloat(data.ACR_14_T2_Max || 20)) baseRate = parseFloat(data.ACR_14_T2_Rate || 35);
@@ -26,14 +26,12 @@ function calculateAcrylic(inputs, data) {
         else baseRate = parseFloat(data.ACR_1IN_T2_Rate || 55);
     }
 
-    // Apply specific layer/white ink markups if requested
     if (inputs.method === 'direct_white') baseRate += parseFloat(data.Retail_Adder_2ndSurf || 5);
     if (inputs.method === 'direct_3layer') baseRate += parseFloat(data.Retail_Adder_Blockout || 8);
-    if (inputs.method === 'direct_5layer') baseRate += parseFloat(data.Retail_Adder_Blockout || 8) + 4; // Extra for 5-layer
+    if (inputs.method === 'direct_5layer') baseRate += parseFloat(data.Retail_Adder_Blockout || 8) + 4; 
 
     let retailPrint = baseRate * totalSqFt;
 
-    // Adders
     let paintFee = 0;
     if (inputs.paint) paintFee = parseFloat(data.Retail_Fee_Paint_Setup || 65) + (totalSqFt * parseFloat(data.Retail_Adder_Paint_SqFt || 20));
 
@@ -57,12 +55,17 @@ function calculateAcrylic(inputs, data) {
     const wastePct = parseFloat(data.Waste_Factor || 1.25);
     const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
     
-    // Substrate Cost
+    // Substrate Cost (Thickness AND Color Logic)
     let rawSheetCost = 0;
-    if (inputs.thickness === '0.25') rawSheetCost = parseFloat(data.Cost_Stock_14_4x8 || 120.55);
-    else if (inputs.thickness === '0.5') rawSheetCost = parseFloat(data.Cost_Stock_12_4x8 || 277.01);
-    else if (inputs.thickness === '0.75') rawSheetCost = parseFloat(data.Cost_Stock_34_4x8 || 424.17);
-    else rawSheetCost = parseFloat(data.Cost_Stock_1IN_4x8 || 496.71);
+    if (inputs.thickness === '0.25') {
+        rawSheetCost = inputs.color === 'Clear' ? parseFloat(data.Cost_Stock_14_4x8_C || 120.55) : parseFloat(data.Cost_Stock_14_4x8_W || 133.27);
+    } else if (inputs.thickness === '0.5') {
+        rawSheetCost = inputs.color === 'Clear' ? parseFloat(data.Cost_Stock_12_4x8_C || 264.71) : parseFloat(data.Cost_Stock_12_4x8_W || 289.31);
+    } else if (inputs.thickness === '0.75') {
+        rawSheetCost = inputs.color === 'Clear' ? parseFloat(data.Cost_Stock_34_4x8_C || 424.17) : parseFloat(data.Cost_Stock_34_4x8_W || 459.65);
+    } else {
+        rawSheetCost = inputs.color === 'Clear' ? parseFloat(data.Cost_Stock_1IN_4x8_C || 496.71) : parseFloat(data.Cost_Stock_1IN_4x8_W || 712.77);
+    }
         
     const costSubstrate = (totalSqFt / sheetSqFt) * rawSheetCost * wastePct;
 
@@ -109,7 +112,6 @@ function calculateAcrylic(inputs, data) {
         costPrintLabor = (rollHrs * rateOp * attnRatio) + (lamHrs * rateShop);
         costPrintMach = rollHrs * rateMachRoll;
         
-        // Mounting Vinyl to Acrylic
         const mountHrs = (totalSqFt / sheetSqFt) * (parseFloat(data.Time_Mount_4x8 || 15) / 60);
         costMountLabor = mountHrs * rateShop;
     }
@@ -124,8 +126,8 @@ function calculateAcrylic(inputs, data) {
         const maskHrs = (totalSqFt * parseFloat(data.Time_Mask_SqFt || 1)) / 60;
         const mountHrs = (totalSqFt / sheetSqFt) * (parseFloat(data.Time_Mount_4x8 || 15) / 60);
 
-        costPrintLabor = (weedHrs + maskHrs) * rateShop; // Manual Labor
-        costPrintMach = plotHrs * rateMachPlot; // Plotter Time
+        costPrintLabor = (weedHrs + maskHrs) * rateShop; 
+        costPrintMach = plotHrs * rateMachPlot; 
         costMountLabor = mountHrs * rateShop;
     }
 
@@ -149,7 +151,6 @@ function calculateAcrylic(inputs, data) {
         costCutMach = cutHrs * rateMachCNC;
         costCutLabor = cutHrs * rateCNC * attnRatio; 
     } else {
-        // Assume basic panel saw/shear time
         costCutLabor = ((inputs.qty * 1) / 60) * rateShop;
     }
 
@@ -163,12 +164,11 @@ function calculateAcrylic(inputs, data) {
         costPaintLabor = (pSetupHrs + pRunHrs) * ratePaint;
     }
 
-    // Hardware
     const hwCost = inputs.standoffs ? (inputs.standoffQty * parseFloat(data.Cost_Standoff || 2.54) * inputs.qty) : 0;
 
     const subTotal = costSubstrate + costInk + costVinLam + costPrepressPrint + costMachSetupPrint + costPrintLabor + costPrintMach + costMountLabor + costPrepressCNC + costMachSetupCNC + costCutMach + costCutLabor + costPaintLabor + costPaintMat + hwCost;
     
-    const riskFactor = parseFloat(data.Factor_Risk || 1.10); // Acrylic is prone to cracking, 10% risk
+    const riskFactor = parseFloat(data.Factor_Risk || 1.10); 
     const riskBuffer = subTotal * (riskFactor - 1);
 
     return {
@@ -222,16 +222,14 @@ window.ACRYLIC_CONFIG = {
       { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'0.25', t:'1/4"'}, {v:'0.5', t:'1/2"'}, {v:'0.75', t:'3/4"'}, {v:'1', t:'1"'}] },
       { id: 'color', label: 'Acrylic Color', type: 'select', opts: [{v:'Clear', t:'Clear'}, {v:'White', t:'White'}, {v:'Black', t:'Black'}] },
       { id: 'surface', label: 'Surface', type: 'select', opts: [{v:'1', t:'1st Surface (Front)'}, {v:'2', t:'2nd Surface (Back)'}] },
-      { id: 'method', label: 'Graphics Method', type: 'select', opts: [{v:'direct_color', t:'Direct (Color Only)'}, {v:'direct_white', t:'Direct (Color + Wht Flood)'}, {v:'direct_3layer', t:'Direct (3-Layer)'}, {v:'direct_5layer', t:'Direct (5-Layer)'}, {v:'vinyl_print_opq', t:'Print Vinyl (Opaque)'}, {v:'vinyl_print_trn', t:'Print Vinyl (Translucent)'}, {v:'vinyl_cut_opq', t:'Cut Vinyl (Opaque)'}, {v:'vinyl_cut_trn', t:'Cut Vinyl (Translucent)'}] },
+      { id: 'method', label: 'Graphics Method', type: 'select', opts: [{v:'direct_color', t:'Direct (Color)'}, {v:'direct_white', t:'Direct (+Wht Flood)'}, {v:'direct_3layer', t:'Direct (3-Layer)'}, {v:'direct_5layer', t:'Direct (5-Layer)'}, {v:'vinyl_print_opq', t:'Print Vinyl (Opq)'}, {v:'vinyl_print_trn', t:'Print Vinyl (Trans)'}, {v:'vinyl_cut_opq', t:'Cut Vinyl (Opq)'}, {v:'vinyl_cut_trn', t:'Cut Vinyl (Trans)'}] },
       { id: 'shape', label: 'Cut Method', type: 'select', opts: [{v:'Rectangle', t:'Square / Saw'}, {v:'Easy', t:'CNC Simple'}, {v:'Complex', t:'CNC Complex'}] },
       { id: 'paint', label: 'Paint Background', type: 'toggle', def: false },
       { id: 'standoffs', label: 'Add Standoffs', type: 'toggle', def: false },
       { id: 'standoffQty', label: 'Standoff Qty', type: 'number', def: 4 },
       { id: 'files', label: 'Files', type: 'number', def: 1 },
-      { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
-      { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
+      { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false }
     ],
-    // Dynamic rule to automatically correct impossible combinations (e.g. 2nd surface on white acrylic)
     dynamicUI: function(inputs) {
         if (inputs.thickness !== '0.25' && inputs.color === 'Black') inputs.color = 'White';
         if (inputs.color !== 'Clear') inputs.surface = '1';
@@ -243,15 +241,6 @@ window.ACRYLIC_CONFIG = {
       { key: 'ACR_14_T2_Max', label: 'T2 Max SqFt' },
       { key: 'ACR_14_T2_Rate', label: 'T2 ($/sf)' },
       { key: 'ACR_14_T3_Rate', label: 'T3 (>20sf)' },
-      { heading: '1/2" Area Curves', key: 'ACR_12_T1_Max', label: 'T1 Max SqFt' },
-      { key: 'ACR_12_T1_Rate', label: 'T1 ($/sf)' },
-      { key: 'ACR_12_T2_Rate', label: 'T2 (>10sf)' },
-      { heading: '3/4" Area Curves', key: 'ACR_34_T1_Max', label: 'T1 Max SqFt' },
-      { key: 'ACR_34_T1_Rate', label: 'T1 ($/sf)' },
-      { key: 'ACR_34_T2_Rate', label: 'T2 (>10sf)' },
-      { heading: '1" Area Curves', key: 'ACR_1IN_T1_Max', label: 'T1 Max SqFt' },
-      { key: 'ACR_1IN_T1_Rate', label: 'T1 ($/sf)' },
-      { key: 'ACR_1IN_T2_Rate', label: 'T2 (>10sf)' },
       { heading: 'Multipliers & Adders', key: 'Retail_Adder_2ndSurf', label: 'Wht Ink Add ($/sf)' },
       { key: 'Retail_Adder_Blockout', label: 'Day/Night Add ($/sf)' },
       { key: 'Retail_Adder_Paint_SqFt', label: 'Paint Add ($/sf)' },
@@ -261,18 +250,33 @@ window.ACRYLIC_CONFIG = {
       { key: 'Retail_Price_Standoff', label: 'Standoff ($/ea)' }
     ],
     costs: [
-      { key: 'Cost_Stock_14_4x8', label: '1/4" Sheet ($)' },
-      { key: 'Cost_Stock_12_4x8', label: '1/2" Sheet ($)' },
-      { key: 'Cost_Stock_34_4x8', label: '3/4" Sheet ($)' },
-      { key: 'Cost_Stock_1IN_4x8', label: '1" Sheet ($)' },
-      { key: 'Cost_Paint_SqFt', label: 'Paint ($/sf)' },
-      { key: 'Cost_Vin_Print', label: 'Print Vinyl ($/sf)' },
-      { key: 'Cost_Vin_Cut_Opq', label: 'Cut Vinyl Opq ($/sf)' },
-      { key: 'Speed_Print_1st', label: '1-Layer (LF/hr)' },
-      { key: 'Speed_Print_White', label: '2-Layer (LF/hr)' },
-      { key: 'Speed_Print_3Layer', label: '3-Layer (LF/hr)' },
-      { key: 'Time_Prepress_CNC', label: 'CNC Prepress (Min)' },
-      { key: 'Time_Setup_CNC', label: 'CNC Setup (Min)' },
+      { heading: 'Acrylic Materials', key: 'Cost_Stock_14_4x8_C', label: '1/4" Clear ($)' },
+      { key: 'Cost_Stock_14_4x8_W', label: '1/4" White ($)' },
+      { key: 'Cost_Stock_12_4x8_C', label: '1/2" Clear ($)' },
+      { key: 'Cost_Stock_12_4x8_W', label: '1/2" White ($)' },
+      { heading: 'Vinyl/Ink Materials', key: 'Cost_Vin_Print', label: 'Print Vinyl ($/sf)' },
+      { key: 'Cost_Lam_SqFt', label: 'Lam Film ($/sf)' },
+      { key: 'Cost_Vin_Cut_Opq', label: 'Cut Vin Opq ($/sf)' },
+      { key: 'Cost_Vin_Cut_Trn', label: 'Cut Vin Trans ($/sf)' },
+      { key: 'Cost_Transfer_Tape', label: 'App Tape ($/sf)' },
+      { heading: 'Machine Speeds', key: 'Speed_Print_1st', label: '1-Layer FB (LF/hr)' },
+      { key: 'Speed_Print_White', label: '2-Layer FB (LF/hr)' },
+      { key: 'Speed_Print_3Layer', label: '3-Layer FB (LF/hr)' },
+      { key: 'Speed_Print_Roll', label: 'Roll Print (SF/hr)' },
+      { key: 'Speed_Lam_Roll', label: 'Laminator (SF/hr)' },
+      { key: 'Speed_Cut_Graphtec', label: 'Plotter (SF/hr)' },
+      { heading: 'Labor & Setup (Mins)', key: 'Time_Prepress_Print', label: 'Print Prepress' },
+      { key: 'Time_Setup_Printer', label: 'Machine Load' },
+      { key: 'Time_Weed_Simple', label: 'Weed Simple (/SF)' },
+      { key: 'Time_Weed_Complex', label: 'Weed Complex (/SF)' },
+      { key: 'Time_Mask_SqFt', label: 'Masking (/SF)' },
+      { key: 'Time_Mount_4x8', label: 'Mounting (/4x8)' },
+      { key: 'Time_Prepress_CNC', label: 'CNC Prepress' },
+      { key: 'Time_Setup_CNC', label: 'CNC Setup' },
+      { heading: 'Overhead & Factors', key: 'Rate_Machine_Flatbed', label: 'Flatbed ($/Hr)' },
+      { key: 'Rate_Machine_Print', label: 'Roll Prt ($/Hr)' },
+      { key: 'Rate_Machine_Cut', label: 'Plotter ($/Hr)' },
+      { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
       { key: 'Labor_Attendance_Ratio', label: 'Operator Attn (%)' },
       { key: 'Waste_Factor', label: 'Waste Buffer' }
     ],
