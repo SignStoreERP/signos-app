@@ -1,0 +1,249 @@
+/**
+ * PURE PHYSICS ENGINE: PVC Signs (v1.0 - Dual Track)
+ * Implements SqFt Area Curves, 1.5x Double Sided logic, and 10% Lam Deductions.
+ */
+
+function calculatePVC(inputs, data) {
+    const sqft = (inputs.w * inputs.h) / 144;
+    const totalSqFt = sqft * inputs.qty;
+
+    // --- 1. RETAIL ENGINE (MARKET VALUE) ---
+    let baseRate = 0;
+    
+    // Find matching tier based on thickness and square footage
+    if (inputs.thickness === '3mm') {
+        if (sqft <= parseFloat(data.PVC3_T1_Max || 2.99)) baseRate = parseFloat(data.PVC3_T1_Rate || 44.00);
+        else if (sqft <= parseFloat(data.PVC3_T2_Max || 5.99)) baseRate = parseFloat(data.PVC3_T2_Rate || 13.20);
+        else if (sqft <= parseFloat(data.PVC3_T3_Max || 11.99)) baseRate = parseFloat(data.PVC3_T3_Rate || 8.40);
+        else baseRate = parseFloat(data.PVC3_T4_Rate || 7.80);
+    } else {
+        if (sqft <= parseFloat(data.PVC6_T1_Max || 2.99)) baseRate = parseFloat(data.PVC6_T1_Rate || 44.00);
+        else if (sqft <= parseFloat(data.PVC6_T2_Max || 5.99)) baseRate = parseFloat(data.PVC6_T2_Rate || 22.00);
+        else if (sqft <= parseFloat(data.PVC6_T3_Max || 11.99)) baseRate = parseFloat(data.PVC6_T3_Rate || 14.00);
+        else baseRate = parseFloat(data.PVC6_T4_Rate || 13.00);
+    }
+
+    // Apply Double Sided Multiplier (e.g., +50%)
+    if (inputs.sides === 2) {
+        baseRate *= (1 + parseFloat(data.Retail_Adder_DS_Mult || 0.50));
+    }
+
+    // Apply "No Laminate" Deduction (e.g., -10%)
+    if (!inputs.lam) {
+        baseRate *= (1 - parseFloat(data.Retail_Lam_Deduct || 0.10));
+    }
+
+    // Volume Tiers
+    let discPct = 0;
+    let currentBestTier = 0;
+    let i = 1;
+    const tierLog = [];
+    while(data[`Tier_${i}_Qty`]) {
+        const tQty = parseFloat(data[`Tier_${i}_Qty`]);
+        const tDisc = parseFloat(data[`Tier_${i}_Disc`] || 0);
+        tierLog.push({ q: tQty, d: tDisc });
+        if (inputs.qty >= tQty) currentBestTier = tDisc;
+        i++;
+    }
+    discPct = currentBestTier;
+
+    const retailPrint = (baseRate * (1 - discPct)) * totalSqFt;
+
+    // CNC Router Fee (Flat Fee per order)
+    let routerFee = 0;
+    if (inputs.shape === 'Easy') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30.00);
+    else if (inputs.shape === 'Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50.00);
+
+    const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
+    const feeSetupBase = parseFloat(data.Retail_Fee_Setup || 15);
+    const feeSetup = inputs.setupPerFile ? (feeSetupBase * inputs.files) : feeSetupBase;
+
+    const grandTotalRaw = retailPrint + routerFee + feeDesign + feeSetup;
+    const minOrder = parseFloat(data.Retail_Min_Order || 50);
+    const grandTotal = Math.max(grandTotalRaw, minOrder);
+
+    // UI Tier Log (For Simulator)
+    const simTiers = tierLog.map(t => {
+        const trPrint = (baseRate * (1 - t.d)) * (sqft * t.q);
+        const total = Math.max(trPrint + routerFee + feeSetup + feeDesign, minOrder);
+        return { q: t.q, base: baseRate * (1 - t.d), unit: total / t.q };
+    });
+
+    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    const sheetSqFt = 32; // 4x8 sheet
+    const wastePct = parseFloat(data.Waste_Factor || 1.15);
+    
+    // Material
+    const rawSheetCost = inputs.thickness === '3mm' 
+        ? parseFloat(data.Cost_Stock_3mm_4x8 || 29.09) 
+        : parseFloat(data.Cost_Stock_6mm_4x8 || 58.37);
+        
+    const costSubstrate = (totalSqFt / sheetSqFt) * rawSheetCost * wastePct;
+    const costInk = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * inputs.sides;
+    const costLam = inputs.lam ? (totalSqFt * parseFloat(data.Cost_Lam_SqFt || 0.36) * wastePct * inputs.sides) : 0;
+
+    // Rates
+    const rateOp = parseFloat(data.Rate_Operator || 25);
+    const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
+    const rateCNC = parseFloat(data.Rate_CNC_Labor || 25);
+    const rateMachFB = parseFloat(data.Rate_Machine_Flatbed || 10);
+    const rateMachCNC = parseFloat(data.Rate_Machine_CNC || 10);
+
+    // Flatbed Print Time
+    const lfPerHour = parseFloat(data.Machine_Speed_LF_Hr || 25);
+    // Assuming 24" wide nested path, converting SqFt to LF approximation
+    const estLF = totalSqFt / 2; 
+    const printHrs = (estLF / lfPerHour) * inputs.sides;
+    const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
+    
+    const costPrintOp = printHrs * rateOp * attnRatio;
+    const costPrintMach = printHrs * rateMachFB;
+
+    // Lam Time
+    let costLamOp = 0;
+    if (inputs.lam) {
+        const lamHrs = (totalSqFt / parseFloat(data.Speed_Lam_Roll || 300)) * inputs.sides;
+        costLamOp = lamHrs * rateShop;
+    }
+
+    // Cutting Time (Shear vs CNC)
+    let cutHrs = 0;
+    let cutMach = 0;
+    let cutLabor = 0;
+
+    if (inputs.shape === 'Rectangle') {
+        const setupMins = parseFloat(data.Time_Shear_Setup || 5);
+        const cutMins = inputs.qty * parseFloat(data.Time_Shear_Cut || 1);
+        const roundMins = inputs.rounded ? parseFloat(data.Time_Round_Setup || 5) + (inputs.qty * 4 * parseFloat(data.Time_Round_Corner || 0.5)) : 0;
+        cutHrs = (setupMins + cutMins + roundMins) / 60;
+        cutLabor = cutHrs * rateShop;
+    } else {
+        const setupMins = parseFloat(data.Time_Setup_CNC || 10);
+        const runMinsSqFt = inputs.shape === 'Easy' ? parseFloat(data.Time_CNC_Easy_SqFt || 1) : parseFloat(data.Time_CNC_Complex_SqFt || 2);
+        const runMins = totalSqFt * runMinsSqFt;
+        cutHrs = (setupMins + runMins) / 60;
+        cutMach = cutHrs * rateMachCNC;
+        cutLabor = cutHrs * rateCNC; // CNC requires dedicated operator
+    }
+
+    // General Setup
+    const setupHrs = (parseFloat(data.Time_Setup_Job || 15) + parseFloat(data.Time_Handling || 5)) / 60;
+    const costSetup = setupHrs * rateOp;
+
+    const subTotal = costSubstrate + costInk + costLam + costSetup + costPrintOp + costPrintMach + costLamOp + cutMach + cutLabor;
+    const riskFactor = parseFloat(data.Factor_Risk || 1.05);
+    const riskBuffer = subTotal * (riskFactor - 1);
+
+    return {
+        retail: {
+            unitPrice: (retailPrint + routerFee) / inputs.qty,
+            printTotal: retailPrint,
+            routerFee: routerFee,
+            setupFee: feeSetup,
+            designFee: feeDesign,
+            grandTotal: grandTotal,
+            isMinApplied: grandTotalRaw < minOrder,
+            tiers: simTiers,
+            baseRate: baseRate
+        },
+        cost: {
+            total: subTotal + riskBuffer,
+            breakdown: {
+                rawSubstrate: costSubstrate,
+                rawInk: costInk,
+                rawLam: costLam,
+                costSetup: costSetup,
+                costPrint: costPrintOp + costPrintMach,
+                costCut: cutMach + cutLabor,
+                costLamRun: costLamOp,
+                riskCost: riskBuffer,
+                wastePct: (wastePct - 1) * 100,
+                riskPct: (riskFactor - 1) * 100
+            }
+        },
+        metrics: { margin: (grandTotal - (subTotal + riskBuffer)) / grandTotal }
+    };
+}
+
+// ==========================================
+// SIMULATOR CONFIGURATION SCHEMA
+// ==========================================
+window.PVC_CONFIG = {
+    tab: 'PROD_PVC_Signs',
+    engine: calculatePVC,
+    controls: [
+      { id: 'w', label: 'Width (in)', type: 'number', def: 24 },
+      { id: 'h', label: 'Height (in)', type: 'number', def: 18 },
+      { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'3mm', t:'3mm Standard'}, {v:'6mm', t:'6mm Heavy'}] },
+      { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
+      { id: 'lam', label: 'Laminate', type: 'toggle', def: true },
+      { id: 'shape', label: 'Cut Method', type: 'select', opts: [{v:'Rectangle', t:'Shear / Square'}, {v:'Easy', t:'CNC Simple'}, {v:'Complex', t:'CNC Complex'}] },
+      { id: 'files', label: 'Files', type: 'number', def: 1 },
+      { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
+      { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
+    ],
+    retails: [
+      { heading: '3mm PVC Area Curves ($/SqFt)', key: 'PVC3_T1_Rate', label: 'Tiny (<3sf)', tooltip: 'FORMAT: 44.00' },
+      { key: 'PVC3_T2_Rate', label: 'Small (<6sf)' },
+      { key: 'PVC3_T3_Rate', label: 'Med (<12sf)' },
+      { key: 'PVC3_T4_Rate', label: 'Large (>12sf)' },
+      { heading: '6mm PVC Area Curves ($/SqFt)', key: 'PVC6_T1_Rate', label: 'Tiny (<3sf)' },
+      { key: 'PVC6_T2_Rate', label: 'Small (<6sf)' },
+      { key: 'PVC6_T3_Rate', label: 'Med (<12sf)' },
+      { key: 'PVC6_T4_Rate', label: 'Large (>12sf)' },
+      { heading: 'Multipliers & Fees', key: 'Retail_Adder_DS_Mult', label: 'Double Sided Add', tooltip: 'Calculated as a % of the base price. FORMAT: 0.50 (adds 50%)' },
+      { key: 'Retail_Lam_Deduct', label: 'No-Lam Deduct', tooltip: 'Discount applied if Laminate toggle is off. FORMAT: 0.10 (deducts 10%)' },
+      { key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
+      { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' },
+      { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger' },
+      { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)', tooltip: 'FORMAT: 0.05' }
+    ],
+    costs: [
+      { key: 'Cost_Stock_3mm_4x8', label: '3mm Sheet ($)', tooltip: 'Cost of full 4x8 sheet. FORMAT: 29.09' },
+      { key: 'Cost_Stock_6mm_4x8', label: '6mm Sheet ($)', tooltip: 'Cost of full 4x8 sheet. FORMAT: 58.37' },
+      { key: 'Cost_Ink_Latex', label: 'Ink ($/SqFt)', tooltip: 'FORMAT: 0.16' },
+      { key: 'Cost_Lam_SqFt', label: 'Laminate ($/SqFt)', tooltip: 'FORMAT: 0.36' },
+      { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
+      { key: 'Rate_CNC_Labor', label: 'CNC Labor ($/Hr)' },
+      { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
+      { key: 'Time_CNC_Easy_SqFt', label: 'CNC Easy (Min/SF)' },
+      { key: 'Time_CNC_Complex_SqFt', label: 'CNC Hard (Min/SF)' },
+      { key: 'Waste_Factor', label: 'Waste Buffer', tooltip: 'FORMAT: 1.15' }
+    ],
+    
+    renderReceipt: function(data, fmt) {
+      let retailHTML = `
+        <div>
+          <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
+          <div class="space-y-1 text-xs text-gray-700">
+            <div class="flex justify-between" title="Based on Area Curves + DS/Lam rules."><span class="cursor-help border-b border-dotted border-gray-400">Printed PVC Base (Calculated @ ${fmt(data.retail.baseRate)}/sf):</span> <span>${fmt(data.retail.printTotal)}</span></div>
+            ${data.retail.routerFee > 0 ? `<div class="flex justify-between text-orange-700"><span>CNC Routing Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>` : ''}
+            <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
+            ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
+            <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
+          </div>
+        </div>
+      `;
+      let costHTML = `
+        <div>
+          <h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
+          <div class="space-y-1 text-xs text-gray-700">`;
+      if (data.cost.breakdown) {
+        const b = data.cost.breakdown;
+        costHTML += `
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">PVC Substrate:</span> <span>${fmt(b.rawSubstrate)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Ink Cost:</span> <span>${fmt(b.rawInk)}</span></div>
+            ${b.rawLam > 0 ? `<div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Laminate Film & Run:</span> <span>${fmt(b.rawLam + b.costLamRun)}</span></div>` : ''}
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
+            <div class="flex justify-between"><span class="cursor-help border-b border-dotted border-gray-400" title="Factored at Operator Attention Ratio.">Flatbed Print Run:</span> <span>${fmt(b.costPrint)}</span></div>
+            <div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">Cutting (Labor & Machine):</span> <span>${fmt(b.costCut)}</span></div>
+            <div class="border-t border-gray-200 mt-2 pt-1"></div>
+            <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
+            <div class="flex justify-between text-red-600"><span class="border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 15}%):</span> <span>(Calculated Above)</span></div>
+            <div class="flex justify-between text-orange-500 opacity-80"><span class="border-b border-dotted border-orange-300">Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> <span>(+ ${fmt(b.riskCost)})</span></div>
+        `;
+      }
+      costHTML += `<div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div></div></div>`;
+      return retailHTML + costHTML;
+    }
+};
