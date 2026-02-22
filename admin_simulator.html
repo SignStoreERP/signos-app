@@ -37,9 +37,9 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 .chevron.closed { transform: rotate(-90deg); }
 
 /* Segmented Control */
-.seg-btn { @apply flex-1 py-1 text-center text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors; }
-.seg-active { @apply bg-white text-gray-900 shadow rounded-md; }
-.seg-inactive { @apply text-gray-500 hover:text-gray-700; }
+.seg-btn { @apply flex-1 py-1.5 text-center text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all duration-200 ease-in-out select-none; }
+.seg-active { @apply bg-white text-blue-700 shadow-sm rounded border border-gray-200/50 scale-[1.02]; }
+.seg-inactive { @apply text-gray-500 hover:text-gray-800 hover:bg-gray-200/50 rounded; }
 </style>
 </head>
 <body class="bg-gray-200 h-screen flex flex-col font-sans overflow-hidden">
@@ -437,8 +437,26 @@ function renderChart() {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            onClick: (event, elements) => {
-                if (elements.length > 0) renderReceipt(elements.index);
+            onClick: (event, elements, chart) => {
+                if (elements.length > 0) {
+                     // Get the index of the first returned element
+                    const dataIndex = elements[0].index;
+                    renderReceipt(dataIndex);
+                } else {
+                    // Fallback: If they click in the column but miss the line/bar
+                    // Get the x-axis value closest to the click
+                    const scales = chart.scales;
+                    const xValue = scales.x.getValueForPixel(event.x);
+                    
+                    if (xValue !== undefined) {
+                        // Find the closest index in our labels array
+                        // Since Chart.js x-axis is categorical here, xValue is the index
+                        const closestIndex = Math.round(xValue);
+                        if (closestIndex >= 0 && closestIndex < simulationData.length) {
+                             renderReceipt(closestIndex);
+                        }
+                    }
+                }
             },
             onHover: (event, chartElement) => {
                 event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
