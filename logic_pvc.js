@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: PVC Signs (v1.4 - Dual Track)
- * Implements granular breakdown of Prepress vs Machine Setup for both Print and CNC.
+ * PURE PHYSICS ENGINE: PVC Signs (v1.5 - Dual Track)
+ * Implements granular separation of Labor vs Machine times for all production phases.
  */
 
 function calculatePVC(inputs, data) {
@@ -156,10 +156,12 @@ function calculatePVC(inputs, data) {
                 rawInk: costInk,
                 costPrepressPrint: costPrepressPrint,
                 costMachSetupPrint: costMachSetupPrint,
-                costPrint: costPrintOp + costPrintMach,
+                costPrintLabor: costPrintOp,
+                costPrintMach: costPrintMach,
                 costPrepressCNC: costPrepressCNC,
                 costMachSetupCNC: costMachSetupCNC,
-                costCut: cutMach + cutLabor,
+                costCutMach: cutMach,
+                costCutLabor: cutLabor,
                 riskCost: riskBuffer,
                 wastePct: (wastePct - 1) * 100,
                 riskPct: (riskFactor - 1) * 100
@@ -239,10 +241,12 @@ window.PVC_CONFIG = {
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Ink Cost:</span> <span>${fmt(b.rawInk)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Print Prepress (RIP/Pathing):</span> <span>${fmt(b.costPrepressPrint)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Printer Setup (Load/Calibrate):</span> <span>${fmt(b.costMachSetupPrint)}</span></div>
-            <div class="flex justify-between"><span class="cursor-help border-b border-dotted border-gray-400" title="Factored at Operator Attention Ratio.">Flatbed Print Run:</span> <span>${fmt(b.costPrint)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Flatbed Print Run (Machine):</span> <span>${fmt(b.costPrintMach)}</span></div>
+            <div class="flex justify-between"><span class="cursor-help border-b border-dotted border-gray-400" title="Factored at Operator Attention Ratio.">Flatbed Print Run (Labor):</span> <span>${fmt(b.costPrintLabor)}</span></div>
             ${b.costPrepressCNC > 0 ? `<div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">CNC Prepress (Toolpaths):</span> <span>${fmt(b.costPrepressCNC)}</span></div>` : ''}
             ${b.costMachSetupCNC > 0 ? `<div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">CNC Setup (Mount/Zero):</span> <span>${fmt(b.costMachSetupCNC)}</span></div>` : ''}
-            <div class="flex justify-between text-orange-800"><span class="cursor-help border-b border-dotted border-orange-300" title="Factored at Operator Attention Ratio.">Cutting Run (Labor & Machine):</span> <span>${fmt(b.costCut)}</span></div>
+            ${b.costCutMach > 0 ? `<div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">Cutting Run (Machine):</span> <span>${fmt(b.costCutMach)}</span></div>` : ''}
+            <div class="flex justify-between text-orange-800"><span class="cursor-help border-b border-dotted border-orange-300" title="Factored at Operator Attention Ratio (if CNC).">Cutting Run (Labor):</span> <span>${fmt(b.costCutLabor)}</span></div>
             <div class="border-t border-gray-200 mt-2 pt-1"></div>
             <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
             <div class="flex justify-between text-red-600"><span class="border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 15}%):</span> <span>(Calculated Above)</span></div>
