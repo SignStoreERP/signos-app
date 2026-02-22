@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PVC Signs v1.0</title>
+<title>PVC Signs v1.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -46,17 +46,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 </div>
 </div>
 
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Laminate</label>
-<div class="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded h-[42px]">
-<span class="text-[10px] font-bold text-blue-900 uppercase">Apply Lam?</span>
-<div class="relative inline-block w-9 align-middle select-none">
-<input type="checkbox" id="lam" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" checked onchange="runCalc()"/>
-<label for="lam" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-</div>
-</div>
-</div>
+<div class="grid grid-cols-1 gap-4">
 <div>
 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Cutting Method</label>
 <select id="shape" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
@@ -80,7 +70,8 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Charge Setup/File</label>
 <label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer bg-purple-50 p-2 rounded border border-purple-200 hover:bg-purple-100 transition"><input type="checkbox" id="inc-design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
 </div>
-<div class="flex items-center gap-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border rounded p-1 text-center text-sm font-bold" oninput="runCalc()"></div>
+<div class="flex items-center gap-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label>
+<input type="number" id="files" value="1" min="1" class="w-16 border rounded p-1 text-center text-sm font-bold" oninput="runCalc()"></div>
 </div>
 </div>
 
@@ -109,7 +100,7 @@ Show Volume Discounts
 
 <!-- LINE ITEMS -->
 <div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
-<div class="flex justify-between"><span>Printed Signs (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
+<div class="flex justify-between"><span>Printed Signs:</span><span id="ui-print" class="font-bold">$0.00</span></div>
 <div class="flex justify-between text-orange-700 hidden" id="row-router"><span>CNC Router Fee:</span><span id="ui-router" class="font-bold">$0.00</span></div>
 <div class="flex justify-between text-gray-700"><span>Job Setup:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
 <div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
@@ -161,7 +152,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v1.0)`;
+            verDisplay.innerText = `(v1.1)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -208,7 +199,6 @@ function runCalc() {
         h: parseFloat(document.getElementById('h').value) || 18,
         thickness: document.getElementById('thickness').value,
         sides: parseInt(document.getElementById('sides').value),
-        lam: document.getElementById('lam').checked,
         shape: shapeVal,
         rounded: roundedVal,
         files: parseFloat(document.getElementById('files').value) || 1,
@@ -271,9 +261,8 @@ function runCalc() {
 
     const sideTxt = inputs.sides === 1 ? "ONE" : "TWO";
     const roundTxt = inputs.rounded ? "with rounded corners" : "square corners";
-    const lamTxt = inputs.lam ? "Laminated" : "NO Lam";
     const cutTxt = inputs.shape === 'Rectangle' ? `Shear Cut ${roundTxt}` : 'CNC Custom Shape';
-    document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs. ${lamTxt}, ${cutTxt}.\nPrinted on ${sideTxt} side(s).`;
+    document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs. No Lam, ${cutTxt}.\nPrinted on ${sideTxt} side(s).`;
 }
 </script>
 </body>
