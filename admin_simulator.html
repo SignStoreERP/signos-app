@@ -18,7 +18,7 @@
 <script src="logic_banner.js"></script>
 <script src="logic_pvc.js"></script>
 
-<style type="text/tailwindcss">
+<style>
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
 .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
@@ -34,13 +34,6 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 .panel-content.closed { max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; }
 .chevron { transition: transform 0.3s ease-in-out; }
 .chevron.closed { transform: rotate(-90deg); }
-
-/* Segmented Toggle Slider */
-.seg-track { @apply relative flex bg-slate-200 p-1 rounded-full border border-slate-300 shadow-inner w-full sm:w-60 shrink-0 overflow-hidden; }
-.seg-pill { @apply absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-full shadow border border-slate-200/50 transition-transform duration-300 ease-out z-0; }
-.seg-btn { @apply flex-1 py-1 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center; }
-.seg-active { @apply text-blue-700; }
-.seg-inactive { @apply text-slate-500 hover:text-slate-800; }
 </style>
 </head>
 <body class="bg-gray-200 h-[100dvh] w-full flex flex-col font-sans p-2 sm:p-4 md:p-6 items-center justify-center overflow-hidden">
@@ -97,11 +90,11 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
                 <span class="w-2 h-2 rounded-full bg-blue-500"></span> Profitability Curve
             </h2>
             
-            <div class="seg-track">
-                <div id="slider-pill" class="seg-pill translate-x-0"></div>
+            <div class="relative flex bg-slate-200 p-1 rounded-full border border-slate-300 shadow-inner w-full sm:w-60 shrink-0 overflow-hidden">
+                <div id="slider-pill" class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-full shadow border border-slate-200/50 transition-transform duration-300 ease-out z-0 translate-x-0"></div>
                 
-                <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
-                <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Net Profit $</div>
+                <div onclick="setViewMode('margin')" id="btn-mode-margin" class="flex-1 py-1.5 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center text-blue-700">Margin</div>
+                <div onclick="setViewMode('profit')" id="btn-mode-profit" class="flex-1 py-1.5 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center text-slate-500 hover:text-slate-800">Net Profit</div>
             </div>
         </div>
 
@@ -201,14 +194,18 @@ function setViewMode(mode) {
     const btnProfit = document.getElementById('btn-mode-profit');
     const pill = document.getElementById('slider-pill');
     
+    // Explicitly defining Tailwind classes to prevent compiler crashes
+    const activeClass = "flex-1 py-1.5 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center text-blue-700";
+    const inactiveClass = "flex-1 py-1.5 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center text-slate-500 hover:text-slate-800";
+    
     if (mode === 'margin') {
-        btnMargin.className = "seg-btn seg-active";
-        btnProfit.className = "seg-btn seg-inactive";
+        btnMargin.className = activeClass;
+        btnProfit.className = inactiveClass;
         pill.style.transform = "translateX(0)";
         document.getElementById('lbl-legend-profit').innerText = "Margin %";
     } else {
-        btnProfit.className = "seg-btn seg-active";
-        btnMargin.className = "seg-btn seg-inactive";
+        btnProfit.className = activeClass;
+        btnMargin.className = inactiveClass;
         pill.style.transform = "translateX(100%)";
         document.getElementById('lbl-legend-profit').innerText = "Net Profit $";
     }
@@ -251,7 +248,7 @@ async function loadModuleData() {
         btn.classList.remove('hidden');
         loader.classList.replace('flex', 'hidden');
 
-        // --- NEW: UPDATE HEADER TO ONLINE ---
+        // --- UPDATE HEADER TO ONLINE ---
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
         if(statusText) {
@@ -262,7 +259,6 @@ async function loadModuleData() {
             statusDot.className = "w-2 h-2 rounded-full bg-green-500";
             statusDot.classList.remove("animate-pulse");
         }
-        // ------------------------------------
 
         runSimulation();
 
@@ -272,7 +268,7 @@ async function loadModuleData() {
         btn.classList.remove('hidden');
         btn.innerText = "ERROR";
         
-        // --- NEW: SET ERROR STATUS ---
+        // --- SET HEADER TO ERROR STATUS ---
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
         if(statusText) {
@@ -281,6 +277,7 @@ async function loadModuleData() {
         }
         if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-red-500";
     }
+}
 
 function resetDefaults() {
     const config = getActiveConfig();
