@@ -1,6 +1,7 @@
 /**
- * PURE PHYSICS ENGINE: PVC Signs (v1.1 - Dual Track)
- * Implements strict Blue Sheet logic (Unit Minimums) and removes laminate.
+ * PURE PHYSICS ENGINE: PVC Signs (v1.3 - Dual Track)
+ * Implements strict Blue Sheet logic (Unit Minimums), removes retail setup fees,
+ * applies attendance ratio to CNC labor, and exposes all prepress variables.
  */
 
 function calculatePVC(inputs, data) {
@@ -54,17 +55,16 @@ function calculatePVC(inputs, data) {
     else if (inputs.shape === 'Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50.00);
 
     const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
-    const feeSetupBase = parseFloat(data.Retail_Fee_Setup || 15);
-    const feeSetup = inputs.setupPerFile ? (feeSetupBase * inputs.files) : feeSetupBase;
 
-    const grandTotalRaw = retailPrint + routerFee + feeDesign + feeSetup;
+    // Removed Setup Fee from Retail
+    const grandTotalRaw = retailPrint + routerFee + feeDesign;
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
     // UI Tier Log (For Simulator)
     const simTiers = tierLog.map(t => {
         const trPrint = (unitPrintPrice * (1 - t.d)) * t.q;
-        const total = Math.max(trPrint + routerFee + feeSetup + feeDesign, minOrder);
+        const total = Math.max(trPrint + routerFee + feeDesign, minOrder);
         return { q: t.q, base: unitPrintPrice * (1 - t.d), unit: total / t.q };
     });
 
@@ -72,6 +72,7 @@ function calculatePVC(inputs, data) {
     const totalSqFt = sqft * inputs.qty;
     const sheetSqFt = 32; // 4x8 sheet
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
+    const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
     
     // Material
     const rawSheetCost = inputs.thickness === '3mm' 
@@ -88,19 +89,24 @@ function calculatePVC(inputs, data) {
     const rateMachFB = parseFloat(data.Rate_Machine_Flatbed || 10);
     const rateMachCNC = parseFloat(data.Rate_Machine_CNC || 10);
 
-    // Flatbed Print Time
+    // 1. Print Department Setup
+    const prepressPrintMins = parseFloat(data.Time_Prepress_Print || 10);
+    const machSetupPrintMins = parseFloat(data.Time_Setup_Printer || 5) + parseFloat(data.Time_Handling || 5);
+    const costSetupPrint = ((prepressPrintMins + machSetupPrintMins) / 60) * rateOp;
+
+    // 2. Print Run
     const lfPerHour = parseFloat(data.Machine_Speed_LF_Hr || 25);
     const estLF = totalSqFt / 2; 
     const printHrs = (estLF / lfPerHour) * inputs.sides;
-    const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
     
     const costPrintOp = printHrs * rateOp * attnRatio;
     const costPrintMach = printHrs * rateMachFB;
 
-    // Cutting Time (Shear vs CNC)
+    // 3. Cutting Department (Shear vs CNC)
     let cutHrs = 0;
     let cutMach = 0;
     let cutLabor = 0;
+    let costSetupCNC = 0;
 
     if (inputs.shape === 'Rectangle') {
         const setupMins = parseFloat(data.Time_Shear_Setup || 5);
@@ -109,19 +115,21 @@ function calculatePVC(inputs, data) {
         cutHrs = (setupMins + cutMins + roundMins) / 60;
         cutLabor = cutHrs * rateShop;
     } else {
-        const setupMins = parseFloat(data.Time_Setup_CNC || 10);
+        // Granular CNC Setup
+        const prepressCNCMins = parseFloat(data.Time_Prepress_CNC || 15);
+        const machSetupCNCMins = parseFloat(data.Time_Setup_CNC || 10);
+        costSetupCNC = ((prepressCNCMins + machSetupCNCMins) / 60) * rateCNC; // Setup is 100% attended
+
+        // CNC Run
         const runMinsSqFt = inputs.shape === 'Easy' ? parseFloat(data.Time_CNC_Easy_SqFt || 1) : parseFloat(data.Time_CNC_Complex_SqFt || 2);
         const runMins = totalSqFt * runMinsSqFt;
-        cutHrs = (setupMins + runMins) / 60;
+        cutHrs = runMins / 60;
         cutMach = cutHrs * rateMachCNC;
-        cutLabor = cutHrs * rateCNC; 
+        // Apply Attendance Ratio to CNC run time
+        cutLabor = cutHrs * rateCNC * attnRatio; 
     }
 
-    // General Setup
-    const setupHrs = (parseFloat(data.Time_Setup_Job || 15) + parseFloat(data.Time_Handling || 5)) / 60;
-    const costSetup = setupHrs * rateOp;
-
-    const subTotal = costSubstrate + costInk + costSetup + costPrintOp + costPrintMach + cutMach + cutLabor;
+    const subTotal = costSubstrate + costInk + costSetupPrint + costPrintOp + costPrintMach + costSetupCNC + cutMach + cutLabor;
     const riskFactor = parseFloat(data.Factor_Risk || 1.05);
     const riskBuffer = subTotal * (riskFactor - 1);
 
@@ -130,20 +138,20 @@ function calculatePVC(inputs, data) {
             unitPrice: (retailPrint + routerFee) / inputs.qty,
             printTotal: retailPrint,
             routerFee: routerFee,
-            setupFee: feeSetup,
             designFee: feeDesign,
             grandTotal: grandTotal,
             isMinApplied: grandTotalRaw < minOrder,
             tiers: simTiers,
-            baseRate: unitPrintPrice / sqft // Derived for receipt display
+            baseRate: unitPrintPrice / sqft 
         },
         cost: {
             total: subTotal + riskBuffer,
             breakdown: {
                 rawSubstrate: costSubstrate,
                 rawInk: costInk,
-                costSetup: costSetup,
+                costSetupPrint: costSetupPrint,
                 costPrint: costPrintOp + costPrintMach,
+                costSetupCNC: costSetupCNC,
                 costCut: cutMach + cutLabor,
                 riskCost: riskBuffer,
                 wastePct: (wastePct - 1) * 100,
@@ -167,7 +175,6 @@ window.PVC_CONFIG = {
       { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
       { id: 'shape', label: 'Cut Method', type: 'select', opts: [{v:'Rectangle', t:'Shear / Square'}, {v:'Easy', t:'CNC Simple'}, {v:'Complex', t:'CNC Complex'}] },
       { id: 'files', label: 'Files', type: 'number', def: 1 },
-      { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
       { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
     retails: [
@@ -189,11 +196,16 @@ window.PVC_CONFIG = {
       { key: 'Cost_Stock_3mm_4x8', label: '3mm Sheet ($)', tooltip: 'Cost of full 4x8 sheet. FORMAT: 29.09' },
       { key: 'Cost_Stock_6mm_4x8', label: '6mm Sheet ($)', tooltip: 'Cost of full 4x8 sheet. FORMAT: 58.37' },
       { key: 'Cost_Ink_Latex', label: 'Ink ($/SqFt)', tooltip: 'FORMAT: 0.16' },
-      { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
+      { key: 'Rate_Operator', label: 'Print Op ($/Hr)' },
       { key: 'Rate_CNC_Labor', label: 'CNC Labor ($/Hr)' },
       { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
+      { key: 'Time_Prepress_Print', label: 'Print Prepress (Min)', tooltip: 'Time to RIP files.' },
+      { key: 'Time_Setup_Printer', label: 'Print Setup (Min)', tooltip: 'Time to load media/calibrate.' },
+      { key: 'Time_Prepress_CNC', label: 'CNC Prepress (Min)', tooltip: 'Time to generate toolpaths.' },
+      { key: 'Time_Setup_CNC', label: 'CNC Setup (Min)', tooltip: 'Time to mount sheet and zero bit.' },
       { key: 'Time_CNC_Easy_SqFt', label: 'CNC Easy (Min/SF)' },
       { key: 'Time_CNC_Complex_SqFt', label: 'CNC Hard (Min/SF)' },
+      { key: 'Labor_Attendance_Ratio', label: 'Operator Attn (%)', tooltip: 'Percentage of machine run time the operator must actively attend. FORMAT: 0.10' },
       { key: 'Waste_Factor', label: 'Waste Buffer', tooltip: 'FORMAT: 1.15' }
     ],
     
@@ -204,7 +216,6 @@ window.PVC_CONFIG = {
           <div class="space-y-1 text-xs text-gray-700">
             <div class="flex justify-between" title="Based on Area Curves + DS rules + Per-Sign Minimums."><span class="cursor-help border-b border-dotted border-gray-400">Printed PVC Base (Calculated @ ${fmt(data.retail.baseRate)}/sf):</span> <span>${fmt(data.retail.printTotal)}</span></div>
             ${data.retail.routerFee > 0 ? `<div class="flex justify-between text-orange-700"><span>CNC Routing Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>` : ''}
-            <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
             ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
             <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
           </div>
@@ -219,9 +230,10 @@ window.PVC_CONFIG = {
         costHTML += `
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">PVC Substrate:</span> <span>${fmt(b.rawSubstrate)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Ink Cost:</span> <span>${fmt(b.rawInk)}</span></div>
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Print Dept Setup (Prepress & Machine):</span> <span>${fmt(b.costSetupPrint)}</span></div>
             <div class="flex justify-between"><span class="cursor-help border-b border-dotted border-gray-400" title="Factored at Operator Attention Ratio.">Flatbed Print Run:</span> <span>${fmt(b.costPrint)}</span></div>
-            <div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">Cutting (Labor & Machine):</span> <span>${fmt(b.costCut)}</span></div>
+            ${b.costSetupCNC > 0 ? `<div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">CNC Dept Setup (Toolpaths & Machine):</span> <span>${fmt(b.costSetupCNC)}</span></div>` : ''}
+            <div class="flex justify-between text-orange-800"><span class="cursor-help border-b border-dotted border-orange-300" title="Factored at Operator Attention Ratio.">Cutting Run (Labor & Machine):</span> <span>${fmt(b.costCut)}</span></div>
             <div class="border-t border-gray-200 mt-2 pt-1"></div>
             <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
             <div class="flex justify-between text-red-600"><span class="border-b border-dotted border-red-400">Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 15}%):</span> <span>(Calculated Above)</span></div>
