@@ -1,7 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: PVC Signs (v1.3 - Dual Track)
- * Implements strict Blue Sheet logic (Unit Minimums), removes retail setup fees,
- * applies attendance ratio to CNC labor, and exposes all prepress variables.
+ * PURE PHYSICS ENGINE: PVC Signs (v1.4 - Dual Track)
+ * Implements granular breakdown of Prepress vs Machine Setup for both Print and CNC.
  */
 
 function calculatePVC(inputs, data) {
@@ -89,10 +88,12 @@ function calculatePVC(inputs, data) {
     const rateMachFB = parseFloat(data.Rate_Machine_Flatbed || 10);
     const rateMachCNC = parseFloat(data.Rate_Machine_CNC || 10);
 
-    // 1. Print Department Setup
+    // 1. Print Department Setup (Split Prepress vs Machine)
     const prepressPrintMins = parseFloat(data.Time_Prepress_Print || 10);
     const machSetupPrintMins = parseFloat(data.Time_Setup_Printer || 5) + parseFloat(data.Time_Handling || 5);
-    const costSetupPrint = ((prepressPrintMins + machSetupPrintMins) / 60) * rateOp;
+    
+    const costPrepressPrint = (prepressPrintMins / 60) * rateOp;
+    const costMachSetupPrint = (machSetupPrintMins / 60) * rateOp;
 
     // 2. Print Run
     const lfPerHour = parseFloat(data.Machine_Speed_LF_Hr || 25);
@@ -106,7 +107,9 @@ function calculatePVC(inputs, data) {
     let cutHrs = 0;
     let cutMach = 0;
     let cutLabor = 0;
-    let costSetupCNC = 0;
+    
+    let costPrepressCNC = 0;
+    let costMachSetupCNC = 0;
 
     if (inputs.shape === 'Rectangle') {
         const setupMins = parseFloat(data.Time_Shear_Setup || 5);
@@ -118,7 +121,9 @@ function calculatePVC(inputs, data) {
         // Granular CNC Setup
         const prepressCNCMins = parseFloat(data.Time_Prepress_CNC || 15);
         const machSetupCNCMins = parseFloat(data.Time_Setup_CNC || 10);
-        costSetupCNC = ((prepressCNCMins + machSetupCNCMins) / 60) * rateCNC; // Setup is 100% attended
+        
+        costPrepressCNC = (prepressCNCMins / 60) * rateCNC;
+        costMachSetupCNC = (machSetupCNCMins / 60) * rateCNC; // Setup is 100% attended
 
         // CNC Run
         const runMinsSqFt = inputs.shape === 'Easy' ? parseFloat(data.Time_CNC_Easy_SqFt || 1) : parseFloat(data.Time_CNC_Complex_SqFt || 2);
@@ -129,7 +134,7 @@ function calculatePVC(inputs, data) {
         cutLabor = cutHrs * rateCNC * attnRatio; 
     }
 
-    const subTotal = costSubstrate + costInk + costSetupPrint + costPrintOp + costPrintMach + costSetupCNC + cutMach + cutLabor;
+    const subTotal = costSubstrate + costInk + costPrepressPrint + costMachSetupPrint + costPrintOp + costPrintMach + costPrepressCNC + costMachSetupCNC + cutMach + cutLabor;
     const riskFactor = parseFloat(data.Factor_Risk || 1.05);
     const riskBuffer = subTotal * (riskFactor - 1);
 
@@ -149,9 +154,11 @@ function calculatePVC(inputs, data) {
             breakdown: {
                 rawSubstrate: costSubstrate,
                 rawInk: costInk,
-                costSetupPrint: costSetupPrint,
+                costPrepressPrint: costPrepressPrint,
+                costMachSetupPrint: costMachSetupPrint,
                 costPrint: costPrintOp + costPrintMach,
-                costSetupCNC: costSetupCNC,
+                costPrepressCNC: costPrepressCNC,
+                costMachSetupCNC: costMachSetupCNC,
                 costCut: cutMach + cutLabor,
                 riskCost: riskBuffer,
                 wastePct: (wastePct - 1) * 100,
@@ -230,9 +237,11 @@ window.PVC_CONFIG = {
         costHTML += `
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">PVC Substrate:</span> <span>${fmt(b.rawSubstrate)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Ink Cost:</span> <span>${fmt(b.rawInk)}</span></div>
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Print Dept Setup (Prepress & Machine):</span> <span>${fmt(b.costSetupPrint)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Print Prepress (RIP/Pathing):</span> <span>${fmt(b.costPrepressPrint)}</span></div>
+            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Printer Setup (Load/Calibrate):</span> <span>${fmt(b.costMachSetupPrint)}</span></div>
             <div class="flex justify-between"><span class="cursor-help border-b border-dotted border-gray-400" title="Factored at Operator Attention Ratio.">Flatbed Print Run:</span> <span>${fmt(b.costPrint)}</span></div>
-            ${b.costSetupCNC > 0 ? `<div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">CNC Dept Setup (Toolpaths & Machine):</span> <span>${fmt(b.costSetupCNC)}</span></div>` : ''}
+            ${b.costPrepressCNC > 0 ? `<div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">CNC Prepress (Toolpaths):</span> <span>${fmt(b.costPrepressCNC)}</span></div>` : ''}
+            ${b.costMachSetupCNC > 0 ? `<div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">CNC Setup (Mount/Zero):</span> <span>${fmt(b.costMachSetupCNC)}</span></div>` : ''}
             <div class="flex justify-between text-orange-800"><span class="cursor-help border-b border-dotted border-orange-300" title="Factored at Operator Attention Ratio.">Cutting Run (Labor & Machine):</span> <span>${fmt(b.costCut)}</span></div>
             <div class="border-t border-gray-200 mt-2 pt-1"></div>
             <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
