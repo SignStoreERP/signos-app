@@ -18,7 +18,7 @@
 <script src="logic_banner.js"></script>
 <script src="logic_pvc.js"></script>
 
-<style>
+<style type="text/tailwindcss">
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
 .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
@@ -251,6 +251,19 @@ async function loadModuleData() {
         btn.classList.remove('hidden');
         loader.classList.replace('flex', 'hidden');
 
+        // --- NEW: UPDATE HEADER TO ONLINE ---
+        const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+        }
+        if(statusDot) {
+            statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+            statusDot.classList.remove("animate-pulse");
+        }
+        // ------------------------------------
+
         runSimulation();
 
     } catch(e) {
@@ -258,8 +271,16 @@ async function loadModuleData() {
         loader.classList.replace('flex', 'hidden');
         btn.classList.remove('hidden');
         btn.innerText = "ERROR";
+        
+        // --- NEW: SET ERROR STATUS ---
+        const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+        if(statusText) {
+            statusText.innerText = "OFFLINE";
+            statusText.className = "font-bold text-red-500";
+        }
+        if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-red-500";
     }
-}
 
 function resetDefaults() {
     const config = getActiveConfig();
