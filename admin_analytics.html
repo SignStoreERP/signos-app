@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Scatter Analytics v2.0</title>
+<title>Profit Scatter Analytics v2.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="signos-core.js"></script>
@@ -92,29 +92,27 @@ let currentViewMode = 'margin';
 let scatterData = []; 
 let profitChart = null;
 
-// The standard quantities we want to test every size against
-const TEST_QUANTITIES = [1, 5, 10, 25, 50, 100, 250, 500];
+// The Quantity Arrays - Dynamically swapped based on product
+const YARD_QUANTITIES = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
+const RIGID_QUANTITIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Granular focus for large boards
 
-// Dynamic Size Generator for Rigid Boards
 const STANDARD_DIMS = [12, 18, 24, 36, 48, 72, 96];
 
 function generateRigidConfigs(modKey) {
     let configs = [];
     
     if (modKey === 'YARD') {
-        // Yard signs are almost exclusively 24x18
         [1, 2].forEach(sides => {
             [false, true].forEach(stakes => {
                 configs.push({
                     label: `24x18 ${sides}S ${stakes ? 'w/ Stakes' : 'No Stakes'}`,
-                    inputs: { sides: sides, hasStakes: stakes }
+                    inputs: { w: 24, h: 18, sides: sides, hasStakes: stakes }
                 });
             });
         });
         return configs;
     }
 
-    // Generate a massive array of sizes for other rigids
     let thicknesses = [];
     if (modKey === 'CORO') thicknesses = ['4mm', '10mm'];
     if (modKey === 'ACM' || modKey === 'PVC') thicknesses = ['3mm', '6mm'];
@@ -122,7 +120,7 @@ function generateRigidConfigs(modKey) {
 
     STANDARD_DIMS.forEach(w => {
         STANDARD_DIMS.forEach(h => {
-            if (w < h || w > 96 || h > 48) return; // Prevent duplicates (12x24 vs 24x12) and keep within 4x8 bounds
+            if (w < h || w > 96 || h > 48) return; 
 
             thicknesses.forEach(th => {
                 [1, 2].forEach(sides => {
@@ -201,7 +199,7 @@ function runAnalysis() {
     const matrixDef = MODULE_MATRICES[modKey];
     
     document.getElementById('loader').classList.replace('hidden', 'flex');
-    scatterData = []; // Reset
+    scatterData = []; 
 
     if(!matrixDef.engine) {
         alert(`Error: Logic engine missing for ${modKey}. Check your script tags.`);
@@ -209,11 +207,15 @@ function runAnalysis() {
         return;
     }
 
+    const isYard = (modKey === 'YARD');
+    const testQtys = isYard ? YARD_QUANTITIES : RIGID_QUANTITIES;
     const configsToTest = generateRigidConfigs(modKey);
 
     setTimeout(() => {
         configsToTest.forEach(config => {
-            TEST_QUANTITIES.forEach(q => {
+            const sqft = (config.inputs.w * config.inputs.h) / 144;
+
+            testQtys.forEach(q => {
                 let inputs = { ...config.inputs, qty: q };
                 
                 try {
@@ -229,17 +231,23 @@ function runAnalysis() {
                     const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
                     const profit = uRet - uCost;
                     
+                    // X-Axis Contextual Logic:
+                    // If Yard Sign, plot Quantity. If Anything Else, plot SqFt.
+                    const xAxisValue = isYard ? q : sqft;
+
                     scatterData.push({
-                        x: q,
+                        x: xAxisValue,
                         y_margin: margin,
                         y_profit: profit,
                         label: config.label,
                         retail: uRet,
-                        cost: uCost
+                        cost: uCost,
+                        qty: q,
+                        sqft: sqft
                     });
 
                 } catch (e) {
-                    // Skip errors
+                    // Skip errors silently
                 }
             });
         });
@@ -251,29 +259,28 @@ function runAnalysis() {
 }
 
 function getPointColor(marginPct) {
-    if (marginPct < 0) return 'rgba(220, 38, 38, 0.7)'; // Red 600
-    if (marginPct < 50) return 'rgba(248, 113, 113, 0.7)'; // Red 400
-    if (marginPct < 65) return 'rgba(250, 204, 21, 0.7)'; // Yellow 400
-    if (marginPct < 75) return 'rgba(74, 222, 128, 0.7)'; // Green 400
-    return 'rgba(22, 163, 74, 0.7)'; // Green 600
+    if (marginPct < 0) return 'rgba(220, 38, 38, 0.7)'; 
+    if (marginPct < 50) return 'rgba(248, 113, 113, 0.7)'; 
+    if (marginPct < 65) return 'rgba(250, 204, 21, 0.7)'; 
+    if (marginPct < 75) return 'rgba(74, 222, 128, 0.7)'; 
+    return 'rgba(22, 163, 74, 0.7)'; 
 }
 
 function renderChart() {
     const ctx = document.getElementById('analyticsChart').getContext('2d');
     const isMargin = currentViewMode === 'margin';
+    const modKey = document.getElementById('sim-module').value;
+    const isYard = (modKey === 'YARD');
 
-    // Format data for Chart.js
     const chartPoints = scatterData.map(d => ({
         x: d.x,
         y: isMargin ? d.y_margin : d.y_profit,
-        raw: d // Keep raw data for tooltip
+        raw: d 
     }));
 
     const pointColors = chartPoints.map(d => getPointColor(d.raw.y_margin));
 
-    if (profitChart) {
-        profitChart.destroy();
-    }
+    if (profitChart) profitChart.destroy();
 
     profitChart = new Chart(ctx, {
         type: 'scatter',
@@ -284,8 +291,8 @@ function renderChart() {
                 backgroundColor: pointColors,
                 borderColor: 'rgba(255,255,255,0.5)',
                 borderWidth: 1,
-                pointRadius: 5,
-                pointHoverRadius: 8
+                pointRadius: 6,
+                pointHoverRadius: 9
             }]
         },
         options: {
@@ -293,8 +300,12 @@ function renderChart() {
             maintainAspectRatio: false,
             scales: {
                 x: {
-                    type: 'logarithmic', // Log scale spreads out the 1 to 500 quantities beautifully
-                    title: { display: true, text: 'Quantity', font: { weight: 'bold' } },
+                    type: isYard ? 'logarithmic' : 'linear',
+                    title: { 
+                        display: true, 
+                        text: isYard ? 'Order Quantity (Log Scale)' : 'Square Footage per Unit', 
+                        font: { weight: 'bold' } 
+                    },
                     ticks: { callback: function(value) { return Number(value.toString()); } }
                 },
                 y: {
@@ -311,10 +322,10 @@ function renderChart() {
                             const raw = context.raw.raw;
                             return [
                                 `${raw.label}`,
-                                `Qty: ${raw.x}`,
+                                `Quantity: ${raw.qty} | Area: ${raw.sqft.toFixed(2)} sqft`,
                                 `Margin: ${raw.y_margin.toFixed(1)}%`,
                                 `Profit: $${raw.y_profit.toFixed(2)}/ea`,
-                                `Ret: $${raw.retail.toFixed(2)} | Cost: $${raw.cost.toFixed(2)}`
+                                `Retail: $${raw.retail.toFixed(2)} | Cost: $${raw.cost.toFixed(2)}`
                             ];
                         }
                     }
@@ -337,11 +348,11 @@ function generateInsights() {
 
     document.getElementById('insights-panel').classList.remove('hidden');
     
-    document.getElementById('insight-best').innerText = `${bestPoint.label} (Qty ${bestPoint.x})`;
-    document.getElementById('insight-best-sub').innerText = `${bestPoint.y_margin.toFixed(1)}% Margin | $${bestPoint.y_profit.toFixed(2)} Profit/Ea`;
+    document.getElementById('insight-best').innerText = `${bestPoint.label}`;
+    document.getElementById('insight-best-sub').innerText = `Qty ${bestPoint.qty} | ${bestPoint.y_margin.toFixed(1)}% Margin | $${bestPoint.y_profit.toFixed(2)} Profit`;
     
-    document.getElementById('insight-worst').innerText = `${worstPoint.label} (Qty ${worstPoint.x})`;
-    document.getElementById('insight-worst-sub').innerText = `${worstPoint.y_margin.toFixed(1)}% Margin | $${worstPoint.y_profit.toFixed(2)} Profit/Ea`;
+    document.getElementById('insight-worst').innerText = `${worstPoint.label}`;
+    document.getElementById('insight-worst-sub').innerText = `Qty ${worstPoint.qty} | ${worstPoint.y_margin.toFixed(1)}% Margin | $${worstPoint.y_profit.toFixed(2)} Profit`;
     
     document.getElementById('insight-count').innerText = scatterData.length.toLocaleString();
 }
