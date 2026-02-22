@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Scatter Analytics v2.2</title>
+<title>Profit Scatter Analytics v2.3</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="signos-core.js"></script>
@@ -12,11 +12,11 @@
 <script src="logic_acm.js"></script>
 <script src="logic_coro.js"></script>
 <script src="logic_foam.js"></script>
+<script src="logic_pvc.js"></script>
+<script src="logic_banner.js"></script>
 <script src="logic_decal.js"></script>
 <script src="logic_cut.js"></script>
 <script src="logic_wrap.js"></script>
-<script src="logic_banner.js"></script>
-<script src="logic_pvc.js"></script>
 
 <style type="text/tailwindcss">
 .seg-btn { @apply flex-1 py-1.5 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center; }
@@ -28,33 +28,43 @@
 
 <div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white m-4 rounded-xl shadow-2xl border border-gray-300 overflow-hidden">
     
-    <div class="bg-gray-900 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 z-40">
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner">
+    <div class="bg-gray-900 px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 z-40">
+        
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-full sm:w-auto">
                 <span class="text-[10px] font-bold text-gray-400 uppercase ml-2 tracking-widest">Product:</span>
-                <select id="sim-module" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition" onchange="loadModuleData()">
+                <select id="sim-module" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition w-full sm:w-auto" onchange="populatePresets()">
                     <option value="CORO">Custom Coroplast</option>
                     <option value="ACM">ACM Signs</option>
                     <option value="PVC">PVC Signs</option>
                     <option value="FOAM">Foam Core</option>
                     <option value="YARD">Yard Signs</option>
+                    <option value="BANNERS">Vinyl Banners</option>
+                    <option value="DECALS">Decals & Stickers</option>
                 </select>
             </div>
-            <div id="loader" class="hidden items-center gap-2 text-yellow-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
+
+            <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-full sm:w-auto">
+                <span class="text-[10px] font-bold text-gray-400 uppercase ml-2 tracking-widest">View:</span>
+                <select id="sim-preset" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition w-full sm:w-auto" onchange="loadModuleData()">
+                    </select>
+            </div>
+
+            <div id="loader" class="hidden items-center gap-2 text-yellow-400 text-[10px] font-bold uppercase tracking-widest animate-pulse ml-2">
                 <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                Processing Loop...
+                Processing...
             </div>
         </div>
 
-        <div class="flex items-center gap-3">
-            <div class="relative flex bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-full sm:w-60 shrink-0 overflow-hidden">
+        <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+            <div class="relative flex bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner w-48 shrink-0 overflow-hidden">
                 <div id="slider-pill" class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded shadow border border-slate-200/50 transition-transform duration-300 ease-out z-0 translate-x-0"></div>
                 <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
-                <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Unit Profit $</div>
+                <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Profit $</div>
             </div>
             
-            <button onclick="runAnalysis()" id="btn-run" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded shadow transition text-[10px] uppercase tracking-widest">
-                Run Analysis
+            <button onclick="runAnalysis()" id="btn-run" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded shadow transition text-[10px] uppercase tracking-widest shrink-0">
+                Run Engine
             </button>
         </div>
     </div>
@@ -62,18 +72,18 @@
     <div id="insights-panel" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-gray-200 shrink-0 z-20">
         <div class="bg-white p-3 rounded-lg shadow-sm border border-green-200 flex flex-col justify-center">
             <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Highest Margin Sweet Spot</span>
-            <div id="insight-best" class="text-sm font-black text-green-700 leading-tight">--</div>
-            <div id="insight-best-sub" class="text-xs text-gray-500 mt-1">--</div>
+            <div id="insight-best" class="text-sm font-black text-green-700 leading-tight truncate">--</div>
+            <div id="insight-best-sub" class="text-xs text-gray-500 mt-1 truncate">--</div>
         </div>
         <div class="bg-white p-3 rounded-lg shadow-sm border border-red-200 flex flex-col justify-center">
             <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Danger Zone (Lowest Margin)</span>
-            <div id="insight-worst" class="text-sm font-black text-red-600 leading-tight">--</div>
-            <div id="insight-worst-sub" class="text-xs text-gray-500 mt-1">--</div>
+            <div id="insight-worst" class="text-sm font-black text-red-600 leading-tight truncate">--</div>
+            <div id="insight-worst-sub" class="text-xs text-gray-500 mt-1 truncate">--</div>
         </div>
         <div class="bg-white p-3 rounded-lg shadow-sm border border-blue-200 flex flex-col justify-center">
             <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Data Points Analyzed</span>
-            <div id="insight-count" class="text-sm font-black text-blue-600 leading-tight">--</div>
-            <div id="insight-count-sub" class="text-xs text-gray-500 mt-1">Simulations generated</div>
+            <div id="insight-count" class="text-sm font-black text-blue-600 leading-tight truncate">--</div>
+            <div id="insight-count-sub" class="text-xs text-gray-500 mt-1 truncate">Simulations generated</div>
         </div>
     </div>
 
@@ -92,38 +102,56 @@ let currentViewMode = 'margin';
 let scatterData = []; 
 let profitChart = null;
 
-const STANDARD_DIMS = [12, 18, 24, 36, 48, 72, 96];
+// ==============================================
+// CONFIGURATION GENERATORS
+// ==============================================
 
-function generateRigidConfigs(modKey) {
+function generateYardConfigs(presetKey) {
     let configs = [];
-    
-    if (modKey === 'YARD') {
-        [1, 2].forEach(sides => {
-            [false, true].forEach(stakes => {
-                configs.push({
-                    label: `24x18 ${sides}S ${stakes ? 'w/ Stakes' : 'No Stakes'}`,
-                    inputs: { w: 24, h: 18, sides: sides, hasStakes: stakes }
-                });
+    let sides = [1, 2];
+    if(presetKey === 'SS') sides = [1];
+    if(presetKey === 'DS') sides = [2];
+
+    sides.forEach(s => {
+        [false, true].forEach(stakes => {
+            configs.push({
+                label: `24x18 ${s}S ${stakes ? 'w/ Stakes' : 'No Stakes'}`,
+                inputs: { w: 24, h: 18, sides: s, hasStakes: stakes }
             });
         });
-        return configs;
+    });
+    return configs;
+}
+
+function generateRigidConfigs(modKey, presetKey) {
+    let configs = [];
+    let thicknesses = [];
+    let sides = presetKey.includes('SS') ? [1] : (presetKey.includes('DS') ? [2] : [1, 2]);
+    let sizes = [];
+
+    // Filter Sizes based on Preset
+    if (presetKey.includes('MATRIX')) {
+        const dims = [12, 18, 24, 36, 48, 72, 96];
+        dims.forEach(w => {
+            dims.forEach(h => {
+                if (w >= h && w <= 96 && h <= 48) sizes.push([w,h]);
+            });
+        });
+    } else {
+        sizes = [[18,12], [24,18], [36,24], [96,48]]; // Standard Walk-in Sizes
     }
 
-    let thicknesses = [];
-    if (modKey === 'CORO') thicknesses = ['4mm', '10mm'];
-    if (modKey === 'ACM' || modKey === 'PVC') thicknesses = ['3mm', '6mm'];
+    // Filter Thickness based on Product & Preset
+    if (modKey === 'CORO') thicknesses = presetKey.includes('4MM') ? ['4mm'] : (presetKey.includes('10MM') ? ['10mm'] : ['4mm', '10mm']);
+    if (modKey === 'ACM' || modKey === 'PVC') thicknesses = presetKey.includes('3MM') ? ['3mm'] : (presetKey.includes('6MM') ? ['6mm'] : ['3mm', '6mm']);
     if (modKey === 'FOAM') thicknesses = ['3/16"'];
 
-    STANDARD_DIMS.forEach(w => {
-        STANDARD_DIMS.forEach(h => {
-            if (w < h || w > 96 || h > 48) return; 
-
-            thicknesses.forEach(th => {
-                [1, 2].forEach(sides => {
-                    configs.push({
-                        label: `${w}x${h} ${th} ${sides === 1 ? 'Single' : 'Double'} Sided`,
-                        inputs: { w: w, h: h, thickness: th, sides: sides, shape: 'Rectangle', rounded: false, files: 1, incDesign: false, setupPerFile: false }
-                    });
+    sizes.forEach(sz => {
+        thicknesses.forEach(th => {
+            sides.forEach(sd => {
+                configs.push({
+                    label: `${sz[0]}x${sz[1]} ${th} ${sd}S`,
+                    inputs: { w: sz[0], h: sz[1], thickness: th, sides: sd, shape: 'Rectangle', rounded: false, files: 1, incDesign: false, setupPerFile: false }
                 });
             });
         });
@@ -131,18 +159,132 @@ function generateRigidConfigs(modKey) {
     return configs;
 }
 
+function generateBannerConfigs(presetKey) {
+    let configs = [];
+    let materials = ['13oz', '18oz'];
+    let sizes = [[48,24], [72,36], [96,48], [120,48]]; // 2x4, 3x6, 4x8, 4x10
+
+    if (presetKey === '13OZ') materials = ['13oz'];
+    if (presetKey === '18OZ') materials = ['18oz'];
+
+    sizes.forEach(sz => {
+        materials.forEach(mat => {
+            let sidesArr = (mat === '18oz') ? [1, 2] : [1];
+            sidesArr.forEach(sd => {
+               configs.push({
+                   label: `${sz[0]/12}x${sz[1]/12} ${mat} ${sd}S`,
+                   inputs: { w: sz[0], h: sz[1], material: mat, sides: sd, polePockets: false, windSlits: false, files: 1 }
+               });
+            });
+        });
+    });
+    return configs;
+}
+
+function generateDecalConfigs(presetKey) {
+    let configs = [];
+    let sizes = [[4,4], [12,12], [24,24]];
+    let materials = ['Calendered', 'Cast'];
+    
+    if (presetKey === 'CAL') materials = ['Calendered'];
+    if (presetKey === 'CAST') materials = ['Cast'];
+
+    sizes.forEach(sz => {
+        materials.forEach(mat => {
+            configs.push({
+                label: `${sz[0]}x${sz[1]} ${mat} Decal`,
+                inputs: { w: sz[0], h: sz[1], material: mat, shape: 'Complex', masking: false, files: 1 }
+            });
+        });
+    });
+    return configs;
+}
+
+// ==============================================
+// MODULE MATRIX DICTIONARY
+// ==============================================
+
 const MODULE_MATRICES = {
-    'YARD': { tab: 'PROD_Yard_Signs', engine: typeof calculateYardSign !== 'undefined' ? calculateYardSign : null },
-    'CORO': { tab: 'PROD_Coroplast_Signs', engine: typeof calculateCoro !== 'undefined' ? calculateCoro : null },
-    'ACM':  { tab: 'PROD_ACM_Signs', engine: typeof calculateACM !== 'undefined' ? calculateACM : null },
-    'PVC':  { tab: 'PROD_PVC_Signs', engine: typeof calculatePVC !== 'undefined' ? calculatePVC : null },
-    'FOAM': { tab: 'PROD_Foam_Signs', engine: typeof calculateFoam !== 'undefined' ? calculateFoam : null }
+    'YARD': { 
+        tab: 'PROD_Yard_Signs', engine: typeof calculateYardSign !== 'undefined' ? calculateYardSign : null, xAxis: 'qty',
+        presets: {
+            'ALL': { label: 'All Yard Configurations', gen: (k) => generateYardConfigs(k) },
+            'SS': { label: 'Single Sided Only', gen: (k) => generateYardConfigs(k) },
+            'DS': { label: 'Double Sided Only', gen: (k) => generateYardConfigs(k) }
+        }
+    },
+    'CORO': { 
+        tab: 'PROD_Coroplast_Signs', engine: typeof calculateCoro !== 'undefined' ? calculateCoro : null, xAxis: 'sqft',
+        presets: {
+            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('CORO', k) },
+            'MATRIX': { label: 'Full Area Matrix (All Combos)', gen: (k) => generateRigidConfigs('CORO', k) },
+            '4MM': { label: '4mm Only (Standard Sizes)', gen: (k) => generateRigidConfigs('CORO', k) },
+            '10MM': { label: '10mm Only (Standard Sizes)', gen: (k) => generateRigidConfigs('CORO', k) }
+        }
+    },
+    'ACM': { 
+        tab: 'PROD_ACM_Signs', engine: typeof calculateACM !== 'undefined' ? calculateACM : null, xAxis: 'sqft',
+        presets: {
+            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('ACM', k) },
+            'MATRIX': { label: 'Full Area Matrix (All Combos)', gen: (k) => generateRigidConfigs('ACM', k) },
+            '3MM': { label: '3mm Only', gen: (k) => generateRigidConfigs('ACM', k) },
+            '6MM': { label: '6mm Only', gen: (k) => generateRigidConfigs('ACM', k) }
+        }
+    },
+    'PVC': { 
+        tab: 'PROD_PVC_Signs', engine: typeof calculatePVC !== 'undefined' ? calculatePVC : null, xAxis: 'sqft',
+        presets: {
+            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('PVC', k) },
+            'MATRIX': { label: 'Full Area Matrix', gen: (k) => generateRigidConfigs('PVC', k) }
+        }
+    },
+    'FOAM': { 
+        tab: 'PROD_Foam_Signs', engine: typeof calculateFoam !== 'undefined' ? calculateFoam : null, xAxis: 'sqft',
+        presets: {
+            'STD': { label: 'Standard Walk-In Sizes', gen: (k) => generateRigidConfigs('FOAM', k) },
+            'MATRIX': { label: 'Full Area Matrix', gen: (k) => generateRigidConfigs('FOAM', k) }
+        }
+    },
+    'BANNERS': {
+        tab: 'PROD_Vinyl_Banners', engine: typeof calculateBanner !== 'undefined' ? calculateBanner : null, xAxis: 'qty',
+        presets: {
+            'ALL': { label: 'Standard Sizes (All Media)', gen: (k) => generateBannerConfigs(k) },
+            '13OZ': { label: '13oz Standard Scrim', gen: (k) => generateBannerConfigs(k) },
+            '18OZ': { label: '18oz Heavy Duty', gen: (k) => generateBannerConfigs(k) }
+        }
+    },
+    'DECALS': {
+        tab: 'PROD_Decals', engine: typeof calculateDecal !== 'undefined' ? calculateDecal : null, xAxis: 'qty',
+        presets: {
+            'ALL': { label: 'Standard Decal Sizes', gen: (k) => generateDecalConfigs(k) },
+            'CAL': { label: 'Calendered (Standard) Only', gen: (k) => generateDecalConfigs(k) },
+            'CAST': { label: 'Cast (Premium) Only', gen: (k) => generateDecalConfigs(k) }
+        }
+    }
 };
 
 window.onload = function() {
-    if(typeof injectHeader === 'function') injectHeader("Profit Scatter Analytics", false);
-    loadModuleData(); 
+    // TRUE re-enables the Back/Menu button globally
+    if(typeof injectHeader === 'function') injectHeader("Profit Scatter Analytics", true);
+    populatePresets(); 
 };
+
+function populatePresets() {
+    const modKey = document.getElementById('sim-module').value;
+    const presetsObj = MODULE_MATRICES[modKey].presets;
+    const presetSelect = document.getElementById('sim-preset');
+    
+    presetSelect.innerHTML = '';
+    
+    Object.keys(presetsObj).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.innerText = presetsObj[key].label;
+        presetSelect.appendChild(opt);
+    });
+    
+    loadModuleData();
+}
 
 function setViewMode(mode) {
     currentViewMode = mode;
@@ -192,6 +334,7 @@ async function loadModuleData() {
 
 function runAnalysis() {
     const modKey = document.getElementById('sim-module').value;
+    const presetKey = document.getElementById('sim-preset').value;
     const matrixDef = MODULE_MATRICES[modKey];
     
     document.getElementById('loader').classList.replace('hidden', 'flex');
@@ -203,25 +346,24 @@ function runAnalysis() {
         return;
     }
 
-    const isYard = (modKey === 'YARD');
-    const configsToTest = generateRigidConfigs(modKey);
+    // Fire the specific generator for this product and preset
+    const configsToTest = matrixDef.presets[presetKey].gen(presetKey);
 
-    // ==========================================
-    // THE 1000-POINT NORMALIZER ENGINE
-    // ==========================================
     const TARGET_DATA_POINTS = 1000;
-    const pointsPerConfig = Math.ceil(TARGET_DATA_POINTS / configsToTest.length);
+    const pointsPerConfig = Math.max(1, Math.ceil(TARGET_DATA_POINTS / configsToTest.length));
     
     let testQtys = [];
-    if (isYard) {
-        // Spread the requested number of points out between Qty 1 and 1000
-        const step = 1000 / pointsPerConfig;
+    if (matrixDef.xAxis === 'qty') {
+        // Logarithmic Spread for Volume Products
+        const maxQty = 1000;
+        const step = maxQty / pointsPerConfig;
         for(let i = 0; i < pointsPerConfig; i++) {
             testQtys.push(Math.floor((i * step) + 1));
         }
     } else {
-        // Standard walk-in progression
-        for(let i = 1; i <= pointsPerConfig; i++) {
+        // Clean Vertical Clustering for Rigid Area Products
+        const maxQ = Math.min(pointsPerConfig, 15); 
+        for(let i = 1; i <= maxQ; i++) {
             testQtys.push(i);
         }
     }
@@ -246,7 +388,7 @@ function runAnalysis() {
                     const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
                     const profit = uRet - uCost;
                     
-                    const xAxisValue = isYard ? q : sqft;
+                    const xAxisValue = matrixDef.xAxis === 'qty' ? q : sqft;
 
                     scatterData.push({
                         x: xAxisValue,
@@ -260,7 +402,7 @@ function runAnalysis() {
                     });
 
                 } catch (e) {
-                    // Skip errors silently
+                    // Skip invalid calculations silently
                 }
             });
         });
@@ -283,7 +425,7 @@ function renderChart() {
     const ctx = document.getElementById('analyticsChart').getContext('2d');
     const isMargin = currentViewMode === 'margin';
     const modKey = document.getElementById('sim-module').value;
-    const isYard = (modKey === 'YARD');
+    const xAxisType = MODULE_MATRICES[modKey].xAxis;
 
     const chartPoints = scatterData.map(d => ({
         x: d.x,
@@ -313,10 +455,10 @@ function renderChart() {
             maintainAspectRatio: false,
             scales: {
                 x: {
-                    type: isYard ? 'logarithmic' : 'linear',
+                    type: xAxisType === 'qty' ? 'logarithmic' : 'linear',
                     title: { 
                         display: true, 
-                        text: isYard ? 'Order Quantity (Log Scale)' : 'Square Footage per Unit', 
+                        text: xAxisType === 'qty' ? 'Order Quantity (Log Scale)' : 'Square Footage per Unit', 
                         font: { weight: 'bold' } 
                     },
                     ticks: { callback: function(value) { return Number(value.toString()); } }
