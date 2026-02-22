@@ -1,472 +1,566 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing Simulator v2.0 (Responsive Plugin Architecture)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="signos-core.js"></script>
-  <script src="logic_yard.js"></script>
-  <script src="logic_acm.js"></script>
-  <script src="logic_coro.js"></script>
-  <script src="logic_foam.js"></script>
-  <script src="logic_decal.js"></script>
-  <script src="logic_cut.js"></script>
-  <script src="logic_wrap.js"></script>
-  <script src="logic_banner.js"></script>
-  <script src="logic_pvc.js"></script>
-  <script src="logic_acrylic.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing Simulator v3.0</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="signos-core.js"></script>
 
-  <style>
-    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
-    .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
+<!-- DUAL-TRACK LOGIC PLUGINS -->
+<script src="logic_yard.js"></script>
+<script src="logic_acm.js"></script>
+<script src="logic_coro.js"></script>
+<script src="logic_foam.js"></script>
+<script src="logic_decal.js"></script>
+<script src="logic_cut.js"></script>
+<script src="logic_wrap.js"></script>
+<script src="logic_banner.js"></script>
+<script src="logic_pvc.js"></script>
 
-    /* Smooth Accordion Transitions */
-    .panel-content { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin 0.3s ease-in-out; max-height: 600px; opacity: 1; overflow-x: auto; overflow-y: hidden; }
-    .panel-content.closed { max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; }
-    .chevron { transition: transform 0.3s ease-in-out; }
-    .chevron.closed { transform: rotate(-90deg); }
-  </style>
+<style>
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.toggle-checkbox:checked { right: 0; border-color: #2563EB; }
+.toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
+
+/* Custom Scrollbars */
+.custom-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f8fafc; }
+.custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scroll::-webkit-scrollbar-track { background: #f8fafc; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+/* Smooth Accordion Transitions */
+.panel-content { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin 0.3s ease-in-out; max-height: 800px; opacity: 1; overflow-y: auto; overflow-x: hidden; }
+.panel-content.closed { max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; }
+.chevron { transition: transform 0.3s ease-in-out; }
+.chevron.closed { transform: rotate(-90deg); }
+
+/* Segmented Control */
+.seg-btn { @apply flex-1 py-1 text-center text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors; }
+.seg-active { @apply bg-white text-gray-900 shadow rounded-md; }
+.seg-inactive { @apply text-gray-500 hover:text-gray-700; }
+</style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col font-sans overflow-auto p-2 md:p-0">
+<body class="bg-gray-200 h-screen flex flex-col font-sans overflow-hidden">
 
-<div id="main-card" class="flex-1 flex flex-col bg-white shadow-xl md:m-4 rounded-xl border border-gray-200">
+<!-- DYNAMIC HEADER INJECTED HERE -->
+<div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white md:m-4 md:rounded-xl shadow-2xl border border-gray-300 overflow-hidden">
 
-  <div class="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:grid md:grid-cols-12 gap-4 shrink-0 md:items-end z-20 relative rounded-t-xl">
-    <div class="w-full md:col-span-3">
-      <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Engine</label>
-      <select id="sim-module" class="w-full border border-gray-300 rounded p-2 text-sm font-bold bg-white focus:border-blue-500 outline-none" onchange="loadModuleData()">
-        <option value="YARD">Yard Signs (Coro)</option>
-        <option value="ACM">ACM Signs (Metal)</option>
-        <option value="CORO">Custom Coroplast</option>
-        <option value="FOAM">Foam Core</option>
-        <option value="DECAL">Decals & Stickers</option>
-        <option value="CUT">Cut Vinyl</option>
-        <option value="WRAP">Wraps & Walls</option>
-        <option value="BANNER">Vinyl Banners</option>
-        <option value="PVC">PVC Signs</option>
-        <option value="ACRYLIC">Acrylic Signs</option>
-      </select>
-    </div>
-
-    <div class="w-full md:col-span-6 flex gap-4">
-      <div class="flex-1 bg-gray-50 p-2 rounded border border-gray-200">
-        <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Simulation Range (Qty)</label>
-        <div class="flex flex-wrap items-center gap-2">
-          <input type="number" id="range-start" value="1" class="w-16 border rounded p-1 text-center text-sm font-bold" placeholder="Start">
-          <span class="text-gray-300 font-bold hidden sm:inline">-</span>
-          <input type="number" id="range-end" value="100" class="w-16 border rounded p-1 text-center text-sm font-bold" placeholder="End">
-          <span class="text-gray-400 text-[10px] uppercase font-bold sm:ml-2">Step:</span>
-          <input type="number" id="range-step" value="5" class="w-12 border rounded p-1 text-center text-sm font-bold">
+<!-- 1. COMMAND BAR (Top) -->
+<div class="bg-gray-900 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0 z-20">
+    <!-- Left: Module Select -->
+    <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700">
+            <span class="text-[10px] font-bold text-gray-400 uppercase ml-2 tracking-widest">Engine:</span>
+            <select id="sim-module" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition" onchange="loadModuleData()">
+                <option value="YARD">Yard Signs (Coro)</option>
+                <option value="ACM">ACM Signs (Metal)</option>
+                <option value="CORO">Custom Coroplast</option>
+                <option value="FOAM">Foam Core</option>
+                <option value="DECAL">Decals & Stickers</option>
+                <option value="CUT">Cut Vinyl</option>
+                <option value="WRAP">Wraps & Walls</option>
+                <option value="BANNER">Vinyl Banners</option>
+                <option value="PVC">PVC Signs</option>
+            </select>
         </div>
-      </div>
+        <div id="loader" class="hidden items-center gap-2 text-yellow-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Loading...
+        </div>
     </div>
 
-    <div class="w-full md:col-span-3 text-right flex flex-col gap-2">
-      <button onclick="runSimulation()" id="btn-run" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition w-full disabled:opacity-50 disabled:cursor-not-allowed text-xs tracking-wider">
-        RE-CALCULATE
-      </button>
-      <div class="flex gap-2">
-        <button onclick="resetDefaults()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 rounded transition text-[10px] uppercase tracking-wider">Reset Data</button>
-        <button onclick="exportData()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 rounded shadow transition text-[10px] uppercase tracking-wider">Export</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="bg-gray-50 border-b border-gray-200 px-4 md:px-6 py-3 shrink-0 relative z-10">
-    <div class="flex flex-wrap items-center gap-4 md:gap-6" id="config-container"></div>
-  </div>
-
-  <div class="bg-blue-50 border-b border-blue-100 px-4 md:px-6 py-3 shrink-0 shadow-inner relative z-10">
-    <div class="flex items-center justify-between cursor-pointer" onclick="togglePanel('retail-container', 'retail-icon')">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-        <h3 class="text-[9px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          Retail Drivers (Sandbox)
-        </h3>
-        <span class="text-[9px] text-blue-400 font-medium sm:ml-2">Market value and discount breaks.</span>
-      </div>
-      <svg id="retail-icon" class="chevron w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-    </div>
-    <div class="panel-content flex flex-wrap items-end gap-x-4 md:gap-x-6 gap-y-3 mt-2 pb-1" id="retail-container"></div>
-  </div>
-
-  <div class="bg-red-50 border-b border-red-100 px-4 md:px-6 py-3 shrink-0 shadow-inner relative z-10">
-    <div class="flex items-center justify-between cursor-pointer" onclick="togglePanel('cost-container', 'cost-icon')">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-        <h3 class="text-[9px] font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-          Backend Cost Drivers (Sandbox)
-        </h3>
-        <span class="text-[9px] text-red-400 font-medium sm:ml-2">Shop physics and hard material costs.</span>
-      </div>
-      <svg id="cost-icon" class="chevron w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-    </div>
-    <div class="panel-content flex flex-wrap items-end gap-x-4 md:gap-x-6 gap-y-3 mt-2 pb-1" id="cost-container"></div>
-  </div>
-
-  <div class="flex-1 p-4 md:p-6 relative bg-white flex flex-col min-h-[400px] md:min-h-[500px]">
-    <div class="chart-container flex-1 w-full relative">
-      <canvas id="priceChart"></canvas>
-    </div>
-    
-    <div id="receipt-panel" class="hidden absolute top-2 right-2 md:top-6 md:right-6 z-40 w-[calc(100%-1rem)] sm:w-96 max-w-[95%] sm:max-w-[90%] bg-white/95 backdrop-blur flex flex-col rounded-xl border border-gray-300 p-4 md:p-5 shadow-2xl overflow-y-auto max-h-[85%] transition-all">
-      <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 shrink-0">
-        <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">
-          Math Receipt (Qty: <span id="rec-qty" class="text-blue-600">--</span>)
-        </h3>
-        <button onclick="document.getElementById('receipt-panel').classList.add('hidden')" class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none transition-colors p-1">✕</button>
-      </div>
-      <div class="flex flex-col space-y-6" id="rec-content"></div>
+    <!-- Center: Range Controls -->
+    <div class="flex items-center gap-2 bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-700">
+        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Range</span>
+        <input type="number" id="range-start" value="1" class="w-12 bg-gray-900 border border-gray-600 rounded px-1 py-0.5 text-center text-xs font-bold text-white outline-none">
+        <span class="text-gray-500 font-bold">-</span>
+        <input type="number" id="range-end" value="100" class="w-12 bg-gray-900 border border-gray-600 rounded px-1 py-0.5 text-center text-xs font-bold text-white outline-none">
+        <span class="text-[9px] font-bold text-gray-500 uppercase ml-2">Step</span>
+        <input type="number" id="range-step" value="5" class="w-10 bg-gray-900 border border-gray-600 rounded px-1 py-0.5 text-center text-xs font-bold text-white outline-none">
     </div>
 
-    <div id="loader" class="absolute inset-0 flex items-center justify-center bg-white/80 z-50 hidden">
-      <div class="text-center">
-        <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-        <span class="text-xs font-bold text-gray-400 tracking-widest">CRUNCHING DATA...</span>
-      </div>
+    <!-- Right: Actions -->
+    <div class="flex gap-2">
+        <button onclick="resetDefaults()" class="bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold px-3 py-1.5 rounded transition text-[9px] uppercase tracking-widest border border-gray-600">Reset</button>
+        <button onclick="exportData()" class="bg-gray-700 hover:bg-gray-600 text-green-400 font-bold px-3 py-1.5 rounded transition text-[9px] uppercase tracking-widest border border-gray-600 flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Export
+        </button>
+        <button onclick="runSimulation()" id="btn-run" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded shadow transition text-[10px] uppercase tracking-widest ml-1">Run Sim</button>
     </div>
-  </div>
+</div>
 
-  <div class="bg-gray-900 text-white px-4 md:px-6 py-3 flex flex-col sm:flex-row justify-between text-[10px] font-mono shrink-0 items-center rounded-b-xl gap-2 sm:gap-0">
-    <div>
-      <span class="text-gray-500">SOURCE:</span>
-      <span id="data-source" class="text-blue-400 font-bold ml-2">---</span>
+<!-- 2. SPLIT LAYOUT -->
+<div class="flex-1 flex flex-col md:flex-row min-h-0 bg-gray-100">
+
+    <!-- LEFT COLUMN: Vis & Receipt (Sticky) -->
+    <div class="flex-1 flex flex-col min-w-0 bg-white relative z-0">
+        
+        <!-- Graph Header & Mode Toggle -->
+        <div class="bg-gray-50 border-b border-gray-200 px-4 py-2 flex justify-between items-center shrink-0">
+            <h2 class="text-xs font-black text-gray-700 uppercase tracking-widest flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span> Profitability Curve
+            </h2>
+            <!-- Segmented Control -->
+            <div class="flex bg-gray-200 p-0.5 rounded-lg border border-gray-300 w-48">
+                <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
+                <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Net Profit $</div>
+            </div>
+        </div>
+
+        <!-- Chart Area -->
+        <div class="flex-1 relative p-4 min-h-[300px]">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <!-- Legend Bar -->
+        <div class="bg-white border-t border-b border-gray-200 px-4 py-2 flex justify-center gap-6 text-[9px] font-bold text-gray-500 uppercase tracking-widest shrink-0 shadow-sm z-10 relative">
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-blue-500 rounded-sm"></span> Unit Retail</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-500 rounded-sm border border-red-300 border-dashed"></span> Unit Cost</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-yellow-400 rounded-sm opacity-60"></span> <span id="lbl-legend-profit">Margin %</span></div>
+        </div>
+
+        <!-- Persistent Math Receipt Area -->
+        <div class="h-1/3 min-h-[250px] bg-slate-50 flex flex-col shrink-0">
+            <div class="bg-slate-200 border-b border-slate-300 px-4 py-1.5 flex justify-between items-center shadow-inner shrink-0">
+                <span class="text-[10px] font-black text-slate-700 uppercase tracking-widest">Math Receipt: <span class="text-blue-600">Qty <span id="rec-qty">--</span></span></span>
+                <span class="text-[9px] text-slate-500 italic font-medium">Click chart bars to inspect qty</span>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 md:p-6" id="rec-content">
+                <div class="text-center text-gray-400 text-xs mt-10 font-bold uppercase tracking-widest opacity-50">Run simulation to view math</div>
+            </div>
+        </div>
     </div>
-    <div class="flex flex-wrap justify-center gap-4 md:gap-6">
-      <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-600 rounded-sm"></span> RETAIL UNIT</div>
-      <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm border border-red-400 border-dashed"></span> COST UNIT</div>
-      <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-400 rounded-sm opacity-50"></span> MARGIN %</div>
+
+    <!-- RIGHT COLUMN: Sandbox Variables (Scrollable) -->
+    <div class="w-full md:w-96 lg:w-[420px] bg-white border-l border-gray-300 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.1)] relative">
+        <div class="flex-1 overflow-y-auto custom-scroll">
+            
+            <!-- A. Config Panel (Gray) -->
+            <div class="bg-gray-50 border-b border-gray-200">
+                <div class="px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition" onclick="togglePanel('config-container', 'cfg-icon')">
+                    <h3 class="text-[10px] font-black text-gray-700 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        Product Configuration
+                    </h3>
+                    <svg id="cfg-icon" class="chevron w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="panel-content px-5 pb-4" id="config-container"></div>
+            </div>
+
+            <!-- B. Retail Sandbox (Blue) -->
+            <div class="bg-blue-50/50 border-b border-blue-100">
+                <div class="px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-blue-50 transition" onclick="togglePanel('retail-container', 'ret-icon')">
+                    <div class="flex flex-col">
+                        <h3 class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Market Drivers</h3>
+                        <span class="text-[9px] text-blue-500 font-medium">Area curves, markups, discounts.</span>
+                    </div>
+                    <svg id="ret-icon" class="chevron w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="panel-content px-5 pb-4" id="retail-container"></div>
+            </div>
+
+            <!-- C. Cost Sandbox (Red) -->
+            <div class="bg-red-50/50">
+                <div class="px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-red-50 transition" onclick="togglePanel('cost-container', 'cost-icon')">
+                    <div class="flex flex-col">
+                        <h3 class="text-[10px] font-black text-red-800 uppercase tracking-widest">Physics Drivers</h3>
+                        <span class="text-[9px] text-red-500 font-medium">Substrate, ink, labor speeds, prep.</span>
+                    </div>
+                    <svg id="cost-icon" class="chevron w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="panel-content px-5 pb-4" id="cost-container"></div>
+            </div>
+
+        </div>
     </div>
-  </div>
+</div>
 
 </div>
 
 <script>
-  let chartInstance = null;
-  let currentBackend = {};
-  let simulationData = [];
+let chartInstance = null;
+let currentBackend = {};
+let simulationData = [];
+let currentViewMode = 'margin'; // 'margin' or 'profit'
 
-  window.onload = function() {
+window.onload = function() {
     if(typeof injectHeader === 'function') injectHeader("Pricing Simulator");
     loadModuleData();
-  };
+};
 
-  // --- UI INTERACTION ---
-  function togglePanel(panelId, iconId) {
+// --- UI INTERACTION ---
+function togglePanel(panelId, iconId) {
     document.getElementById(panelId).classList.toggle('closed');
     document.getElementById(iconId).classList.toggle('closed');
-  }
+}
 
-  // --- GET ACTIVE CONFIG ---
-  function getActiveConfig() {
+function setViewMode(mode) {
+    currentViewMode = mode;
+    
+    const btnMargin = document.getElementById('btn-mode-margin');
+    const btnProfit = document.getElementById('btn-mode-profit');
+    
+    if (mode === 'margin') {
+        btnMargin.className = "seg-btn seg-active";
+        btnProfit.className = "seg-btn seg-inactive";
+        document.getElementById('lbl-legend-profit').innerText = "Margin %";
+    } else {
+        btnProfit.className = "seg-btn seg-active";
+        btnMargin.className = "seg-btn seg-inactive";
+        document.getElementById('lbl-legend-profit').innerText = "Net Profit $";
+    }
+    
+    if (simulationData.length > 0) renderChart();
+}
+
+// --- GET ACTIVE CONFIG ---
+function getActiveConfig() {
     const modKey = document.getElementById('sim-module').value;
     return window[modKey + '_CONFIG'];
-  }
+}
 
-  // --- LOAD DATA & RENDER UI ---
-  async function loadModuleData() {
+// --- LOAD DATA & RENDER UI ---
+async function loadModuleData() {
     const config = getActiveConfig();
     if (!config) { alert("Logic configuration missing for this module."); return; }
-    
-    const btn = document.getElementById('btn-run');
-    document.getElementById('receipt-panel').classList.add('hidden'); 
 
-    btn.innerText = "LOADING...";
-    btn.disabled = true;
+    const btn = document.getElementById('btn-run');
+    const loader = document.getElementById('loader');
+    
+    btn.classList.add('hidden');
+    loader.classList.replace('hidden', 'flex');
 
     renderControls(config.controls);
     document.getElementById('cost-container').innerHTML = `<span class="text-xs text-red-300 font-bold animate-pulse">Fetching backend data...</span>`;
     document.getElementById('retail-container').innerHTML = `<span class="text-xs text-blue-300 font-bold animate-pulse">Fetching backend data...</span>`;
 
     try {
-      const u = sessionStorage.getItem('signos_user') || 'Admin';
-      const res = await fetch(`${SCRIPT_URL}?req=view_module&tab=${config.tab}&user=${u}`);
-      const data = await res.json();
+        const u = sessionStorage.getItem('signos_user') || 'Admin';
+        const res = await fetch(`${SCRIPT_URL}?req=view_module&tab=${config.tab}&user=${u}`);
+        const data = await res.json();
 
-      if(data.error) throw new Error(data.error);
-      currentBackend = data;
+        if(data.error) throw new Error(data.error);
+        currentBackend = data;
 
-      document.getElementById('data-source').innerText = `${config.tab}`;
-      
-      renderCostInputs(config.costs, data);
-      renderRetailInputs(config.retails, data);
-      
-      btn.innerText = "RUN SIMULATION";
-      btn.disabled = false;
-      
-      // STATUS UPDATE
-      const statusText = document.getElementById("status-text");
-      const statusDot = document.getElementById("status-dot");
-      if(statusText) {
-        statusText.innerText = "ONLINE";
-        statusText.className = "font-bold text-green-500";
-        if(statusDot) {
-          statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-          statusDot.classList.remove("animate-pulse");
-        }
-      }
+        renderCostInputs(config.costs, data);
+        renderRetailInputs(config.retails, data);
 
-      runSimulation();
+        btn.classList.remove('hidden');
+        loader.classList.replace('flex', 'hidden');
+
+        runSimulation();
 
     } catch(e) {
-      alert("Load Error: " + e.message);
-      btn.innerText = "ERROR";
+        alert("Load Error: " + e.message);
+        loader.classList.replace('flex', 'hidden');
+        btn.classList.remove('hidden');
+        btn.innerText = "ERROR";
     }
-  }
+}
 
-  function resetDefaults() {
+function resetDefaults() {
     const config = getActiveConfig();
     renderControls(config.controls);
     renderCostInputs(config.costs, currentBackend);
     renderRetailInputs(config.retails, currentBackend);
     runSimulation();
-  }
+}
 
-  function renderControls(controls) {
+// --- DOM RENDERERS ---
+function renderControls(controls) {
     const container = document.getElementById('config-container');
-    container.innerHTML = "";
+    container.innerHTML = `<div class="grid grid-cols-2 gap-4 w-full pt-2"></div>`;
+    const grid = container.firstChild;
+    
     controls.forEach(c => {
-      const wrap = document.createElement('div');
-      if(c.type === 'number') {
-        wrap.innerHTML = `
-          <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>
-          <input type="number" id="cfg-${c.id}" value="${c.def}" class="w-16 border border-gray-300 p-1 rounded text-sm font-bold text-center text-gray-700 focus:border-gray-500 outline-none" onchange="runSimulation()">
-        `;
-      } else if (c.type === 'select') {
-        const opts = c.opts.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
-        wrap.innerHTML = `
-          <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>
-          <select id="cfg-${c.id}" class="border border-gray-300 p-1 rounded text-sm font-bold bg-white w-28 text-gray-700 focus:border-gray-500 outline-none" onchange="runSimulation()">${opts}</select>
-        `;
-      } else if (c.type === 'toggle') {
-        const checked = c.def ? 'checked' : '';
-        wrap.innerHTML = `
-          <div class="flex items-center gap-2 mt-4">
-            <div class="relative inline-block w-8 align-middle select-none">
-              <input type="checkbox" id="cfg-${c.id}" ${checked} class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="runSimulation()"/>
-              <label for="cfg-${c.id}" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
-            </div>
-            <span class="text-[10px] font-bold text-gray-600 uppercase">${c.label}</span>
-          </div>
-        `;
-      }
-      container.appendChild(wrap);
+        const wrap = document.createElement('div');
+        if(c.type === 'number') {
+            wrap.innerHTML = `<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label><input type="number" id="cfg-${c.id}" value="${c.def}" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold text-gray-700 bg-white outline-none" onchange="runSimulation()">`;
+        } else if (c.type === 'select') {
+            const opts = c.opts.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
+            wrap.className = "col-span-2";
+            wrap.innerHTML = `<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">${c.label}</label><select id="cfg-${c.id}" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white text-gray-700 outline-none" onchange="runSimulation()">${opts}</select>`;
+        } else if (c.type === 'toggle') {
+            const checked = c.def ? 'checked' : '';
+            wrap.className = "col-span-2 flex items-center justify-between bg-white border border-gray-200 p-2 rounded";
+            wrap.innerHTML = `<span class="text-[10px] font-bold text-gray-600 uppercase">${c.label}</span><div class="relative inline-block w-8 align-middle select-none"><input type="checkbox" id="cfg-${c.id}" ${checked} class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer border-gray-300" onchange="runSimulation()"/><label for="cfg-${c.id}" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label></div>`;
+        }
+        grid.appendChild(wrap);
     });
-  }
+}
 
-  function renderCostInputs(costs, data) {
+function renderCostInputs(costs, data) {
     const container = document.getElementById('cost-container');
-    container.innerHTML = "";
+    container.innerHTML = `<div class="grid grid-cols-2 gap-3 w-full pt-2"></div>`;
+    const grid = container.firstChild;
     if(!costs) return;
+    
+    let currentHeading = "";
     costs.forEach(c => {
-      let def = 0;
-      if(c.key.includes("Attendance")) def = 1.0;
-      const val = parseFloat(data[c.key]) || def;
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <label class="block text-[9px] font-bold text-red-700 uppercase mb-1 truncate" title="${c.key}">${c.label}</label>
-        <input type="number" id="cost-${c.key}" value="${val}" step="${c.key.includes('Ratio') ? '0.1' : '0.01'}"
-          class="w-24 border border-red-200 bg-red-50 p-1 rounded text-sm font-bold text-center text-red-900 focus:border-red-500 focus:bg-white outline-none transition"
-          onchange="runSimulation()">
-      `;
-      container.appendChild(div);
+        if(c.heading && c.heading !== currentHeading) {
+            currentHeading = c.heading;
+            const h = document.createElement('div');
+            h.className = "col-span-2 text-[9px] font-black text-red-500 uppercase border-b border-red-100 pb-1 mt-2 tracking-widest";
+            h.innerText = currentHeading;
+            grid.appendChild(h);
+        }
+        
+        let def = 0;
+        if(c.key.includes("Attendance")) def = 1.0;
+        const val = parseFloat(data[c.key]) || def;
+        const div = document.createElement('div');
+        div.innerHTML = `<label class="block text-[9px] font-bold text-red-700 uppercase mb-1 truncate" title="${c.key}">${c.label}</label><input type="number" id="cost-${c.key}" value="${val}" step="${c.key.includes('Ratio') ? '0.1' : '0.01'}" class="w-full border border-red-200 bg-white p-1.5 rounded text-xs font-bold text-red-900 focus:border-red-500 outline-none transition shadow-inner" onchange="runSimulation()">`;
+        grid.appendChild(div);
     });
-  }
+}
 
-  function renderRetailInputs(retails, data) {
+function renderRetailInputs(retails, data) {
     const container = document.getElementById('retail-container');
-    container.innerHTML = "";
+    container.innerHTML = `<div class="grid grid-cols-2 gap-3 w-full pt-2"></div>`;
+    const grid = container.firstChild;
     if(!retails) return;
     
+    let currentHeading = "";
     retails.forEach(r => {
-      if (r.heading) {
-        const headWrap = document.createElement('div');
-        headWrap.className = "w-full text-[10px] font-black text-blue-900 uppercase mt-1 mb-[-4px] border-b border-blue-200 pb-1";
-        headWrap.innerText = r.heading;
-        container.appendChild(headWrap);
-      }
-
-      const val = parseFloat(data[r.key]) || 0;
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <label class="block text-[9px] font-bold text-blue-800 uppercase mb-1 truncate" title="${r.key}">${r.label}</label>
-        <input type="number" id="ret-${r.key}" value="${val}" step="0.01"
-          class="w-24 border border-blue-200 bg-blue-50 p-1 rounded text-sm font-bold text-center text-blue-900 focus:border-blue-500 focus:bg-white outline-none transition"
-          onchange="runSimulation()">
-      `;
-      container.appendChild(div);
+        if(r.heading && r.heading !== currentHeading) {
+            currentHeading = r.heading;
+            const h = document.createElement('div');
+            h.className = "col-span-2 text-[9px] font-black text-blue-500 uppercase border-b border-blue-100 pb-1 mt-2 tracking-widest";
+            h.innerText = currentHeading;
+            grid.appendChild(h);
+        }
+        
+        const val = parseFloat(data[r.key]) || 0;
+        const div = document.createElement('div');
+        div.innerHTML = `<label class="block text-[9px] font-bold text-blue-800 uppercase mb-1 truncate" title="${r.key}">${r.label}</label><input type="number" id="ret-${r.key}" value="${val}" step="0.01" class="w-full border border-blue-200 bg-white p-1.5 rounded text-xs font-bold text-blue-900 focus:border-blue-500 outline-none transition shadow-inner" onchange="runSimulation()">`;
+        grid.appendChild(div);
     });
-  }
+}
 
-  // --- 3. SIMULATION ENGINE ---
-  function runSimulation() {
+// --- SIMULATION ENGINE ---
+function runSimulation() {
     const config = getActiveConfig();
     const engine = config.engine;
 
-    const start = parseInt(document.getElementById('range-start').value);
-    const end = parseInt(document.getElementById('range-end').value);
-    const step = parseInt(document.getElementById('range-step').value);
+    const start = parseInt(document.getElementById('range-start').value) || 1;
+    const end = parseInt(document.getElementById('range-end').value) || 100;
+    let step = parseInt(document.getElementById('range-step').value) || 1;
+    if (step < 1) step = 1;
 
     let inputs = { qty: 1 };
     config.controls.forEach(c => {
-      const el = document.getElementById(`cfg-${c.id}`);
-      if(c.type === 'toggle') inputs[c.id] = el.checked;
-      else if(c.type === 'number') inputs[c.id] = parseFloat(el.value);
-      // STRICT EXTRACTION: Prevents '13oz' or '3mm' from being corrupted into purely numbers
-      else if(c.type === 'select') inputs[c.id] = isNaN(Number(el.value)) ? el.value : Number(el.value);
+        const el = document.getElementById(`cfg-${c.id}`);
+        if(c.type === 'toggle') inputs[c.id] = el.checked;
+        else if(c.type === 'number') inputs[c.id] = parseFloat(el.value);
+        else if(c.type === 'select') inputs[c.id] = isNaN(Number(el.value)) ? el.value : Number(el.value);
     });
-    
-    // EXECUTE DYNAMIC UI LOGIC IF IT EXISTS
-    if (typeof config.dynamicUI === 'function') {
-      inputs = config.dynamicUI(inputs);
-    }
+
+    if (typeof config.dynamicUI === 'function') inputs = config.dynamicUI(inputs);
 
     if(!inputs.files) inputs.files = 1;
-    if(!inputs.rounded) inputs.rounded = false;
+    if(inputs.setupPerFile === undefined) inputs.setupPerFile = false;
 
-    // SANDBOX DATA INJECTION 
-    let simBackend = { ...currentBackend };
-    
-    if (config.costs) {
-      config.costs.forEach(c => {
-        const el = document.getElementById(`cost-${c.key}`);
-        if(el) simBackend[c.key] = parseFloat(el.value);
-      });
+    let simData = { ...currentBackend };
+    if(config.costs) config.costs.forEach(c => simData[c.key] = parseFloat(document.getElementById(`cost-${c.key}`).value));
+    if(config.retails) config.retails.forEach(r => simData[r.key] = parseFloat(document.getElementById(`ret-${r.key}`).value));
+
+    simulationData = [];
+    for (let q = start; q <= end; q += step) {
+        inputs.qty = q;
+        try {
+            const result = engine(inputs, simData);
+            simulationData.push({ qty: q, ...result });
+        } catch (e) {
+            console.error(`Simulation failed at qty ${q}:`, e);
+        }
     }
-    
-    if (config.retails) {
-      config.retails.forEach(r => {
-        const el = document.getElementById(`ret-${r.key}`);
-        if(el) simBackend[r.key] = parseFloat(el.value);
-      });
-    }
+
+    renderChart();
+    if(simulationData.length > 0) renderReceipt(0); // Auto-load first item
+}
+
+function renderChart() {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy(); // Full destroy to reset axes
 
     const labels = [];
-    const retailPoints = [];
-    const costPoints = [];
-    const marginPoints = [];
-    simulationData = []; 
+    const costData = [];
+    const retailData = [];
+    const secondaryData = [];
 
-    for (let q = start; q <= end; q += step) { 
-      labels.push(q); 
-      inputs.qty = q;
-    
-      const result = engine(inputs, simBackend);
-      simulationData.push({ qty: q, retail: result.retail, cost: result.cost });
+    const isMargin = (currentViewMode === 'margin');
 
-      // BULLETPROOF EXTRACTION: Catches grandTotal, quoteTotal, printBase, total, or flat numbers safely
-      const r = result.retail;
-      const c = result.cost;
-      
-      const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
-      const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
+    simulationData.forEach(d => {
+        labels.push(d.qty);
+        
+        const r = d.retail;
+        const c = d.cost;
+        const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
+        const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
 
-      const unitRetail = retailTotal / q;
-      const unitCost = costTotal / q; 
-    
-      // SAFE MARGIN CALCULATION: Prevents divide-by-zero if unitRetail is 0
-      const margin = unitRetail > 0 ? ((unitRetail - unitCost) / unitRetail) * 100 : 0;
-
-      retailPoints.push(unitRetail.toFixed(2)); 
-      costPoints.push(unitCost.toFixed(2));
-      marginPoints.push(margin.toFixed(1)); 
-    }
-
-    renderChart(labels, retailPoints, costPoints, marginPoints);
-    document.getElementById('receipt-panel').classList.add('hidden'); 
-  }
-
-  function renderChart(labels, retail, cost, margin) {
-    const ctx = document.getElementById('priceChart').getContext('2d');
-    if(chartInstance) chartInstance.destroy();
+        const uRet = retailTotal / d.qty;
+        const uCost = costTotal / d.qty;
+        
+        costData.push(uCost);
+        retailData.push(uRet);
+        
+        if (isMargin) {
+            const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
+            secondaryData.push(margin);
+        } else {
+            const profit = uRet - uCost;
+            secondaryData.push(profit);
+        }
+    });
 
     chartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Unit Retail ($)', data: retail, borderColor: '#2563eb', backgroundColor: '#2563eb', yAxisID: 'y', tension: 0.1, borderWidth: 3 },
-          { label: 'Unit Cost ($)', data: cost, borderColor: '#ef4444', backgroundColor: '#ef4444', yAxisID: 'y', borderDash: [1], borderWidth: 2 },
-          { label: 'Margin %', data: margin, borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.5)', yAxisID: 'y1', type: 'bar', barThickness: 'flex', maxBarThickness: 40, opacity: 0.5 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        onClick: (event, elements) => {
-          if (elements.length > 0) {
-            const dataIndex = elements[0].index; // FIX APPLIED HERE
-            renderReceipt(dataIndex);
-          }
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Unit Cost', data: costData, borderColor: '#ef4444', backgroundColor: '#fca5a5', type: 'line', tension: 0.1, yAxisID: 'y' },
+                { label: 'Unit Retail', data: retailData, borderColor: '#3b82f6', backgroundColor: '#93c5fd', type: 'line', tension: 0.1, yAxisID: 'y' },
+                {
+                    label: isMargin ? 'Margin %' : 'Net Profit ($)',
+                    data: secondaryData,
+                    backgroundColor: isMargin ? 'rgba(250, 204, 21, 0.4)' : 'rgba(34, 197, 94, 0.4)',
+                    borderColor: isMargin ? '#eab308' : '#16a34a',
+                    borderWidth: 1,
+                    type: 'bar',
+                    yAxisID: 'y1'
+                }
+            ]
         },
-        onHover: (event, chartElement) => {
-          event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
-        },
-        scales: {
-          y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Price / Cost ($)' }, grid: { color: '#f3f4f6' } },
-          y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Margin (%)' }, grid: { drawOnChartArea: false }, min: 0, max: 100 },
-          x: { title: { display: true, text: 'Quantity' }, grid: { display: false } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            onClick: (event, elements) => {
+                if (elements.length > 0) renderReceipt(elements.index);
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                if (context.datasetIndex === 2 && isMargin) label += context.parsed.y.toFixed(1) + '%';
+                                else label += '$' + context.parsed.y.toFixed(2);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Price / Cost ($)' }, grid: { color: '#f1f5f9' }, beginAtZero: true },
+                y1: { 
+                    type: 'linear', 
+                    display: true, 
+                    position: 'right', 
+                    title: { display: true, text: isMargin ? 'Margin (%)' : 'Net Profit ($)' }, 
+                    grid: { drawOnChartArea: false }, 
+                    min: isMargin ? 0 : undefined, 
+                    max: isMargin ? 100 : undefined 
+                },
+                x: { title: { display: true, text: 'Quantity' }, grid: { display: false } }
+            }
         }
-      }
     });
-  }
+}
 
-  function exportData() {
-    if(simulationData.length === 0) { alert("No data to export."); return; }
+function renderReceipt(index) {
+    const data = simulationData[index];
+    if (!data) return;
+
+    document.getElementById('rec-qty').innerText = data.qty;
+    const fmt = (n) => "$" + parseFloat(n || 0).toFixed(2);
+
+    const config = getActiveConfig();
+    const content = document.getElementById('rec-content');
     
+    if (typeof config.renderReceipt === 'function') {
+        content.innerHTML = config.renderReceipt(data, fmt);
+    } else {
+        content.innerHTML = `<div class="text-center text-red-500 font-bold mt-10">Receipt template not defined for this module.</div>`;
+    }
+    
+    // Add Total Profit callout
+    const r = data.retail;
+    const c = data.cost;
+    const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
+    const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
+    const net = retailTotal - costTotal;
+    
+    content.innerHTML += `
+        <div class="mt-4 pt-3 border-t-2 border-slate-300 flex justify-between items-end">
+            <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Total Order Profit</span>
+            <span class="text-2xl font-black ${net < 0 ? 'text-red-500' : 'text-green-600'}">${fmt(net)}</span>
+        </div>
+    `;
+}
+
+function exportData() {
+    if(simulationData.length === 0) { alert("No data to export."); return; }
+
     const config = getActiveConfig();
     const modKey = document.getElementById('sim-module').options[document.getElementById('sim-module').selectedIndex].text;
     const rawKey = document.getElementById('sim-module').value;
-    
+
     let out = `SIGNOS PRICING SIMULATION EXPORT\n`;
     out += `Module: ${modKey} (${config.tab})\n`;
     out += `Date: ${new Date().toLocaleString()}\n`;
     out += `========================================\n\n`;
-    
+
     out += `--- ACTIVE VARIABLES ---\n\n`;
     out += `[RETAIL DRIVERS]\n`;
     if (config.retails) {
-      config.retails.forEach(r => {
-        const val = document.getElementById(`ret-${r.key}`).value;
-        out += `${r.label.padEnd(25)} : ${val}\n`;
-      });
+        config.retails.forEach(r => {
+            const val = document.getElementById(`ret-${r.key}`).value;
+            out += `${r.label.padEnd(25)} : ${val}\n`;
+        });
     } else { out += `No overrides set.\n`; }
-    
+
     out += `\n[COST DRIVERS]\n`;
     if (config.costs) {
-      config.costs.forEach(c => {
-        const val = document.getElementById(`cost-${c.key}`).value;
-        out += `${c.label.padEnd(25)} : ${val}\n`;
-      });
+        config.costs.forEach(c => {
+            const val = document.getElementById(`cost-${c.key}`).value;
+            out += `${c.label.padEnd(25)} : ${val}\n`;
+        });
     }
-    
-    out += `\n========================================\n`;
-    out += ` QTY  | RETAIL EA  | COST EA    | MARGIN %\n`;
-    out += `----------------------------------------\n`;
-    
-    simulationData.forEach(d => {
-      const r = d.retail;
-      const c = d.cost;
-      
-      const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
-      const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
 
-      const uRet = retailTotal / d.qty;
-      const uCost = costTotal / d.qty;
-      const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
-      
-      const qStr = d.qty.toString().padEnd(4);
-      const rStr = `$${uRet.toFixed(2)}`.padEnd(10);
-      const cStr = `$${uCost.toFixed(2)}`.padEnd(10);
-      const mStr = `${margin.toFixed(1)}%`;
-      
-      out += ` ${qStr} | ${rStr} | ${cStr} | ${mStr}\n`;
+    out += `\n========================================\n`;
+    out += ` QTY  | RETAIL EA  | COST EA    | MARGIN % | NET PROFIT $\n`;
+    out += `----------------------------------------------------------\n`;
+
+    simulationData.forEach(d => {
+        const r = d.retail;
+        const c = d.cost;
+
+        const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
+        const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
+
+        const uRet = retailTotal / d.qty;
+        const uCost = costTotal / d.qty;
+        const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
+        const profit = uRet - uCost;
+
+        const qStr = d.qty.toString().padEnd(4);
+        const rStr = `$${uRet.toFixed(2)}`.padEnd(10);
+        const cStr = `$${uCost.toFixed(2)}`.padEnd(10);
+        const mStr = `${margin.toFixed(1)}%`.padEnd(8);
+        const pStr = `$${profit.toFixed(2)}`;
+
+        out += ` ${qStr} | ${rStr} | ${cStr} | ${mStr} | ${pStr}\n`;
     });
-    
+
     const blob = new Blob([out], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -476,25 +570,7 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  // --- DYNAMIC RECEIPT RENDERER ---
-  function renderReceipt(index) {
-    const data = simulationData[index];
-    if (!data) return;
-
-    document.getElementById('receipt-panel').classList.remove('hidden');
-    document.getElementById('rec-qty').innerText = data.qty;
-
-    const fmt = (n) => "$" + parseFloat(n || 0).toFixed(2);
-    
-    const config = getActiveConfig();
-    if (typeof config.renderReceipt === 'function') {
-        document.getElementById('rec-content').innerHTML = config.renderReceipt(data, fmt);
-    } else {
-        document.getElementById('rec-content').innerHTML = `<div class="col-span-2 text-center text-red-500 font-bold">Receipt template not defined for this module.</div>`;
-    }
-  }
+}
 </script>
 </body>
 </html>
