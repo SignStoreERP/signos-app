@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acrylic Signs v5.0</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="signos-core.js"></script>
+
+<!-- DUAL-TRACK LOGIC ENGINES -->
+<script src="logic_acrylic.js"></script>
+
+<style>
+.toggle-checkbox:checked { right: 0; border-color: #2563EB; }
+.toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col">
+
+<!-- Main Card: Island Mode -->
+<div id="main-card" class="max-w-md mx-auto my-4 sm:my-10 w-[calc(100%-2rem)] sm:w-full bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200">
+
+<!-- INPUTS -->
+<div class="p-6 space-y-4">
+<div class="grid grid-cols-3 gap-3">
+<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="24" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="18" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Thickness</label>
+<select id="thickness" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="enforceRules(); runCalc()">
+<option value="0.25">1/4" Standard</option>
+<option value="0.5">1/2" Medium</option>
+<option value="0.75">3/4" Thick</option>
+<option value="1">1" Monumental</option>
+</select>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Acrylic Color</label>
+<select id="color" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="enforceRules(); runCalc()">
+<option value="Clear">Clear</option>
+<option value="White">White</option>
+<option value="Black" id="opt-black">Black</option>
+</select>
+</div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Graphic Surface</label>
+<select id="surface" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
+<option value="2">2nd Surface (Back)</option>
+<option value="1">1st Surface (Front)</option>
+</select>
+</div>
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Graphic Method</label>
+<select id="method" class="w-full border p-2 rounded bg-white font-bold text-xs h-[42px] truncate" onchange="runCalc()">
+<option value="direct_color">Direct Print (Color)</option>
+<option value="direct_white">Direct Print (+Wht Flood)</option>
+<option value="direct_3layer">Direct Print (Day/Night)</option>
+<option value="direct_5layer">Direct Print (Blockout)</option>
+<option value="vinyl_print_opq">Printed Vinyl (Opaque)</option>
+<option value="vinyl_print_trn">Printed Vinyl (Translucent)</option>
+<option value="vinyl_cut_opq">Cut Vinyl (Opaque)</option>
+<option value="vinyl_cut_trn">Cut Vinyl (Translucent)</option>
+</select>
+</div>
+</div>
+
+<div class="grid grid-cols-1 gap-4">
+<div>
+<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Routing Method</label>
+<select id="shape" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
+<option value="Rectangle">Square / Saw Cut</option>
+<option value="Easy">CNC (Simple Shape)</option>
+<option value="Complex">CNC (Complex Shape)</option>
+</select>
+</div>
+</div>
+
+<div class="space-y-2 border-t border-gray-100 pt-2">
+<!-- Paint Toggle -->
+<div class="flex flex-col bg-indigo-50 border border-indigo-200 rounded">
+<div class="flex items-center justify-between p-2">
+<span class="text-[10px] font-bold text-indigo-900 uppercase">Paint Background?</span>
+<div class="relative inline-block w-9 align-middle select-none">
+<input type="checkbox" id="paint" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="toggleBox('box-paint'); runCalc()"/>
+<label for="paint" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+</div>
+</div>
+<div id="box-paint" class="hidden p-2 border-t border-indigo-200 bg-white rounded-b flex gap-2 items-center">
+<span class="text-xs font-bold text-gray-500">Color/PMS:</span>
+<input type="text" id="paint-code" placeholder="e.g. SW 7005" class="flex-1 border p-1 rounded text-xs font-bold bg-gray-50" oninput="runCalc()">
+</div>
+</div>
+
+<!-- Hardware Toggle -->
+<div class="flex flex-col bg-gray-50 border border-gray-200 rounded">
+<div class="flex items-center justify-between p-2">
+<span class="text-[10px] font-bold text-gray-700 uppercase">Include Standoffs?</span>
+<div class="relative inline-block w-9 align-middle select-none">
+<input type="checkbox" id="standoffs" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" onchange="toggleBox('box-hw'); runCalc()"/>
+<label for="standoffs" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+</div>
+</div>
+<div id="box-hw" class="hidden p-2 border-t border-gray-200 bg-white rounded-b flex gap-2">
+<select id="standoffQty" class="border text-xs p-1 rounded w-1/3 font-bold" onchange="runCalc()"><option value="4">4 Qty</option><option value="6">6 Qty</option></select>
+<select id="hw-col" class="border text-xs p-1 rounded w-2/3 font-bold" onchange="runCalc()"><option value="Silver">Silver</option><option value="Black">Black</option></select>
+</div>
+</div>
+
+<div class="grid grid-cols-2 gap-2 mt-2">
+<label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Charge Setup/File</label>
+<label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer bg-purple-50 p-2 rounded border border-purple-200 hover:bg-purple-100 transition"><input type="checkbox" id="inc-design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
+</div>
+<div class="flex items-center gap-2 mt-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border rounded p-1 text-center text-sm font-bold" oninput="runCalc()"></div>
+</div>
+</div>
+
+<!-- RESULTS -->
+<div class="bg-white p-6 border-t border-gray-200">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Base Unit Price</span>
+<span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
+</div>
+
+<div class="border-t border-gray-100 my-3"></div>
+
+<!-- LINE ITEMS -->
+<div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
+<div class="flex justify-between"><span>Graphic & Substrate (<span id="lbl-sqft">0</span> sf):</span><span id="ui-print" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-indigo-700 hidden" id="row-paint"><span>Paint Area & Setup:</span><span id="ui-paint" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-orange-700 hidden" id="row-router"><span>CNC Router Fee:</span><span id="ui-router" class="font-bold">$0.00</span></div>
+<div class="flex justify-between hidden" id="row-hw"><span>Standoff Hardware:</span><span id="ui-hw" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-gray-700"><span>Job Setup:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
+<div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
+</div>
+
+<div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
+<div>
+<span class="text-xs font-bold text-gray-400 uppercase block">Total Quote</span>
+<span class="text-[9px] font-bold text-gray-400 uppercase block mt-1" id="ui-min-text">Shop Minimum: $75</span>
+<div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+</div>
+<span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
+</div>
+</div>
+
+<!-- DESCRIPTION GENERATOR -->
+<div class="bg-gray-50 p-4 border-t border-gray-200">
+<label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+<textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
+</div>
+</div>
+
+<script>
+let backendData = {};
+
+window.onload = async function() {
+    injectHeader("Acrylic Signs");
+
+    const u = sessionStorage.getItem('signos_user') || 'Guest';
+    const r = sessionStorage.getItem('signos_role') || 'VIEW';
+
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
+    const verDisplay = document.getElementById("version-display");
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?tab=PROD_Acrylic_Signs&ip=${clientIP}&user=${u}&role=${r}&req=view_module`);
+        const data = await res.json();
+
+        if(data.error) throw new Error(data.error);
+        backendData = data;
+
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+            statusDot.classList.remove("animate-pulse");
+        }
+        if(verDisplay) {
+            verDisplay.innerText = `(v5.0)`;
+            verDisplay.classList.remove('hidden');
+        }
+
+        enforceRules();
+        runCalc();
+    } catch(e) {
+        if(statusText) {
+            statusText.innerText = "OFFLINE";
+            statusText.className = "font-bold text-red-500";
+        }
+        console.error(e);
+    }
+};
+
+function enforceRules() {
+    const t = document.getElementById('thickness').value;
+    const color = document.getElementById('color');
+    const surf = document.getElementById('surface');
+    
+    // Only 1/4" has Black
+    if (t !== '0.25' && color.value === 'Black') color.value = 'White';
+    document.getElementById('opt-black').disabled = (t !== '0.25');
+
+    // Only Clear allows 2nd Surface
+    if (color.value !== 'Clear') surf.value = '1';
+    surf.disabled = (color.value !== 'Clear');
+}
+
+function toggleBox(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+function runCalc() {
+    if(!backendData.Item_Name) return;
+
+    const inputs = {
+        qty: parseFloat(document.getElementById('qty').value) || 1,
+        w: parseFloat(document.getElementById('w').value) || 24,
+        h: parseFloat(document.getElementById('h').value) || 18,
+        thickness: document.getElementById('thickness').value,
+        color: document.getElementById('color').value,
+        surface: document.getElementById('surface').value,
+        method: document.getElementById('method').value,
+        shape: document.getElementById('shape').value,
+        paint: document.getElementById('paint').checked,
+        standoffs: document.getElementById('standoffs').checked,
+        standoffQty: parseInt(document.getElementById('standoffQty').value),
+        files: parseFloat(document.getElementById('files').value) || 1,
+        setupPerFile: document.getElementById('setup-per-file').checked,
+        incDesign: document.getElementById('inc-design').checked
+    };
+
+    const result = calculateAcrylic(inputs, backendData);
+    const ret = result.retail;
+    const fmt = (n) => "$" + n.toFixed(2);
+
+    const totalSqFt = ((inputs.w * inputs.h) / 144) * inputs.qty;
+    document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(1);
+
+    document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+    document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
+    document.getElementById('ui-print').innerText = fmt(ret.printTotal);
+
+    if (ret.paintTotal > 0) { document.getElementById('row-paint').classList.remove('hidden'); document.getElementById('ui-paint').innerText = fmt(ret.paintTotal); }
+    else document.getElementById('row-paint').classList.add('hidden');
+
+    if (ret.routerFee > 0) { document.getElementById('row-router').classList.remove('hidden'); document.getElementById('ui-router').innerText = fmt(ret.routerFee); }
+    else document.getElementById('row-router').classList.add('hidden');
+
+    if (ret.hwTotal > 0) { document.getElementById('row-hw').classList.remove('hidden'); document.getElementById('ui-hw').innerText = fmt(ret.hwTotal); }
+    else document.getElementById('row-hw').classList.add('hidden');
+
+    document.getElementById('ui-setup').innerText = fmt(ret.setupFee || 0);
+    
+    if (ret.designFee > 0) { document.getElementById('row-design').classList.remove('hidden'); document.getElementById('ui-design').innerText = fmt(ret.designFee); }
+    else document.getElementById('row-design').classList.add('hidden');
+
+    const minOrder = parseFloat(backendData.Retail_Min_Order || 75);
+    document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
+    document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+
+    // Generation
+    let selMethod = document.getElementById('method');
+    let methodText = selMethod.options[selMethod.selectedIndex].text;
+    const surfTxt = inputs.surface === '1' ? '1st Surface' : '2nd Surface';
+    let pTxt = inputs.paint ? ` Painted Background (${document.getElementById('paint-code').value || 'TBD'}).` : '';
+    let hwTxt = inputs.standoffs ? ` Included ${inputs.standoffQty} ${document.getElementById('hw-col').value} Standoffs.` : '';
+
+    const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" x ${inputs.thickness}" ${inputs.color} Acrylic Signs. ${inputs.shape} Cut.\n${methodText} applied to ${surfTxt}.${pTxt}${hwTxt}`;
+    document.getElementById('job-desc').value = desc;
+}
+</script>
+</body>
+</html>
