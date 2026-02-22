@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Heatmap v1.1</title>
+<title>Profit Heatmap v1.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
-<!-- DUAL-TRACK LOGIC ENGINES -->
 <script src="logic_yard.js"></script>
 <script src="logic_acm.js"></script>
 <script src="logic_coro.js"></script>
@@ -40,7 +39,6 @@
 
 <div id="main-card" class="flex-1 flex flex-col min-h-0 bg-white m-4 rounded-xl shadow-2xl border border-gray-300 overflow-hidden">
     
-    <!-- 1. COMMAND BAR -->
     <div class="bg-gray-900 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 z-40">
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700 shadow-inner">
@@ -72,7 +70,6 @@
         </div>
     </div>
 
-    <!-- 2. COLOR LEGEND -->
     <div class="bg-gray-50 border-b border-gray-200 px-4 py-2 flex flex-wrap justify-center sm:justify-start gap-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest shrink-0 shadow-sm z-30">
         <span class="mr-2 text-gray-400">HEATMAP SCALE:</span>
         <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-600 rounded-sm shadow-inner"></span> Loss (&lt; 0%)</div>
@@ -82,17 +79,30 @@
         <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-green-600 rounded-sm shadow-inner"></span> Optimal (75%+)</div>
     </div>
 
-    <!-- 3. HEATMAP GRID -->
+    <div id="insights-panel" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-gray-200 shrink-0 z-20">
+        <div class="bg-white p-3 rounded-lg shadow-sm border border-green-200 flex flex-col justify-center">
+            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Highest Margin Sweet Spot</span>
+            <div id="insight-best" class="text-sm font-black text-green-700 leading-tight">--</div>
+            <div id="insight-best-sub" class="text-xs text-gray-500 mt-1">--</div>
+        </div>
+        <div class="bg-white p-3 rounded-lg shadow-sm border border-red-200 flex flex-col justify-center">
+            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Danger Zone (Lowest Margin)</span>
+            <div id="insight-worst" class="text-sm font-black text-red-600 leading-tight">--</div>
+            <div id="insight-worst-sub" class="text-xs text-gray-500 mt-1">--</div>
+        </div>
+        <div class="bg-white p-3 rounded-lg shadow-sm border border-orange-200 flex flex-col justify-center">
+            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Steepest Pricing Cliff</span>
+            <div id="insight-cliff" class="text-sm font-black text-orange-600 leading-tight">--</div>
+            <div id="insight-cliff-sub" class="text-xs text-gray-500 mt-1">--</div>
+        </div>
+    </div>
+
     <div class="flex-1 overflow-auto custom-scroll relative bg-white pb-10">
         <table class="w-full text-left border-collapse">
             <thead>
-                <tr id="heatmap-header">
-                    <!-- Injected by JS -->
-                </tr>
+                <tr id="heatmap-header"></tr>
             </thead>
-            <tbody id="heatmap-body" class="divide-y divide-gray-100">
-                <!-- Injected by JS -->
-            </tbody>
+            <tbody id="heatmap-body" class="divide-y divide-gray-100"></tbody>
         </table>
         
         <div id="empty-state" class="absolute inset-0 flex items-center justify-center bg-white z-10">
@@ -204,7 +214,6 @@ async function loadModuleData() {
     document.getElementById('btn-run').disabled = true;
 
     try {
-        // Fallback for SCRIPT_URL if testing locally without signos-core.js
         const apiUrl = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
         const u = sessionStorage.getItem('signos_user') || 'Admin';
         
@@ -249,7 +258,6 @@ function runAnalysis() {
     document.getElementById('loader').classList.replace('hidden', 'flex');
     analysisData = [];
 
-    // Safety check if engine JS isn't loaded
     if(!matrixDef.engine) {
         alert(`Error: The logic engine for ${modKey} could not be found. Check your <script> tags.`);
         document.getElementById('loader').classList.replace('flex', 'hidden');
@@ -267,7 +275,7 @@ function runAnalysis() {
                     const result = matrixDef.engine(inputs, currentBackend);
                     
                     const r = result.retail;
-                    const c = result.cost || result.inHouse; // added fallback
+                    const c = result.cost || result.inHouse;
                     const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
                     const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
                     
@@ -287,6 +295,7 @@ function runAnalysis() {
         });
 
         renderHeatmap();
+        generateInsights(); // <--- Automated Insights Triggered Here
         document.getElementById('loader').classList.replace('flex', 'hidden');
         document.getElementById('btn-run').disabled = false;
     }, 100);
@@ -341,6 +350,59 @@ function renderHeatmap() {
     });
     
     tbody.innerHTML = bodyHTML;
+}
+
+function generateInsights() {
+    if (analysisData.length === 0) return;
+
+    let bestCell = { margin: -Infinity, label: '', qty: 0 };
+    let worstCell = { margin: Infinity, label: '', qty: 0 };
+    let maxCliff = { drop: 0, label: '', fromQty: 0, toQty: 0 };
+
+    analysisData.forEach(row => {
+        let prevMargin = null;
+        let prevQty = null;
+
+        TEST_QUANTITIES.forEach(q => {
+            const cell = row.data[q];
+            if (!cell || cell.error) return;
+
+            // Track Best Margin
+            if (cell.margin > bestCell.margin) {
+                bestCell = { margin: cell.margin, label: row.label, qty: q, profit: cell.profit };
+            }
+
+            // Track Worst Margin
+            if (cell.margin < worstCell.margin) {
+                worstCell = { margin: cell.margin, label: row.label, qty: q, profit: cell.profit };
+            }
+
+            // Track Pricing Cliffs
+            if (prevMargin !== null) {
+                const drop = prevMargin - cell.margin;
+                if (drop > maxCliff.drop) {
+                    maxCliff = { drop: drop, label: row.label, fromQty: prevQty, toQty: q };
+                }
+            }
+            
+            prevMargin = cell.margin;
+            prevQty = q;
+        });
+    });
+
+    document.getElementById('insights-panel').classList.remove('hidden');
+    document.getElementById('insight-best').innerText = `${bestCell.label} (Qty ${bestCell.qty})`;
+    document.getElementById('insight-best-sub').innerText = `${bestCell.margin.toFixed(1)}% Margin | $${bestCell.profit.toFixed(2)} Profit/Ea`;
+    document.getElementById('insight-worst').innerText = `${worstCell.label} (Qty ${worstCell.qty})`;
+    document.getElementById('insight-worst-sub').innerText = `${worstCell.margin.toFixed(1)}% Margin | $${worstCell.profit.toFixed(2)} Profit/Ea`;
+
+    if (maxCliff.drop > 0) {
+        document.getElementById('insight-cliff').innerText = `${maxCliff.label}`;
+        document.getElementById('insight-cliff-sub').innerText = `Drops ${maxCliff.drop.toFixed(1)}% when moving from Qty ${maxCliff.fromQty} to ${maxCliff.toQty}`;
+    } else {
+        document.getElementById('insight-cliff').innerText = "No significant cliffs detected.";
+        document.getElementById('insight-cliff-sub').innerText = "Margins scale linearly.";
+    }
 }
 </script>
 </body>
