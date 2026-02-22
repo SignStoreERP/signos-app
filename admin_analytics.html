@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Heatmap v1.0</title>
+<title>Profit Heatmap v1.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -75,7 +75,7 @@
     <!-- 2. COLOR LEGEND -->
     <div class="bg-gray-50 border-b border-gray-200 px-4 py-2 flex flex-wrap justify-center sm:justify-start gap-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest shrink-0 shadow-sm z-30">
         <span class="mr-2 text-gray-400">HEATMAP SCALE:</span>
-        <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-600 rounded-sm shadow-inner"></span> Loss (< 0%)</div>
+        <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-600 rounded-sm shadow-inner"></span> Loss (&lt; 0%)</div>
         <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-400 rounded-sm shadow-inner"></span> Danger (0 - 49%)</div>
         <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-yellow-400 rounded-sm shadow-inner"></span> Warning (50 - 64%)</div>
         <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-green-400 rounded-sm shadow-inner"></span> Target (65 - 74%)</div>
@@ -104,17 +104,17 @@
 
 <script>
 let currentBackend = {};
-let currentViewMode = 'margin'; // 'margin' or 'profit'
-let analysisData = []; // Holds the raw results
+let currentViewMode = 'margin'; 
+let analysisData = []; 
 
-// The X-Axis (Quantity Breaks to Test)
-const TEST_QUANTITIES = [1-9];
+// THE X-AXIS: Quantities to simulate across
+const TEST_QUANTITIES = [1-8];
 
-// The Y-Axis (Product Configurations to recursively test)
+// THE Y-AXIS: Product Configurations to recursively test
 const MODULE_MATRICES = {
     'YARD': {
         tab: 'PROD_Yard_Signs',
-        engine: calculateYardSign, // From logic_yard.js
+        engine: calculateYardSign,
         configs: [
             { label: '24x18 Single Sided (No Stakes)', inputs: { sides: 1, hasStakes: false } },
             { label: '24x18 Single Sided (w/ Stakes)', inputs: { sides: 1, hasStakes: true } },
@@ -124,7 +124,7 @@ const MODULE_MATRICES = {
     },
     'CORO': {
         tab: 'PROD_Coroplast_Signs',
-        engine: calculateCoro, // From logic_coro.js
+        engine: calculateCoro,
         configs: [
             { label: '18x12 4mm Single Sided', inputs: { w: 18, h: 12, thickness: '4mm', sides: 1 } },
             { label: '24x18 4mm Single Sided', inputs: { w: 24, h: 18, thickness: '4mm', sides: 1 } },
@@ -137,7 +137,7 @@ const MODULE_MATRICES = {
     },
     'ACM': {
         tab: 'PROD_ACM_Signs',
-        engine: calculateACM, // From logic_acm.js
+        engine: calculateACM,
         configs: [
             { label: '18x12 3mm White (Shear)', inputs: { w: 18, h: 12, thickness: '3mm', sides: 1, color: 'White', shape: 'Rectangle', rounded: false, files: 1, incDesign: false, setupPerFile: false } },
             { label: '24x18 3mm White (Shear)', inputs: { w: 24, h: 18, thickness: '3mm', sides: 1, color: 'White', shape: 'Rectangle', rounded: false, files: 1, incDesign: false, setupPerFile: false } },
@@ -149,7 +149,7 @@ const MODULE_MATRICES = {
     },
     'PVC': {
         tab: 'PROD_PVC_Signs',
-        engine: calculatePVC, // From logic_pvc.js
+        engine: calculatePVC,
         configs: [
             { label: '24x18 3mm Single Sided', inputs: { w: 24, h: 18, thickness: '3mm', sides: 1, shape: 'Rectangle', rounded: false, files: 1, incDesign: false } },
             { label: '36x24 3mm CNC Contour', inputs: { w: 36, h: 24, thickness: '3mm', sides: 1, shape: 'Complex', rounded: false, files: 1, incDesign: false } },
@@ -158,7 +158,7 @@ const MODULE_MATRICES = {
     },
     'FOAM': {
         tab: 'PROD_Foam_Signs',
-        engine: calculateFoam, // From logic_foam.js
+        engine: calculateFoam,
         configs: [
             { label: '24x18 3/16" Single Sided', inputs: { w: 24, h: 18, sides: 1, files: 1, incDesign: false } },
             { label: '36x24 3/16" Single Sided', inputs: { w: 36, h: 24, sides: 1, files: 1, incDesign: false } },
@@ -169,6 +169,9 @@ const MODULE_MATRICES = {
 
 window.onload = function() {
     if(typeof injectHeader === 'function') injectHeader("Profit Heatmap Analytics", false);
+    
+    // Auto-trigger the first load so it populates immediately
+    loadModuleData(); 
 };
 
 function setViewMode(mode) {
@@ -209,11 +212,33 @@ async function loadModuleData() {
         
         if(data.error) throw new Error(data.error);
         currentBackend = data;
+
+        // UPDATE HEADER TO ONLINE
+        const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "text-xs font-bold text-green-500";
+        }
+        if(statusDot) {
+            statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+            statusDot.classList.remove("animate-pulse");
+        }
+
         runAnalysis();
 
     } catch (e) {
         alert("Load Error: " + e.message);
         document.getElementById('loader').classList.replace('flex', 'hidden');
+
+        // SET ERROR STATUS
+        const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+        if(statusText) {
+            statusText.innerText = "OFFLINE";
+            statusText.className = "text-xs font-bold text-red-500";
+        }
+        if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-red-500";
     }
 }
 
@@ -222,8 +247,6 @@ function runAnalysis() {
     const matrixDef = MODULE_MATRICES[modKey];
     
     document.getElementById('loader').classList.replace('hidden', 'flex');
-    
-    // Clear previous
     analysisData = [];
 
     // Allow UI to update before locking thread with heavy math
@@ -237,7 +260,6 @@ function runAnalysis() {
                 try {
                     const result = matrixDef.engine(inputs, currentBackend);
                     
-                    // Standardize extraction
                     const r = result.retail;
                     const c = result.cost;
                     const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
@@ -275,14 +297,12 @@ function renderHeatmap() {
     const thead = document.getElementById('heatmap-header');
     const tbody = document.getElementById('heatmap-body');
     
-    // Build Header
     let headHTML = `<th class="p-4 sticky-col z-30-corner bg-slate-100 text-slate-700 w-64 border-b border-slate-200">Configuration</th>`;
     TEST_QUANTITIES.forEach(q => {
         headHTML += `<th class="p-4 sticky-header text-center w-24 border-l border-slate-200">Qty ${q}</th>`;
     });
     thead.innerHTML = headHTML;
 
-    // Build Body
     let bodyHTML = "";
     analysisData.forEach(row => {
         bodyHTML += `<tr>`;
@@ -298,9 +318,8 @@ function renderHeatmap() {
 
             const isMargin = currentViewMode === 'margin';
             const displayVal = isMargin ? `${cell.margin.toFixed(0)}%` : `$${cell.profit.toFixed(2)}`;
-            const colorClass = getHeatmapColor(cell.margin); // Color is always based on margin health
+            const colorClass = getHeatmapColor(cell.margin); 
             
-            // Sub-text
             const subText = isMargin ? `$${cell.retail.toFixed(2)} ea` : `${cell.margin.toFixed(0)}%`;
 
             bodyHTML += `
