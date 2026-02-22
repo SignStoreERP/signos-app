@@ -107,14 +107,14 @@ let currentBackend = {};
 let currentViewMode = 'margin'; 
 let analysisData = []; 
 
-// THE X-AXIS: Quantities to simulate across
-const TEST_QUANTITIES = [1-8];
+// THE X-AXIS: Realistic Production Quantities to test profit cliffs
+const TEST_QUANTITIES = [1, 5, 10, 25, 50, 100, 250, 500];
 
 // THE Y-AXIS: Product Configurations to recursively test
 const MODULE_MATRICES = {
     'YARD': {
         tab: 'PROD_Yard_Signs',
-        engine: calculateYardSign,
+        engine: typeof calculateYardSign !== 'undefined' ? calculateYardSign : null,
         configs: [
             { label: '24x18 Single Sided (No Stakes)', inputs: { sides: 1, hasStakes: false } },
             { label: '24x18 Single Sided (w/ Stakes)', inputs: { sides: 1, hasStakes: true } },
@@ -124,7 +124,7 @@ const MODULE_MATRICES = {
     },
     'CORO': {
         tab: 'PROD_Coroplast_Signs',
-        engine: calculateCoro,
+        engine: typeof calculateCoro !== 'undefined' ? calculateCoro : null,
         configs: [
             { label: '18x12 4mm Single Sided', inputs: { w: 18, h: 12, thickness: '4mm', sides: 1 } },
             { label: '24x18 4mm Single Sided', inputs: { w: 24, h: 18, thickness: '4mm', sides: 1 } },
@@ -137,7 +137,7 @@ const MODULE_MATRICES = {
     },
     'ACM': {
         tab: 'PROD_ACM_Signs',
-        engine: calculateACM,
+        engine: typeof calculateACM !== 'undefined' ? calculateACM : null,
         configs: [
             { label: '18x12 3mm White (Shear)', inputs: { w: 18, h: 12, thickness: '3mm', sides: 1, color: 'White', shape: 'Rectangle', rounded: false, files: 1, incDesign: false, setupPerFile: false } },
             { label: '24x18 3mm White (Shear)', inputs: { w: 24, h: 18, thickness: '3mm', sides: 1, color: 'White', shape: 'Rectangle', rounded: false, files: 1, incDesign: false, setupPerFile: false } },
@@ -149,7 +149,7 @@ const MODULE_MATRICES = {
     },
     'PVC': {
         tab: 'PROD_PVC_Signs',
-        engine: calculatePVC,
+        engine: typeof calculatePVC !== 'undefined' ? calculatePVC : null,
         configs: [
             { label: '24x18 3mm Single Sided', inputs: { w: 24, h: 18, thickness: '3mm', sides: 1, shape: 'Rectangle', rounded: false, files: 1, incDesign: false } },
             { label: '36x24 3mm CNC Contour', inputs: { w: 36, h: 24, thickness: '3mm', sides: 1, shape: 'Complex', rounded: false, files: 1, incDesign: false } },
@@ -158,7 +158,7 @@ const MODULE_MATRICES = {
     },
     'FOAM': {
         tab: 'PROD_Foam_Signs',
-        engine: calculateFoam,
+        engine: typeof calculateFoam !== 'undefined' ? calculateFoam : null,
         configs: [
             { label: '24x18 3/16" Single Sided', inputs: { w: 24, h: 18, sides: 1, files: 1, incDesign: false } },
             { label: '36x24 3/16" Single Sided', inputs: { w: 36, h: 24, sides: 1, files: 1, incDesign: false } },
@@ -169,8 +169,6 @@ const MODULE_MATRICES = {
 
 window.onload = function() {
     if(typeof injectHeader === 'function') injectHeader("Profit Heatmap Analytics", false);
-    
-    // Auto-trigger the first load so it populates immediately
     loadModuleData(); 
 };
 
@@ -206,14 +204,16 @@ async function loadModuleData() {
     document.getElementById('btn-run').disabled = true;
 
     try {
+        // Fallback for SCRIPT_URL if testing locally without signos-core.js
+        const apiUrl = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
         const u = sessionStorage.getItem('signos_user') || 'Admin';
-        const res = await fetch(`${SCRIPT_URL}?req=view_module&tab=${matrixDef.tab}&user=${u}`);
+        
+        const res = await fetch(`${apiUrl}?req=view_module&tab=${matrixDef.tab}&user=${u}`);
         const data = await res.json();
         
         if(data.error) throw new Error(data.error);
         currentBackend = data;
 
-        // UPDATE HEADER TO ONLINE
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
         if(statusText) {
@@ -228,10 +228,10 @@ async function loadModuleData() {
         runAnalysis();
 
     } catch (e) {
+        console.error(e);
         alert("Load Error: " + e.message);
         document.getElementById('loader').classList.replace('flex', 'hidden');
 
-        // SET ERROR STATUS
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
         if(statusText) {
@@ -249,7 +249,13 @@ function runAnalysis() {
     document.getElementById('loader').classList.replace('hidden', 'flex');
     analysisData = [];
 
-    // Allow UI to update before locking thread with heavy math
+    // Safety check if engine JS isn't loaded
+    if(!matrixDef.engine) {
+        alert(`Error: The logic engine for ${modKey} could not be found. Check your <script> tags.`);
+        document.getElementById('loader').classList.replace('flex', 'hidden');
+        return;
+    }
+
     setTimeout(() => {
         matrixDef.configs.forEach(config => {
             const rowResults = { label: config.label, data: {} };
@@ -261,7 +267,7 @@ function runAnalysis() {
                     const result = matrixDef.engine(inputs, currentBackend);
                     
                     const r = result.retail;
-                    const c = result.cost;
+                    const c = result.cost || result.inHouse; // added fallback
                     const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
                     const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
                     
@@ -273,6 +279,7 @@ function runAnalysis() {
                     rowResults.data[q] = { margin: margin, profit: profit, retail: uRet, cost: uCost };
 
                 } catch (e) {
+                    console.error("Engine Error: ", e);
                     rowResults.data[q] = { margin: 0, profit: 0, retail: 0, cost: 0, error: true };
                 }
             });
