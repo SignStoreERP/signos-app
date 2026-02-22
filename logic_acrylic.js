@@ -1,7 +1,7 @@
 /**
- * PURE PHYSICS ENGINE: Acrylic Signs (v5.1 - Dual Track)
+ * PURE PHYSICS ENGINE: Acrylic Signs (v5.2 - Dual Track)
  * Implements Direct Print (Flatbed) vs Vinyl Application (Roll + Plotter + Mounting) physics.
- * v5.1: Added Color logic to substrates and exposed all Roll/Labor variables to Simulator.
+ * v5.2: Added missing 3/4" and 1" sheets, plus all Labor & Setup variables to the Simulator Config.
  */
 
 function calculateAcrylic(inputs, data) {
@@ -254,6 +254,10 @@ window.ACRYLIC_CONFIG = {
       { key: 'Cost_Stock_14_4x8_W', label: '1/4" White ($)' },
       { key: 'Cost_Stock_12_4x8_C', label: '1/2" Clear ($)' },
       { key: 'Cost_Stock_12_4x8_W', label: '1/2" White ($)' },
+      { key: 'Cost_Stock_34_4x8_C', label: '3/4" Clear ($)' },
+      { key: 'Cost_Stock_34_4x8_W', label: '3/4" White ($)' },
+      { key: 'Cost_Stock_1IN_4x8_C', label: '1" Clear ($)' },
+      { key: 'Cost_Stock_1IN_4x8_W', label: '1" White ($)' },
       { heading: 'Vinyl/Ink Materials', key: 'Cost_Vin_Print', label: 'Print Vinyl ($/sf)' },
       { key: 'Cost_Lam_SqFt', label: 'Lam Film ($/sf)' },
       { key: 'Cost_Vin_Cut_Opq', label: 'Cut Vin Opq ($/sf)' },
@@ -265,6 +269,10 @@ window.ACRYLIC_CONFIG = {
       { key: 'Speed_Print_Roll', label: 'Roll Print (SF/hr)' },
       { key: 'Speed_Lam_Roll', label: 'Laminator (SF/hr)' },
       { key: 'Speed_Cut_Graphtec', label: 'Plotter (SF/hr)' },
+      { heading: 'Labor Rates ($/Hr)', key: 'Rate_Operator', label: 'Print Op' },
+      { key: 'Rate_Shop_Labor', label: 'Shop Labor' },
+      { key: 'Rate_CNC_Labor', label: 'CNC Op' },
+      { key: 'Rate_Paint_Labor', label: 'Paint Tech' },
       { heading: 'Labor & Setup (Mins)', key: 'Time_Prepress_Print', label: 'Print Prepress' },
       { key: 'Time_Setup_Printer', label: 'Machine Load' },
       { key: 'Time_Weed_Simple', label: 'Weed Simple (/SF)' },
@@ -276,7 +284,6 @@ window.ACRYLIC_CONFIG = {
       { heading: 'Overhead & Factors', key: 'Rate_Machine_Flatbed', label: 'Flatbed ($/Hr)' },
       { key: 'Rate_Machine_Print', label: 'Roll Prt ($/Hr)' },
       { key: 'Rate_Machine_Cut', label: 'Plotter ($/Hr)' },
-      { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
       { key: 'Labor_Attendance_Ratio', label: 'Operator Attn (%)' },
       { key: 'Waste_Factor', label: 'Waste Buffer' }
     ],
