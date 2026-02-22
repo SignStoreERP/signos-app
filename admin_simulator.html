@@ -36,10 +36,10 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 .chevron { transition: transform 0.3s ease-in-out; }
 .chevron.closed { transform: rotate(-90deg); }
 
-/* Segmented Control */
-.seg-btn { @apply flex-1 py-1.5 text-center text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all duration-200 ease-in-out select-none; }
-.seg-active { @apply bg-white text-blue-700 shadow-sm rounded border border-gray-200/50 scale-[1.02]; }
-.seg-inactive { @apply text-gray-500 hover:text-gray-800 hover:bg-gray-200/50 rounded; }
+/* Segmented Toggle Switch */
+.seg-btn { @apply flex-1 py-1.5 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all duration-300 ease-out select-none rounded-full z-10; }
+.seg-active { @apply bg-white text-blue-700 shadow-md ring-1 ring-black/5 transform scale-105; }
+.seg-inactive { @apply text-slate-500 hover:text-slate-800 hover:bg-slate-300/50; }
 </style>
 </head>
 <body class="bg-gray-200 h-screen flex flex-col font-sans overflow-hidden">
@@ -104,7 +104,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
                 <span class="w-2 h-2 rounded-full bg-blue-500"></span> Profitability Curve
             </h2>
             <!-- Segmented Control -->
-            <div class="flex bg-gray-200 p-0.5 rounded-lg border border-gray-300 w-48">
+            <div class="flex bg-slate-200 p-1 rounded-full border border-slate-300 shadow-inner w-60 relative group">
                 <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
                 <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Net Profit $</div>
             </div>
