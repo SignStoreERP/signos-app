@@ -211,7 +211,8 @@ function runCalc() {
     const fmt = (n) => "$" + n.toFixed(2);
 
     const totalSqFt = ((inputs.w * inputs.h) / 144) * inputs.qty;
-    document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(1);
+    const lblSqFt = document.getElementById('lbl-sqft');
+    if (lblSqFt) lblSqFt.innerText = totalSqFt.toFixed(1);
 
     document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
     document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
