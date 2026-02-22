@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Analytics Engine v4.0</title>
+<title>Profit Analytics Engine v4.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="signos-core.js"></script>
@@ -31,8 +31,11 @@
 <div class="flex-1 w-full max-w-screen-2xl mx-auto p-4 flex flex-col lg:flex-row gap-4 h-full min-h-0 overflow-hidden">
     
     <div class="w-full lg:w-80 bg-white rounded-xl shadow border border-gray-200 flex flex-col shrink-0 overflow-hidden z-20">
+        
         <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-            <h2 class="text-xs font-black text-gray-800 uppercase tracking-widest">Analytics Matrix Config</h2>
+            <a href="menu.html" class="text-xs font-bold text-gray-500 hover:text-blue-600 transition flex items-center gap-1 uppercase tracking-widest">
+                <span>&larr; Menu</span>
+            </a>
             <div id="status-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
         </div>
         
@@ -53,14 +56,17 @@
             <div id="dynamic-options-container" class="space-y-5 border-t border-gray-100 pt-4"></div>
         </div>
         
-        <div class="p-4 bg-gray-50 border-t border-gray-200">
+        <div class="p-4 bg-gray-50 border-t border-gray-200 flex flex-col gap-2">
             <button id="btn-run" onclick="runAnalysis()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] uppercase tracking-widest py-3 rounded shadow-md transition flex justify-center items-center gap-2">
                 <span>Run Physics Engine</span>
+            </button>
+            <button onclick="location.reload()" class="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold text-[10px] uppercase tracking-widest py-2 rounded transition">
+                Start Over / Reset
             </button>
         </div>
     </div>
 
-    <div class="flex-1 bg-white rounded-xl shadow border border-gray-200 flex flex-col min-h-0 relative z-10">
+    <div class="flex-1 bg-white rounded-xl shadow border border-gray-200 flex flex-col min-h-0 relative z-10 overflow-hidden">
         
         <div id="loader-overlay" class="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm hidden flex-col items-center justify-center rounded-xl">
             <svg class="w-12 h-12 text-blue-600 animate-spin mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -68,36 +74,38 @@
             <div class="text-[10px] text-gray-500 font-bold mt-1">Simulating physics engine variables...</div>
         </div>
 
-        <div class="p-3 border-b border-gray-200 bg-gray-900 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 rounded-t-xl z-20">
-            <div class="flex items-center gap-2 w-full sm:w-auto overflow-hidden">
+        <div class="p-3 border-b border-gray-200 bg-gray-900 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
                 <div class="w-1.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
-                <h3 id="dash-title" class="text-white font-bold text-xs tracking-widest uppercase truncate">Awaiting Config</h3>
+                <h3 id="dash-title" class="text-white font-bold text-xs tracking-widest uppercase">Awaiting Config</h3>
             </div>
             
-            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                <div id="filter-bar" class="hidden flex items-center gap-2">
-                    <select id="dash-config-filter" class="bg-gray-800 text-gray-200 border border-gray-700 rounded text-[10px] font-bold py-1 px-2 outline-none max-w-[160px] truncate" onchange="renderChart()"></select>
-                    <select id="dash-qty-filter" class="bg-gray-800 text-gray-200 border border-gray-700 rounded text-[10px] font-bold py-1 px-2 outline-none" onchange="renderChart()"></select>
-                </div>
-                
-                <div class="h-5 w-px bg-gray-700 hidden sm:block"></div>
-                
-                <div class="relative flex bg-gray-800 p-0.5 rounded border border-gray-700 w-32 shrink-0">
-                    <div id="slider-pill" class="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-white rounded-sm shadow transition-transform duration-300 ease-out translate-x-0"></div>
-                    <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
-                    <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Profit $</div>
-                </div>
+            <div class="relative flex bg-gray-800 p-0.5 rounded border border-gray-700 w-40 shrink-0">
+                <div id="slider-pill" class="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-white rounded-sm shadow transition-transform duration-300 ease-out translate-x-0"></div>
+                <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
+                <div onclick="setViewMode('profit')" id="btn-mode-profit" class="seg-btn seg-inactive">Profit $</div>
+            </div>
+        </div>
+
+        <div id="filter-bar" class="hidden bg-blue-50 border-b border-blue-200 p-4 shrink-0 flex flex-wrap gap-6 items-end shadow-inner">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1.5">View Configuration</label>
+                <select id="dash-config-filter" class="w-full bg-white border-2 border-blue-300 text-blue-900 font-bold rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm" onchange="renderChart()"></select>
+            </div>
+            <div class="w-48 shrink-0">
+                <label class="block text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1.5">Simulated Quantity</label>
+                <select id="dash-qty-filter" class="w-full bg-white border-2 border-blue-300 text-blue-900 font-bold rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm" onchange="renderChart()"></select>
             </div>
         </div>
 
         <div class="grid grid-cols-3 gap-0 border-b border-gray-200 bg-slate-50 shrink-0 divide-x divide-gray-200">
             <div class="p-3">
-                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Max Margin Sweet Spot</div>
+                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Highest Profit Sweet Spot</div>
                 <div id="insight-best" class="text-sm font-black text-green-700 truncate">--</div>
                 <div id="insight-best-sub" class="text-[10px] font-bold text-gray-500 truncate mt-0.5">--</div>
             </div>
             <div class="p-3">
-                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Min Margin Danger Zone</div>
+                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Lowest Profit Danger Zone</div>
                 <div id="insight-worst" class="text-sm font-black text-red-600 truncate">--</div>
                 <div id="insight-worst-sub" class="text-[10px] font-bold text-gray-500 truncate mt-0.5">--</div>
             </div>
@@ -113,7 +121,7 @@
             <div id="empty-state" class="absolute inset-0 flex items-center justify-center bg-white/90 z-10">
                 <div class="text-center text-gray-400 text-sm font-bold uppercase tracking-widest flex flex-col items-center">
                     <span class="text-4xl mb-3 opacity-50">📉</span>
-                    Select a product and options to plot heatmap
+                    Select options and click 'Run' to plot heatmap
                 </div>
             </div>
         </div>
@@ -167,8 +175,15 @@ const UI_CONFIGS = {
     },
     'BANNERS': {
         groups: [
-            { id: 'material', label: 'Material Logic', options: [{val: '13oz', label: '13oz Scrim', default: true}, {val: '18oz', label: '18oz Blockout', default: false}] },
-            { id: 'sides', label: 'Print Sides', options: [{val: 1, label: 'Single Sided', default: true}, {val: 2, label: 'Double Sided (18oz)', default: false}] },
+            { id: 'material', label: 'Material Grade', options: [
+                {val: '13oz', label: '13oz Standard Scrim', default: true}, 
+                {val: '18oz', label: '18oz Heavy Blockout', default: false},
+                {val: 'Mesh', label: '8oz Mesh', default: false}
+            ] },
+            { id: 'sides', label: 'Print Sides', options: [
+                {val: 1, label: 'Single Sided', default: true}, 
+                {val: 2, label: 'Double Sided (18oz Only)', default: false}
+            ] },
             { id: 'windSlits', label: 'Wind Slits', options: [{val: 'false', label: 'Standard (No Slits)', default: true}, {val: 'true', label: 'Include Slits', default: false}] },
             { id: 'polePockets', label: 'Pole Pockets', options: [{val: 'false', label: 'Standard Hem', default: true}, {val: 'true', label: 'Include Pockets', default: false}] }
         ]
@@ -193,7 +208,7 @@ const MODULE_MATRICES = {
 };
 
 window.onload = function() {
-    if(typeof injectHeader === 'function') injectHeader("Profit Analytics Engine", true);
+    if(typeof injectHeader === 'function') injectHeader("Profit Analytics Engine", true); // True re-enables Global Menu
     renderOptions();
 };
 
@@ -344,22 +359,23 @@ function processCalculations() {
     const engine = MODULE_MATRICES[modKey].engine;
     const isYard = (modKey === 'YARD');
 
-    // 1. Build Quantity Matrix (Strictly following step logic requests)
+    // 1. Build Quantity Matrix
     let qtyMatrix = [];
     if (isYard) {
         for (let i = 1; i <= 10; i++) qtyMatrix.push(i);
         for (let i = 15; i <= 50; i += 5) qtyMatrix.push(i);
         for (let i = 60; i <= 1000; i += 10) qtyMatrix.push(i);
     } else {
-        qtyMatrix = [1, 5, 10, 25, 50]; // Distinct visual layers for heatmaps
+        qtyMatrix = [1, 5, 10, 25, 50]; // Walk-in layers
     }
 
-    // 2. Build Physical Dimensional Matrix
+    // 2. Build Physical Dimensional Matrix (Steps of 12")
     let sizeMatrix = [];
     if (isYard) {
         sizeMatrix = [{w: 24, h: 18}];
     } else {
-        const dims = [6, 12, 18, 24, 30, 36, 42, 48, 60, 72, 84, 96, 108, 120, 144];
+        // Steps of exactly 12 inches
+        const dims = [12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144];
         const maxSqFt = (modKey === 'BANNERS') ? 72 : 32;
         const maxW = (modKey === 'BANNERS') ? 72 : 48;
         const maxH = (modKey === 'BANNERS') ? 144 : 96;
@@ -376,8 +392,14 @@ function processCalculations() {
         });
     }
 
-    // 3. Nested Processing Loop (Shotgun mapping UI options to actual backend variables)
+    // 3. Nested Processing Loop
     activeCombos.forEach(combo => {
+        
+        // Banner Rule Enforcement: Prevent Double Sided calculations on non-18oz materials
+        if (modKey === 'BANNERS' && parseInt(combo.sides) === 2 && combo.material !== '18oz') {
+            return; // Skip this combination block
+        }
+
         sizeMatrix.forEach(sz => {
             qtyMatrix.forEach(q => {
                 
@@ -390,7 +412,6 @@ function processCalculations() {
                     setupPerFile: false
                 };
                 
-                // Exhaustive Boolean mappings to ensure engines catch the specific flag they were coded for
                 if (combo.sides) {
                     payload.sides = parseInt(combo.sides);
                     payload.isDoubleSided = (payload.sides === 2);
@@ -440,7 +461,7 @@ function processCalculations() {
                     });
 
                 } catch (e) {
-                    // Engines will purposefully throw errors if a dimension/material constraint is violated. We skip them to keep graph clean.
+                    // Invalid material constraints will fail silently
                 }
             });
         });
@@ -467,11 +488,15 @@ function populateDashboardFilters(isYard, qtyMatrix) {
     qtySel.innerHTML = '';
     
     if (isYard) {
-        bar.classList.add('hidden'); // Yard displays all configs simultaneously on lines
+        bar.classList.add('hidden'); 
     } else {
-        bar.classList.remove('hidden');
+        bar.classList.remove('hidden'); // Makes the big blue bar visible
         
-        activeCombos.forEach(c => {
+        // Only show configs that actually generated valid data (blocks the 13oz Double Sided from showing as an option)
+        const validConfigIds = [...new Set(scatterData.map(d => d.configId))];
+        const validCombos = activeCombos.filter(c => validConfigIds.includes(c._configId));
+
+        validCombos.forEach(c => {
             confSel.innerHTML += `<option value="${c._configId}">${c._label}</option>`;
         });
         
@@ -481,12 +506,22 @@ function populateDashboardFilters(isYard, qtyMatrix) {
     }
 }
 
-function getPointColor(marginPct) {
-    if (marginPct < 0) return 'rgba(220, 38, 38, 0.9)'; // Loss (Red)
-    if (marginPct < 50) return 'rgba(248, 113, 113, 0.9)'; // Danger (Light Red)
-    if (marginPct < 65) return 'rgba(250, 204, 21, 0.9)'; // Warning (Yellow)
-    if (marginPct < 75) return 'rgba(74, 222, 128, 0.9)'; // Target (Light Green)
-    return 'rgba(22, 163, 74, 0.9)'; // Optimal (Dark Green)
+// Dynamically scale colors based on whether user is looking at % or $
+function getPointColor(val, mode) {
+    if (mode === 'margin') {
+        if (val < 0) return 'rgba(220, 38, 38, 0.9)'; // Loss (Red)
+        if (val < 50) return 'rgba(248, 113, 113, 0.9)'; // Danger (Light Red)
+        if (val < 65) return 'rgba(250, 204, 21, 0.9)'; // Warning (Yellow)
+        if (val < 75) return 'rgba(74, 222, 128, 0.9)'; // Target (Light Green)
+        return 'rgba(22, 163, 74, 0.9)'; // Optimal (Dark Green)
+    } else {
+        // Profit Metric Map
+        if (val < 0) return 'rgba(220, 38, 38, 0.9)'; 
+        if (val < 25) return 'rgba(248, 113, 113, 0.9)'; // Low Profit < $25
+        if (val < 75) return 'rgba(250, 204, 21, 0.9)'; // Med Profit < $75
+        if (val < 150) return 'rgba(74, 222, 128, 0.9)'; // Good Profit < $150
+        return 'rgba(22, 163, 74, 0.9)'; // High Profit
+    }
 }
 
 function updateInsights(dataArr) {
@@ -498,9 +533,15 @@ function updateInsights(dataArr) {
     }
     
     let best = dataArr[0], worst = dataArr[0];
+    const isMargin = (currentViewMode === 'margin');
+
     dataArr.forEach(d => {
-        if(d.margin > best.margin) best = d;
-        if(d.margin < worst.margin) worst = d;
+        const dVal = isMargin ? d.margin : d.profit;
+        const bVal = isMargin ? best.margin : best.profit;
+        const wVal = isMargin ? worst.margin : worst.profit;
+        
+        if(dVal > bVal) best = d;
+        if(dVal < wVal) worst = d;
     });
     
     const isYard = document.getElementById('sim-module').value === 'YARD';
@@ -577,7 +618,7 @@ function renderChart() {
         const activeData = scatterData.filter(d => d.qty === selQty && d.configId === selConf);
         
         const chartPoints = activeData.map(d => ({ x: d.w, y: d.h, raw: d }));
-        const pointColors = chartPoints.map(d => getPointColor(d.raw.margin));
+        const pointColors = chartPoints.map(d => getPointColor(isMargin ? d.raw.margin : d.raw.profit, currentViewMode));
         
         const maxW = (modKey === 'BANNERS') ? 75 : 52;
         const maxH = (modKey === 'BANNERS') ? 150 : 100;
