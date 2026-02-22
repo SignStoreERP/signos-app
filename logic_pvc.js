@@ -1,36 +1,35 @@
 /**
- * PURE PHYSICS ENGINE: PVC Signs (v1.0 - Dual Track)
- * Implements SqFt Area Curves, 1.5x Double Sided logic, and 10% Lam Deductions.
+ * PURE PHYSICS ENGINE: PVC Signs (v1.1 - Dual Track)
+ * Implements strict Blue Sheet logic (Unit Minimums) and removes laminate.
  */
 
 function calculatePVC(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
-    const totalSqFt = sqft * inputs.qty;
 
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
     let baseRate = 0;
+    let minPrice = 0;
     
     // Find matching tier based on thickness and square footage
     if (inputs.thickness === '3mm') {
-        if (sqft <= parseFloat(data.PVC3_T1_Max || 2.99)) baseRate = parseFloat(data.PVC3_T1_Rate || 44.00);
-        else if (sqft <= parseFloat(data.PVC3_T2_Max || 5.99)) baseRate = parseFloat(data.PVC3_T2_Rate || 13.20);
+        minPrice = parseFloat(data.PVC3_T1_Min || 33.00);
+        if (sqft <= parseFloat(data.PVC3_T2_Max || 5.99)) baseRate = parseFloat(data.PVC3_T2_Rate || 13.20);
         else if (sqft <= parseFloat(data.PVC3_T3_Max || 11.99)) baseRate = parseFloat(data.PVC3_T3_Rate || 8.40);
         else baseRate = parseFloat(data.PVC3_T4_Rate || 7.80);
     } else {
-        if (sqft <= parseFloat(data.PVC6_T1_Max || 2.99)) baseRate = parseFloat(data.PVC6_T1_Rate || 44.00);
-        else if (sqft <= parseFloat(data.PVC6_T2_Max || 5.99)) baseRate = parseFloat(data.PVC6_T2_Rate || 22.00);
+        minPrice = parseFloat(data.PVC6_T1_Min || 33.00);
+        if (sqft <= parseFloat(data.PVC6_T2_Max || 5.99)) baseRate = parseFloat(data.PVC6_T2_Rate || 22.00);
         else if (sqft <= parseFloat(data.PVC6_T3_Max || 11.99)) baseRate = parseFloat(data.PVC6_T3_Rate || 14.00);
         else baseRate = parseFloat(data.PVC6_T4_Rate || 13.00);
     }
 
+    // Apply per-unit math and strict $33 minimum per sign
+    let unitPrintPrice = sqft * baseRate;
+    unitPrintPrice = Math.max(unitPrintPrice, minPrice);
+
     // Apply Double Sided Multiplier (e.g., +50%)
     if (inputs.sides === 2) {
-        baseRate *= (1 + parseFloat(data.Retail_Adder_DS_Mult || 0.50));
-    }
-
-    // Apply "No Laminate" Deduction (e.g., -10%)
-    if (!inputs.lam) {
-        baseRate *= (1 - parseFloat(data.Retail_Lam_Deduct || 0.10));
+        unitPrintPrice *= (1 + parseFloat(data.Retail_Adder_DS_Mult || 0.50));
     }
 
     // Volume Tiers
@@ -47,7 +46,7 @@ function calculatePVC(inputs, data) {
     }
     discPct = currentBestTier;
 
-    const retailPrint = (baseRate * (1 - discPct)) * totalSqFt;
+    const retailPrint = (unitPrintPrice * (1 - discPct)) * inputs.qty;
 
     // CNC Router Fee (Flat Fee per order)
     let routerFee = 0;
@@ -64,12 +63,13 @@ function calculatePVC(inputs, data) {
 
     // UI Tier Log (For Simulator)
     const simTiers = tierLog.map(t => {
-        const trPrint = (baseRate * (1 - t.d)) * (sqft * t.q);
+        const trPrint = (unitPrintPrice * (1 - t.d)) * t.q;
         const total = Math.max(trPrint + routerFee + feeSetup + feeDesign, minOrder);
-        return { q: t.q, base: baseRate * (1 - t.d), unit: total / t.q };
+        return { q: t.q, base: unitPrintPrice * (1 - t.d), unit: total / t.q };
     });
 
     // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    const totalSqFt = sqft * inputs.qty;
     const sheetSqFt = 32; // 4x8 sheet
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
     
@@ -80,7 +80,6 @@ function calculatePVC(inputs, data) {
         
     const costSubstrate = (totalSqFt / sheetSqFt) * rawSheetCost * wastePct;
     const costInk = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * inputs.sides;
-    const costLam = inputs.lam ? (totalSqFt * parseFloat(data.Cost_Lam_SqFt || 0.36) * wastePct * inputs.sides) : 0;
 
     // Rates
     const rateOp = parseFloat(data.Rate_Operator || 25);
@@ -91,20 +90,12 @@ function calculatePVC(inputs, data) {
 
     // Flatbed Print Time
     const lfPerHour = parseFloat(data.Machine_Speed_LF_Hr || 25);
-    // Assuming 24" wide nested path, converting SqFt to LF approximation
     const estLF = totalSqFt / 2; 
     const printHrs = (estLF / lfPerHour) * inputs.sides;
     const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
     
     const costPrintOp = printHrs * rateOp * attnRatio;
     const costPrintMach = printHrs * rateMachFB;
-
-    // Lam Time
-    let costLamOp = 0;
-    if (inputs.lam) {
-        const lamHrs = (totalSqFt / parseFloat(data.Speed_Lam_Roll || 300)) * inputs.sides;
-        costLamOp = lamHrs * rateShop;
-    }
 
     // Cutting Time (Shear vs CNC)
     let cutHrs = 0;
@@ -123,14 +114,14 @@ function calculatePVC(inputs, data) {
         const runMins = totalSqFt * runMinsSqFt;
         cutHrs = (setupMins + runMins) / 60;
         cutMach = cutHrs * rateMachCNC;
-        cutLabor = cutHrs * rateCNC; // CNC requires dedicated operator
+        cutLabor = cutHrs * rateCNC; 
     }
 
     // General Setup
     const setupHrs = (parseFloat(data.Time_Setup_Job || 15) + parseFloat(data.Time_Handling || 5)) / 60;
     const costSetup = setupHrs * rateOp;
 
-    const subTotal = costSubstrate + costInk + costLam + costSetup + costPrintOp + costPrintMach + costLamOp + cutMach + cutLabor;
+    const subTotal = costSubstrate + costInk + costSetup + costPrintOp + costPrintMach + cutMach + cutLabor;
     const riskFactor = parseFloat(data.Factor_Risk || 1.05);
     const riskBuffer = subTotal * (riskFactor - 1);
 
@@ -144,18 +135,16 @@ function calculatePVC(inputs, data) {
             grandTotal: grandTotal,
             isMinApplied: grandTotalRaw < minOrder,
             tiers: simTiers,
-            baseRate: baseRate
+            baseRate: unitPrintPrice / sqft // Derived for receipt display
         },
         cost: {
             total: subTotal + riskBuffer,
             breakdown: {
                 rawSubstrate: costSubstrate,
                 rawInk: costInk,
-                rawLam: costLam,
                 costSetup: costSetup,
                 costPrint: costPrintOp + costPrintMach,
                 costCut: cutMach + cutLabor,
-                costLamRun: costLamOp,
                 riskCost: riskBuffer,
                 wastePct: (wastePct - 1) * 100,
                 riskPct: (riskFactor - 1) * 100
@@ -176,23 +165,21 @@ window.PVC_CONFIG = {
       { id: 'h', label: 'Height (in)', type: 'number', def: 18 },
       { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'3mm', t:'3mm Standard'}, {v:'6mm', t:'6mm Heavy'}] },
       { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'Single Sided'}, {v:2, t:'Double Sided'}] },
-      { id: 'lam', label: 'Laminate', type: 'toggle', def: true },
       { id: 'shape', label: 'Cut Method', type: 'select', opts: [{v:'Rectangle', t:'Shear / Square'}, {v:'Easy', t:'CNC Simple'}, {v:'Complex', t:'CNC Complex'}] },
       { id: 'files', label: 'Files', type: 'number', def: 1 },
       { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
       { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
     retails: [
-      { heading: '3mm PVC Area Curves ($/SqFt)', key: 'PVC3_T1_Rate', label: 'Tiny (<3sf)', tooltip: 'FORMAT: 44.00' },
-      { key: 'PVC3_T2_Rate', label: 'Small (<6sf)' },
-      { key: 'PVC3_T3_Rate', label: 'Med (<12sf)' },
-      { key: 'PVC3_T4_Rate', label: 'Large (>12sf)' },
-      { heading: '6mm PVC Area Curves ($/SqFt)', key: 'PVC6_T1_Rate', label: 'Tiny (<3sf)' },
-      { key: 'PVC6_T2_Rate', label: 'Small (<6sf)' },
-      { key: 'PVC6_T3_Rate', label: 'Med (<12sf)' },
-      { key: 'PVC6_T4_Rate', label: 'Large (>12sf)' },
-      { heading: 'Multipliers & Fees', key: 'Retail_Adder_DS_Mult', label: 'Double Sided Add', tooltip: 'Calculated as a % of the base price. FORMAT: 0.50 (adds 50%)' },
-      { key: 'Retail_Lam_Deduct', label: 'No-Lam Deduct', tooltip: 'Discount applied if Laminate toggle is off. FORMAT: 0.10 (deducts 10%)' },
+      { heading: '3mm PVC Area Curves', key: 'PVC3_T1_Min', label: 'Per-Sign Min ($)', tooltip: 'FORMAT: 33.00' },
+      { key: 'PVC3_T2_Rate', label: 'Small (<6sf) $/sf' },
+      { key: 'PVC3_T3_Rate', label: 'Med (<12sf) $/sf' },
+      { key: 'PVC3_T4_Rate', label: 'Large (>12sf) $/sf' },
+      { heading: '6mm PVC Area Curves', key: 'PVC6_T1_Min', label: 'Per-Sign Min ($)' },
+      { key: 'PVC6_T2_Rate', label: 'Small (<6sf) $/sf' },
+      { key: 'PVC6_T3_Rate', label: 'Med (<12sf) $/sf' },
+      { key: 'PVC6_T4_Rate', label: 'Large (>12sf) $/sf' },
+      { heading: 'Multipliers & Fees', key: 'Retail_Adder_DS_Mult', label: 'Double Sided Add', tooltip: 'FORMAT: 0.50 (adds 50%)' },
       { key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' },
       { key: 'Retail_Fee_Router_Hard', label: 'CNC Hard Fee ($)' },
       { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger' },
@@ -202,7 +189,6 @@ window.PVC_CONFIG = {
       { key: 'Cost_Stock_3mm_4x8', label: '3mm Sheet ($)', tooltip: 'Cost of full 4x8 sheet. FORMAT: 29.09' },
       { key: 'Cost_Stock_6mm_4x8', label: '6mm Sheet ($)', tooltip: 'Cost of full 4x8 sheet. FORMAT: 58.37' },
       { key: 'Cost_Ink_Latex', label: 'Ink ($/SqFt)', tooltip: 'FORMAT: 0.16' },
-      { key: 'Cost_Lam_SqFt', label: 'Laminate ($/SqFt)', tooltip: 'FORMAT: 0.36' },
       { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
       { key: 'Rate_CNC_Labor', label: 'CNC Labor ($/Hr)' },
       { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
@@ -216,7 +202,7 @@ window.PVC_CONFIG = {
         <div>
           <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
           <div class="space-y-1 text-xs text-gray-700">
-            <div class="flex justify-between" title="Based on Area Curves + DS/Lam rules."><span class="cursor-help border-b border-dotted border-gray-400">Printed PVC Base (Calculated @ ${fmt(data.retail.baseRate)}/sf):</span> <span>${fmt(data.retail.printTotal)}</span></div>
+            <div class="flex justify-between" title="Based on Area Curves + DS rules + Per-Sign Minimums."><span class="cursor-help border-b border-dotted border-gray-400">Printed PVC Base (Calculated @ ${fmt(data.retail.baseRate)}/sf):</span> <span>${fmt(data.retail.printTotal)}</span></div>
             ${data.retail.routerFee > 0 ? `<div class="flex justify-between text-orange-700"><span>CNC Routing Fee:</span> <span>${fmt(data.retail.routerFee)}</span></div>` : ''}
             <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
             ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
@@ -233,7 +219,6 @@ window.PVC_CONFIG = {
         costHTML += `
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">PVC Substrate:</span> <span>${fmt(b.rawSubstrate)}</span></div>
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Ink Cost:</span> <span>${fmt(b.rawInk)}</span></div>
-            ${b.rawLam > 0 ? `<div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Laminate Film & Run:</span> <span>${fmt(b.rawLam + b.costLamRun)}</span></div>` : ''}
             <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
             <div class="flex justify-between"><span class="cursor-help border-b border-dotted border-gray-400" title="Factored at Operator Attention Ratio.">Flatbed Print Run:</span> <span>${fmt(b.costPrint)}</span></div>
             <div class="flex justify-between text-orange-800"><span class="border-b border-dotted border-orange-300">Cutting (Labor & Machine):</span> <span>${fmt(b.costCut)}</span></div>
