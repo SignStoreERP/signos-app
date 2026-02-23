@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Interior Wall Wraps (v1.1)
- * Supports Window Perf storefront integration and dynamic panel tracking.
+ * PURE PHYSICS ENGINE: Interior Wall Wraps (v1.2)
+ * Supports Window Perf storefront integration, dynamic panel tracking, and Line Item Qty.
  */
 function calculateWall(inputs, data) {
     // --- 1. RETAIL ENGINE ---
@@ -14,11 +14,12 @@ function calculateWall(inputs, data) {
 
     inputs.panels.forEach(p => {
         const sqft = (p.w * p.h) / 144;
-        const area = sqft * inputs.qty;
+        const lineQty = p.qty || 1;
+        const area = sqft * lineQty * inputs.qty;
         totalSqFt += area;
 
         const shortEdge = Math.min(p.w, p.h);
-        const panelCount = shortEdge <= 52 ? 1 : Math.ceil((shortEdge - 1) / 51);
+        const panelCount = (shortEdge <= 52 ? 1 : Math.ceil((shortEdge - 1) / 51)) * lineQty;
 
         let retailUnit = p.material === 'perf' ? retPerf : retWall;
         const rowRetail = retailUnit * area;
@@ -27,6 +28,7 @@ function calculateWall(inputs, data) {
         panelLogs.push({ 
             label: p.label || 'Wall Section', 
             material: p.material,
+            qty: lineQty,
             w: p.w, h: p.h,
             sqft: area, 
             retail: rowRetail, 
@@ -65,7 +67,8 @@ function calculateWall(inputs, data) {
 
     let totalCostMat = 0;
     inputs.panels.forEach(p => {
-        const area = ((p.w * p.h) / 144) * inputs.qty;
+        const lineQty = p.qty || 1;
+        const area = ((p.w * p.h) / 144) * lineQty * inputs.qty;
         let matUnit = p.material === 'perf' ? (costVinPerf + costLamPerf) : (costVinWall + costLamWall);
         totalCostMat += (matUnit * area * waste);
     });
@@ -110,3 +113,61 @@ function calculateWall(inputs, data) {
         }
     };
 }
+
+window.WALL_CONFIG = {
+    tab: 'PROD_Vinyl_Wraps',
+    engine: calculateWall,
+    controls: [
+        { id: 'w', label: 'Simulated Width', type: 'number', def: 120 },
+        { id: 'h', label: 'Simulated Height', type: 'number', def: 96 },
+        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
+    ],
+    dynamicUI: function(inputs) {
+        inputs.panels = [{ label: "Simulated Wall", qty: 1, w: inputs.w, h: inputs.h }];
+        return inputs;
+    },
+    retails: [
+        { heading: 'Market Base ($/SqFt)', key: 'Retail_Price_Wall_SqFt', label: 'Wall Wrap Rate ($)' },
+        { heading: 'Installation Matrix', key: 'Retail_Install_Wall_SqFt', label: 'Wall Install ($/SqFt)' },
+        { heading: 'Flat Fees', key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
+    ],
+    costs: [
+        { heading: 'Raw Materials', key: 'Cost_Vin_Wall', label: 'Wall Vinyl ($/SqFt)' },
+        { key: 'Cost_Lam_Wall', label: 'Wall Lam ($/SqFt)' },
+        { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
+        { heading: 'Labor & Speeds', key: 'Rate_Operator', label: 'Operator ($/Hr)' },
+        { key: 'Rate_Install', label: 'Installer ($/Hr)' },
+        { key: 'Rate_Machine_Print', label: 'Printer Mach ($/Hr)' },
+        { key: 'Speed_Print_Roll', label: 'Print Spd (SqFt/hr)' },
+        { key: 'Speed_Lam_Roll', label: 'Lam Spd (SqFt/hr)' },
+        { key: 'Speed_Install_Wall', label: 'Install Spd (SqFt/hr)' },
+        { heading: 'Modifiers', key: 'Waste_Factor', label: 'Waste (1.x)' },
+        { key: 'Factor_Risk', label: 'Risk (1.x)' },
+        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
+    ],
+    renderReceipt: function(data, fmt) {
+        return `
+            <div>
+                <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
+                <div class="space-y-1 text-xs text-gray-700">
+                    <div class="flex justify-between"><span>Printed Wall Graphics:</span> <span>${fmt(data.retail.printTotal)}</span></div>
+                    <div class="flex justify-between"><span>Installation:</span> <span>${fmt(data.retail.installTotal)}</span></div>
+                    ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
+                    <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
+                <div class="space-y-1 text-xs text-gray-700">
+                    <div class="flex justify-between"><span>Vinyl + Lam + Waste:</span> <span>${fmt(data.cost.breakdown.materials)}</span></div>
+                    <div class="flex justify-between"><span>Ink Usage:</span> <span>${fmt(data.cost.breakdown.ink)}</span></div>
+                    <div class="flex justify-between"><span>Print Labor:</span> <span>${fmt(data.cost.breakdown.printLabor)}</span></div>
+                    <div class="flex justify-between"><span>Machine Time:</span> <span>${fmt(data.cost.breakdown.machine)}</span></div>
+                    <div class="flex justify-between text-blue-600 font-bold border-t border-gray-100 pt-1 mt-1"><span>Installation Labor:</span> <span>${fmt(data.cost.breakdown.installLabor)}</span></div>
+                    <div class="flex justify-between text-orange-500 opacity-80 border-t border-gray-100 pt-1 mt-1"><span>Risk Buffer:</span> <span>(+ ${fmt(data.cost.breakdown.risk)})</span></div>
+                    <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div>
+                </div>
+            </div>
+        `;
+    }
+};
