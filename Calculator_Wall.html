@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interior Wall Wraps v1.1</title>
+<title>Interior Wall Wraps v1.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 <script src="logic_wall.js"></script>
@@ -88,16 +88,16 @@ window.onload = async function() {
         backendData = data;
 
         if(statusText) { statusText.innerText = "ONLINE"; statusText.className = "font-bold text-green-500"; statusDot.className = "w-2 h-2 rounded-full bg-green-500"; statusDot.classList.remove("animate-pulse"); }
-        if(verDisplay) { verDisplay.innerText = `(v1.1)`; verDisplay.classList.remove('hidden'); }
+        if(verDisplay) { verDisplay.innerText = `(v1.2)`; verDisplay.classList.remove('hidden'); }
 
-        addPanel("Lobby Main Wall", "wall", 120, 96);
+        addPanel("Lobby Main Wall", "wall", 1, 120, 96);
     } catch(e) {
         if(statusText) { statusText.innerText = "OFFLINE"; statusText.className = "font-bold text-red-500"; }
         console.error(e);
     }
 };
 
-function addPanel(defLabel = "", defMat = "wall", defW = 0, defH = 0) {
+function addPanel(defLabel = "", defMat = "wall", defQty = 1, defW = 0, defH = 0) {
     const id = panelIdCounter++;
     const container = document.getElementById('panel-container');
     const div = document.createElement('div');
@@ -105,7 +105,9 @@ function addPanel(defLabel = "", defMat = "wall", defW = 0, defH = 0) {
     div.id = `panel-${id}`;
     
     div.innerHTML = `
-        <button onclick="removePanel(${id})" class="absolute -top-2 -right-2 bg-red-100 text-red-600 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full text-xs font-bold shadow opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">✕</button>
+        <button onclick="duplicatePanel(${id})" class="absolute -top-2 right-6 bg-blue-100 text-blue-600 hover:bg-blue-500 hover:text-white w-6 h-6 rounded-full text-xs font-bold shadow opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center" title="Duplicate Row">⧉</button>
+        <button onclick="removePanel(${id})" class="absolute -top-2 -right-2 bg-red-100 text-red-600 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full text-xs font-bold shadow opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center" title="Delete Row">✕</button>
+        
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
             <div><label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Section Identifier</label><input type="text" id="lbl-${id}" value="${defLabel}" placeholder="e.g. North Conf Room" class="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-700 outline-none focus:border-blue-500" oninput="runCalc()"></div>
             <div><label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Material Type</label>
@@ -115,7 +117,9 @@ function addPanel(defLabel = "", defMat = "wall", defW = 0, defH = 0) {
                 </select>
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-3 items-end">
+        
+        <div class="grid grid-cols-3 gap-3 items-end">
+            <div><label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Line Qty</label><input type="number" id="p-qty-${id}" value="${defQty}" min="1" class="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-center outline-none" oninput="runCalc()"></div>
             <div><label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Total Width (in)</label><input type="number" id="w-${id}" value="${defW || ''}" class="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-center outline-none" oninput="runCalc()"></div>
             <div><label class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Total Height (in)</label><input type="number" id="h-${id}" value="${defH || ''}" class="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-center outline-none" oninput="runCalc()"></div>
         </div>
@@ -125,6 +129,15 @@ function addPanel(defLabel = "", defMat = "wall", defW = 0, defH = 0) {
     runCalc();
 }
 
+function duplicatePanel(id) {
+    const label = document.getElementById(`lbl-${id}`).value;
+    const mat = document.getElementById(`mat-${id}`).value;
+    const qty = document.getElementById(`p-qty-${id}`).value || 1;
+    const w = document.getElementById(`w-${id}`).value;
+    const h = document.getElementById(`h-${id}`).value;
+    addPanel(label + ' (Copy)', mat, qty, w, h);
+}
+
 function removePanel(id) { document.getElementById(`panel-${id}`).remove(); runCalc(); }
 
 function runCalc() {
@@ -132,19 +145,26 @@ function runCalc() {
 
     const panels = [];
     document.querySelectorAll('.panel-row').forEach(row => {
-        const id = row.id.split('-')[1];
+        const id = row.id.split('-')[1]; // Fixed index
         const w = parseFloat(document.getElementById(`w-${id}`).value) || 0;
         const h = parseFloat(document.getElementById(`h-${id}`).value) || 0;
+        const lineQty = parseFloat(document.getElementById(`p-qty-${id}`).value) || 1;
         const shortEdge = Math.min(w, h);
         const longEdge = Math.max(w, h);
         const seamEl = document.getElementById(`seam-${id}`);
         
         if (w === 0 || h === 0) { seamEl.innerText = "Awaiting Dimensions..."; seamEl.className = "mt-3 text-[9px] font-bold uppercase tracking-widest text-gray-400 text-center bg-gray-50 py-1.5 rounded border border-transparent"; } 
         else if (longEdge > 1200) { seamEl.innerText = `⚠️ OVERSIZED: Exceeds 100ft roll length`; seamEl.className = "mt-3 text-[9px] font-bold uppercase tracking-widest text-white text-center bg-red-600 py-1.5 rounded shadow-inner"; } 
-        else if (shortEdge > 52) { const pCount = Math.ceil((shortEdge - 1) / 51); seamEl.innerText = `⚠️ Tiled: Produces ${pCount} Vertical Panels`; seamEl.className = "mt-3 text-[9px] font-bold uppercase tracking-widest text-orange-700 text-center bg-orange-100 py-1.5 rounded border border-orange-200"; } 
-        else { seamEl.innerText = "Produces 1 Panel (Seamless)"; seamEl.className = "mt-3 text-[9px] font-bold uppercase tracking-widest text-green-700 text-center bg-green-50 py-1.5 rounded border border-green-200"; }
+        else if (shortEdge > 52) { const pCount = Math.ceil((shortEdge - 1) / 51) * lineQty; seamEl.innerText = `⚠️ Tiled: Produces ${pCount} Vertical Panels`; seamEl.className = "mt-3 text-[9px] font-bold uppercase tracking-widest text-orange-700 text-center bg-orange-100 py-1.5 rounded border border-orange-200"; } 
+        else { seamEl.innerText = `Produces ${1 * lineQty} Panel(s)`; seamEl.className = "mt-3 text-[9px] font-bold uppercase tracking-widest text-green-700 text-center bg-green-50 py-1.5 rounded border border-green-200"; }
 
-        panels.push({ label: document.getElementById(`lbl-${id}`).value || 'Unnamed Section', material: document.getElementById(`mat-${id}`).value, w: w, h: h });
+        panels.push({ 
+            label: document.getElementById(`lbl-${id}`).value || 'Unnamed Section', 
+            material: document.getElementById(`mat-${id}`).value, 
+            qty: lineQty,
+            w: w, 
+            h: h 
+        });
     });
 
     const inputs = {
@@ -160,7 +180,7 @@ function runCalc() {
     const fmt = (n) => "$" + n.toFixed(2);
 
     let totalArea = 0;
-    panels.forEach(p => totalArea += ((p.w * p.h) / 144));
+    panels.forEach(p => totalArea += ((p.w * p.h) / 144) * p.qty); // Include Line Qty
     
     document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
     document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
@@ -173,7 +193,7 @@ function runCalc() {
             lineItemsHTML += `
             <div class="flex justify-between items-end mb-1.5">
                 <span class="truncate pr-2">
-                    <span class="text-gray-800 font-bold">${p.label}</span> 
+                    <span class="text-gray-800 font-bold">${p.label} (x${p.qty})</span> 
                     <span class="text-[9px] text-gray-500 ml-1">(${p.w}"x${p.h}" ${matTxt})</span>
                 </span>
                 <span class="font-bold shrink-0">${fmt(p.retail)}</span>
@@ -193,7 +213,7 @@ function runCalc() {
     descLines.push(`(x${inputs.qty}) Location(s) - Architectural Wall Wraps`);
     panels.forEach(p => {
         let matTxt = p.material === 'wall' ? 'GF 226 WallMark' : 'Storefront Window Perf';
-        if(p.w > 0 && p.h > 0) descLines.push(` - ${p.label}: ${p.w}" x ${p.h}" (${matTxt})`);
+        if(p.w > 0 && p.h > 0) descLines.push(` - ${p.label} (x${p.qty}): ${p.w}" x ${p.h}" (${matTxt})`);
     });
     descLines.push(`Finish: ${inputs.lam === 'gloss' ? 'Gloss' : 'Matte'} Laminated. Printed and installed.`);
     document.getElementById('job-desc').value = descLines.join('\n');
