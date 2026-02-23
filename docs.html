@@ -3,177 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS User Manual v4.2</title>
+    <title>SignOS User Manual v4.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Placeholder for core logic - implementation handles real data -->
+    <script src="signos-core.js"></script>
     <style>
-        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; background: #eff6ff; }
+        .tab-btn.active { border-bottom: 2px solid #3b82f6; color: #1d4ed8; font-weight: 800; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .guide-card { transition: all 0.2s; }
-        .guide-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .badge-new { background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 8px; vertical-align: middle; }
+        .feature-card { transition: all 0.2s; border: 1px solid #e5e7eb; background: white; }
+        .feature-card:hover { border-color: #3b82f6; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
         details > summary { list-style: none; cursor: pointer; }
         details > summary::-webkit-details-marker { display: none; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans p-4 md:p-8">
+<body class="bg-gray-50 min-h-screen font-sans flex flex-col">
 
-<div class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
-
-    <!-- HEADER -->
-    <div class="bg-gray-900 px-8 py-6 text-white flex justify-between items-center">
-        <div>
-            <div class="flex items-center">
-                <h1 class="text-2xl font-bold tracking-tight">SignOS Knowledge Base</h1>
-                <span class="ml-3 px-2 py-1 bg-blue-600 rounded text-xs font-mono uppercase tracking-widest" id="env-badge">v4.2 | PRODUCTION</span>
+    <!-- STANDARD ERP HEADER -->
+    <div class="bg-gray-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+        <div class="flex flex-col">
+            <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">SignOS Knowledge Base</span>
+            <div class="flex items-center gap-2">
+                <h1 class="text-sm font-bold leading-tight" id="module-title">User Manual v4.3</h1>
+                <span id="env-badge" class="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-600 text-white uppercase tracking-tighter">ONLINE</span>
             </div>
-            <p class="text-gray-400 text-sm mt-1">Official Sales & Production Standard Operating Procedures</p>
         </div>
-        <div class="hidden md:flex flex-col items-end">
-            <span class="flex items-center text-xs text-green-400">
-                <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                SYSTEM ONLINE
-            </span>
-            <span class="text-xs text-gray-500 mt-1" id="last-update">Sync: 2/23/2026</span>
-        </div>
-    </div>
-
-    <!-- NAVIGATION TABS -->
-    <div class="flex border-b border-gray-200 bg-gray-50 overflow-x-auto no-scrollbar">
-        <button onclick="switchTab('sales')" class="tab-btn active px-6 py-4 font-semibold text-gray-600 transition-colors whitespace-nowrap">Sales Manual</button>
-        <button onclick="switchTab('prod')" class="tab-btn px-6 py-4 font-semibold text-gray-600 transition-colors whitespace-nowrap">Production Specs</button>
-        <button id="btn-admin" onclick="switchTab('admin')" class="tab-btn hidden px-6 py-4 font-semibold text-gray-600 transition-colors whitespace-nowrap">Admin/Dev Control</button>
-    </div>
-
-    <!-- SALES CONTENT -->
-    <div id="sales" class="tab-content active p-8">
         
-        <!-- RELEASE ALERT -->
-        <div class="mb-10 bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
-            <h3 class="text-blue-900 font-bold text-lg mb-2">🚀 New Product Release - Feb 23</h3>
-            <p class="text-blue-800 text-sm mb-4">The following calculators have been moved from DEV to SALES. You are now authorized to use these for client quoting:</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">Yard Signs</span>
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">Coroplast</span>
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">ACM Signs</span>
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">PVC Signs</span>
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">Foam Core</span>
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">Vinyl Banners</span>
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">Vehicle Wraps</span>
-                <span class="bg-white border border-blue-200 px-3 py-1 rounded text-xs font-bold text-blue-700">Cut Vinyl</span>
+        <div class="flex items-center gap-4">
+            <div class="hidden md:flex flex-col items-end">
+                <span class="text-[10px] font-bold text-gray-300 uppercase tracking-tight" id="auth-user">---</span>
+                <span class="text-[9px] text-blue-500 font-bold uppercase tracking-tighter" id="auth-role">---</span>
             </div>
+            <div class="h-8 w-[1px] bg-gray-700 hidden md:block"></div>
+            <button onclick="goBack()" class="text-gray-300 hover:text-white text-[10px] font-bold border border-gray-600 px-3 py-1.5 rounded transition uppercase tracking-widest">Menu</button>
+            <button onclick="logout()" class="text-red-400 hover:text-red-300 text-[10px] font-bold border border-red-900/50 bg-red-950/20 px-3 py-1.5 rounded transition uppercase tracking-widest">Exit</button>
         </div>
+    </div>
 
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- SECTION 1: CALCULATOR TERMINOLOGY -->
+    <!-- SUB-NAV / TABS -->
+    <div class="bg-white border-b border-gray-200 sticky top-[68px] z-40">
+        <div class="max-w-6xl mx-auto flex px-4 hide-scroll overflow-x-auto">
+            <button onclick="switchTab('sales')" class="tab-btn active px-6 py-4 text-xs font-bold uppercase tracking-widest border-b-2 border-transparent transition-all whitespace-nowrap">Sales Manual</button>
+            <button onclick="switchTab('prod')" class="tab-btn px-6 py-4 text-xs font-bold uppercase tracking-widest border-b-2 border-transparent transition-all whitespace-nowrap">Production Specs</button>
+            <button id="btn-admin" onclick="switchTab('admin')" class="tab-btn hidden px-6 py-4 text-xs font-bold uppercase tracking-widest border-b-2 border-transparent transition-all whitespace-nowrap text-orange-600">Admin Control</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-6xl mx-auto w-full p-4 md:p-8">
+        
+        <!-- SALES CONTENT -->
+        <div id="sales" class="tab-content active space-y-8">
+            
+            <!-- PRODUCT RELEASE GRID -->
             <section>
-                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                    <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                    Common Terminology
-                </h2>
-                <div class="space-y-4">
-                    <details class="group bg-gray-50 rounded-lg border border-gray-100 p-4">
-                        <summary class="font-bold text-gray-700 flex justify-between items-center">
-                            Rigid Substrate Logic
-                            <span class="text-blue-500 group-open:rotate-180 transition-transform">▼</span>
-                        </summary>
-                        <ul class="mt-3 space-y-2 text-sm text-gray-600 pl-2">
-                            <li><strong>ACM (Aluminum Composite):</strong> Durable metal exterior for long-term outdoor use.</li>
-                            <li><strong>Shear Cut:</strong> Standard straight-line cutting (included in base price).</li>
-                            <li><strong>CNC Routing:</strong> Required for circles, logos, or custom shapes. Adds a flat setup fee ($30-$50).</li>
-                            <li><strong>Single-Sided (SS) vs Double-Sided (DS):</strong> Rigid DS typically adds 50% to the base price, not 100%, because the material is already paid for.</li>
-                        </ul>
-                    </details>
-
-                    <details class="group bg-gray-50 rounded-lg border border-gray-100 p-4">
-                        <summary class="font-bold text-gray-700 flex justify-between items-center">
-                            Vinyl & Roll Media Logic
-                            <span class="text-blue-500 group-open:rotate-180 transition-transform">▼</span>
-                        </summary>
-                        <ul class="mt-3 space-y-2 text-sm text-gray-600 pl-2">
-                            <li><strong>Calendered (Standard):</strong> For flat signs and wall decals (Intermediate).</li>
-                            <li><strong>Cast (Premium):</strong> Required for Vehicle Wraps and high-durability needs (751/IJ180).</li>
-                            <li><strong>Simple Weeding:</strong> Circles, squares, large text (2 mins/sqft labor).</li>
-                            <li><strong>Complex Weeding:</strong> Small text or logos with many "islands" (8 mins/sqft labor).</li>
-                            <li><strong>Hem & Grommet:</strong> Banner finishing included in linear foot price.</li>
-                        </ul>
-                    </details>
+                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Authorized Products (Released Today)</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div class="bg-white border border-blue-100 p-3 rounded-lg text-center feature-card">
+                        <span class="block text-xs font-bold text-gray-800 uppercase">Yard Signs</span>
+                    </div>
+                    <div class="bg-white border border-blue-100 p-3 rounded-lg text-center feature-card">
+                        <span class="block text-xs font-bold text-gray-800 uppercase">ACM / Rigid</span>
+                    </div>
+                    <div class="bg-white border border-blue-100 p-3 rounded-lg text-center feature-card">
+                        <span class="block text-xs font-bold text-gray-800 uppercase">Wraps / Walls</span>
+                    </div>
+                    <div class="bg-white border border-blue-100 p-3 rounded-lg text-center feature-card">
+                        <span class="block text-xs font-bold text-gray-800 uppercase">Banners</span>
+                    </div>
+                    <div class="bg-white border border-blue-100 p-3 rounded-lg text-center feature-card">
+                        <span class="block text-xs font-bold text-gray-800 uppercase">Cut Vinyl</span>
+                    </div>
                 </div>
             </section>
 
-            <!-- SECTION 2: HOW TO QUOTE -->
-            <section>
-                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                    <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                    Quoting Best Practices
-                </h2>
-                <div class="space-y-6">
-                    <div class="guide-card p-5 border border-gray-100 rounded-xl bg-white shadow-sm">
-                        <h4 class="font-bold text-gray-900">1. Select the Material First</h4>
-                        <p class="text-sm text-gray-500 mt-1">The system automatically calculates machine speeds based on material density. Don't select ACM if you are quoting Coroplast just to see the price difference; the labor math will be wrong.</p>
+            <!-- CHEAT SHEET GRID -->
+            <div class="grid md:grid-cols-2 gap-6">
+                
+                <!-- TERMINOLOGY COMPACT -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h4 class="text-xs font-bold text-gray-700 uppercase tracking-tight">Terminology Cheat Sheet</h4>
                     </div>
-                    <div class="guide-card p-5 border border-gray-100 rounded-xl bg-white shadow-sm">
-                        <h4 class="font-bold text-gray-900 text-red-600">2. Respect the Loss Alert</h4>
-                        <p class="text-sm text-gray-500 mt-1">If the system shows a red pulse, your markup is too low. Increasing quantity often solves this by reducing the "Labor Burden" per sign.</p>
-                    </div>
-                    <div class="guide-card p-5 border border-gray-100 rounded-xl bg-white shadow-sm">
-                        <h4 class="font-bold text-gray-900">3. Shipping Verification</h4>
-                        <p class="text-sm text-gray-500 mt-1">For ACM or Rigid signs over 48", the system assumes LTL Freight ($199 flat). Warn clients about freight costs for large rigid boards.</p>
+                    <div class="p-4 space-y-4">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">ACM</div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-800">Shear vs CNC</p>
+                                <p class="text-[11px] text-gray-500">Shear is straight cuts only (Free). CNC is for shapes/circles ($30+ fee).</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded bg-green-50 text-green-600 flex items-center justify-center font-bold text-xs shrink-0">VIN</div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-800">Cast vs Calendered</p>
+                                <p class="text-[11px] text-gray-500">Cast for vehicles/long-term. Calendered for walls/flat signs.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">LAB</div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-800">Simple vs Complex Weeding</p>
+                                <p class="text-[11px] text-gray-500">Small letters/islands multiply weeding labor from 2 mins to 8 mins/sqft.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </section>
-        </div>
-    </div>
 
-    <!-- PRODUCTION CONTENT -->
-    <div id="prod" class="tab-content p-8">
-        <h2 class="text-xl font-bold text-gray-800 mb-6">Manufacturing Standards</h2>
-        <div class="grid md:grid-cols-3 gap-6">
-            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <h3 class="font-bold text-gray-900 mb-3">Material Yields</h3>
-                <ul class="text-sm space-y-2 text-gray-600">
-                    <li><strong>Rigid:</strong> 10% Waste Factor (Standard)</li>
-                    <li><strong>Vinyl:</strong> 15% Waste Factor (Standard)</li>
-                    <li><strong>Wraps:</strong> 25% Waste Factor (Complex Panels)</li>
-                </ul>
-            </div>
-            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <h3 class="font-bold text-gray-900 mb-3">Machine Speeds</h3>
-                <ul class="text-sm space-y-2 text-gray-600">
-                    <li><strong>HP R1000:</strong> 25 LF/Hr (Draft Mode)</li>
-                    <li><strong>HP Latex 300:</strong> 150 SqFt/Hr (High Speed)</li>
-                    <li><strong>CNC MultiCam:</strong> 1-2 Mins/SqFt</li>
-                </ul>
-            </div>
-            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <h3 class="font-bold text-gray-900 mb-3">Labor Rates</h3>
-                <ul class="text-sm space-y-2 text-gray-600">
-                    <li><strong>Shop Labor:</strong> $60 Retail</li>
-                    <li><strong>Design:</strong> $100 Retail</li>
-                    <li><strong>Installer:</strong> $85 Retail</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- ADMIN CONTENT -->
-    <div id="admin" class="tab-content p-8">
-        <h2 class="text-xl font-bold text-gray-800 mb-6">Backend Management</h2>
-        <p class="text-gray-600 text-sm mb-8 italic">Restricted to Admin/Dev roles. These controls sync directly with the Google Sheets backend.</p>
-        
-        <div class="space-y-4">
-            <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-between">
-                <div>
-                    <span class="font-bold text-orange-800">Master Data Sync</span>
-                    <p class="text-xs text-orange-700">Push pricing changes from Master_Retail_Curves to all live modules.</p>
+                <!-- QUOTING FLOW -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h4 class="text-xs font-bold text-gray-700 uppercase tracking-tight">Profit Guard Protocol</h4>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="border-l-2 border-red-500 pl-4">
+                            <p class="text-xs font-bold text-red-600 uppercase mb-1">Red Pulse Alert</p>
+                            <p class="text-xs text-gray-600">If you see a pulsing red bar, you are pricing below shop cost. Increase Qty or Price.</p>
+                        </div>
+                        <div class="border-l-2 border-blue-500 pl-4">
+                            <p class="text-xs font-bold text-blue-600 uppercase mb-1">The Vended Check</p>
+                            <p class="text-xs text-gray-600">Always check Tab 3 (Vended). If outsourced cost is cheaper than shop cost, prioritize selling that.</p>
+                        </div>
+                    </div>
                 </div>
-                <button class="bg-orange-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-orange-700">Run Sync</button>
+
             </div>
         </div>
-    </div>
 
-</div>
+        <!-- PRODUCTION CONTENT (COMPACT) -->
+        <div id="prod" class="tab-content">
+            <div class="grid sm:grid-cols-3 gap-4">
+                <div class="bg-white p-4 border rounded-xl">
+                    <h5 class="text-[10px] font-black text-gray-400 uppercase mb-2">Machine Speeds</h5>
+                    <p class="text-xs font-bold">HP R1000: <span class="text-gray-500 font-normal">25 LF/Hr</span></p>
+                    <p class="text-xs font-bold">Latex 300: <span class="text-gray-500 font-normal">150 SqFt/Hr</span></p>
+                </div>
+                <div class="bg-white p-4 border rounded-xl">
+                    <h5 class="text-[10px] font-black text-gray-400 uppercase mb-2">Labor Rates (Retail)</h5>
+                    <p class="text-xs font-bold">Shop: <span class="text-gray-500 font-normal">$60/Hr</span></p>
+                    <p class="text-xs font-bold">Installer: <span class="text-gray-500 font-normal">$85/Hr</span></p>
+                </div>
+                <div class="bg-white p-4 border rounded-xl">
+                    <h5 class="text-[10px] font-black text-gray-400 uppercase mb-2">Waste Buffers</h5>
+                    <p class="text-xs font-bold">Rigid: <span class="text-gray-500 font-normal">10%</span></p>
+                    <p class="text-xs font-bold">Wrap: <span class="text-gray-500 font-normal">25%</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN CONTENT -->
+        <div id="admin" class="tab-content">
+            <div class="bg-orange-50 border border-orange-200 p-6 rounded-xl">
+                <h4 class="font-bold text-orange-800 mb-2 uppercase text-xs">Administrative Sync Engine</h4>
+                <p class="text-xs text-orange-700 mb-6 leading-relaxed">Changes to Master Retail Curves in the backend are cached until a global sync is run. This prevents partial data from affecting sales quotes during bulk updates.</p>
+                <button class="bg-orange-600 text-white px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition">Execute Global Sync</button>
+            </div>
+        </div>
+
+    </main>
 
 <script>
     const switchTab = (tabId) => {
@@ -185,19 +172,24 @@
     };
 
     // --- AUTH & INITIALIZATION ---
-    window.onload = async function() {
-        const u = localStorage.getItem('signos_user') || 'Guest';
-        const r = localStorage.getItem('signos_role') || 'SALES';
-        const IS_DEV_ENV = window.location.href.includes('dev');
+    window.onload = function() {
+        const u = sessionStorage.getItem('signos_user') || 'GUEST';
+        const r = sessionStorage.getItem('signos_role') || 'SALES';
+        
+        // Populate Header
+        document.getElementById('auth-user').innerText = u;
+        document.getElementById('auth-role').innerText = r;
 
-        // Logic to show/hide admin buttons based on role
-        if (r === 'ADMIN') {
+        // Admin Visibility
+        if (r === 'ADMIN' || r === 'SUPER') {
             document.getElementById('btn-admin').classList.remove('hidden');
         }
 
-        if(IS_DEV_ENV) {
-            document.getElementById('env-badge').innerText = "v4.2 | DEVELOPMENT";
-            document.getElementById('env-badge').classList.replace('bg-blue-600', 'bg-orange-600');
+        // Environment Detection
+        if (window.location.href.includes('signos-app')) {
+            const badge = document.getElementById('env-badge');
+            badge.innerText = "DEV MODE";
+            badge.className = "px-1.5 py-0.5 rounded text-[8px] font-black bg-orange-500 text-white uppercase tracking-tighter";
         }
     };
 </script>
