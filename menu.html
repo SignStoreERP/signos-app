@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SignOS Menu v6.0</title>
+<title>SignOS Menu v6.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 </head>
@@ -197,6 +197,8 @@ function renderMenu(data, rawRole, mappedRole) {
         groups[category].forEach(mod => {
             const iconPath = val(mod, 'Icon_Path');
             const iconColor = val(mod, 'Icon') || 'gray';
+            const devStatus = val(mod, 'Dev_Status') || '';
+
             let iconContent = iconPath 
                 ? `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path></svg>`
                 : `<span class="w-4 h-4 rounded-full bg-${iconColor}-500 inline-block"></span>`;
@@ -209,6 +211,8 @@ function renderMenu(data, rawRole, mappedRole) {
                 </span>`;
             }
 
+            const statusHtml = devStatus ? `<div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 truncate">${devStatus}</div>` : '';
+
             gridHtml += `
             <a href="${val(mod, 'File_Link')}" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 active:scale-95 transition flex items-center justify-between group">
                 <div class="flex items-center gap-4">
@@ -217,7 +221,8 @@ function renderMenu(data, rawRole, mappedRole) {
                     </div>
                     <div class="min-w-0">
                         <h3 class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition truncate">${val(mod, 'Display_Name')}</h3>
-                        <div class="flex items-center mt-1">
+                        ${statusHtml}
+                        <div class="flex items-center mt-1.5">
                             <span class="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${mod._verClass}">${mod._verText}</span>
                             ${healthHTML}
                         </div>
