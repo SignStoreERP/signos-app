@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cut Vinyl Calculator v4.2</title>
+<title>Cut Vinyl Calculator v4.3</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -21,145 +21,129 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <!-- Main Card: Island Mode -->
 <div id="main-card" class="max-w-md mx-auto my-4 sm:my-10 w-[calc(100%-2rem)] sm:w-full bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200">
 
-<!-- INPUTS -->
-<div class="p-6 space-y-4">
-<div class="grid grid-cols-3 gap-3">
-<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
-<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="12" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
-<div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="6" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
-</div>
+    <!-- INPUTS -->
+    <div class="p-6 space-y-4">
+        <div class="grid grid-cols-3 gap-3">
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="12" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="6" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+        </div>
 
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Application</label>
-<select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="initColors(); runCalc()">
-  <option value="Flat">Flat Surface (751)</option>
-  <option value="Vehicle">Vehicle App (951)</option>
-  <option value="Backlit_8500">Backlit Std (8500)</option>
-  <option value="Backlit_8800">Backlit Premium (8800)</option>
-</select>
-</div>
-<div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Weeding</label>
-<select id="complexity" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
-<option value="Simple">Simple (Large Text)</option>
-<option value="Complex">Complex (Small/Serifs)</option>
-</select>
-</div>
-</div>
+        <!-- SEAM WARNING (Dynamic) -->
+        <div id="seam-warn" class="hidden bg-orange-50 text-orange-800 text-[10px] font-bold px-3 py-2 rounded border border-orange-200 transition-opacity">
+            ⚠️ Panel seaming required. Dimensions exceed maximum roll width (48"). Graphics will be tiled.
+        </div>
+        
+        <!-- ROLL WIDTH INDICATOR -->
+        <div id="ui-sheet-indicator" class="text-[9px] font-bold text-gray-400 text-center uppercase tracking-widest bg-gray-50 py-1 rounded border border-gray-100">
+            Producing from: 24" Roll
+        </div>
 
-<!-- DYNAMIC COLOR PICKER -->
-<div>
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1" id="lbl-color-title">Cast Vinyl Colors</label>
-<div class="relative">
-<input type="text" id="vinyl-color" placeholder="Select Color below..." readonly class="w-full border p-2 pl-10 rounded font-bold text-sm bg-gray-50 text-gray-700 outline-none">
-<div class="absolute top-2.5 left-2.5 w-5 h-5 rounded border border-gray-300 shadow-sm" id="selected-swatch" style="background-color: #fff;"></div>
-</div>
-<div id="color-grid" class="grid grid-cols-8 gap-1 mt-2 max-h-32 overflow-y-auto border p-1.5 rounded bg-gray-50 custom-scroll"></div>
-</div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Application</label>
+                <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="initColors(); runCalc()">
+                    <option value="Flat">Flat Surface (751)</option>
+                    <option value="Vehicle">Vehicle App (951)</option>
+                    <option value="Backlit_8500">Backlit Std (8500)</option>
+                    <option value="Backlit_8800">Backlit Premium (8800)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Weeding</label>
+                <select id="complexity" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
+                    <option value="Simple">Simple (Large/Block)</option>
+                    <option value="Complex">Complex (Small/Serif)</option>
+                </select>
+            </div>
+        </div>
 
-<!-- Toggles -->
-<div class="space-y-2 border-t border-gray-100 pt-3">
-<div class="grid grid-cols-2 gap-2">
-<label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="setup-per-file" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Charge Setup/File</label>
-<label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer bg-purple-50 p-2 rounded border border-purple-200 hover:bg-purple-100 transition"><input type="checkbox" id="inc-design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
-</div>
-<div class="flex items-center gap-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border rounded p-1 text-center text-sm font-bold" oninput="runCalc()"></div>
-</div>
-</div>
+        <div class="space-y-2 border-t border-gray-100 pt-2">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Vinyl Color Selection</label>
+                <div class="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded border border-gray-200">
+                    <div id="selected-swatch" class="w-6 h-6 rounded border border-gray-300 shadow-inner bg-white"></div>
+                    <input type="text" id="vinyl-color" placeholder="Select a color below or type code..." class="flex-1 bg-transparent text-sm font-bold text-gray-800 outline-none" oninput="runCalc()">
+                </div>
+                <div id="color-grid" class="flex flex-wrap gap-1.5 p-1"></div>
+            </div>
 
-<!-- RESULTS -->
-<div class="bg-white p-6 border-t border-gray-200">
-<div class="flex justify-between items-center mb-1">
-<span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Base Unit Price</span>
-<span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
-</div>
+            <div class="flex justify-between items-center bg-purple-50 border border-purple-200 p-2 rounded mt-2">
+                <label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer transition"><input type="checkbox" id="inc-design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
+                <div class="flex items-center gap-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border border-gray-300 rounded p-1 text-center text-sm font-bold bg-white" oninput="runCalc()"></div>
+            </div>
+        </div>
+    </div>
 
-<!-- DISCOUNT TABLE -->
-<div class="mb-4 text-right">
-<button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wide inline-flex items-center gap-1 ml-auto">
-Show Volume Discounts
-<svg id="disc-arrow" class="w-3 h-3 transition-transform duration-200 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-</button>
-<div id="disc-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
-<table class="w-full text-right">
-<thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200"><tr><th class="pr-4 pb-1">Qty</th><th class="pr-4 pb-1">Base Graphic</th><th class="pb-1 text-blue-600">You Pay</th></tr></thead>
-<tbody id="tier-rows" class="font-bold text-gray-700"></tbody>
-</table>
-</div>
-</div>
+    <!-- RESULTS -->
+    <div class="bg-white p-6 border-t border-gray-200">
+        <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Base Unit Price</span>
+            <span class="text-2xl font-bold text-gray-900" id="ui-unit">---</span>
+        </div>
 
-<div class="border-t border-gray-100 my-3"></div>
+        <!-- DISCOUNT TABLE -->
+        <div class="mb-4 text-right">
+            <button onclick="toggleDiscounts()" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wide inline-flex items-center gap-1 ml-auto">
+                Show Volume Discounts
+                <svg id="disc-arrow" class="w-3 h-3 transition-transform duration-200 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="disc-table" class="hidden mt-2 bg-blue-50 rounded p-2 text-xs border border-blue-100">
+                <table class="w-full text-right">
+                    <thead class="text-gray-400 text-[9px] uppercase border-b border-blue-200"><tr><th class="pr-4 pb-1">Qty</th><th class="pr-4 pb-1">Base Graphic</th><th class="pb-1 text-blue-600">You Pay</th></tr></thead>
+                    <tbody id="tier-rows" class="font-bold text-gray-700"></tbody>
+                </table>
+            </div>
+        </div>
 
-<!-- LINE ITEMS -->
-<div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
-<div class="flex justify-between"><span>Base Vinyl (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
-<div class="flex justify-between text-pink-700 hidden" id="row-weed"><span>Complex Weeding Adder:</span><span id="ui-weed" class="font-bold">$0.00</span></div>
-<div class="flex justify-between text-gray-700"><span>Job Setup:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
-<div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
-</div>
+        <div class="border-t border-gray-100 my-3"></div>
 
-<div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
-<div>
-<span class="text-xs font-bold text-gray-400 uppercase block">Total Quote</span>
-<span class="text-[9px] font-bold text-gray-400 uppercase block mt-1" id="ui-min-text">Shop Minimum: $45</span>
-<div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
-</div>
-<span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
-</div>
-</div>
+        <!-- LINE ITEMS -->
+        <div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
+            <div class="flex justify-between"><span>Base Vinyl (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
+            <div class="flex justify-between text-pink-700 hidden" id="row-weed"><span>Complex Weeding Adder:</span><span id="ui-weed" class="font-bold">$0.00</span></div>
+            <div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
+        </div>
 
-<!-- DESCRIPTION GENERATOR -->
-<div class="bg-gray-50 p-4 border-t border-gray-200">
-<label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-<textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-16 text-gray-600 font-mono outline-none" readonly></textarea>
-</div>
+        <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
+            <div>
+                <span class="text-xs font-bold text-gray-400 uppercase block">Total Quote</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase block mt-1" id="ui-min-text">Shop Minimum: $45</span>
+                <div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+            </div>
+            <span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
+        </div>
+    </div>
+
+    <!-- DESCRIPTION GENERATOR -->
+    <div class="bg-gray-50 p-4 border-t border-gray-200">
+        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+        <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-16 text-gray-600 font-mono outline-none" readonly></textarea>
+    </div>
 </div>
 
 <script>
 let backendData = {};
 
 const COLORS_CAST = [
-{c:"010", n:"White", h:"#FFFFFF"}, {c:"020", n:"Golden Yellow", h:"#FFC806"}, {c:"219", n:"Yellow", h:"#FFD600"}, {c:"032", n:"Light Red", h:"#D9282C"}, 
-{c:"030", n:"Dark Red", h:"#82181C"}, {c:"305", n:"Geranium Red", h:"#E11C2B"}, {c:"047", n:"Orange Red", h:"#DD331D"}, {c:"034", n:"Orange", h:"#E54909"}, 
-{c:"402", n:"Cyclamen", h:"#9E2659"}, {c:"049", n:"King Blue", h:"#002359"}, {c:"050", n:"Dark Blue", h:"#002D58"}, {c:"057", n:"Traffic Blue", h:"#005B98"}, 
-{c:"051", n:"Gentian Blue", h:"#00458B"}, {c:"052", n:"Azure Blue", h:"#005697"}, {c:"053", n:"Light Blue", h:"#5E94D3"}, {c:"056", n:"Ice Blue", h:"#98C4E3"}, 
-{c:"067", n:"Blue Green", h:"#00685A"}, {c:"060", n:"Dark Green", h:"#00442D"}, {c:"061", n:"Green", h:"#006B3F"}, {c:"062", n:"Light Green", h:"#008546"}, 
-{c:"064", n:"Yellow Green", h:"#4CA337"}, {c:"063", n:"Lime-Tree Green", h:"#81B930"}, {c:"070", n:"Black", h:"#000000"}, {c:"073", n:"Dark Grey", h:"#4D5054"}, 
-{c:"071", n:"Grey", h:"#737679"}, {c:"076", n:"Telegrey", h:"#8D9092"}, {c:"090", n:"Silver Grey", h:"#8A8D8F"}, {c:"091", n:"Gold", h:"#897238"}, 
-{c:"093", n:"Anthracite", h:"#3E4145"}, {c:"944", n:"Red Gold", h:"#965A3D"}, {c:"932", n:"Graphite", h:"#363636"}, {c:"369", n:"Red Brown", h:"#5E3128"}
-];
-
-const COLORS_TRANS = [
-{c:"010", n:"White", h:"#F5F5F5"}, {c:"020", n:"Golden Yellow", h:"#FFC500"}, {c:"021", n:"Yellow", h:"#FFD600"}, {c:"025", n:"Brimstone", h:"#FFEE00"}, 
-{c:"031", n:"Red", h:"#BF0D26"}, {c:"032", n:"Light Red", h:"#D62629"}, {c:"034", n:"Orange", h:"#E34A0A"}, {c:"085", n:"Pale Pink", h:"#F2C4CE"}, 
-{c:"041", n:"Pink", h:"#CC4F81"}, {c:"053", n:"Light Blue", h:"#5DA0D9"}, {c:"052", n:"Azure Blue", h:"#005A9C"}, {c:"051", n:"Gentian Blue", h:"#004B91"}, 
-{c:"057", n:"Traffic Blue", h:"#0063A5"}, {c:"049", n:"King Blue", h:"#002D62"}, {c:"063", n:"Lime-Tree", h:"#89C540"}, {c:"061", n:"Green", h:"#00764A"}, 
-{c:"060", n:"Dark Green", h:"#004E35"}, {c:"079", n:"Red Brown", h:"#632A1D"}, {c:"070", n:"Black", h:"#000000"}, {c:"074", n:"Middle Grey", h:"#9EA2A4"}, 
-{c:"073", n:"Dark Grey", h:"#525559"}, {c:"090", n:"Silver Grey", h:"#96989A"}, {c:"091", n:"Gold", h:"#9C8346"}
+    {c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"}, {c:"020", n:"Golden Yellow", h:"#FFC806"}, 
+    {c:"219", n:"Yellow", h:"#FFD600"}, {c:"032", n:"Light Red", h:"#D9282C"}, {c:"030", n:"Dark Red", h:"#82181C"}, 
+    {c:"047", n:"Orange Red", h:"#DD331D"}, {c:"034", n:"Orange", h:"#FF7300"}, {c:"049", n:"King Blue", h:"#1D2A5B"}, 
+    {c:"086", n:"Brilliant Blue", h:"#003882"}, {c:"061", n:"Green", h:"#005B40"}, {c:"090", n:"Silver Grey", h:"#8A9094"}, 
+    {c:"091", n:"Gold", h:"#B39054"}
 ];
 
 function initColors() {
-    const mat = document.getElementById('material').value;
-    
-    // Updated logic: checks if the string contains 'Backlit' so both 8500 and 8800 trigger the translucent colors
-    const isTranslucent = (mat.includes('Backlit')); 
-    
-    const colorArray = isTranslucent ? COLORS_TRANS : COLORS_CAST;
-    
-    document.getElementById('lbl-color-title').innerText = isTranslucent ? "Translucent Colors" : "Cast Vinyl Colors";
-    document.getElementById('vinyl-color').value = ""; // Clear selection on switch
-    document.getElementById('selected-swatch').style.backgroundColor = "#fff";
-    
     const grid = document.getElementById('color-grid');
-    grid.innerHTML = ""; // Clear existing grid
+    if (!grid) return;
+    grid.innerHTML = '';
     
-    colorArray.forEach(col => {
+    COLORS_CAST.forEach(col => {
         const div = document.createElement('div');
-        div.className = "w-full h-6 rounded cursor-pointer border border-gray-200 hover:border-blue-500 hover:shadow-md transition";
+        div.className = "w-6 h-6 rounded cursor-pointer border border-gray-300 hover:scale-110 transition shadow-sm";
         div.style.backgroundColor = col.h;
         div.title = `${col.n} (${col.c})`;
-        div.onclick = function() {
+        div.onclick = () => {
             document.getElementById('vinyl-color').value = `${col.n} (${col.c})`;
             document.getElementById('selected-swatch').style.backgroundColor = col.h;
             runCalc();
@@ -194,7 +178,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v4.2)`;
+            verDisplay.innerText = `(v4.3)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -220,14 +204,33 @@ function toggleDiscounts() {
 function runCalc() {
     if(!backendData.Item_Name) return;
 
+    const w = parseFloat(document.getElementById('w').value) || 12;
+    const h = parseFloat(document.getElementById('h').value) || 6;
+    const minD = Math.min(w, h);
+    
+    // --- DYNAMIC ROLL & SEAM WARNING ---
+    const seamWarnEl = document.getElementById('seam-warn');
+    const indicatorEl = document.getElementById('ui-sheet-indicator');
+    
+    if (minD > 48) {
+        if (seamWarnEl) seamWarnEl.classList.remove('hidden');
+        if (indicatorEl) indicatorEl.innerText = 'Producing from: 48" Roll (Seamed)';
+    } else {
+        if (seamWarnEl) seamWarnEl.classList.add('hidden');
+        if (minD <= 24) {
+            if (indicatorEl) indicatorEl.innerText = 'Producing from: 24" Roll';
+        } else {
+            if (indicatorEl) indicatorEl.innerText = 'Producing from: 48" Roll';
+        }
+    }
+
     const inputs = {
         qty: parseFloat(document.getElementById('qty').value) || 1,
-        w: parseFloat(document.getElementById('w').value) || 12,
-        h: parseFloat(document.getElementById('h').value) || 6,
+        w: w,
+        h: h,
         material: document.getElementById('material').value,
         complexity: document.getElementById('complexity').value,
         files: parseFloat(document.getElementById('files').value) || 1,
-        setupPerFile: document.getElementById('setup-per-file').checked,
         incDesign: document.getElementById('inc-design').checked
     };
 
@@ -244,12 +247,19 @@ function runCalc() {
     document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
     document.getElementById('ui-print').innerText = fmt(ret.printTotal);
 
-    if (ret.weedFee > 0) { document.getElementById('row-weed').classList.remove('hidden'); document.getElementById('ui-weed').innerText = fmt(ret.weedFee); }
-    else document.getElementById('row-weed').classList.add('hidden');
+    if (ret.weedFee > 0) { 
+        document.getElementById('row-weed').classList.remove('hidden'); 
+        document.getElementById('ui-weed').innerText = fmt(ret.weedFee); 
+    } else {
+        document.getElementById('row-weed').classList.add('hidden');
+    }
 
-    document.getElementById('ui-setup').innerText = fmt(ret.setupFee || 0);
-    if (ret.designFee > 0) { document.getElementById('row-design').classList.remove('hidden'); document.getElementById('ui-design').innerText = fmt(ret.designFee); }
-    else document.getElementById('row-design').classList.add('hidden');
+    if (ret.designFee > 0) { 
+        document.getElementById('row-design').classList.remove('hidden'); 
+        document.getElementById('ui-design').innerText = fmt(ret.designFee); 
+    } else {
+        document.getElementById('row-design').classList.add('hidden');
+    }
 
     const minOrder = parseFloat(backendData.Retail_Min_Order || 45);
     document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
