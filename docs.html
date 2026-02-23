@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS News & Docs v4.5</title>
+    <title>SignOS News & Docs v4.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -30,7 +30,7 @@
         <div class="flex flex-col">
             <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none mb-1">SignOS Knowledge Base</span>
             <div class="flex items-center gap-2">
-                <h1 class="text-sm font-black leading-tight" id="module-title">News & Docs v4.5</h1>
+                <h1 class="text-sm font-black leading-tight" id="module-title">News & Docs v4.6</h1>
                 <span id="env-badge" class="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-600 text-white uppercase tracking-tighter">ONLINE</span>
             </div>
         </div>
@@ -54,110 +54,127 @@
             <div class="flex justify-center"><span class="badge-new">Release: Feb 23, 2026</span></div>
             <h2 class="text-4xl font-black text-gray-900 tracking-tighter italic uppercase">The SignOS Dispatch</h2>
             <div class="h-1 w-24 bg-blue-600 mx-auto rounded-full"></div>
-            <p class="text-gray-500 text-sm max-w-md mx-auto">Empowering our sales and production teams with physics-based manufacturing data.</p>
+            <p class="text-gray-500 text-sm max-w-md mx-auto">Modernizing production and quoting for The Sign Store team.</p>
         </header>
 
         <!-- SECTION 1: TOP STORY -->
         <section id="top-story" class="relative group cursor-pointer" onclick="openArticle('release')">
-            <div class="grid md:grid-cols-2 gap-8 items-center bg-slate-50 rounded-2xl p-8 border border-slate-200 hover:border-blue-300 transition-all">
+            <div class="grid md:grid-cols-2 gap-8 items-center bg-slate-50 rounded-2xl p-8 border border-slate-200 hover:border-blue-300 transition-all shadow-sm">
                 <div class="space-y-4">
-                    <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Featured Article</span>
-                    <h3 class="text-2xl font-bold text-slate-900 leading-tight">The "Grand Release": 9 New Product Modules Go Live</h3>
-                    <p class="text-slate-600 text-sm leading-relaxed">Today marks the transition of our rigid and roll-media catalog from development into active sales. Understand the new math behind ACM routing and vinyl weeding.</p>
-                    <button class="bg-blue-600 text-white px-6 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition">Read Article</button>
+                    <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Featured Training</span>
+                    <h3 class="text-2xl font-bold text-slate-900 leading-tight">The "Grand Release": 8 New Product Modules Go Live</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">Today we activate the active sales catalog for rigid and roll media. Learn how the new calculators automate local market pricing and production math.</p>
+                    <div class="flex gap-4">
+                        <button class="bg-blue-600 text-white px-6 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition">Read Update</button>
+                        <span class="flex items-center gap-2 text-blue-600 font-bold text-[10px] uppercase">
+                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+                             Watch Video
+                        </span>
+                    </div>
                 </div>
-                <div class="bg-slate-200 aspect-video rounded-xl flex items-center justify-center overflow-hidden relative">
-                     <!-- Placeholder SVG for Release Image -->
-                     <svg class="w-20 h-20 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
-                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent"></div>
+                <div class="bg-slate-200 aspect-video rounded-xl flex items-center justify-center overflow-hidden relative border border-slate-300">
+                     <svg class="w-16 h-16 text-slate-400 group-hover:text-blue-500 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent"></div>
                 </div>
             </div>
         </section>
 
         <!-- SECTION 2: APPROVED CALCULATORS GRID -->
-        <section id="active-modules">
-            <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 text-center">Approved Production Calculators</h3>
+        <section id="active-modules" class="bg-blue-50/50 rounded-3xl p-8 border border-blue-100">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-[11px] font-black text-blue-900 uppercase tracking-[0.2em]">New: Approved Production Calculators</h3>
+                <span class="badge-new">Active Today</span>
+            </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <a href="Calculator_YardSign.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black">YR</div>
+                    <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-black">YR</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">Yard Signs</span>
                 </a>
                 <a href="Calculator_Coro.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-black">CR</div>
+                    <div class="w-12 h-12 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-black">CR</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">Coroplast</span>
                 </a>
                 <a href="Calculator_ACM.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-black">AM</div>
+                    <div class="w-12 h-12 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-black">AM</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">ACM Signs</span>
                 </a>
                 <a href="Calculator_PVC.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">PV</div>
+                    <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black">PV</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">PVC Signs</span>
                 </a>
                 <a href="Calculator_Foam.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-black">FM</div>
+                    <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-black">FM</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">Foam Core</span>
                 </a>
                 <a href="Calculator_Banner.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center font-black">BN</div>
+                    <div class="w-12 h-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-black">BN</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">Banners</span>
                 </a>
                 <a href="Calculator_Decal.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center font-black">DC</div>
+                    <div class="w-12 h-12 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center font-black">DC</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">Digital Print</span>
                 </a>
                 <a href="Calculator_CutVinyl.html" class="feature-card p-5 rounded-2xl flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center font-black">CV</div>
+                    <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-black">CV</div>
                     <span class="text-[10px] font-black text-gray-900 uppercase">Cut Vinyl</span>
                 </a>
             </div>
         </section>
 
-        <!-- SECTION 3: HOW TO USE / EDUCATIONAL -->
+        <!-- SECTION 3: HOW TO USE / HOW IT WORKS -->
         <section class="newsletter-section">
             <div class="grid md:grid-cols-2 gap-16">
                 <div class="space-y-6">
                     <h3 class="text-xl font-black text-gray-900 uppercase tracking-tighter">How to use Calculators</h3>
-                    <p class="text-gray-500 text-sm">Every calculator in SignOS 4.x follows a specific 3-step validation protocol. Follow this to ensure $0 margin leakage.</p>
+                    <p class="text-gray-500 text-sm">Quoting a job is now a consistent 3-step process. No more looking through static price sheets.</p>
                     <ul class="space-y-4">
                         <li class="flex gap-4">
-                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center shrink-0">1</span>
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center shrink-0 font-bold">1</span>
                             <div class="text-[11px]">
-                                <b class="block text-gray-900 uppercase">Define Physical Specs</b>
-                                <p class="text-gray-500">Input width, height, and quantity. The system calculates yield (boards/LF) instantly.</p>
+                                <b class="block text-gray-900 uppercase">Select Product</b>
+                                <p class="text-gray-500">Pick your module from the menu or dashboard.</p>
                             </div>
                         </li>
                         <li class="flex gap-4">
-                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center shrink-0">2</span>
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center shrink-0 font-bold">2</span>
                             <div class="text-[11px]">
-                                <b class="block text-gray-900 uppercase">Review In-House Costs</b>
-                                <p class="text-gray-500">Switch to Tab 2 to see machine time and ink cost. If profit is red, adjust price.</p>
+                                <b class="block text-gray-900 uppercase">Enter Variables</b>
+                                <p class="text-gray-500">Input size, quantity, and specific product options (single/double sided, thickness, finish).</p>
                             </div>
                         </li>
                         <li class="flex gap-4">
-                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center shrink-0">3</span>
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center shrink-0 font-bold">3</span>
                             <div class="text-[11px]">
-                                <b class="block text-gray-900 uppercase">Perform Vended Check</b>
-                                <p class="text-gray-500">Check Tab 3. If outsource price is lower than shop cost, prioritize vended.</p>
+                                <b class="block text-gray-900 uppercase">Get Price</b>
+                                <p class="text-gray-500">The total updates instantly based on market-based curves.</p>
                             </div>
                         </li>
                     </ul>
-                    <button onclick="openArticle('guide')" class="text-blue-600 font-bold text-xs uppercase tracking-widest hover:underline">View Detailed Quoting Guide &rarr;</button>
+                    <button onclick="openArticle('guide')" class="text-blue-600 font-black text-[10px] uppercase tracking-widest hover:underline flex items-center gap-2">View Detailed Tutorial &rarr;</button>
                 </div>
                 <div class="bg-gray-50 rounded-2xl p-8 border border-dashed border-gray-300">
-                    <h3 class="text-xs font-black text-gray-400 uppercase mb-6 tracking-widest">Backend Logic Hierarchy</h3>
+                    <h3 class="text-xs font-black text-gray-400 uppercase mb-6 tracking-widest">How it Works</h3>
                     <div class="space-y-6">
-                        <div class="border-l-2 border-orange-500 pl-4">
-                            <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-tighter">Level 1: Master Data</h4>
-                            <p class="text-[10px] text-gray-500 leading-tight">The "Brain." Contains raw costs (e.g., $0.65 Coro Blank) and Market Curves (Blue Sheet).</p>
+                        <div class="flex gap-4 items-start">
+                            <div class="p-2 rounded bg-orange-100 text-orange-600 font-black text-[10px]">DATA</div>
+                            <div>
+                                <h4 class="text-[10px] font-black text-gray-900 uppercase">The Brain</h4>
+                                <p class="text-[10px] text-gray-500 leading-tight mt-1">A Master Data Sheet feeds all pricing logic. One change to material cost updates every calculator shop-wide instantly.</p>
+                            </div>
                         </div>
-                        <div class="border-l-2 border-orange-400 pl-4">
-                            <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-tighter">Level 1.5: The Matrix</h4>
-                            <p class="text-[10px] text-gray-500 leading-tight">The "Intercept." Allows Admins to toggle materials ON/OFF globally without breaking formulas.</p>
+                        <div class="flex gap-4 items-start">
+                            <div class="p-2 rounded bg-orange-100 text-orange-600 font-black text-[10px]">USER</div>
+                            <div>
+                                <h4 class="text-[10px] font-black text-gray-900 uppercase">Security & Roles</h4>
+                                <p class="text-[10px] text-gray-500 leading-tight mt-1">Defined user roles and 6-digit PINs control access. Admin can toggle modules ON/OFF or update logic via the Cloud Matrix.</p>
+                            </div>
                         </div>
-                        <div class="border-l-2 border-orange-300 pl-4">
-                            <h4 class="text-[10px] font-black text-gray-900 uppercase tracking-tighter">Level 2: Product Logic</h4>
-                            <p class="text-[10px] text-gray-500 leading-tight">The "Context." Calculates specific item costs (e.g., CNC Time for ACM vs Shear Time).</p>
+                        <div class="flex gap-4 items-start">
+                            <div class="p-2 rounded bg-orange-100 text-orange-600 font-black text-[10px]">COST</div>
+                            <div>
+                                <h4 class="text-[10px] font-black text-gray-900 uppercase">Physics Basis</h4>
+                                <p class="text-[10px] text-gray-500 leading-tight mt-1">Every product considers the real cost of material yield and various labor tasks (printing, weeding, routing).</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -168,32 +185,32 @@
         <section class="newsletter-section bg-slate-900 rounded-3xl p-10 text-white">
             <header class="flex justify-between items-center mb-10">
                 <div>
-                    <h3 class="text-2xl font-black tracking-tighter uppercase italic">Development Roadmap</h3>
-                    <p class="text-slate-400 text-xs">Tracking our progress toward Shop Automation.</p>
+                    <h3 class="text-2xl font-black tracking-tighter uppercase italic">Project Progress</h3>
+                    <p class="text-slate-400 text-xs">Tracking our transition to the SignOS environment.</p>
                 </div>
-                <span class="text-[10px] bg-slate-800 px-3 py-1 rounded-full text-slate-400 font-mono tracking-widest">Silo: Manufactured Signage</span>
+                <span class="text-[10px] bg-slate-800 px-3 py-1 rounded-full text-slate-400 font-mono tracking-widest uppercase">Registry Status</span>
             </header>
 
             <div class="grid md:grid-cols-2 gap-12">
                 <!-- ACTIVE SPRINTS -->
                 <div>
-                    <h4 class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-6">Current Sprints</h4>
+                    <h4 class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-6">Currently Working On</h4>
                     <div class="space-y-4">
                         <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                             <div class="flex justify-between mb-2">
-                                <span class="roadmap-tag tag-sprint">In Development</span>
-                                <span class="text-[9px] text-slate-500">#1002</span>
+                                <span class="roadmap-tag tag-sprint">Silo: Pricing</span>
+                                <span class="text-[9px] text-slate-500 font-mono">#1002</span>
                             </div>
-                            <h5 class="text-xs font-bold uppercase text-slate-100">Profit Heatmap Engine</h5>
-                            <p class="text-[10px] text-slate-400 mt-1">Visualizing pricing "sweet spots" and margin cliffs for the R1000 flatbed printer.</p>
+                            <h5 class="text-xs font-bold uppercase text-slate-100 italic">Profit Heatmap Engine</h5>
+                            <p class="text-[10px] text-slate-400 mt-1 leading-normal">Charting pricing "sweet spots" to maximize margins on high-volume runs.</p>
                         </div>
                         <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                             <div class="flex justify-between mb-2">
-                                <span class="roadmap-tag tag-sprint">In Development</span>
-                                <span class="text-[9px] text-slate-500">#1003</span>
+                                <span class="roadmap-tag tag-sprint">Silo: Fabrication</span>
+                                <span class="text-[9px] text-slate-500 font-mono">#1003</span>
                             </div>
-                            <h5 class="text-xs font-bold uppercase text-slate-100">Channel Letter Core</h5>
-                            <p class="text-[10px] text-slate-400 mt-1">Calculating Trim Cap, Coil, and LED counts based on font style (Block vs Serif).</p>
+                            <h5 class="text-xs font-bold uppercase text-slate-100 italic">Channel Letter Core</h5>
+                            <p class="text-[10px] text-slate-400 mt-1 leading-normal">Calculating Coil, Trim Cap, and LEDs based on Block vs Serif font styles.</p>
                         </div>
                     </div>
                 </div>
@@ -203,17 +220,17 @@
                     <h4 class="text-[10px] font-black text-green-400 uppercase tracking-widest mb-6">Completed Milestones</h4>
                     <div class="space-y-4">
                         <div class="flex gap-4 items-start bg-slate-800/20 p-4 rounded-xl">
-                            <span class="roadmap-tag tag-done">Live</span>
+                            <span class="roadmap-tag tag-done">DONE</span>
                             <div>
-                                <h5 class="text-xs font-bold uppercase text-slate-200">Dual-Track Architecture</h5>
-                                <p class="text-[10px] text-slate-500 mt-1">Decoupled Retail math from Physics costing engines shop-wide.</p>
+                                <h5 class="text-xs font-bold uppercase text-slate-200">The Matrix Engine</h5>
+                                <p class="text-[10px] text-slate-500 mt-1 leading-tight">Admin tool to override material costs shop-wide without breaking formulas.</p>
                             </div>
                         </div>
                         <div class="flex gap-4 items-start bg-slate-800/20 p-4 rounded-xl">
-                            <span class="roadmap-tag tag-done">Live</span>
+                            <span class="roadmap-tag tag-done">DONE</span>
                             <div>
-                                <h5 class="text-xs font-bold uppercase text-slate-200">Shadow Dev Protocol</h5>
-                                <p class="text-[10px] text-slate-500 mt-1">Established secure staging pipeline for new logic validation.</p>
+                                <h5 class="text-xs font-bold uppercase text-slate-200">Master Data Sync</h5>
+                                <p class="text-[10px] text-slate-500 mt-1 leading-tight">Bi-directional sync between Google Sheets and HTML Calculators.</p>
                             </div>
                         </div>
                     </div>
@@ -237,39 +254,81 @@
     // --- CONTENT DATABASE ---
     const ARTICLES = {
         release: `
-            <span class="text-blue-600 font-black uppercase text-[10px] tracking-widest">SignOS Official Announcement</span>
-            <h1 class="text-3xl font-black text-slate-900 mb-6">The "Grand Release": Empowering Sales</h1>
-            <p class="text-slate-600 leading-relaxed text-base">As of Feb 23, 2026, we have activated 9 core product families for daily sales floor use. This update marks a significant shift from "Fixed Pricing" to "Dynamic Physics-Based Quoting."</p>
-            <h3 class="font-bold text-slate-900 mt-8 mb-2 uppercase text-xs">New Capabilities:</h3>
-            <ul class="space-y-2 text-slate-600 list-disc pl-5">
-                <li><b>ACM & Acrylic:</b> Real-time CNC Router setup fees ($30-$50) vs Shear cutting.</li>
-                <li><b>Vehicle Wraps:</b> Calculation of 54" panel overlaps and stretch-media waste factors (25%).</li>
-                <li><b>Cut Vinyl:</b> "Intricate Island" logic that multiplies weeding labor for small text.</li>
-                <li><b>Coroplast:</b> Automated H-Stake bundling at 50/100 unit tiers.</li>
-            </ul>
-            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 my-8">
-                <p class="text-blue-800 text-xs font-bold italic">"We no longer quote based on a markup of a markup. We quote based on the seconds the machine spends on the media."</p>
+            <span class="text-blue-600 font-black uppercase text-[10px] tracking-widest">Grand Release - Feb 23</span>
+            <h1 class="text-3xl font-black text-slate-900 mb-6">The Sales Floor Empowerment</h1>
+            <p class="text-slate-600 leading-relaxed text-base">We have activated 8 core product families for production-ready quoting. This marks our shift from manual calculations to an automated, market-driven logic system.</p>
+            
+            <div class="grid gap-6 mt-10">
+                <div class="border-l-4 border-blue-600 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">Yard Signs</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Standardized 18x24 roadside signage with automated tiered bulk pricing and H-Stake bundling.</p>
+                </div>
+                <div class="border-l-4 border-blue-500 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">Custom Coroplast</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Quotes custom sizes for 4mm and 10mm fluted plastic, handling both direct-print and vinyl-mount workflows.</p>
+                </div>
+                <div class="border-l-4 border-blue-400 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">ACM Signs</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Metal composite pricing. Automatically handles Shear cutting (straight) vs CNC Routing (shapes).</p>
+                </div>
+                <div class="border-l-4 border-blue-300 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">PVC Signs</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Retail plastic display boards (Sintra). Includes automatic deduction if no lamination is required.</p>
+                </div>
+                <div class="border-l-4 border-indigo-600 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">Foam Core</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Lightweight interior display boards. Respects the global $50 shop minimum.</p>
+                </div>
+                <div class="border-l-4 border-green-600 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">Banners</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Supports 13oz, 15oz, and 18oz scrim vinyl with finishing fees for pole pockets and wind slits.</p>
+                </div>
+                <div class="border-l-4 border-pink-600 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">Digital Print</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Standard decals and stickers on IJ35C or IJ180. Differentiates between Die-cut and Kiss-cut.</p>
+                </div>
+                <div class="border-l-4 border-yellow-500 pl-4">
+                    <h4 class="text-sm font-black text-gray-900 uppercase">Cut Vinyl</h4>
+                    <p class="text-xs text-gray-500 italic leading-relaxed">Solid color plotter lettering. Uses "Intricate Weeding" logic for complex logos and small text.</p>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 my-12">
+                <p class="text-blue-800 text-xs font-bold leading-relaxed">NOTE: This release is laying the groundwork to shift The Sign Store from static, sheet-based pricing to agile, market-based pricing.</p>
             </div>
         `,
         guide: `
-            <span class="text-blue-600 font-black uppercase text-[10px] tracking-widest">Training Module</span>
-            <h1 class="text-3xl font-black text-slate-900 mb-6">Mastering the Quoting Flow</h1>
+            <span class="text-blue-600 font-black uppercase text-[10px] tracking-widest">Tutorial Guide</span>
+            <h1 class="text-3xl font-black text-slate-900 mb-6 italic">Mastering the Quoting Flow</h1>
             
             <div class="space-y-12">
                 <div>
-                    <div class="bg-gray-100 aspect-video rounded-xl mb-4 flex items-center justify-center text-gray-400 font-mono text-[10px]">[IMAGE: CALCULATOR_INPUTS_SCREENSHOT]</div>
-                    <h3 class="font-bold text-slate-900 uppercase text-sm">1. Dimension Precision</h3>
-                    <p class="text-slate-600 text-sm">Always input the "Final Finished Size." The system automatically adds 1" bleed factors for banners and 1/2" margins for CNC routing. Do not add these yourself.</p>
+                    <div class="bg-gray-100 aspect-video rounded-xl mb-4 flex items-center justify-center text-gray-400 font-mono text-[10px] border border-slate-200">
+                        [IMAGE: SCREENSHOT_INPUTS_SIZE_QTY]
+                    </div>
+                    <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest">Step 1: Size and Quantity</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">Enter the finished width and height in inches. Set the quantity. The system immediately calculates the "Physical Footprint" of the order.</p>
                 </div>
                 <div>
-                    <div class="bg-gray-100 aspect-video rounded-xl mb-4 flex items-center justify-center text-gray-400 font-mono text-[10px]">[IMAGE: PROFIT_GUARD_ALERT_DEMO]</div>
-                    <h3 class="font-bold text-slate-900 uppercase text-sm">2. Understanding the Red Pulse</h3>
-                    <p class="text-slate-600 text-sm">If your screen pulses red, the 'Net Margin' is below shop viability. This usually happens on single-unit small signs. Solutions: 1) Increase Price, 2) Upsell Quantity, 3) Add Setup Fees.</p>
+                    <div class="bg-gray-100 aspect-video rounded-xl mb-4 flex items-center justify-center text-gray-400 font-mono text-[10px] border border-slate-200">
+                        [IMAGE: SCREENSHOT_PRODUCT_OPTIONS]
+                    </div>
+                    <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest">Step 2: Define Product Variables</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">Choose your substrate thickness (e.g., 3mm vs 6mm), number of sides, and lamination options. These choices trigger hidden logic for CNC routing or vinyl mounting.</p>
                 </div>
                 <div>
-                    <div class="bg-gray-100 aspect-video rounded-xl mb-4 flex items-center justify-center text-gray-400 font-mono text-[10px]">[IMAGE: THREE_TAB_COMPARISON]</div>
-                    <h3 class="font-bold text-slate-900 uppercase text-sm">3. The Vended Check</h3>
-                    <p class="text-slate-600 text-sm">If the vended price (Tab 3) is 15% cheaper than our shop cost (Tab 2), the system will flag the item. This prevents us from wasting machine capacity on jobs better handled by high-volume wholesale partners.</p>
+                    <div class="bg-gray-100 aspect-video rounded-xl mb-4 flex items-center justify-center text-gray-400 font-mono text-[10px] border border-slate-200">
+                        [IMAGE: SCREENSHOT_RETAIL_PRICE_BANNER]
+                    </div>
+                    <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest">Step 3: Check Retail Price</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">The calculator displays the unit price and line-item totals. This is your market-based quote. If the price feels too low, verify the quantity tiered discount has applied correctly.</p>
+                </div>
+                <div>
+                    <div class="bg-gray-100 aspect-video rounded-xl mb-4 flex items-center justify-center text-gray-400 font-mono text-[10px] border border-slate-200">
+                        [IMAGE: SCREENSHOT_COPY_DESCRIPTION_BUTTON]
+                    </div>
+                    <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest">Step 4: Sync with Workflow</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">Use the description output to copy the quote details directly into QuickBooks or Freshdesk. This ensures production knows exactly what substrate and finish was sold.</p>
                 </div>
             </div>
         `
