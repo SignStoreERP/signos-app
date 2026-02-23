@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS News & Docs v4.8</title>
+    <title>SignOS News & Docs v4.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -24,11 +24,12 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
+    <!-- STANDARD ERP HEADER -->
     <div class="bg-gray-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
         <div class="flex flex-col">
             <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none mb-1">SignOS Knowledge Base</span>
             <div class="flex items-center gap-2">
-                <h1 class="text-sm font-black leading-tight" id="module-title">News & Docs v4.8</h1>
+                <h1 class="text-sm font-black leading-tight" id="module-title">News & Docs v4.9</h1>
                 <span id="env-badge" class="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-600 text-white uppercase tracking-tighter">ONLINE</span>
             </div>
         </div>
@@ -44,8 +45,10 @@
         </div>
     </div>
 
+    <!-- MAIN NEWSLETTER BODY -->
     <main class="max-w-4xl mx-auto w-full p-4 md:p-12 space-y-16 bg-white shadow-xl my-8 rounded-2xl border border-gray-200">
         
+        <!-- HEADER SECTION -->
         <header class="text-center space-y-4">
             <div class="flex justify-center"><span class="badge-new">Release: Feb 23, 2026</span></div>
             <h2 class="text-4xl font-black text-gray-900 tracking-tighter italic uppercase">The SignOS Dispatch</h2>
@@ -53,6 +56,7 @@
             <p class="text-gray-500 text-sm max-w-md mx-auto">Modernizing production and quoting for The Sign Store team.</p>
         </header>
 
+        <!-- SECTION 1: TOP STORY (Updated with GIF) -->
         <section id="top-story" class="relative group cursor-pointer" onclick="openArticle('release')">
             <div class="grid md:grid-cols-2 gap-8 items-center bg-slate-50 rounded-2xl p-8 border border-slate-200 hover:border-blue-300 transition-all shadow-sm">
                 <div class="space-y-4">
@@ -63,13 +67,13 @@
                         <button class="bg-blue-600 text-white px-6 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition">Read Article</button>
                     </div>
                 </div>
-                <div class="bg-slate-200 aspect-video rounded-xl flex items-center justify-center overflow-hidden relative border border-slate-300">
-                     <svg class="w-16 h-16 text-slate-400 group-hover:text-blue-500 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
-                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent"></div>
+                <div class="flex items-center justify-center overflow-hidden rounded-xl border border-slate-200 shadow-inner bg-white">
+                     <img src="https://i.imgur.com/2XcoCY4.gif" alt="SignOS Release Demo" class="w-full h-auto max-w-[200px] md:max-w-none transition-transform group-hover:scale-105 duration-700">
                 </div>
             </div>
         </section>
 
+        <!-- SECTION 2: APPROVED CALCULATORS GRID -->
         <section id="active-modules" class="bg-blue-50/50 rounded-3xl p-8 border border-blue-100">
             <div class="flex items-center justify-between mb-8">
                 <h3 class="text-[11px] font-black text-blue-900 uppercase tracking-[0.2em]">Retail Ready: Active Modules</h3>
@@ -111,6 +115,7 @@
             </div>
         </section>
 
+        <!-- SECTION 3: HOW TO USE / HOW IT WORKS -->
         <section class="newsletter-section">
             <div class="grid md:grid-cols-2 gap-16">
                 <div class="space-y-6">
@@ -170,6 +175,7 @@
             </div>
         </section>
 
+        <!-- SECTION 4: PROJECT PROGRESS (SYS_ROADMAP) -->
         <section class="newsletter-section bg-slate-900 rounded-3xl p-10 text-white">
             <header class="flex justify-between items-center mb-10">
                 <div>
@@ -180,6 +186,7 @@
             </header>
 
             <div class="grid md:grid-cols-2 gap-12">
+                <!-- ACTIVE SPRINTS -->
                 <div>
                     <h4 class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-6">Upcoming Features</h4>
                     <div class="space-y-4">
@@ -202,6 +209,7 @@
                     </div>
                 </div>
 
+                <!-- COMPLETED -->
                 <div>
                     <h4 class="text-[10px] font-black text-green-400 uppercase tracking-widest mb-6">Recent Completions</h4>
                     <div class="space-y-4">
@@ -226,11 +234,13 @@
 
     </main>
 
+    <!-- ARTICLE OVERLAY -->
     <div id="article-overlay" onclick="closeArticleOnClickAway(event)">
         <div class="max-w-3xl mx-auto my-20 p-8 md:p-16 bg-white rounded-3xl shadow-2xl relative" onclick="event.stopPropagation()">
             <button onclick="closeArticle()" class="absolute top-8 right-8 text-gray-400 hover:text-gray-900 transition font-black text-xl">✕</button>
             <div id="article-content" class="prose prose-slate prose-sm max-w-none">
-                </div>
+                <!-- Content Injected via JS -->
+            </div>
         </div>
     </div>
 
