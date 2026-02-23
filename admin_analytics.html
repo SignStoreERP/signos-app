@@ -3,18 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit Analytics Engine v4.1</title>
+<title>Profit Analytics Engine v4.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="signos-core.js"></script>
 
+<!-- ALL HEADLESS PHYSICS ENGINES -->
 <script src="logic_yard.js"></script>
 <script src="logic_acm.js"></script>
 <script src="logic_coro.js"></script>
 <script src="logic_foam.js"></script>
 <script src="logic_pvc.js"></script>
+<script src="logic_acrylic.js"></script>
 <script src="logic_banner.js"></script>
 <script src="logic_decal.js"></script>
+<script src="logic_wrap.js"></script>
+<script src="logic_wall.js"></script>
 
 <style type="text/tailwindcss">
 .seg-btn { @apply flex-1 py-1 text-center text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors duration-300 ease-out select-none z-10 flex items-center justify-center; }
@@ -29,16 +33,17 @@
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col overflow-hidden">
 
 <div class="flex-1 w-full max-w-screen-2xl mx-auto p-4 flex flex-col lg:flex-row gap-4 h-full min-h-0 overflow-hidden">
-    
+
+    <!-- LEFT SIDEBAR -->
     <div class="w-full lg:w-80 bg-white rounded-xl shadow border border-gray-200 flex flex-col shrink-0 overflow-hidden z-20">
-        
+
         <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
             <a href="menu.html" class="text-xs font-bold text-gray-500 hover:text-blue-600 transition flex items-center gap-1 uppercase tracking-widest">
                 <span>&larr; Menu</span>
             </a>
             <div id="status-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
         </div>
-        
+
         <div class="p-4 flex-1 overflow-auto custom-scroll relative">
             <div class="mb-5">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-widest">Product Module</label>
@@ -48,14 +53,17 @@
                     <option value="ACM">ACM Signs</option>
                     <option value="PVC">PVC Signs</option>
                     <option value="FOAM">Foam Core</option>
+                    <option value="ACR">Acrylic Signs</option>
                     <option value="BANNERS">Vinyl Banners</option>
                     <option value="DECALS">Decals & Stickers</option>
+                    <option value="WRAP">Vehicle Wraps</option>
+                    <option value="WALL">Interior Wall Wraps</option>
                 </select>
             </div>
-            
+
             <div id="dynamic-options-container" class="space-y-5 border-t border-gray-100 pt-4"></div>
         </div>
-        
+
         <div class="p-4 bg-gray-50 border-t border-gray-200 flex flex-col gap-2">
             <button id="btn-run" onclick="runAnalysis()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] uppercase tracking-widest py-3 rounded shadow-md transition flex justify-center items-center gap-2">
                 <span>Run Physics Engine</span>
@@ -66,8 +74,9 @@
         </div>
     </div>
 
+    <!-- RIGHT DASHBOARD -->
     <div class="flex-1 bg-white rounded-xl shadow border border-gray-200 flex flex-col min-h-0 relative z-10 overflow-hidden">
-        
+
         <div id="loader-overlay" class="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm hidden flex-col items-center justify-center rounded-xl">
             <svg class="w-12 h-12 text-blue-600 animate-spin mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <div class="text-sm font-black text-gray-800 tracking-widest uppercase">Calculating Matrix</div>
@@ -79,7 +88,7 @@
                 <div class="w-1.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
                 <h3 id="dash-title" class="text-white font-bold text-xs tracking-widest uppercase">Awaiting Config</h3>
             </div>
-            
+
             <div class="relative flex bg-gray-800 p-0.5 rounded border border-gray-700 w-40 shrink-0">
                 <div id="slider-pill" class="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-white rounded-sm shadow transition-transform duration-300 ease-out translate-x-0"></div>
                 <div onclick="setViewMode('margin')" id="btn-mode-margin" class="seg-btn seg-active">Margin %</div>
@@ -134,8 +143,8 @@
 // STATE & DICTIONARIES
 // ==========================================
 let currentBackend = {};
-let currentViewMode = 'margin'; 
-let scatterData = []; 
+let currentViewMode = 'margin';
+let scatterData = [];
 let activeCombos = [];
 let profitChart = null;
 
@@ -173,15 +182,22 @@ const UI_CONFIGS = {
             { id: 'sides', label: 'Print Sides', options: [{val: 1, label: 'Single Sided', default: true}, {val: 2, label: 'Double Sided', default: false}] }
         ]
     },
+    'ACR': {
+        groups: [
+            { id: 'thickness', label: 'Material Thickness', options: [{val: '0.25', label: '1/4" Standard', default: true}, {val: '0.5', label: '1/2" Medium', default: false}] },
+            { id: 'surface', label: 'Print Surface', options: [{val: '1', label: '1st Surface (Front)', default: true}, {val: '2', label: '2nd Surface (Back)', default: false}] },
+            { id: 'paint', label: 'Backing', options: [{val: 'false', label: 'No Paint', default: true}, {val: 'true', label: 'Painted Back', default: false}] }
+        ]
+    },
     'BANNERS': {
         groups: [
             { id: 'material', label: 'Material Grade', options: [
-                {val: '13oz', label: '13oz Standard Scrim', default: true}, 
+                {val: '13oz', label: '13oz Standard Scrim', default: true},
                 {val: '18oz', label: '18oz Heavy Blockout', default: false},
                 {val: 'Mesh', label: '8oz Mesh', default: false}
             ] },
             { id: 'sides', label: 'Print Sides', options: [
-                {val: 1, label: 'Single Sided', default: true}, 
+                {val: 1, label: 'Single Sided', default: true},
                 {val: 2, label: 'Double Sided (18oz Only)', default: false}
             ] },
             { id: 'windSlits', label: 'Wind Slits', options: [{val: 'false', label: 'Standard (No Slits)', default: true}, {val: 'true', label: 'Include Slits', default: false}] },
@@ -194,6 +210,15 @@ const UI_CONFIGS = {
             { id: 'shape', label: 'Cut Type', options: [{val: 'Rectangle', label: 'Standard Square', default: true}, {val: 'Complex', label: 'Contour Cut', default: true}] },
             { id: 'masking', label: 'Finishing', options: [{val: 'false', label: 'No Masking', default: true}, {val: 'true', label: 'Apply Transfer Tape', default: false}] }
         ]
+    },
+    'WRAP': {
+        groups: [
+            { id: 'complexity', label: 'Vehicle Type', options: [{val: 'simple', label: 'Flat / Box Truck', default: true}, {val: 'complex', label: 'Complex / Van', default: false}] },
+            { id: 'material', label: 'Component Type', options: [{val: 'wrap', label: 'Cast Wrap', default: true}, {val: 'perf', label: 'Window Perf', default: false}, {val: 'decal', label: 'Spot Decal', default: false}] }
+        ]
+    },
+    'WALL': {
+        groups: [] // No variations, tests single standard GF226 logic automatically
     }
 };
 
@@ -203,12 +228,15 @@ const MODULE_MATRICES = {
     'ACM':  { tab: 'PROD_ACM_Signs', engine: typeof calculateACM !== 'undefined' ? calculateACM : null },
     'PVC':  { tab: 'PROD_PVC_Signs', engine: typeof calculatePVC !== 'undefined' ? calculatePVC : null },
     'FOAM': { tab: 'PROD_Foam_Signs', engine: typeof calculateFoam !== 'undefined' ? calculateFoam : null },
+    'ACR':  { tab: 'PROD_Acrylic_Signs', engine: typeof calculateAcrylic !== 'undefined' ? calculateAcrylic : null },
     'BANNERS': { tab: 'PROD_Vinyl_Banners', engine: typeof calculateBanner !== 'undefined' ? calculateBanner : null },
-    'DECALS': { tab: 'PROD_Decals', engine: typeof calculateDecal !== 'undefined' ? calculateDecal : null }
+    'DECALS': { tab: 'PROD_Decals', engine: typeof calculateDecal !== 'undefined' ? calculateDecal : null },
+    'WRAP': { tab: 'PROD_Vinyl_Wraps', engine: typeof calculateWrap !== 'undefined' ? calculateWrap : null },
+    'WALL': { tab: 'PROD_Vinyl_Wraps', engine: typeof calculateWall !== 'undefined' ? calculateWall : null }
 };
 
 window.onload = function() {
-    if(typeof injectHeader === 'function') injectHeader("Profit Analytics Engine", true); // True re-enables Global Menu
+    if(typeof injectHeader === 'function') injectHeader("Profit Analytics Engine", true);
     renderOptions();
 };
 
@@ -220,15 +248,20 @@ function renderOptions() {
     const modKey = document.getElementById('sim-module').value;
     const container = document.getElementById('dynamic-options-container');
     container.innerHTML = '';
-    
+
     const config = UI_CONFIGS[modKey];
     if(!config) return;
     
+    if(config.groups.length === 0) {
+        container.innerHTML = `<div class="text-xs text-gray-500 italic p-2">Standard logic active. No configuration variations exist for this product.</div>`;
+        return;
+    }
+
     config.groups.forEach(g => {
         let html = `<div class="bg-white">
             <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">${g.label}</label>
             <div class="space-y-1.5 bg-gray-50 border border-gray-200 p-2.5 rounded-lg shadow-inner">`;
-            
+        
         g.options.forEach(opt => {
             const checked = opt.default ? 'checked' : '';
             html += `<label class="flex items-center gap-2.5 cursor-pointer group">
@@ -256,7 +289,7 @@ function setViewMode(mode) {
         btnMargin.className = "seg-btn seg-inactive";
         pill.style.transform = "translateX(100%)";
     }
-    
+
     if(scatterData.length > 0) renderChart();
 }
 
@@ -266,8 +299,8 @@ function getCheckedValues(name) {
 
 function generateCombinations(optionsMap) {
     const keys = Object.keys(optionsMap);
-    if (keys.length === 0) return [{}];
-    
+    if (keys.length === 0) return [{ _label: 'Standard Logic', _configId: 'cfg_0' }];
+
     let combos = [{}];
     keys.forEach(key => {
         const values = optionsMap[key];
@@ -283,20 +316,23 @@ function generateCombinations(optionsMap) {
         });
         combos = newCombos;
     });
-    
+
     // Labeling
     combos.forEach((c, i) => {
         let lblParts = [];
         if(c.thickness) lblParts.push(c.thickness);
         if(c.material) lblParts.push(c.material);
+        if(c.complexity) lblParts.push(c.complexity === 'complex' ? 'Complex/Van' : 'Flat/Box');
         if(c.sides) lblParts.push(c.sides == 2 ? 'Double Sided' : 'Single Sided');
         if(c.shape && c.shape !== 'Rectangle') lblParts.push('Contour/CNC');
+        if(c.surface === '2') lblParts.push('2nd Surface');
+        if(c.paint === 'true') lblParts.push('Painted');
         if(c.stakes === 'step_stake') lblParts.push('w/ Stakes');
         else if(c.stakes === 'none') lblParts.push('No Stakes');
         if(c.windSlits === 'true') lblParts.push('Wind Slits');
         if(c.polePockets === 'true') lblParts.push('Pole Pockets');
         if(c.masking === 'true') lblParts.push('Masked');
-        
+
         c._label = lblParts.length > 0 ? lblParts.join(' | ') : 'Standard Logic';
         c._configId = 'cfg_' + i;
     });
@@ -310,7 +346,7 @@ function generateCombinations(optionsMap) {
 async function runAnalysis() {
     const modKey = document.getElementById('sim-module').value;
     const matrixDef = MODULE_MATRICES[modKey];
-    
+
     if(!matrixDef.engine) {
         alert(`Error: Logic engine missing for ${modKey}. Check your script tags.`);
         return;
@@ -319,28 +355,30 @@ async function runAnalysis() {
     // Build the configuration map based on what the user checked
     let optionsMap = {};
     let missingGroups = false;
-    UI_CONFIGS[modKey].groups.forEach(g => {
-        const vals = getCheckedValues(`opt_${g.id}`);
-        if(vals.length === 0) missingGroups = true;
-        optionsMap[g.id] = vals;
-    });
     
-    if (missingGroups) {
-        alert("Action Required: Please select at least one option from every configuration group.");
-        return;
+    if(UI_CONFIGS[modKey].groups.length > 0) {
+        UI_CONFIGS[modKey].groups.forEach(g => {
+            const vals = getCheckedValues(`opt_${g.id}`);
+            if(vals.length === 0) missingGroups = true;
+            optionsMap[g.id] = vals;
+        });
+
+        if (missingGroups) {
+            alert("Action Required: Please select at least one option from every configuration group.");
+            return;
+        }
     }
 
     activeCombos = generateCombinations(optionsMap);
-    
     document.getElementById('loader-overlay').classList.remove('hidden');
 
     try {
         const apiUrl = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbzEEf1lQ4xkXdSqcLgfLJ3FmNbLGUyElTzmac7U-t1msxLvJL8iSZ30R3bm5dCpmlKqPA/exec";
         const u = sessionStorage.getItem('signos_user') || 'Admin';
-        
+
         const res = await fetch(`${apiUrl}?req=view_module&tab=${matrixDef.tab}&user=${u}`);
         const data = await res.json();
-        
+
         if(data.error) throw new Error(data.error);
         currentBackend = data;
 
@@ -358,6 +396,7 @@ function processCalculations() {
     const modKey = document.getElementById('sim-module').value;
     const engine = MODULE_MATRICES[modKey].engine;
     const isYard = (modKey === 'YARD');
+    const isRollMedia = ['BANNERS', 'DECALS', 'WRAP', 'WALL'].includes(modKey);
 
     // 1. Build Quantity Matrix
     let qtyMatrix = [];
@@ -366,7 +405,7 @@ function processCalculations() {
         for (let i = 15; i <= 50; i += 5) qtyMatrix.push(i);
         for (let i = 60; i <= 1000; i += 10) qtyMatrix.push(i);
     } else {
-        qtyMatrix = [1, 5, 10, 25, 50]; // Walk-in layers
+        qtyMatrix = [1-5]; // Walk-in layers
     }
 
     // 2. Build Physical Dimensional Matrix (Steps of 12")
@@ -375,11 +414,11 @@ function processCalculations() {
         sizeMatrix = [{w: 24, h: 18}];
     } else {
         // Steps of exactly 12 inches
-        const dims = [12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144];
-        const maxSqFt = (modKey === 'BANNERS') ? 72 : 32;
-        const maxW = (modKey === 'BANNERS') ? 72 : 48;
-        const maxH = (modKey === 'BANNERS') ? 144 : 96;
-        
+        const dims = [6-17];
+        const maxSqFt = isRollMedia ? 72 : 32;
+        const maxW = isRollMedia ? 72 : 48;
+        const maxH = isRollMedia ? 144 : 96;
+
         dims.forEach(w => {
             dims.forEach(h => {
                 if (w <= h && w <= maxW && h <= maxH) {
@@ -394,7 +433,7 @@ function processCalculations() {
 
     // 3. Nested Processing Loop
     activeCombos.forEach(combo => {
-        
+
         // Banner Rule Enforcement: Prevent Double Sided calculations on non-18oz materials
         if (modKey === 'BANNERS' && parseInt(combo.sides) === 2 && combo.material !== '18oz') {
             return; // Skip this combination block
@@ -402,7 +441,6 @@ function processCalculations() {
 
         sizeMatrix.forEach(sz => {
             qtyMatrix.forEach(q => {
-                
                 let payload = {
                     w: sz.w,
                     h: sz.h,
@@ -411,7 +449,13 @@ function processCalculations() {
                     incDesign: false,
                     setupPerFile: false
                 };
-                
+
+                // Inject Panel Array for Wraps & Walls
+                if (modKey === 'WRAP' || modKey === 'WALL') {
+                    payload.panels = [{ label: 'Analytics Panel', w: sz.w, h: sz.h, material: combo.material || 'wrap', included: false }];
+                    payload.complexity = combo.complexity || 'simple';
+                }
+
                 if (combo.sides) {
                     payload.sides = parseInt(combo.sides);
                     payload.isDoubleSided = (payload.sides === 2);
@@ -434,20 +478,22 @@ function processCalculations() {
                 if (combo.windSlits === 'true') payload.windSlits = true;
                 if (combo.polePockets === 'true') payload.polePockets = true;
                 if (combo.masking === 'true') payload.masking = true;
-                
+                if (combo.surface) payload.surface = combo.surface;
+                if (combo.paint === 'true') payload.paint = true;
+
                 try {
                     const result = engine(payload, currentBackend);
-                    
+
                     const r = result.retail;
-                    const c = result.cost || result.inHouse; 
+                    const c = result.cost || result.inHouse;
                     const retailTotal = typeof r === 'number' ? r : (r?.grandTotal || r?.quoteTotal || r?.total || r?.printBase || 0);
                     const costTotal = typeof c === 'number' ? c : (c?.grandTotal || c?.total || c?.quoteTotal || c?.printBase || 0);
-                    
+
                     const uRet = retailTotal / q;
                     const uCost = costTotal / q;
                     const margin = uRet > 0 ? ((uRet - uCost) / uRet) * 100 : 0;
                     const profit = uRet - uCost;
-                    
+
                     scatterData.push({
                         w: sz.w,
                         h: sz.h,
@@ -471,7 +517,7 @@ function processCalculations() {
     document.getElementById('dash-title').innerText = `${MODULE_MATRICES[modKey].tab.replace('PROD_','').replace('_',' ')}`;
     document.getElementById('empty-state').classList.add('hidden');
     document.getElementById('loader-overlay').classList.add('hidden');
-    
+
     renderChart();
 }
 
@@ -483,23 +529,23 @@ function populateDashboardFilters(isYard, qtyMatrix) {
     const bar = document.getElementById('filter-bar');
     const confSel = document.getElementById('dash-config-filter');
     const qtySel = document.getElementById('dash-qty-filter');
-    
+
     confSel.innerHTML = '';
     qtySel.innerHTML = '';
-    
+
     if (isYard) {
-        bar.classList.add('hidden'); 
+        bar.classList.add('hidden');
     } else {
         bar.classList.remove('hidden'); // Makes the big blue bar visible
-        
-        // Only show configs that actually generated valid data (blocks the 13oz Double Sided from showing as an option)
+
+        // Only show configs that actually generated valid data 
         const validConfigIds = [...new Set(scatterData.map(d => d.configId))];
         const validCombos = activeCombos.filter(c => validConfigIds.includes(c._configId));
 
         validCombos.forEach(c => {
             confSel.innerHTML += `<option value="${c._configId}">${c._label}</option>`;
         });
-        
+
         qtyMatrix.forEach(q => {
             qtySel.innerHTML += `<option value="${q}">Walk-In Qty ${q}</option>`;
         });
@@ -516,7 +562,7 @@ function getPointColor(val, mode) {
         return 'rgba(22, 163, 74, 0.9)'; // Optimal (Dark Green)
     } else {
         // Profit Metric Map
-        if (val < 0) return 'rgba(220, 38, 38, 0.9)'; 
+        if (val < 0) return 'rgba(220, 38, 38, 0.9)';
         if (val < 25) return 'rgba(248, 113, 113, 0.9)'; // Low Profit < $25
         if (val < 75) return 'rgba(250, 204, 21, 0.9)'; // Med Profit < $75
         if (val < 150) return 'rgba(74, 222, 128, 0.9)'; // Good Profit < $150
@@ -531,23 +577,23 @@ function updateInsights(dataArr) {
         document.getElementById('insight-count').innerText = '0';
         return;
     }
-    
-    let best = dataArr[0], worst = dataArr[0];
+
+    let best = dataArr, worst = dataArr;
     const isMargin = (currentViewMode === 'margin');
 
     dataArr.forEach(d => {
         const dVal = isMargin ? d.margin : d.profit;
         const bVal = isMargin ? best.margin : best.profit;
         const wVal = isMargin ? worst.margin : worst.profit;
-        
+
         if(dVal > bVal) best = d;
         if(dVal < wVal) worst = d;
     });
-    
+
     const isYard = document.getElementById('sim-module').value === 'YARD';
     const bLabel = isYard ? `Qty ${best.qty} (${best.label})` : `${best.w}"x${best.h}"`;
     const wLabel = isYard ? `Qty ${worst.qty} (${worst.label})` : `${worst.w}"x${worst.h}"`;
-    
+
     document.getElementById('insight-best').innerText = bLabel;
     document.getElementById('insight-best-sub').innerText = `${best.margin.toFixed(1)}% | $${best.profit.toFixed(2)} /ea`;
     document.getElementById('insight-worst').innerText = wLabel;
@@ -560,17 +606,17 @@ function renderChart() {
     const isYard = (modKey === 'YARD');
     const isMargin = (currentViewMode === 'margin');
     const ctx = document.getElementById('analyticsChart').getContext('2d');
-    
+
     if (profitChart) profitChart.destroy();
-    
+
     if (isYard) {
         // LINE CHART: Visualizing Volume Cliffs for Yard Signs
         const lineColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
-        
+
         const datasets = activeCombos.map((c, i) => {
             const dataPts = scatterData.filter(d => d.configId === c._configId);
             const color = lineColors[i % lineColors.length];
-            
+
             return {
                 label: c._label,
                 data: dataPts.map(d => ({ x: d.qty, y: isMargin ? d.margin : d.profit, raw: d })),
@@ -583,7 +629,7 @@ function renderChart() {
                 tension: 0.1
             };
         });
-        
+
         profitChart = new Chart(ctx, {
             type: 'scatter',
             data: { datasets: datasets },
@@ -608,20 +654,21 @@ function renderChart() {
                 }
             }
         });
-        
+
         updateInsights(scatterData);
-        
+
     } else {
-        // SPATIAL HEATMAP: Visualizing Yield and Size Efficiencies 
+        // SPATIAL HEATMAP: Visualizing Yield and Size Efficiencies
         const selQty = parseInt(document.getElementById('dash-qty-filter').value);
         const selConf = document.getElementById('dash-config-filter').value;
         const activeData = scatterData.filter(d => d.qty === selQty && d.configId === selConf);
-        
+
         const chartPoints = activeData.map(d => ({ x: d.w, y: d.h, raw: d }));
         const pointColors = chartPoints.map(d => getPointColor(isMargin ? d.raw.margin : d.raw.profit, currentViewMode));
-        
-        const maxW = (modKey === 'BANNERS') ? 75 : 52;
-        const maxH = (modKey === 'BANNERS') ? 150 : 100;
+
+        const isRollMedia = ['BANNERS', 'DECALS', 'WRAP', 'WALL'].includes(modKey);
+        const maxW = isRollMedia ? 75 : 52;
+        const maxH = isRollMedia ? 150 : 100;
 
         profitChart = new Chart(ctx, {
             type: 'scatter',
@@ -662,7 +709,7 @@ function renderChart() {
                 }
             }
         });
-        
+
         updateInsights(activeData);
     }
 }
