@@ -9,14 +9,15 @@
 <script src="signos-core.js"></script>
 
 <script src="logic_yard.js"></script>
+<script src="logic_banner.js"></script>
 <script src="logic_acm.js"></script>
+<script src="logic_pvc.js"></script>
 <script src="logic_coro.js"></script>
 <script src="logic_foam.js"></script>
 <script src="logic_decal.js"></script>
 <script src="logic_cut.js"></script>
 <script src="logic_wrap.js"></script>
-<script src="logic_banner.js"></script>
-<script src="logic_pvc.js"></script>
+<script src="logic_wall.js"></script>
 
 <style>
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -46,13 +47,14 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
             <span class="text-[10px] font-bold text-gray-400 uppercase ml-2 tracking-widest">Engine:</span>
             <select id="sim-module" class="bg-gray-900 text-white border border-gray-600 rounded p-1 text-xs font-bold outline-none cursor-pointer focus:border-blue-500 transition" onchange="loadModuleData()">
                 <option value="YARD">Yard Signs (Coro)</option>
+                <option value="BANNER">Vinyl Banners</option>
                 <option value="ACM">ACM Signs (Metal)</option>
                 <option value="CORO">Custom Coroplast</option>
                 <option value="FOAM">Foam Core</option>
                 <option value="DECAL">Decals & Stickers</option>
                 <option value="CUT">Cut Vinyl</option>
                 <option value="WRAP">Wraps & Walls</option>
-                <option value="BANNER">Vinyl Banners</option>
+                <option value="WALL">Interior Wall Wraps</option>
                 <option value="PVC">PVC Signs</option>
             </select>
         </div>
