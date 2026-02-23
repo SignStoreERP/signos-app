@@ -24,9 +24,9 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
     <!-- INPUTS -->
     <div class="p-6 space-y-4">
         <div class="grid grid-cols-3 gap-3">
-            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalcSafe()"></div>
-            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="24" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalcSafe()"></div>
-            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="18" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalcSafe()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="24" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="18" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
         </div>
 
         <!-- SUBTLE CLAMPING WARNING -->
@@ -42,16 +42,17 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Thickness</label>
-                <select id="thickness" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalcSafe()">
-                    <option value="1/4">1/4" Acrylic</option>
-                    <option value="1/2">1/2" Acrylic</option>
-                    <option value="3/4">3/4" Acrylic</option>
+                <select id="thickness" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
+                    <!-- Decimals map directly to the logic engine -->
+                    <option value="0.25">1/4" Acrylic</option>
+                    <option value="0.5">1/2" Acrylic</option>
+                    <option value="0.75">3/4" Acrylic</option>
                     <option value="1">1" Acrylic</option>
                 </select>
             </div>
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Color</label>
-                <select id="color" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalcSafe()">
+                <select id="color" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
                     <option value="Clear">Clear</option>
                     <option value="White">White</option>
                     <option value="Black">Black</option>
@@ -62,7 +63,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
         <div class="grid grid-cols-1 gap-4">
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Cutting & Routing</label>
-                <select id="shape" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalcSafe()">
+                <select id="shape" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px]" onchange="runCalc()">
                     <option value="Rectangle">Square Cut (Rectangle)</option>
                     <option value="Complex">CNC Contour Shape</option>
                 </select>
@@ -71,13 +72,13 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 
         <div class="space-y-2 border-t border-gray-100 pt-2">
             <div class="grid grid-cols-2 gap-2">
-                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="second-surface" onchange="runCalcSafe()" class="w-4 h-4 text-blue-600 rounded"> Second Surface Print</label>
-                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="holes" onchange="runCalcSafe()" class="w-4 h-4 text-blue-600 rounded"> Drill Holes</label>
+                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="second-surface" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Second Surface Print</label>
+                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="holes" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Drill Holes</label>
             </div>
 
             <div class="flex justify-between items-center bg-purple-50 border border-purple-200 p-2 rounded mt-2">
-                <label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer transition"><input type="checkbox" id="inc-design" onchange="runCalcSafe()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
-                <div class="flex items-center gap-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border border-gray-300 rounded p-1 text-center text-sm font-bold bg-white" oninput="runCalcSafe()"></div>
+                <label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer transition"><input type="checkbox" id="inc-design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
+                <div class="flex items-center gap-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Total Files:</label><input type="number" id="files" value="1" min="1" class="w-16 border border-gray-300 rounded p-1 text-center text-sm font-bold bg-white" oninput="runCalc()"></div>
             </div>
         </div>
     </div>
@@ -116,7 +117,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
         <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
             <div>
                 <span class="text-xs font-bold text-gray-400 uppercase block">Total Quote</span>
-                <span class="text-[9px] font-bold text-gray-400 uppercase block mt-1" id="ui-min-text">Shop Minimum: $50</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase block mt-1" id="ui-min-text">Shop Minimum: $75</span>
                 <div id="min-badge" class="hidden bg-red-100 text-red-600 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
             </div>
             <span class="text-3xl font-black text-blue-600" id="ui-total">---</span>
@@ -180,17 +181,16 @@ window.onload = async function() {
             statusDot.className = "w-2 h-2 rounded-full bg-green-500";
             statusDot.classList.remove("animate-pulse");
         }
+        
+        runCalc();
+
     } catch(e) {
         if(statusText) {
             statusText.innerText = "OFFLINE";
             statusText.className = "font-bold text-red-500";
         }
         console.error("Fetch Error:", e);
-        return; // Halt if API failed
     }
-
-    // Run calculation OUTSIDE the network fetch try-catch so a math bug doesn't trigger "OFFLINE"
-    runCalcSafe();
 };
 
 function toggleDiscounts() {
@@ -201,28 +201,22 @@ function toggleDiscounts() {
     else arrow.classList.remove('rotate-90');
 }
 
-function runCalcSafe() {
-    try {
-        runCalc();
-    } catch (e) {
-        console.error("Calculation Engine Error:", e);
-    }
-}
-
 function runCalc() {
     if(!backendData.Item_Name) return;
 
     enforceSheetLimits(48, 96);
 
+    // Map UI inputs flawlessly to the logic_acrylic.js engine
     const inputs = {
         qty: parseFloat(document.getElementById('qty').value) || 1,
         w: parseFloat(document.getElementById('w').value) || 24,
         h: parseFloat(document.getElementById('h').value) || 18,
-        thickness: document.getElementById('thickness').value,
+        thickness: document.getElementById('thickness').value, // Reads "0.25", etc.
         color: document.getElementById('color').value,
-        shape: document.getElementById('shape').value,
-        secondSurface: document.getElementById('second-surface').checked,
-        holes: document.getElementById('holes').checked,
+        shape: document.getElementById('shape').value, // 'Rectangle' or 'Complex'
+        method: document.getElementById('second-surface').checked ? 'direct_white' : 'standard',
+        standoffs: document.getElementById('holes').checked,
+        standoffQty: 4, 
         files: parseFloat(document.getElementById('files').value) || 1,
         incDesign: document.getElementById('inc-design').checked,
         sides: 1
@@ -230,6 +224,7 @@ function runCalc() {
 
     const result = calculateAcrylic(inputs, backendData);
     if (!result || !result.retail) return;
+    
     const ret = result.retail;
     const fmt = (n) => "$" + (n || 0).toFixed(2);
 
@@ -247,9 +242,9 @@ function runCalc() {
         document.getElementById('row-router').classList.add('hidden');
     }
 
-    if (ret.hardwareFee > 0) {
+    if (ret.hwTotal > 0) {
         document.getElementById('row-holes').classList.remove('hidden');
-        document.getElementById('ui-holes').innerText = fmt(ret.hardwareFee);
+        document.getElementById('ui-holes').innerText = fmt(ret.hwTotal);
     } else {
         document.getElementById('row-holes').classList.add('hidden');
     }
@@ -261,7 +256,7 @@ function runCalc() {
         document.getElementById('row-design').classList.add('hidden');
     }
 
-    const minOrder = parseFloat(backendData.Retail_Min_Order || 50);
+    const minOrder = parseFloat(backendData.Retail_Min_Order || 75);
     document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
     document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
@@ -275,11 +270,12 @@ function runCalc() {
     }
     document.getElementById('tier-rows').innerHTML = rowsHtml;
 
-    const printTxt = inputs.secondSurface ? "Second Surface (Reverse Printed on Back)" : "First Surface (Printed on Front)";
-    const holeTxt = inputs.holes ? "Includes drilled holes." : "";
+    const printTxt = inputs.method === 'direct_white' ? "Second Surface (Reverse Printed on Back)" : "First Surface (Printed on Front)";
+    const holeTxt = inputs.standoffs ? "Includes drilled holes / hardware." : "";
     const cutTxt = inputs.shape === 'Rectangle' ? 'Square/Rectangle Cut' : 'CNC Custom Profile Cut';
+    const thkTxt = document.getElementById('thickness').options[document.getElementById('thickness').selectedIndex].text;
 
-    document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} ${inputs.color} Acrylic Signs.\n${cutTxt}. ${printTxt}. ${holeTxt}`;
+    document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${thkTxt} ${inputs.color} Acrylic Signs.\n${cutTxt}. ${printTxt}. ${holeTxt}`;
 }
 </script>
 </body>
