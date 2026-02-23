@@ -133,12 +133,33 @@ const COLORS_CAST = [
     {c:"091", n:"Gold", h:"#B39054"}
 ];
 
+const COLORS_CAST = [
+    {c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"}, {c:"020", n:"Golden Yellow", h:"#FFC806"}, 
+    {c:"219", n:"Yellow", h:"#FFD600"}, {c:"032", n:"Light Red", h:"#D9282C"}, {c:"030", n:"Dark Red", h:"#82181C"}, 
+    {c:"047", n:"Orange Red", h:"#DD331D"}, {c:"034", n:"Orange", h:"#FF7300"}, {c:"049", n:"King Blue", h:"#1D2A5B"}, 
+    {c:"086", n:"Brilliant Blue", h:"#003882"}, {c:"061", n:"Green", h:"#005B40"}, {c:"090", n:"Silver Grey", h:"#8A9094"}, 
+    {c:"091", n:"Gold", h:"#B39054"}
+];
+
+// Added Translucent Palette based on Oracal 8500/8800 Series
+const COLORS_TRANS = [
+    {c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"}, {c:"020", n:"Golden Yellow", h:"#FFC806"},
+    {c:"021", n:"Yellow", h:"#FED100"}, {c:"031", n:"Red", h:"#C4051D"}, {c:"034", n:"Orange", h:"#E34A0A"},
+    {c:"041", n:"Pink", h:"#CC4F81"}, {c:"053", n:"Light Blue", h:"#5DA0D9"}, {c:"057", n:"Traffic Blue", h:"#0063A5"},
+    {c:"061", n:"Green", h:"#00764A"}, {c:"060", n:"Dark Green", h:"#004E35"}, {c:"090", n:"Silver Grey", h:"#96989A"},
+    {c:"091", n:"Gold", h:"#A28D61"}
+];
+
 function initColors() {
     const grid = document.getElementById('color-grid');
+    const appType = document.getElementById('material').value; 
     if (!grid) return;
     grid.innerHTML = '';
     
-    COLORS_CAST.forEach(col => {
+    // Dynamically select palette based on whether application is Backlit
+    const activePalette = (appType.includes('Backlit')) ? COLORS_TRANS : COLORS_CAST;
+    
+    activePalette.forEach(col => {
         const div = document.createElement('div');
         div.className = "w-6 h-6 rounded cursor-pointer border border-gray-300 hover:scale-110 transition shadow-sm";
         div.style.backgroundColor = col.h;
