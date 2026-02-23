@@ -23,6 +23,11 @@
             <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="24" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
             <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="18" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center" oninput="runCalc()"></div>
         </div>
+        
+        <!-- SUBTLE CLAMPING WARNING -->
+        <div id="sheet-warn" class="hidden bg-yellow-50 text-yellow-700 text-[10px] font-bold px-3 py-1.5 rounded border border-yellow-200 transition-opacity">
+            ⚠️ Parent sheet size limit reached. Dimensions auto-adjusted.
+        </div>
 
         <div class="grid grid-cols-2 gap-4">
             <div>
@@ -91,19 +96,21 @@
 <script>
 let backendData = {};
 
-// --- NEW VALIDATION ENGINE ---
+// --- NEW VALIDATION ENGINE w/ UX WARNING ---
 function enforceSheetLimits(maxShort, maxLong) {
     let wEl = document.getElementById('w');
     let hEl = document.getElementById('h');
+    let warnEl = document.getElementById('sheet-warn');
 
     if (!wEl || !hEl) return;
 
     let w = parseFloat(wEl.value) || 0;
     let h = parseFloat(hEl.value) || 0;
+    let didClamp = false;
 
     // 1. Neither dimension can ever exceed the absolute maximum length
-    if (w > maxLong) { w = maxLong; wEl.value = w; }
-    if (h > maxLong) { h = maxLong; hEl.value = h; }
+    if (w > maxLong) { w = maxLong; wEl.value = w; didClamp = true; }
+    if (h > maxLong) { h = maxLong; hEl.value = h; didClamp = true; }
 
     // 2. Both dimensions cannot simultaneously exceed the short edge
     if (w > maxShort && h > maxShort) {
@@ -113,6 +120,16 @@ function enforceSheetLimits(maxShort, maxLong) {
         } else {
             w = maxShort;
             wEl.value = w;
+        }
+        didClamp = true;
+    }
+    
+    // 3. Trigger Subtle UI Warning
+    if (warnEl) {
+        if (didClamp) {
+            warnEl.classList.remove('hidden');
+            clearTimeout(warnEl.timeoutId);
+            warnEl.timeoutId = setTimeout(() => warnEl.classList.add('hidden'), 3000);
         }
     }
 }
