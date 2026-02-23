@@ -222,70 +222,69 @@ function runCalc() {
     if(!backendData.Item_Name) return;
 
     // Enforce strict 48x96 parent sheet limits on inputs
-    enforceSheetLimits(48, 96);
+    if (typeof enforceSheetLimits === 'function') enforceSheetLimits(48, 96);
 
     const inputs = {
         qty: parseFloat(document.getElementById('qty').value) || 1,
         w: parseFloat(document.getElementById('w').value) || 24,
         h: parseFloat(document.getElementById('h').value) || 18,
-        thickness: document.getElementById('thickness').value,
-        color: document.getElementById('color').value,
-        shape: document.getElementById('shape').value,
-        secondSurface: document.getElementById('second-surface').checked,
-        holes: document.getElementById('holes').checked,
-        files: parseFloat(document.getElementById('files').value) || 1,
-        incDesign: document.getElementById('inc-design').checked,
+        thickness: document.getElementById('thickness') ? document.getElementById('thickness').value : '1/4',
+        color: document.getElementById('color') ? document.getElementById('color').value : 'Clear',
+        shape: document.getElementById('shape') ? document.getElementById('shape').value : 'Rectangle',
+        secondSurface: document.getElementById('second-surface') ? document.getElementById('second-surface').checked : false,
+        holes: document.getElementById('holes') ? document.getElementById('holes').checked : false,
+        files: document.getElementById('files') ? (parseFloat(document.getElementById('files').value) || 1) : 1,
+        incDesign: document.getElementById('inc-design') ? document.getElementById('inc-design').checked : false,
         sides: 1 // Acrylic is typically 1-sided print, even if second surface
     };
 
     const result = calculateAcrylic(inputs, backendData);
+    if (!result || !result.retail) return; // Stop if logic engine fails
+    
     const ret = result.retail;
-    const fmt = (n) => "$" + n.toFixed(2);
+    const fmt = (n) => "$" + (n || 0).toFixed(2);
 
-    const totalSqFt = ((inputs.w * inputs.h) / 144) * inputs.qty;
+    // --- SAFETY SHIELDS ---
+    // These functions ensure the script won't crash if an HTML element is missing
+    const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    const safeToggle = (id, condition) => { const el = document.getElementById(id); if (el) condition ? el.classList.remove('hidden') : el.classList.add('hidden'); };
 
-    document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
-    document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-    document.getElementById('ui-print').innerText = fmt(ret.printTotal);
+    safeSet('ui-unit', fmt(ret.unitPrice));
+    safeSet('ui-total', fmt(ret.grandTotal));
+    safeSet('ui-print', fmt(ret.printTotal));
 
-    if (ret.routerFee > 0) {
-        document.getElementById('row-router').classList.remove('hidden');
-        document.getElementById('ui-router').innerText = fmt(ret.routerFee);
-    } else {
-        document.getElementById('row-router').classList.add('hidden');
-    }
+    safeToggle('row-router', ret.routerFee > 0);
+    safeSet('ui-router', fmt(ret.routerFee));
 
-    if (ret.hardwareFee > 0) {
-        document.getElementById('row-holes').classList.remove('hidden');
-        document.getElementById('ui-holes').innerText = fmt(ret.hardwareFee);
-    } else {
-        document.getElementById('row-holes').classList.add('hidden');
-    }
+    safeToggle('row-holes', ret.hardwareFee > 0);
+    safeSet('ui-holes', fmt(ret.hardwareFee));
 
-    if (ret.designFee > 0) {
-        document.getElementById('row-design').classList.remove('hidden');
-        document.getElementById('ui-design').innerText = fmt(ret.designFee);
-    } else {
-        document.getElementById('row-design').classList.add('hidden');
-    }
+    safeToggle('row-design', ret.designFee > 0);
+    safeSet('ui-design', fmt(ret.designFee));
 
     const minOrder = parseFloat(backendData.Retail_Min_Order || 50);
-    document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
-    document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+    safeSet('ui-min-text', `Shop Minimum: $${minOrder}`);
+    safeToggle('min-badge', ret.isMinApplied);
 
-    let rowsHtml = "";
-    ret.tiers.forEach(tier => {
-        const trPct = (ret.printTotal / totalSqFt - tier.base) / (ret.printTotal / totalSqFt);
-        const pctDisplay = trPct > 0 ? `<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">-${(trPct*100).toFixed(0)}%</span>` : "";
-        rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+ ${pctDisplay}</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
-    });
-    document.getElementById('tier-rows').innerHTML = rowsHtml;
+    // Safely update tier rows if the discount table exists
+    const trEl = document.getElementById('tier-rows');
+    if (trEl && ret.tiers) {
+        let rowsHtml = "";
+        ret.tiers.forEach(tier => {
+            rowsHtml += `<tr><td class="pr-4 py-1 text-gray-500">${tier.q}+</td><td class="pr-4 py-1 text-gray-400">$${(ret.printTotal/inputs.qty).toFixed(2)}</td><td class="py-1 text-blue-600 font-bold">$${tier.unit.toFixed(2)}</td></tr>`;
+        });
+        trEl.innerHTML = rowsHtml;
+    }
 
+    // Generate Text Description Safely
     const printTxt = inputs.secondSurface ? "Second Surface (Reverse Printed on Back)" : "First Surface (Printed on Front)";
     const holeTxt = inputs.holes ? "Includes drilled holes." : "";
     const cutTxt = inputs.shape === 'Rectangle' ? 'Square/Rectangle Cut' : 'CNC Custom Profile Cut';
-    
-    document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} ${inputs.color} Acrylic Signs.\n${cutTxt}. ${printTxt}. ${holeTxt}`;
+
+    const jobDescEl = document.getElementById('job-desc');
+    if (jobDescEl) {
+        jobDescEl.value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} ${inputs.color} Acrylic Signs.\n${cutTxt}. ${printTxt}. ${holeTxt}`;
+    }
 }
 </script>
 </body>
