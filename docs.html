@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignOS News & Docs v5.0</title>
+    <title>SignOS News & Docs v5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <style>
@@ -29,7 +29,7 @@
         <div class="flex flex-col">
             <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none mb-1">SignOS Knowledge Base</span>
             <div class="flex items-center gap-2">
-                <h1 class="text-sm font-black leading-tight" id="module-title">News & Docs v5.0</h1>
+                <h1 class="text-sm font-black leading-tight" id="module-title">News & Docs v5.1</h1>
                 <span id="env-badge" class="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-600 text-white uppercase tracking-tighter">ONLINE</span>
             </div>
         </div>
@@ -56,26 +56,20 @@
             <p class="text-gray-500 text-sm max-w-md mx-auto">Modernizing production and quoting for The Sign Store team.</p>
         </header>
 
-        <!-- SECTION 1: TOP STORY (Adaptive GIF Layout) -->
-        <section id="top-story" class="relative group cursor-pointer overflow-hidden rounded-2xl border border-slate-200 shadow-sm" onclick="openArticle('release')">
-            
-            <!-- Mobile GIF Background (Visible only on mobile) -->
-            <div class="absolute inset-0 md:hidden bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" style="background-image: url('https://i.imgur.com/2XcoCY4.gif');"></div>
-            <div class="absolute inset-0 md:hidden bg-black/70 z-0"></div>
-
-            <div class="grid md:grid-cols-2 gap-8 items-center bg-slate-50 md:bg-slate-50 p-8 relative z-10">
-                <!-- Text Column -->
+        <!-- SECTION 1: TOP STORY (Grid Layout) -->
+        <section id="top-story" class="relative group cursor-pointer overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-slate-50" onclick="openArticle('release')">
+            <div class="grid md:grid-cols-2 gap-8 items-center p-8">
                 <div class="space-y-4">
-                    <span class="text-[10px] font-black text-blue-400 md:text-blue-600 uppercase tracking-widest">Grand Release Article</span>
-                    <h3 class="text-2xl font-bold text-white md:text-slate-900 leading-tight">Sales Empowerment: 8 Production Modules Activated</h3>
-                    <p class="text-gray-200 md:text-slate-600 text-sm leading-relaxed">The Sign Store catalog is now active. Learn how our new retail logic automates pricing across our core product lines.</p>
+                    <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Grand Release Article</span>
+                    <h3 class="text-2xl font-bold text-slate-900 leading-tight">Sales Empowerment: 8 Production Modules Activated</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">The Sign Store catalog is now active. Learn how our new retail logic automates pricing across our core product lines.</p>
                     <div class="flex gap-4">
                         <button class="bg-blue-600 text-white px-6 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition shadow-lg">Read Article</button>
                     </div>
                 </div>
                 
-                <!-- Desktop GIF Column (Hidden on mobile, shrinks vertically) -->
-                <div class="hidden md:flex items-center justify-center overflow-hidden rounded-xl border border-slate-200 shadow-inner bg-white h-full max-h-[400px]">
+                <!-- GIF Column (Shrinks vertically, stacks on mobile) -->
+                <div class="flex items-center justify-center overflow-hidden rounded-xl border border-slate-200 shadow-inner bg-white max-h-[400px]">
                      <img src="https://i.imgur.com/2XcoCY4.gif" alt="SignOS Release Demo" class="w-full h-auto object-contain transition-transform group-hover:scale-105 duration-700">
                 </div>
             </div>
@@ -330,7 +324,7 @@
         document.getElementById('article-content').innerHTML = ARTICLES[id] || 'Content not found.';
         const overlay = document.getElementById('article-overlay');
         overlay.classList.add('active');
-        overlay.scrollTop = 0; // Reset scroll to top
+        overlay.scrollTop = 0; // Ensure article starts at the top
         document.body.style.overflow = 'hidden';
     };
 
