@@ -1,32 +1,32 @@
 /**
- * PURE PHYSICS ENGINE: Interior Wall Wraps (v1.0)
- * Handles dynamic wall panels, multi-panel seaming, and architectural install speeds.
+ * PURE PHYSICS ENGINE: Interior Wall Wraps (v1.1)
+ * Supports Window Perf storefront integration and dynamic panel tracking.
  */
-
 function calculateWall(inputs, data) {
-    // --- 1. RETAIL ENGINE (MARKET VALUE) ---
+    // --- 1. RETAIL ENGINE ---
     const retWall = parseFloat(data.Retail_Price_Wall_SqFt || 10);
+    const retPerf = parseFloat(data.Retail_Price_Perf_SqFt || 12);
     const retInstall = parseFloat(data.Retail_Install_Wall_SqFt || 3);
     
     let totalRetailPrint = 0;
     let totalSqFt = 0;
     let panelLogs = [];
 
-    // Loop through dynamic wall sections
     inputs.panels.forEach(p => {
         const sqft = (p.w * p.h) / 144;
         const area = sqft * inputs.qty;
         totalSqFt += area;
 
-        // Seam Math (52" Max with 1" Overlap)
         const shortEdge = Math.min(p.w, p.h);
         const panelCount = shortEdge <= 52 ? 1 : Math.ceil((shortEdge - 1) / 51);
 
-        const rowRetail = retWall * area;
+        let retailUnit = p.material === 'perf' ? retPerf : retWall;
+        const rowRetail = retailUnit * area;
         totalRetailPrint += rowRetail;
 
         panelLogs.push({ 
             label: p.label || 'Wall Section', 
+            material: p.material,
             w: p.w, h: p.h,
             sqft: area, 
             retail: rowRetail, 
@@ -34,10 +34,8 @@ function calculateWall(inputs, data) {
         });
     });
 
-    // Install Retail
     const totalInstallRetail = totalSqFt * retInstall;
 
-    // Fees & Discounts
     let appliedPrintRetail = totalRetailPrint;
     let i = 1;
     const tierLog = [];
@@ -55,15 +53,23 @@ function calculateWall(inputs, data) {
     const minOrder = parseFloat(data.Retail_Min_Order || 150);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
-    // --- 2. COST ENGINE (PHYSICS & BOM) ---
-    const costVin = parseFloat(data.Cost_Vin_Wall || 0.59);
-    const costLam = parseFloat(data.Cost_Lam_Wall || 0.36);
+    // --- 2. COST ENGINE ---
+    const costVinWall = parseFloat(data.Cost_Vin_Wall || 0.59);
+    const costLamWall = parseFloat(data.Cost_Lam_Wall || 0.36);
+    const costVinPerf = parseFloat(data.Cost_Vinyl_Perf || 0.65);
+    const costLamPerf = parseFloat(data.Cost_Lam_Perf || 0.25);
     const inkCost = parseFloat(data.Cost_Ink_Latex || 0.16);
     
     const waste = parseFloat(data.Waste_Factor || 1.25);
     const risk = parseFloat(data.Factor_Risk || 1.10);
 
-    const totalCostMat = totalSqFt * (costVin + costLam) * waste;
+    let totalCostMat = 0;
+    inputs.panels.forEach(p => {
+        const area = ((p.w * p.h) / 144) * inputs.qty;
+        let matUnit = p.material === 'perf' ? (costVinPerf + costLamPerf) : (costVinWall + costLamWall);
+        totalCostMat += (matUnit * area * waste);
+    });
+
     const totalCostInk = totalSqFt * inkCost * waste;
 
     const rateOp = parseFloat(data.Rate_Operator || 25);
@@ -100,75 +106,7 @@ function calculateWall(inputs, data) {
         },
         cost: {
             total: totalCost,
-            breakdown: {
-                materials: totalCostMat,
-                ink: totalCostInk,
-                printLabor: costPrintOp,
-                installLabor: costInstallLabor,
-                machine: costMach,
-                risk: riskCost
-            }
+            breakdown: { materials: totalCostMat, ink: totalCostInk, printLabor: costPrintOp, installLabor: costInstallLabor, machine: costMach, risk: riskCost }
         }
     };
 }
-
-// ==========================================
-// SIMULATOR CONFIGURATION SCHEMA
-// ==========================================
-window.WALL_CONFIG = {
-    tab: 'PROD_Vinyl_Wraps',
-    engine: calculateWall,
-    controls: [
-        { id: 'w', label: 'Simulated Width', type: 'number', def: 120 },
-        { id: 'h', label: 'Simulated Height', type: 'number', def: 96 },
-        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
-    ],
-    dynamicUI: function(inputs) {
-        inputs.panels = [{ label: "Simulated Wall", w: inputs.w, h: inputs.h }];
-        return inputs;
-    },
-    retails: [
-        { heading: 'Market Base ($/SqFt)', key: 'Retail_Price_Wall_SqFt', label: 'Wall Wrap Rate ($)' },
-        { heading: 'Installation Matrix', key: 'Retail_Install_Wall_SqFt', label: 'Wall Install ($/SqFt)' },
-        { heading: 'Flat Fees', key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
-    ],
-    costs: [
-        { heading: 'Raw Materials', key: 'Cost_Vin_Wall', label: 'Wall Vinyl ($/SqFt)' },
-        { key: 'Cost_Lam_Wall', label: 'Wall Lam ($/SqFt)' },
-        { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
-        { heading: 'Labor & Speeds', key: 'Rate_Operator', label: 'Operator ($/Hr)' },
-        { key: 'Rate_Install', label: 'Installer ($/Hr)' },
-        { key: 'Rate_Machine_Print', label: 'Printer Mach ($/Hr)' },
-        { key: 'Speed_Print_Roll', label: 'Print Spd (SqFt/hr)' },
-        { key: 'Speed_Lam_Roll', label: 'Lam Spd (SqFt/hr)' },
-        { key: 'Speed_Install_Wall', label: 'Install Spd (SqFt/hr)' },
-        { heading: 'Modifiers', key: 'Waste_Factor', label: 'Waste (1.x)' },
-        { key: 'Factor_Risk', label: 'Risk (1.x)' },
-        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
-    ],
-    renderReceipt: function(data, fmt) {
-        return `
-            <div>
-                <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
-                <div class="space-y-1 text-xs text-gray-700">
-                    <div class="flex justify-between"><span>Printed Wall Graphics:</span> <span>${fmt(data.retail.printTotal)}</span></div>
-                    <div class="flex justify-between"><span>Installation:</span> <span>${fmt(data.retail.installTotal)}</span></div>
-                    ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
-                    <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
-                </div>
-            </div>
-            <div class="mt-6">
-                <h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
-                <div class="space-y-1 text-xs text-gray-700">
-                    <div class="flex justify-between"><span>Vinyl + Lam + Waste:</span> <span>${fmt(data.cost.breakdown.materials)}</span></div>
-                    <div class="flex justify-between"><span>Ink Usage:</span> <span>${fmt(data.cost.breakdown.ink)}</span></div>
-                    <div class="flex justify-between"><span>Print Labor (Attn Ratio):</span> <span>${fmt(data.cost.breakdown.printLabor)}</span></div>
-                    <div class="flex justify-between"><span>Machine Time:</span> <span>${fmt(data.cost.breakdown.machine)}</span></div>
-                    <div class="flex justify-between text-blue-600 font-bold border-t border-gray-100 pt-1 mt-1"><span>Installation Labor:</span> <span>${fmt(data.cost.breakdown.installLabor)}</span></div>
-                    <div class="flex justify-between text-orange-500 opacity-80 border-t border-gray-100 pt-1 mt-1"><span>Risk Buffer:</span> <span>(+ ${fmt(data.cost.breakdown.risk)})</span></div>
-                    <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div>
-                </div>
-            </div>
-        `;
-    }
-};
