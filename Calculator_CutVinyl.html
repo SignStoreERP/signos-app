@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cut Vinyl Calculator v4.3</title>
+<title>Cut Vinyl Calculator v4.4</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -14,6 +14,10 @@
 .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
 .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.custom-scroll::-webkit-scrollbar { width: 5px; }
+.custom-scroll::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col">
@@ -65,7 +69,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
                     <div id="selected-swatch" class="w-6 h-6 rounded border border-gray-300 shadow-inner bg-white"></div>
                     <input type="text" id="vinyl-color" placeholder="Select a color below or type code..." class="flex-1 bg-transparent text-sm font-bold text-gray-800 outline-none" oninput="runCalc()">
                 </div>
-                <div id="color-grid" class="flex flex-wrap gap-1.5 p-1"></div>
+                <div id="color-grid" class="flex flex-wrap gap-1.5 p-2 max-h-48 overflow-y-auto custom-scroll bg-gray-50 border border-gray-200 rounded shadow-inner"></div>
             </div>
 
             <div class="flex justify-between items-center bg-purple-50 border border-purple-200 p-2 rounded mt-2">
@@ -125,20 +129,41 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <script>
 let backendData = {};
 
-const COLORS_CAST = [
-    {c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"}, {c:"020", n:"Golden Yellow", h:"#FFC806"}, 
-    {c:"219", n:"Yellow", h:"#FFD600"}, {c:"032", n:"Light Red", h:"#D9282C"}, {c:"030", n:"Dark Red", h:"#82181C"}, 
-    {c:"047", n:"Orange Red", h:"#DD331D"}, {c:"034", n:"Orange", h:"#FF7300"}, {c:"049", n:"King Blue", h:"#1D2A5B"}, 
-    {c:"086", n:"Brilliant Blue", h:"#003882"}, {c:"061", n:"Green", h:"#005B40"}, {c:"090", n:"Silver Grey", h:"#8A9094"}, 
-    {c:"091", n:"Gold", h:"#B39054"}
+// EXHAUSTIVE MASTER LIST
+const COLORS_STANDARD = [
+    {c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"}, {c:"020", n:"Golden Yellow", h:"#FFC806"},
+    {c:"019", n:"Signal Yellow", h:"#F4A900"}, {c:"021", n:"Yellow", h:"#FED100"}, {c:"022", n:"Light Yellow", h:"#FFEA00"},
+    {c:"025", n:"Brimstone Yellow", h:"#FFF200"}, {c:"219", n:"Cast Yellow", h:"#FFD600"}, {c:"026", n:"Purple Red", h:"#751421"},
+    {c:"312", n:"Burgundy", h:"#681123"}, {c:"030", n:"Dark Red", h:"#82181C"}, {c:"031", n:"Red", h:"#C0142C"},
+    {c:"032", n:"Light Red", h:"#D9282C"}, {c:"305", n:"Geranium Red", h:"#E11C2B"}, {c:"047", n:"Orange Red", h:"#DD331D"},
+    {c:"034", n:"Orange", h:"#E54909"}, {c:"036", n:"Light Orange", h:"#F06105"}, {c:"035", n:"Pastel Orange", h:"#F88636"},
+    {c:"404", n:"Purple", h:"#4F2864"}, {c:"040", n:"Violet", h:"#583375"}, {c:"043", n:"Lavender", h:"#886D9D"},
+    {c:"042", n:"Lilac", h:"#BC9FBF"}, {c:"041", n:"Pink", h:"#CC4F81"}, {c:"045", n:"Soft Pink", h:"#EBB7C4"},
+    {c:"402", n:"Cyclamen", h:"#9E2659"}, {c:"050", n:"Dark Blue", h:"#002D58"}, {c:"049", n:"King Blue", h:"#002359"},
+    {c:"086", n:"Brilliant Blue", h:"#004386"}, {c:"057", n:"Traffic Blue", h:"#005B98"}, {c:"051", n:"Gentian Blue", h:"#00458B"},
+    {c:"098", n:"Gentian", h:"#00548F"}, {c:"052", n:"Azure Blue", h:"#005697"}, {c:"053", n:"Light Blue", h:"#5E94D3"},
+    {c:"056", n:"Ice Blue", h:"#98C4E3"}, {c:"066", n:"Turquoise Blue", h:"#00888F"}, {c:"054", n:"Turquoise", h:"#009E96"},
+    {c:"055", n:"Mint", h:"#64C5B3"}, {c:"060", n:"Dark Green", h:"#00442D"}, {c:"061", n:"Green", h:"#006B3F"},
+    {c:"062", n:"Light Green", h:"#008546"}, {c:"064", n:"Yellow Green", h:"#4CA337"}, {c:"063", n:"Lime-Tree Green", h:"#81B930"},
+    {c:"067", n:"Blue Green", h:"#00685A"}, {c:"080", n:"Brown", h:"#52341C"}, {c:"081", n:"Light Brown", h:"#936B3D"},
+    {c:"082", n:"Beige", h:"#D1B896"}, {c:"083", n:"Nut Brown", h:"#A36437"}, {c:"023", n:"Cream", h:"#F1E5AC"},
+    {c:"073", n:"Dark Grey", h:"#4D5054"}, {c:"071", n:"Grey", h:"#737679"}, {c:"076", n:"Telegrey", h:"#8D9092"},
+    {c:"074", n:"Middle Grey", h:"#9EA2A4"}, {c:"072", n:"Light Grey", h:"#C0C4C6"}, {c:"090", n:"Silver Grey", h:"#8A8D8F"},
+    {c:"091", n:"Gold", h:"#897238"}, {c:"092", n:"Copper", h:"#8C5230"}, {c:"093", n:"Anthracite", h:"#3E4145"},
+    {c:"944", n:"Red Gold", h:"#965A3D"}, {c:"932", n:"Graphite", h:"#363636"}, {c:"369", n:"Red Brown", h:"#5E3128"},
+    {c:"029", n:"Fluorescent Yellow", h:"#E8F416"}, {c:"037", n:"Fluorescent Orange", h:"#FF5E00"}, {c:"038", n:"Fluorescent Red Orange", h:"#FF3300"},
+    {c:"039", n:"Fluorescent Red", h:"#FF0000"}, {c:"046", n:"Fluorescent Pink", h:"#FF007F"}, {c:"069", n:"Fluorescent Green", h:"#00FF00"}
 ];
 
-const COLORS_TRANS = [
-    {c:"010", n:"White", h:"#FFFFFF"}, {c:"070", n:"Black", h:"#000000"}, {c:"020", n:"Golden Yellow", h:"#FFC806"},
-    {c:"021", n:"Yellow", h:"#FED100"}, {c:"031", n:"Red", h:"#C4051D"}, {c:"034", n:"Orange", h:"#E34A0A"},
-    {c:"041", n:"Pink", h:"#CC4F81"}, {c:"053", n:"Light Blue", h:"#5DA0D9"}, {c:"057", n:"Traffic Blue", h:"#0063A5"},
-    {c:"061", n:"Green", h:"#00764A"}, {c:"060", n:"Dark Green", h:"#004E35"}, {c:"090", n:"Silver Grey", h:"#96989A"},
-    {c:"091", n:"Gold", h:"#A28D61"}
+const COLORS_BACKLIT = [
+    {c:"010", n:"Translucent White", h:"#F5F5F5"}, {c:"070", n:"Translucent Black", h:"#000000"}, {c:"020", n:"Translucent Golden Yellow", h:"#FFC500"},
+    {c:"021", n:"Translucent Yellow", h:"#FFD600"}, {c:"025", n:"Translucent Brimstone", h:"#FFEE00"}, {c:"031", n:"Translucent Red", h:"#BF0D26"},
+    {c:"032", n:"Translucent Light Red", h:"#D62629"}, {c:"034", n:"Translucent Orange", h:"#E34A0A"}, {c:"085", n:"Translucent Pale Pink", h:"#F2C4CE"},
+    {c:"041", n:"Translucent Pink", h:"#CC4F81"}, {c:"053", n:"Translucent Light Blue", h:"#5DA0D9"}, {c:"052", n:"Translucent Azure Blue", h:"#005A9C"},
+    {c:"051", n:"Translucent Gentian Blue", h:"#004B91"}, {c:"057", n:"Translucent Traffic Blue", h:"#0063A5"}, {c:"049", n:"Translucent King Blue", h:"#002D62"},
+    {c:"063", n:"Translucent Lime-Tree", h:"#89C540"}, {c:"061", n:"Translucent Green", h:"#00764A"}, {c:"060", n:"Translucent Dark Green", h:"#004E35"},
+    {c:"079", n:"Translucent Red Brown", h:"#632A1D"}, {c:"074", n:"Translucent Middle Grey", h:"#9EA2A4"}, {c:"073", n:"Translucent Dark Grey", h:"#525559"},
+    {c:"090", n:"Translucent Silver Grey", h:"#96989A"}, {c:"091", n:"Translucent Gold", h:"#9C8346"}
 ];
 
 function initColors() {
@@ -147,12 +172,11 @@ function initColors() {
     if (!grid) return;
     grid.innerHTML = '';
     
-    // Dynamically select palette based on Backlit application
-    const activePalette = (appType.includes('Backlit')) ? COLORS_TRANS : COLORS_CAST;
+    const activePalette = (appType.includes('Backlit')) ? COLORS_BACKLIT : COLORS_STANDARD;
     
     activePalette.forEach(col => {
         const div = document.createElement('div');
-        div.className = "w-6 h-6 rounded cursor-pointer border border-gray-300 hover:scale-110 transition shadow-sm";
+        div.className = "w-6 h-6 rounded cursor-pointer border border-gray-300 hover:scale-110 transition shadow-sm shrink-0";
         div.style.backgroundColor = col.h;
         div.title = `${col.n} (${col.c})`;
         div.onclick = () => {
@@ -190,7 +214,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v4.3)`;
+            verDisplay.innerText = `(v4.4)`;
             verDisplay.classList.remove('hidden');
         }
 
