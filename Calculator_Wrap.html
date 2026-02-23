@@ -201,7 +201,7 @@ function runCalc() {
 
     const panels = [];
     document.querySelectorAll('.panel-row').forEach(row => {
-        const id = row.id.split('-');
+        const id = row.id.split('-')[1];
         const w = parseFloat(document.getElementById(`w-${id}`).value) || 0;
         const h = parseFloat(document.getElementById(`h-${id}`).value) || 0;
         const shortEdge = Math.min(w, h);
