@@ -1,130 +1,147 @@
 /**
- * PURE PHYSICS ENGINE: Wraps & Wall Graphics (v1.0 - Dual Track)
- * Implements specific mapping for Automotive Cast and Interior Wall Calendered workflows.
+ * PURE PHYSICS ENGINE: Vehicle Wraps (v4.1)
+ * Handles dynamic panel arrays, Window Perf inclusion logic, and multi-panel seaming.
  */
 
 function calculateWrap(inputs, data) {
-    const sqft = (inputs.w * inputs.h) / 144;
-    const totalSqFt = sqft * inputs.qty;
-
-    const isVehicle = (inputs.app === 'Vehicle');
-    const matLabel = isVehicle ? "Cast (IJ180 + 8518 Lam)" : "Calendered (IJ35C + 210 Lam)";
-
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
-    const baseRate = isVehicle 
-        ? parseFloat(data.Retail_Price_Vehicle_SqFt || 15) 
-        : parseFloat(data.Retail_Price_Wall_SqFt || 10);
-        
-    const installRate = isVehicle
-        ? parseFloat(data.Retail_Install_Vehicle_SqFt || 8)
-        : parseFloat(data.Retail_Install_Wall_SqFt || 5);
+    const retWrap = parseFloat(data.Retail_Price_Wrap_SqFt || 15);
+    const retPerf = parseFloat(data.Retail_Price_Perf_SqFt || 12);
+    const retDecal = parseFloat(data.Retail_Price_Decal_SqFt || 14);
+    
+    let totalRetailPrint = 0;
+    let totalSqFt = 0;
+    let totalInstallSqFt = 0;
+    let panelLogs = [];
 
-    // Volume Tiers (Fleet Discounts)
-    let discPct = 0;
-    let currentBestTier = 0;
+    // Loop through dynamic panels
+    inputs.panels.forEach(p => {
+        const sqft = (p.w * p.h) / 144;
+        const area = sqft * inputs.qty;
+        totalSqFt += area;
+
+        // Seam Math (52" Max with 1" Overlap)
+        const shortEdge = Math.min(p.w, p.h);
+        const panelCount = shortEdge <= 52 ? 1 : Math.ceil((shortEdge - 1) / 51);
+
+        let retailUnit = 0;
+        if (p.material === 'wrap') {
+            retailUnit = retWrap;
+            totalInstallSqFt += area;
+        } else if (p.material === 'perf') {
+            retailUnit = p.included ? 0 : retPerf;
+            totalInstallSqFt += area;
+        } else if (p.material === 'decal') {
+            retailUnit = retDecal;
+            totalInstallSqFt += area * 0.5; // Spot graphics install faster
+        }
+
+        const rowRetail = retailUnit * area;
+        totalRetailPrint += rowRetail;
+
+        panelLogs.push({ 
+            label: p.label || 'Section', 
+            material: p.material,
+            w: p.w, h: p.h,
+            sqft: area, 
+            retail: rowRetail, 
+            panels: panelCount,
+            included: p.included
+        });
+    });
+
+    // Install Retail
+    const isComplex = inputs.complexity === 'complex';
+    const baseInstallRet = parseFloat(data.Retail_Price_Install_Simple || 5);
+    const complexMult = parseFloat(data.Retail_Mult_Complex || 2.5);
+    const installRetRate = isComplex ? (baseInstallRet * complexMult) : baseInstallRet;
+    const totalInstallRetail = totalInstallSqFt * installRetRate;
+
+    // Fees & Discounts
+    let appliedPrintRetail = totalRetailPrint;
     let i = 1;
     const tierLog = [];
-    while(data[`Tier_${i}_Qty`]) {
+    while (data[`Tier_${i}_Qty`]) {
         const tQty = parseFloat(data[`Tier_${i}_Qty`]);
         const tDisc = parseFloat(data[`Tier_${i}_Disc`] || 0);
-        tierLog.push({ q: tQty, d: tDisc });
-        if (inputs.qty >= tQty) currentBestTier = tDisc;
+        let discountedPrint = totalRetailPrint * (1 - tDisc);
+        if (inputs.qty >= tQty) appliedPrintRetail = discountedPrint;
+        tierLog.push({ q: tQty, base: totalRetailPrint, unit: discountedPrint, pct: tDisc });
         i++;
     }
-    discPct = currentBestTier;
 
-    const retailPrint = (baseRate * (1 - discPct)) * totalSqFt;
-    const retailInstall = inputs.hasInstall ? (installRate * totalSqFt) : 0;
-
-    const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 85) : 0;
-    const feeSetupBase = parseFloat(data.Retail_Fee_Setup || 25);
-    const feeSetup = inputs.setupPerFile ? (feeSetupBase * inputs.files) : feeSetupBase;
-
-    const grandTotalRaw = retailPrint + retailInstall + feeDesign + feeSetup;
+    const feeDesign = inputs.incDesign ? (parseFloat(data.Retail_Fee_Design || 85) * inputs.files) : 0;
+    const grandTotalRaw = appliedPrintRetail + totalInstallRetail + feeDesign;
     const minOrder = parseFloat(data.Retail_Min_Order || 150);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
-    // UI Tier Log (For Simulator)
-    const simTiers = tierLog.map(t => {
-        const trPrint = (baseRate * (1 - t.d)) * (sqft * t.q);
-        const trInst = inputs.hasInstall ? (installRate * (sqft * t.q)) : 0;
-        const total = Math.max(trPrint + trInst + feeSetup + feeDesign, minOrder);
-        return { q: t.q, base: baseRate * (1 - t.d), unit: total / t.q };
+    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    const costCast = parseFloat(data.Cost_Vin_Vehicle || 1.30);
+    const costCastLam = parseFloat(data.Cost_Lam_Vehicle || 0.96);
+    const costPerf = parseFloat(data.Cost_Vinyl_Perf || 0.65);
+    const costPerfLam = parseFloat(data.Cost_Lam_Perf || 0.25); // Optically clear lam
+    const inkCost = parseFloat(data.Cost_Ink_Latex || 0.16);
+    
+    const waste = parseFloat(data.Waste_Factor || 1.25);
+    const risk = parseFloat(data.Factor_Risk || 1.10);
+
+    let totalCostMat = 0;
+    
+    inputs.panels.forEach(p => {
+        const area = ((p.w * p.h) / 144) * inputs.qty;
+        let matUnit = 0;
+        if (p.material === 'wrap' || p.material === 'decal') matUnit = costCast + costCastLam;
+        if (p.material === 'perf') matUnit = costPerf + costPerfLam; // Cost always applies, even if Retail is $0
+        
+        totalCostMat += (matUnit * area * waste);
     });
 
-    // --- 2. COST ENGINE (PHYSICS & BOM) ---
-    const wastePct = parseFloat(data.Waste_Factor || 1.25); // Higher waste for panel overlap
+    const totalCostInk = totalSqFt * inkCost * waste;
 
-    // Material Costs (Print + Lam combined)
-    const costVinylRaw = isVehicle ? parseFloat(data.Cost_Vin_Vehicle || 1.30) : parseFloat(data.Cost_Vin_Wall || 0.21);
-    const costLamRaw = isVehicle ? parseFloat(data.Cost_Lam_Vehicle || 0.96) : parseFloat(data.Cost_Lam_Wall || 0.36);
-        
-    const costVinyl = totalSqFt * costVinylRaw * wastePct;
-    const costLam = totalSqFt * costLamRaw * wastePct;
-    const costInk = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16);
-
-    // Labor & Machines
     const rateOp = parseFloat(data.Rate_Operator || 25);
-    const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
     const rateInstall = parseFloat(data.Rate_Install || 32);
-    const rateMachPrint = parseFloat(data.Rate_Machine_Print || 5);
-
-    // Setup
-    const setupMins = parseFloat(data.Time_Setup_Job || 25);
-    const costSetup = (setupMins / 60) * rateOp;
-
-    // Print Run
-    const speedPrint = parseFloat(data.Speed_Print_Roll || 150);
-    const printHrs = totalSqFt / speedPrint;
+    const rateMach = parseFloat(data.Rate_Machine_Print || 5);
     const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
-    const costPrintOp = printHrs * rateOp * attnRatio;
-    const costPrintMach = printHrs * rateMachPrint;
 
-    // Lam Run
+    const speedPrint = parseFloat(data.Speed_Print_Roll || 150);
     const speedLam = parseFloat(data.Speed_Lam_Roll || 300);
+    const speedInstallBase = parseFloat(data.Speed_Install_Vehicle || 10);
+    const speedInstall = isComplex ? (speedInstallBase * 0.5) : speedInstallBase;
+
+    const printHrs = totalSqFt / speedPrint;
     const lamHrs = totalSqFt / speedLam;
-    const costLamOp = lamHrs * rateShop; // 100% attendance required
+    const installHrs = totalInstallSqFt / speedInstall;
 
-    // Installation Labor
-    let costInstallOp = 0;
-    if (inputs.hasInstall) {
-        const installSpeed = isVehicle ? parseFloat(data.Speed_Install_Vehicle || 10) : parseFloat(data.Speed_Install_Wall || 25);
-        const installHrs = totalSqFt / installSpeed;
-        costInstallOp = installHrs * rateInstall;
-    }
+    const costPrintOp = (printHrs + lamHrs) * rateOp * attnRatio;
+    const costInstallLabor = installHrs * rateInstall;
+    const costMach = (printHrs + lamHrs) * rateMach;
 
-    const subTotal = costVinyl + costLam + costInk + costSetup + costPrintOp + costPrintMach + costLamOp + costInstallOp;
-    const riskFactor = parseFloat(data.Factor_Risk || 1.10); // 10% risk for wraps
-    const riskBuffer = subTotal * (riskFactor - 1);
+    const rawSubTotal = totalCostMat + totalCostInk + costPrintOp + costInstallLabor + costMach;
+    const riskCost = rawSubTotal * (risk - 1);
+    const totalCost = rawSubTotal + riskCost;
 
     return {
         retail: {
-            unitPrice: (retailPrint + retailInstall) / inputs.qty,
-            printTotal: retailPrint,
-            installTotal: retailInstall,
-            setupFee: feeSetup,
+            unitPrice: grandTotal / inputs.qty,
+            printTotal: appliedPrintRetail,
+            installTotal: totalInstallRetail,
             designFee: feeDesign,
             grandTotal: grandTotal,
             isMinApplied: grandTotalRaw < minOrder,
-            tiers: simTiers,
-            matLabel: matLabel
+            panels: panelLogs,
+            tiers: tierLog
         },
         cost: {
-            total: subTotal + riskBuffer, // Hard cost includes the high risk factor for wraps
+            total: totalCost,
             breakdown: {
-                rawVinyl: costVinyl,
-                rawLam: costLam,
-                totalInk: costInk,
-                costSetup: costSetup,
-                costPrint: costPrintOp + costPrintMach,
-                costLamRun: costLamOp,
-                costInstall: costInstallOp,
-                riskCost: riskBuffer,
-                wastePct: (wastePct - 1) * 100,
-                riskPct: (riskFactor - 1) * 100
+                materials: totalCostMat,
+                ink: totalCostInk,
+                printLabor: costPrintOp,
+                installLabor: costInstallLabor,
+                machine: costMach,
+                risk: riskCost
             }
-        },
-        metrics: { margin: (grandTotal - (subTotal + riskBuffer)) / grandTotal }
+        }
     };
 }
 
@@ -132,73 +149,73 @@ function calculateWrap(inputs, data) {
 // SIMULATOR CONFIGURATION SCHEMA
 // ==========================================
 window.WRAP_CONFIG = {
-    tab: 'PROD_Vinyl_Wraps', // <-- Set to exact backend tab name
+    tab: 'PROD_Vinyl_Wraps',
     engine: calculateWrap,
     controls: [
-      { id: 'w', label: 'Width (in)', type: 'number', def: 120 },
-      { id: 'h', label: 'Height (in)', type: 'number', def: 60 },
-      { id: 'app', label: 'Application', type: 'select', opts: [{v:'Vehicle', t:'Vehicle (Cast)'}, {v:'Wall', t:'Wall (Calendered)'}] },
-      { id: 'hasInstall', label: 'Include Install', type: 'toggle', def: true },
-      { id: 'files', label: 'Files', type: 'number', def: 1 },
-      { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
-      { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
+        { id: 'w', label: 'Simulated Width', type: 'number', def: 120 },
+        { id: 'h', label: 'Simulated Height', type: 'number', def: 60 },
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'wrap', t:'Cast Wrap'}, {v:'perf', t:'Window Perf'}, {v:'decal', t:'Spot Decal'}] },
+        { id: 'complexity', label: 'Vehicle Type', type: 'select', opts: [{v:'simple', t:'Flat / Box Truck'}, {v:'complex', t:'Complex / Van'}] },
+        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
+    dynamicUI: function(inputs) {
+        // The simulator sends flat W/H, we must wrap it in a panel array for the new engine
+        inputs.panels = [{
+            label: "Simulated Panel",
+            w: inputs.w,
+            h: inputs.h,
+            material: inputs.material,
+            included: false
+        }];
+        return inputs;
+    },
     retails: [
-      { heading: 'Print Rates ($/SqFt)', key: 'Retail_Price_Vehicle_SqFt', label: 'Cast Wrap ($)' },
-      { key: 'Retail_Price_Wall_SqFt', label: 'Wall Wrap ($)' },
-      { heading: 'Install Rates ($/SqFt)', key: 'Retail_Install_Vehicle_SqFt', label: 'Vehicle Install ($)' },
-      { key: 'Retail_Install_Wall_SqFt', label: 'Wall Install ($)' },
-      { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'Tier 1 Trigger (Qty)' },
-      { key: 'Tier_1_Disc', label: 'Tier 1 Disc (%)' },
-      { heading: 'Flat Fees', key: 'Retail_Fee_Setup', label: 'Setup Fee ($)' },
-      { key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
+        { heading: 'Market Base ($/SqFt)', key: 'Retail_Price_Wrap_SqFt', label: 'Wrap Cast Rate ($)' },
+        { key: 'Retail_Price_Perf_SqFt', label: 'Window Perf Rate ($)' },
+        { key: 'Retail_Price_Decal_SqFt', label: 'Spot Decal Rate ($)' },
+        { heading: 'Installation Matrix', key: 'Retail_Price_Install_Simple', label: 'Base Install ($/SqFt)' },
+        { key: 'Retail_Mult_Complex', label: 'Complex Curve Mult (1.x)' },
+        { heading: 'Flat Fees', key: 'Retail_Fee_Design', label: 'Design Fee ($)' }
     ],
     costs: [
-      { key: 'Cost_Vin_Vehicle', label: 'IJ180 ($/SqFt)' },
-      { key: 'Cost_Lam_Vehicle', label: '8518 Lam ($/SqFt)' },
-      { key: 'Cost_Vin_Wall', label: 'IJ35C ($/SqFt)' },
-      { key: 'Cost_Lam_Wall', label: '210 Lam ($/SqFt)' },
-      { key: 'Rate_Operator', label: 'Operator ($/Hr)' },
-      { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
-      { key: 'Rate_Install', label: 'Installer ($/Hr)' },
-      { key: 'Speed_Install_Vehicle', label: 'Veh Inst (SqFt/Hr)' },
-      { key: 'Speed_Install_Wall', label: 'Wall Inst (SqFt/Hr)' },
-      { key: 'Waste_Factor', label: 'Panel Waste (1.x)' },
-      { key: 'Factor_Risk', label: 'Risk Buffer (1.x)' }
+        { heading: 'Raw Materials', key: 'Cost_Vin_Vehicle', label: 'Cast Vinyl ($/SqFt)' },
+        { key: 'Cost_Lam_Vehicle', label: 'Cast Lam ($/SqFt)' },
+        { key: 'Cost_Vinyl_Perf', label: 'Perf Vinyl ($/SqFt)' },
+        { key: 'Cost_Lam_Perf', label: 'Optic Clear Lam ($/SqFt)' },
+        { key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
+        { heading: 'Labor & Speeds', key: 'Rate_Operator', label: 'Operator ($/Hr)' },
+        { key: 'Rate_Install', label: 'Installer ($/Hr)' },
+        { key: 'Rate_Machine_Print', label: 'Printer Mach ($/Hr)' },
+        { key: 'Speed_Print_Roll', label: 'Print Spd (SqFt/hr)' },
+        { key: 'Speed_Lam_Roll', label: 'Lam Spd (SqFt/hr)' },
+        { key: 'Speed_Install_Vehicle', label: 'Install Spd (SqFt/hr)' },
+        { heading: 'Modifiers', key: 'Waste_Factor', label: 'Waste (1.x)' },
+        { key: 'Factor_Risk', label: 'Risk (1.x)' },
+        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
     ],
-    
     renderReceipt: function(data, fmt) {
-      let retailHTML = `
-        <div>
-          <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
-          <div class="space-y-1 text-xs text-gray-700">
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Printed Graphic (${data.retail.matLabel}):</span> <span>${fmt(data.retail.printTotal)}</span></div>
-            ${data.retail.installTotal > 0 ? `<div class="flex justify-between text-indigo-700"><span>Installation Labor:</span> <span>${fmt(data.retail.installTotal)}</span></div>` : ''}
-            <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
-            ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
-            <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
-          </div>
-        </div>
-      `;
-      let costHTML = `
-        <div>
-          <h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
-          <div class="space-y-1 text-xs text-gray-700">`;
-      if (data.cost.breakdown) {
-        const b = data.cost.breakdown;
-        costHTML += `
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Vinyl Material:</span> <span>${fmt(b.rawVinyl)}</span></div>
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Laminate Material:</span> <span>${fmt(b.rawLam)}</span></div>
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Ink & Setup:</span> <span>${fmt(b.totalInk + b.costSetup)}</span></div>
-            <div class="flex justify-between"><span class="border-b border-dotted border-gray-400">Print & Lam Run:</span> <span>${fmt(b.costPrint + b.costLamRun)}</span></div>
-            ${b.costInstall > 0 ? `<div class="flex justify-between text-indigo-700"><span class="border-b border-dotted border-indigo-400">Install Labor:</span> <span>${fmt(b.costInstall)}</span></div>` : ''}
-            <div class="border-t border-gray-200 mt-2 pt-1"></div>
-            <h4 class="text-[9px] font-bold text-gray-500 uppercase mb-1">Additives & Risk</h4>
-            <div class="flex justify-between text-red-600"><span class="border-b border-dotted border-red-400">Panel Waste (${b.wastePct ? b.wastePct.toFixed(0) : 10}%):</span> <span>(Calculated Above)</span></div>
-            <div class="flex justify-between text-orange-600"><span class="border-b border-dotted border-orange-400">Hard Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> <span>(+ ${fmt(b.riskCost)})</span></div>
+        return `
+            <div>
+                <h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
+                <div class="space-y-1 text-xs text-gray-700">
+                    <div class="flex justify-between"><span>Printed Graphics:</span> <span>${fmt(data.retail.printTotal)}</span></div>
+                    <div class="flex justify-between"><span>Installation:</span> <span>${fmt(data.retail.installTotal)}</span></div>
+                    ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
+                    <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
+                <div class="space-y-1 text-xs text-gray-700">
+                    <div class="flex justify-between"><span>Vinyl + Lam + Waste:</span> <span>${fmt(data.cost.breakdown.materials)}</span></div>
+                    <div class="flex justify-between"><span>Ink Usage:</span> <span>${fmt(data.cost.breakdown.ink)}</span></div>
+                    <div class="flex justify-between"><span>Print Labor (Attn Ratio):</span> <span>${fmt(data.cost.breakdown.printLabor)}</span></div>
+                    <div class="flex justify-between"><span>Machine Time:</span> <span>${fmt(data.cost.breakdown.machine)}</span></div>
+                    <div class="flex justify-between text-blue-600 font-bold border-t border-gray-100 pt-1 mt-1"><span>Installation Labor:</span> <span>${fmt(data.cost.breakdown.installLabor)}</span></div>
+                    <div class="flex justify-between text-orange-500 opacity-80 border-t border-gray-100 pt-1 mt-1"><span>Risk Buffer:</span> <span>(+ ${fmt(data.cost.breakdown.risk)})</span></div>
+                    <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div>
+                </div>
+            </div>
         `;
-      }
-      costHTML += `<div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div></div></div>`;
-      return retailHTML + costHTML;
     }
 };
