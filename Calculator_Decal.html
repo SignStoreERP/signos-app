@@ -60,11 +60,11 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
         <div class="space-y-2 border-t border-gray-100 pt-2">
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded">
-                    <span class="text-[10px] font-bold text-blue-900 uppercase">Laminate?</span>
-                    <div class="relative inline-block w-9 align-middle select-none">
-                        <input type="checkbox" id="has-lam" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300" checked onchange="runCalc()"/>
-                        <label for="has-lam" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-                    </div>
+                    <span class="text-[10px] font-bold text-blue-900 uppercase">Laminate</span>
+                    <select id="lam-type" class="text-xs font-bold bg-white border border-blue-300 rounded px-2 py-1 outline-none text-blue-800 shadow-inner" onchange="runCalc()">
+                        <option value="gloss" selected>Gloss (Default)</option>
+                        <option value="matte">Matte</option>
+                    </select>
                 </div>
                 <div class="flex items-center justify-between p-2 bg-teal-50 border border-teal-200 rounded">
                     <span class="text-[10px] font-bold text-teal-900 uppercase">Pre-Mask?</span>
@@ -204,7 +204,7 @@ function runCalc() {
         h: h,
         material: document.getElementById('material').value,
         shape: document.getElementById('shape').value,
-        lam: document.getElementById('has-lam').checked,
+        lam: document.getElementById('lam-type').value,
         mask: document.getElementById('has-mask').checked,
         files: parseFloat(document.getElementById('files').value) || 1,
         incDesign: document.getElementById('inc-design').checked
@@ -242,7 +242,7 @@ function runCalc() {
     });
     document.getElementById('tier-rows').innerHTML = rowsHtml;
 
-    const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Custom Decals. Material: ${inputs.material === 'Cast' ? '3M Cast Air Release' : 'Standard Calendered'}. Cut: ${inputs.shape}. ${inputs.lam ? 'Laminated.' : ''} ${inputs.mask ? 'Pre-Mask Applied.' : ''}`;
+    const desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Custom Decals. Material: ${inputs.material === 'Cast' ? '3M Cast Air Release' : 'Standard Calendered'}. Cut: ${inputs.shape}. ${inputs.lam === 'matte' ? 'Matte Laminated.' : 'Gloss Laminated.'} ${inputs.mask ? 'Pre-Mask Applied.' : ''}`;
     document.getElementById('job-desc').value = desc;
 }
 </script>
