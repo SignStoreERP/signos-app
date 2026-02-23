@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Vehicle Wraps (v4.1)
- * Handles dynamic panel arrays, Window Perf inclusion logic, and multi-panel seaming.
+ * PURE PHYSICS ENGINE: Vehicle Wraps (v4.2)
+ * Handles dynamic panel arrays, Line Item Qty, Window Perf inclusion, and seaming.
  */
 
 function calculateWrap(inputs, data) {
@@ -17,12 +17,13 @@ function calculateWrap(inputs, data) {
     // Loop through dynamic panels
     inputs.panels.forEach(p => {
         const sqft = (p.w * p.h) / 144;
-        const area = sqft * inputs.qty;
+        const lineQty = p.qty || 1;
+        const area = sqft * lineQty * inputs.qty; // Area = (Panel SqFt) x (Line Qty) x (Fleet Qty)
         totalSqFt += area;
 
         // Seam Math (52" Max with 1" Overlap)
         const shortEdge = Math.min(p.w, p.h);
-        const panelCount = shortEdge <= 52 ? 1 : Math.ceil((shortEdge - 1) / 51);
+        const panelCount = (shortEdge <= 52 ? 1 : Math.ceil((shortEdge - 1) / 51)) * lineQty;
 
         let retailUnit = 0;
         if (p.material === 'wrap') {
@@ -42,6 +43,7 @@ function calculateWrap(inputs, data) {
         panelLogs.push({ 
             label: p.label || 'Section', 
             material: p.material,
+            qty: lineQty,
             w: p.w, h: p.h,
             sqft: area, 
             retail: rowRetail, 
@@ -79,7 +81,7 @@ function calculateWrap(inputs, data) {
     const costCast = parseFloat(data.Cost_Vin_Vehicle || 1.30);
     const costCastLam = parseFloat(data.Cost_Lam_Vehicle || 0.96);
     const costPerf = parseFloat(data.Cost_Vinyl_Perf || 0.65);
-    const costPerfLam = parseFloat(data.Cost_Lam_Perf || 0.25); // Optically clear lam
+    const costPerfLam = parseFloat(data.Cost_Lam_Perf || 0.25);
     const inkCost = parseFloat(data.Cost_Ink_Latex || 0.16);
     
     const waste = parseFloat(data.Waste_Factor || 1.25);
@@ -88,10 +90,11 @@ function calculateWrap(inputs, data) {
     let totalCostMat = 0;
     
     inputs.panels.forEach(p => {
-        const area = ((p.w * p.h) / 144) * inputs.qty;
+        const lineQty = p.qty || 1;
+        const area = ((p.w * p.h) / 144) * lineQty * inputs.qty;
         let matUnit = 0;
         if (p.material === 'wrap' || p.material === 'decal') matUnit = costCast + costCastLam;
-        if (p.material === 'perf') matUnit = costPerf + costPerfLam; // Cost always applies, even if Retail is $0
+        if (p.material === 'perf') matUnit = costPerf + costPerfLam; 
         
         totalCostMat += (matUnit * area * waste);
     });
@@ -133,21 +136,11 @@ function calculateWrap(inputs, data) {
         },
         cost: {
             total: totalCost,
-            breakdown: {
-                materials: totalCostMat,
-                ink: totalCostInk,
-                printLabor: costPrintOp,
-                installLabor: costInstallLabor,
-                machine: costMach,
-                risk: riskCost
-            }
+            breakdown: { materials: totalCostMat, ink: totalCostInk, printLabor: costPrintOp, installLabor: costInstallLabor, machine: costMach, risk: riskCost }
         }
     };
 }
 
-// ==========================================
-// SIMULATOR CONFIGURATION SCHEMA
-// ==========================================
 window.WRAP_CONFIG = {
     tab: 'PROD_Vinyl_Wraps',
     engine: calculateWrap,
@@ -159,14 +152,7 @@ window.WRAP_CONFIG = {
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
     dynamicUI: function(inputs) {
-        // The simulator sends flat W/H, we must wrap it in a panel array for the new engine
-        inputs.panels = [{
-            label: "Simulated Panel",
-            w: inputs.w,
-            h: inputs.h,
-            material: inputs.material,
-            included: false
-        }];
+        inputs.panels = [{ label: "Simulated Panel", qty: 1, w: inputs.w, h: inputs.h, material: inputs.material, included: false }];
         return inputs;
     },
     retails: [
@@ -209,7 +195,7 @@ window.WRAP_CONFIG = {
                 <div class="space-y-1 text-xs text-gray-700">
                     <div class="flex justify-between"><span>Vinyl + Lam + Waste:</span> <span>${fmt(data.cost.breakdown.materials)}</span></div>
                     <div class="flex justify-between"><span>Ink Usage:</span> <span>${fmt(data.cost.breakdown.ink)}</span></div>
-                    <div class="flex justify-between"><span>Print Labor (Attn Ratio):</span> <span>${fmt(data.cost.breakdown.printLabor)}</span></div>
+                    <div class="flex justify-between"><span>Print Labor:</span> <span>${fmt(data.cost.breakdown.printLabor)}</span></div>
                     <div class="flex justify-between"><span>Machine Time:</span> <span>${fmt(data.cost.breakdown.machine)}</span></div>
                     <div class="flex justify-between text-blue-600 font-bold border-t border-gray-100 pt-1 mt-1"><span>Installation Labor:</span> <span>${fmt(data.cost.breakdown.installLabor)}</span></div>
                     <div class="flex justify-between text-orange-500 opacity-80 border-t border-gray-100 pt-1 mt-1"><span>Risk Buffer:</span> <span>(+ ${fmt(data.cost.breakdown.risk)})</span></div>
