@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vehicle Wraps v4.1</title>
+<title>Vehicle Wraps v4.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="signos-core.js"></script>
 
@@ -61,11 +61,9 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 
         <div class="border-t border-gray-100 my-3"></div>
 
-        <!-- LINE ITEMS -->
-        <div class="space-y-1 text-xs text-gray-600 border-t border-dashed border-gray-200 pt-3">
-            <div class="flex justify-between"><span>Printed Graphics & Lam (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
-            <div class="flex justify-between text-blue-700"><span>Installation Labor:</span><span id="ui-install" class="font-bold">$0.00</span></div>
-            <div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
+        <!-- DYNAMIC LINE ITEMS -->
+        <div class="space-y-1 text-xs text-gray-600 pt-2" id="dynamic-line-items">
+            <!-- Populated by JS loop -->
         </div>
 
         <div class="flex justify-between items-end border-t-2 border-gray-800 my-3 pt-2">
@@ -114,7 +112,7 @@ window.onload = async function() {
         }
 
         if(verDisplay) {
-            verDisplay.innerText = `(v4.1)`;
+            verDisplay.innerText = `(v4.2)`;
             verDisplay.classList.remove('hidden');
         }
 
@@ -203,7 +201,7 @@ function runCalc() {
 
     const panels = [];
     document.querySelectorAll('.panel-row').forEach(row => {
-        const id = row.id.split('-')[1];
+        const id = row.id.split('-');
         const w = parseFloat(document.getElementById(`w-${id}`).value) || 0;
         const h = parseFloat(document.getElementById(`h-${id}`).value) || 0;
         const shortEdge = Math.min(w, h);
@@ -245,19 +243,42 @@ function runCalc() {
 
     let totalArea = 0;
     panels.forEach(p => totalArea += ((p.w * p.h) / 144));
-    document.getElementById('lbl-sqft').innerText = (totalArea * inputs.qty).toFixed(1);
-
+    
+    // Total & Unit Update
     document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
     document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-    document.getElementById('ui-print').innerText = fmt(ret.printTotal);
-    document.getElementById('ui-install').innerText = fmt(ret.installTotal);
+
+    // --- DYNAMIC LINE ITEMS ---
+    let lineItemsHTML = `<div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 pb-1 border-b border-gray-100">Wrap Sections (<span id="lbl-sqft">${(totalArea * inputs.qty).toFixed(1)}</span> sqft)</div>`;
+    
+    ret.panels.forEach(p => {
+        if(p.w > 0 && p.h > 0) {
+            let matTxt = p.material === 'wrap' ? 'Cast Wrap' : (p.material === 'perf' ? 'Window Perf' : 'Spot Decal');
+            let priceDisplay = p.included ? '<span class="text-[9px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded uppercase tracking-wider border border-teal-200 shadow-inner">INCLUDED</span>' : fmt(p.retail);
+            
+            lineItemsHTML += `
+            <div class="flex justify-between items-end mb-1.5">
+                <span class="truncate pr-2">
+                    <span class="text-gray-800 font-bold">${p.label}</span> 
+                    <span class="text-[9px] text-gray-500 ml-1">(${p.w}"x${p.h}" ${matTxt})</span>
+                </span>
+                <span class="font-bold shrink-0">${priceDisplay}</span>
+            </div>`;
+        }
+    });
+
+    lineItemsHTML += `<div class="flex justify-between items-end text-blue-700 mt-2 pt-2 border-t border-dashed border-gray-200">
+        <span>Installation Labor:</span><span class="font-bold">${fmt(ret.installTotal)}</span>
+    </div>`;
 
     if (ret.designFee > 0) {
-        document.getElementById('row-design').classList.remove('hidden');
-        document.getElementById('ui-design').innerText = fmt(ret.designFee);
-    } else {
-        document.getElementById('row-design').classList.add('hidden');
+        lineItemsHTML += `<div class="flex justify-between items-end text-purple-700 mt-1">
+            <span>Design Fee:</span><span class="font-bold">${fmt(ret.designFee)}</span>
+        </div>`;
     }
+
+    document.getElementById('dynamic-line-items').innerHTML = lineItemsHTML;
+    // --------------------------
 
     const minOrder = parseFloat(backendData.Retail_Min_Order || 150);
     document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
