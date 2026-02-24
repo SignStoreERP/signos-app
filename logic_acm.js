@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ACM Signs (v3.4)
- * Implements Yield Bounding Box logic.
+ * PURE PHYSICS ENGINE: ACM Signs (v3.5)
+ * Bug Fix: Corrected split array index for dimension parsing.
  */
 function calculateACM(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -15,10 +15,9 @@ function calculateACM(inputs, data) {
     let bestFitArea = Infinity;
     let bestP1 = null, bestP10 = null, bestLabel = "";
 
-    // Bounding Box Search
     Object.keys(data).forEach(key => {
         if (key.startsWith(`RET_ACM${thickStr}_`) && key.endsWith(`_${sideStr}_1`)) {
-            const dimStr = key.split('_')[4]; 
+            const dimStr = key.split('_')[2]; // Changed from [1] to [2]
             const stdShort = parseInt(dimStr.substring(0, 2), 10);
             const stdLong = parseInt(dimStr.substring(2), 10);
             const stdArea = stdShort * stdLong;
@@ -37,11 +36,9 @@ function calculateACM(inputs, data) {
     const tierLog = [];
 
     if (bestP1 !== null) {
-        // MATCH: Apply Yield Envelope Price
         baseUnitPrice = inputs.qty >= t1Qty ? bestP10 : bestP1;
         tierLog.push({ q: 1, base: bestP1, unit: bestP1 }, { q: t1Qty, base: bestP10, unit: bestP10 });
     } else {
-        // NO MATCH: Oversize / Fallback Area Curves
         let baseSqFtRate = inputs.thickness === '6mm' ? 16.50 : 14.00;
         let signMinPrice = 0;
         let t = 1;
@@ -69,7 +66,6 @@ function calculateACM(inputs, data) {
         );
     }
 
-    // Apply Black ACM Multiplier (+100% on 6mm)
     if (inputs.color === 'Black' && inputs.thickness === '6mm') {
         const blkMult = parseFloat(data.Retail_Adder_Black_Mult || 2);
         baseUnitPrice *= blkMult;
@@ -77,8 +73,6 @@ function calculateACM(inputs, data) {
     }
 
     let retailPrint = baseUnitPrice * inputs.qty;
-
-    // Fees
     let routerFee = 0;
     if (inputs.shape !== 'Rectangle') {
         routerFee = inputs.shape === 'Easy' ? parseFloat(data.Retail_Fee_Router_Easy || 30) : parseFloat(data.Retail_Fee_Router_Hard || 50);
@@ -94,13 +88,12 @@ function calculateACM(inputs, data) {
 
     tierLog.forEach(t => t.unit = (t.unit * t.q + routerFee) / t.q);
 
-    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    // --- 2. COST ENGINE ---
     const wasteFactor = parseFloat(data.Waste_Factor || 1.15);
     const stockSheets = inputs.thickness === '6mm'
         ? [{w: 48, h: 96, cost: parseFloat(data.Cost_Stock_6mm_4x8 || 72.10)}, {w: 60, h: 120, cost: parseFloat(data.Cost_Stock_6mm_5x10 || 132.39)}]
         : [{w: 48, h: 96, cost: parseFloat(data.Cost_Stock_3mm_4x8 || 52.09)}, {w: 48, h: 120, cost: parseFloat(data.Cost_Stock_3mm_4x10 || 69.44)}, {w: 60, h: 120, cost: parseFloat(data.Cost_Stock_3mm_5x10 || 75.75)}];
 
-    let bestStock = stockSheets;
     let lowestCost = Infinity;
     stockSheets.forEach(sheet => {
         const sheetsNeeded = Math.ceil((sqft * inputs.qty * wasteFactor) / ((sheet.w * sheet.h)/144));
