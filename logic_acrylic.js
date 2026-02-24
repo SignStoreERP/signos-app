@@ -61,7 +61,7 @@ function calculateAcrylic(inputs, data) {
     if (inputs.standoffs) hwFee = (inputs.standoffQty || 4) * parseFloat(data.Retail_Price_Standoff || 8) * inputs.qty;
 
     const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
-    const feeSetupBase = parseFloat(data.Retail_Fee_Setup || 25);
+    const feeSetupBase = parseFloat(data.Retail_Fee_Setup ?? 25);
     const feeSetup = inputs.setupPerFile ? (feeSetupBase * (inputs.files||1)) : feeSetupBase;
 
     const grandTotalRaw = retailPrint + paintFee + routerFee + hwFee + feeDesign + feeSetup;
