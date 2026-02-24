@@ -52,6 +52,9 @@ else if (inputs.thickness.includes('1')) {
     }
 }
 
+// Calculate the raw print cost
+let retailPrint = baseSqFtRate * totalSqFt;
+
     // Adders
     if (inputs.method === 'direct_white') baseRate += parseFloat(data.Retail_Adder_2ndSurf || 5);
     if (inputs.method === 'direct_3layer') baseRate += parseFloat(data.Retail_Adder_Blockout || 8);
