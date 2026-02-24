@@ -1,5 +1,5 @@
 /**
- * PURE PHYSICS ENGINE: PVC Signs (v1.6.1)
+ * PURE PHYSICS ENGINE: PVC Signs (v1.6.2)
  * Bug Fix: Corrected split array index for dimension parsing.
  */
 function calculatePVC(inputs, data) {
@@ -16,12 +16,8 @@ function calculatePVC(inputs, data) {
     let bestP1 = null, bestP10 = null, bestLabel = "";
 
     Object.keys(data).forEach(key => {
-        // Find Blue Sheet keys for this thickness/side
         if (key.startsWith(`RET_PVC${thickStr}_`) && key.endsWith(`_${sideStr}_1`)) {
-            
-            // THE FIX: Target index [2] of the array to grab the dimension string
-            const dimStr = key.split('_')[2]; 
-            
+            const dimStr = key.split('_')[2]; // Changed from [1] to [2]
             const stdShort = parseInt(dimStr.substring(0, 2), 10);
             const stdLong = parseInt(dimStr.substring(2), 10);
             const stdArea = stdShort * stdLong;
@@ -40,11 +36,9 @@ function calculatePVC(inputs, data) {
     const tierLog = [];
 
     if (bestP1 !== null) {
-        // MATCH: Yield Envelope Price
         baseUnitPrice = inputs.qty >= t1Qty ? bestP10 : bestP1;
         tierLog.push({ q: 1, base: bestP1, unit: bestP1 }, { q: t1Qty, base: bestP10, unit: bestP10 });
     } else {
-        // NO MATCH: Oversize / Area Curves
         let baseSqFtRate = 0;
         let signMinPrice = inputs.thickness === '3mm' ? parseFloat(data.PVC3_T1_Min || 33.00) : parseFloat(data.PVC6_T1_Min || 33.00);
 
@@ -72,14 +66,12 @@ function calculatePVC(inputs, data) {
     }
 
     let retailPrint = baseUnitPrice * inputs.qty;
-
     let routerFee = 0;
     if (inputs.shape === 'Easy') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30.00);
     else if (inputs.shape === 'Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50.00);
 
     const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
     
-    // Apply 10% No-Laminate Deduction logic for PVC
     let lamDeduction = 0;
     if (typeof inputs.lam !== 'undefined' && !inputs.lam) {
         lamDeduction = retailPrint * 0.10;
