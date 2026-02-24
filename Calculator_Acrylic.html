@@ -8,8 +8,6 @@
     <script src="signos-core.js"></script>
     <script src="logic_acrylic.js"></script>
     <style>
-        .toggle-checkbox:checked { right: 0; border-color: #2563EB; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #2563EB; }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
@@ -17,11 +15,6 @@
 
 <!-- Main Card: Island Mode -->
 <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
-
-    <!-- Status Badge -->
-    <div id="status-bar" class="bg-gray-200 text-gray-500 text-[10px] font-bold text-center py-1 uppercase tracking-widest relative z-10">
-        FETCHING DATA...
-    </div>
 
     <!-- INPUTS -->
     <div class="p-6 space-y-4">
@@ -70,12 +63,6 @@
                 </select>
             </div>
         </div>
-
-        <div class="space-y-2 border-t border-gray-100 pt-2">
-            <div class="flex justify-between items-center bg-purple-50 border border-purple-200 p-2 rounded mt-2">
-                <label class="flex items-center gap-2 text-[10px] font-bold text-purple-800 cursor-pointer transition"><input type="checkbox" id="inc-design" onchange="runCalc()" class="w-4 h-4 text-purple-600 rounded"> Add Design Fee</label>
-            </div>
-        </div>
     </div>
 
     <!-- RESULTS -->
@@ -91,8 +78,6 @@
         <div class="space-y-1 text-xs text-blue-900/70 pt-1">
             <div class="flex justify-between"><span>Printed Signs (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
             <div class="flex justify-between text-orange-700 hidden" id="row-router"><span>CNC Router Fee:</span><span id="ui-router" class="font-bold">$0.00</span></div>
-            <div class="flex justify-between text-slate-700 hidden" id="row-setup"><span>Setup Fee:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
-            <div class="flex justify-between text-purple-700 hidden" id="row-design"><span>Design Fee:</span><span id="ui-design" class="font-bold">$0.00</span></div>
         </div>
 
         <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
@@ -144,8 +129,6 @@ function enforceSheetLimits(maxShort, maxLong) {
 
 // SAFE UI CONSTRAINT (Waits for page load)
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof injectHeader === 'function') injectHeader("Acrylic Signs");
-
     const thickDropdown = document.getElementById('thickness');
     if (thickDropdown) {
         thickDropdown.addEventListener('change', function(e) {
@@ -180,8 +163,7 @@ function runCalc() {
             h: parseFloat(document.getElementById('h').value) || 18,
             thickness: document.getElementById('thickness').value, 
             color: document.getElementById('color').value,
-            shape: document.getElementById('shape').value, 
-            incDesign: document.getElementById('inc-design').checked
+            shape: document.getElementById('shape').value
         };
 
         const result = calculateAcrylic(inputs, backendData);
@@ -201,16 +183,6 @@ function runCalc() {
             document.getElementById('ui-router').innerText = fmt(ret.routerFee);
         } else { document.getElementById('row-router').classList.add('hidden'); }
 
-        if (ret.setupFee > 0) {
-            document.getElementById('row-setup').classList.remove('hidden');
-            document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
-        } else { document.getElementById('row-setup').classList.add('hidden'); }
-
-        if (ret.designFee > 0) {
-            document.getElementById('row-design').classList.remove('hidden');
-            document.getElementById('ui-design').innerText = fmt(ret.designFee);
-        } else { document.getElementById('row-design').classList.add('hidden'); }
-
         const minOrder = parseFloat(backendData.Retail_Min_Order || 75);
         document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
         document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
@@ -220,29 +192,40 @@ function runCalc() {
 
         document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${thkTxt} ${inputs.color} Acrylic Signs.\n${cutTxt}.`;
 
-        setStatus("ONLINE", "bg-green-500", "text-white");
     } catch(e) {
-        setStatus("OFFLINE", "bg-red-500", "text-white");
         console.error(e);
     }
 }
 
-function setStatus(msg, bgClass, txtClass) {
-    const bar = document.getElementById('status-bar');
-    bar.className = `text-[10px] font-bold text-center py-1 uppercase tracking-widest relative z-10 ${bgClass} ${txtClass}`;
-    bar.innerText = msg;
-}
-
+// 4. API FETCH & NATIVE STATUS BAR UPDATER
 window.addEventListener('load', async () => {
+    if (typeof injectHeader === 'function') injectHeader("Acrylic Signs");
+    
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
+
     try {
         const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Acrylic_Signs`);
         backendData = await req.json();
         
         if(backendData.error) throw new Error(backendData.error);
         
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            if(statusDot) {
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                statusDot.classList.remove("animate-pulse");
+            }
+        }
+        
         runCalc(); 
     } catch(e) {
-        setStatus("CONNECTION FAILED", "bg-red-500", "text-white");
+        if(statusText) {
+            statusText.innerText = "OFFLINE";
+            statusText.className = "font-bold text-red-500";
+        }
+        console.error(e);
     }
 });
 </script>
