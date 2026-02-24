@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS_DEV API v7.2.5 - COMPLETE & CORRECTED
+// SignOS_DEV API v7.2.6 - FULL SYSTEM RECOVERY
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -57,7 +57,7 @@ function doGet(e) {
 }
 
 // ==========================================
-//  CORE DATA FUNCTIONS
+//  CORE DATA & AUTH FUNCTIONS
 // ==========================================
 
 function handleAuth(pin) {
@@ -67,16 +67,15 @@ function handleAuth(pin) {
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][6]) === String(pin)) { // FIXED: Col G
       const isActive = (data[i][7] === true || String(data[i][7]).toUpperCase() === "TRUE"); // FIXED: Col H
-      
       if (!isActive) return returnJSON({ status: "fail", message: "Account Disabled" });
 
       return returnJSON({
         status: "success",
-        name: data[i][1], // FIXED: Col B
-        role: data[i][5], // FIXED: Col F
+        name: data[i][1], // First Name (Col B)
+        role: data[i][5], // Access Role (Col F)
         permissions: {
-          roadmap: data[i][8] || "None", // FIXED: Col I
-          backup: data[i][9] || "None"   // FIXED: Col J
+          roadmap: data[i][8] || "None", // Col I
+          backup: data[i][9] || "None"   // Col J
         }
       });
     }
@@ -93,7 +92,7 @@ function fetchTable(tabName) {
     const values = sheet.getDataRange().getValues();
     if (values.length < 2) return returnJSON([]);
 
-    const headers = values[0]; // FIXED: Targeted Row 1 correctly
+    const headers = values[0]; 
     const rows = values.slice(1);
 
     const result = rows.map(row => {
@@ -121,8 +120,8 @@ function fetchProductWithMatrix(tabName) {
     if (prodSheet) {
       const data = prodSheet.getDataRange().getValues();
       for (let i = 1; i < data.length; i++) {
-        const key = data[i][0]; // FIXED: Col A
-        const val = data[i][1]; // FIXED: Col B
+        const key = data[i][0]; 
+        const val = data[i][1]; 
         if (key) config[key] = val;
       }
     }
@@ -136,16 +135,16 @@ function fetchProductWithMatrix(tabName) {
       const dData = defSheet.getDataRange().getValues();
       const productID = tabName.replace("_Signs", "").replace("_Calculator", "");
 
-      const headers = mData[0]; // FIXED: Row 1
+      const headers = mData[0];
       const colIdx = headers.findIndex(h => h === productID || h === tabName);
 
       if (colIdx > -1) {
         const defMap = {};
         for (let i = 1; i < dData.length; i++) {
-          if(dData[i][0]) defMap[dData[i][0]] = dData[i][5]; // FIXED: Default_Source_Ref (Col F)
+          if(dData[i][0]) defMap[dData[i][0]] = dData[i][5]; // FIXED: Default Source Ref (Col F)
         }
         for (let r = 1; r < mData.length; r++) {
-          const costKey = mData[r][0]; // FIXED: Col A
+          const costKey = mData[r][0]; 
           const matrixVal = mData[r][colIdx];
 
           if (matrixVal === false || String(matrixVal).toUpperCase() === "FALSE") {
@@ -165,10 +164,10 @@ function fetchProductWithMatrix(tabName) {
     if (blueSheet) {
       const bData = blueSheet.getDataRange().getValues();
       for (let i = 1; i < bData.length; i++) {
-        const key = bData[i][0]; // FIXED: Col A
+        const key = bData[i][0]; 
         if (key && typeof key === 'string') {
-          config[`${key}_1`] = bData[i][5];  // FIXED: Price_Qty_1 (Col F)
-          config[`${key}_10`] = bData[i][6]; // FIXED: Price_Qty_10_Plus (Col G)
+          config[`${key}_1`] = bData[i][5];  // FIXED: Price Qty 1 (Col F)
+          config[`${key}_10`] = bData[i][6]; // FIXED: Price Qty 10+ (Col G)
         }
       }
     }
@@ -217,7 +216,7 @@ function getTicketDetails(ticketId) {
     const history = [];
 
     for(let i=1; i<cData.length; i++) {
-      if(String(cData[i][1]) === String(ticketId)) { // Col B: Parent_ID
+      if(String(cData[i][1]) === String(ticketId)) { // Parent_ID (Col B)
         let act = {};
         cHeaders.forEach((h, idx) => act[h] = cData[i][idx]);
         history.push(act);
@@ -238,7 +237,7 @@ function addTicketAction(p) {
     const pData = pSheet.getDataRange().getValues();
     for(let i=1; i<pData.length; i++) {
       if(String(pData[i][0]) === String(p.id)) {
-        pSheet.getRange(i+1, 8).setValue(p.new_status);
+        pSheet.getRange(i+1, 8).setValue(p.new_status); // Status is Col 8
         break;
       }
     }
@@ -247,8 +246,101 @@ function addTicketAction(p) {
 }
 
 // ==========================================
-//  ADMIN & UTILS (Backups, Logs, Bridges)
+//  ADMIN LOGS & ARCHIVING
 // ==========================================
+
+function fetchArchiveIndex() {
+  const ss = SpreadsheetApp.openById(LOG_SS_ID);
+  const sheet = ss.getSheetByName("SYS_Archive_Index");
+  if (!sheet) return returnJSON([]);
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return returnJSON([]);
+
+  const result = data.slice(1).map(r => {
+    let fileId = null;
+    if (r[2] && r[2].includes("/d/")) {
+      const match = r[2].match(/\/d\/(.+?)\//);
+      if(match) fileId = match[1];
+    }
+    return { date: r[0], name: r[1], url: r[2], count: r[3], type: r[4], file_id: fileId };
+  }).reverse();
+
+  return returnJSON(result);
+}
+
+function fetchLogFile(fileId) {
+  try {
+    const file = DriveApp.getFileById(fileId);
+    return returnJSON({ status: "success", content: file.getBlob().getDataAsString() });
+  } catch(e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
+
+function fetchLiveLogs() {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Access_Logs");
+    if (!sheet) return returnJSON({ status: "error", message: "Log sheet not found" });
+
+    const data = sheet.getDataRange().getValues();
+    return returnJSON({ status: "success", logs: data });
+  } catch(e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
+
+function manualExport(pin) {
+  const auth = handleAuth(pin);
+  const authObj = JSON.parse(auth.getContent());
+  if (authObj.status !== "success") return returnJSON({ status: "error", message: "Unauthorized" });
+  return returnJSON(processArchive(false));
+}
+
+function processArchive(isDestructive) {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const logSheet = ss.getSheetByName("SYS_Access_Logs");
+    const lastRow = logSheet.getLastRow();
+    if (lastRow < 2) return { status: "skipped" };
+
+    const data = logSheet.getRange(2, 1, lastRow - 1, logSheet.getLastColumn()).getValues();
+    let content = "Timestamp | IP | User | Role | Action | Target | Meta\n=================================================\n";
+    data.forEach(r => content += r.join(" | ") + "\n");
+    
+    const name = `SignOS_Log_${isDestructive ? 'AUTO' : 'MANUAL'}_${Date.now()}.txt`;
+    const folder = DriveApp.getFolderById(ARCHIVE_FOLDER_ID);
+    const file = folder.createFile(name, content);
+
+    const idxSheet = ss.getSheetByName("SYS_Archive_Index");
+    idxSheet.appendRow([new Date(), name, file.getUrl(), data.length, isDestructive ? "AUTO" : "MANUAL"]);
+
+    if (isDestructive) logSheet.deleteRows(2, lastRow - 1);
+    return { status: "success", url: file.getUrl(), rows_archived: data.length };
+  } catch(e) { return { status: "error", message: e.toString() }; }
+}
+
+// ==========================================
+//  MATRIX BATCH ENGINE (Stage & Commit)
+// ==========================================
+
+function updateMatrixValue(p) {
+  try {
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Cost_Matrix");
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const rowIds = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues().flat();
+
+    const colIndex = headers.indexOf(p.product_id);
+    const rowIndex = rowIds.indexOf(p.cost_id);
+
+    if (colIndex === -1 || rowIndex === -1) throw new Error("Invalid Coordinates");
+
+    let val = p.value;
+    if (val === 'TRUE') val = true;
+    if (val === 'FALSE') val = false;
+
+    sheet.getRange(rowIndex + 1, colIndex + 1).setValue(val);
+    return returnJSON({ status: "success", new_value: val });
+  } catch (e) { return returnJSON({ status: "error", message: e.toString() }); }
+}
 
 function commitMatrixBatch(p) {
   const lock = LockService.getScriptLock();
@@ -284,36 +376,59 @@ function commitMatrixBatch(p) {
   finally { lock.releaseLock(); }
 }
 
-function fetchArchiveIndex() {
-  const ss = SpreadsheetApp.openById(LOG_SS_ID);
-  const sheet = ss.getSheetByName("SYS_Archive_Index");
-  if (!sheet) return returnJSON([]);
+// ==========================================
+//  NOTEBOOKLM BRIDGES (V2.0)
+// ==========================================
 
+function generateNotebookLMBridge() {
+  const ss = SpreadsheetApp.openById(DATA_SS_ID);
+  const sheet = ss.getSheetByName("SYS_Modules");
   const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return returnJSON([]);
+  
+  const repoOwner = "SignStoreERP";
+  const repoName = "signos-app";
+  const MAX_CHARS = 300000; 
+  
+  let chunks = [];
+  let currentContent = `# SIGNOS MASTER CODEBASE (PART 1)\n**Sync:** ${new Date().toString()}\n---\n\n`;
+  let count = 0;
+  let fetchedJS = new Set();
 
-  const result = data.slice(1).map(r => {
-    let fileId = null;
-    if (r[2] && r[2].includes("/d/")) {
-      const match = r[2].match(/\/d\/(.+?)\//);
-      if(match) fileId = match[1];
+  for (let i = 1; i < data.length; i++) {
+    const name = data[i][1];      // Display Name (Col B)
+    const fileName = data[i][2];  // File Link (Col C)
+
+    if (fileName && (fileName.toString().endsWith(".html") || fileName.toString().endsWith(".js"))) {
+      try {
+        const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${fileName}`;
+        const content = UrlFetchApp.fetch(url).getContentText();
+        const lang = fileName.endsWith('.js') ? 'javascript' : 'html';
+
+        let block = `## ${name} (${fileName})\n\`\`\`${lang}\n${content}\n\`\`\`\n\n---\n\n`;
+
+        if (currentContent.length + block.length > MAX_CHARS) {
+          chunks.push(currentContent);
+          currentContent = `# SIGNOS MASTER CODEBASE (PART ${chunks.length + 1})\n**Sync:** ${new Date().toString()}\n---\n\n`;
+        }
+        currentContent += block;
+        count++;
+      } catch (e) {}
     }
-    return { date: r[0], name: r[1], url: r[2], count: r[3], type: r[4], file_id: fileId };
-  }).reverse();
+  }
+  chunks.push(currentContent);
 
-  return returnJSON(result);
-}
+  const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID);
+  const oldFiles = folder.getFiles();
+  while(oldFiles.hasNext()) {
+    const f = oldFiles.next();
+    if(f.getName().startsWith("SignOS_DEV_Context_Part_")) f.setTrashed(true);
+  }
 
-function returnJSON(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
+  chunks.forEach((text, idx) => {
+    folder.createFile(`SignOS_DEV_Context_Part_${idx + 1}.txt`, text, MimeType.PLAIN_TEXT);
+  });
 
-function logActivity(p) {
-  try {
-    const ss = SpreadsheetApp.openById(LOG_SS_ID);
-    const sheet = ss.getSheetByName("SYS_Access_Logs");
-    sheet.appendRow([new Date(), p.ip || "Unknown", p.user || "GUEST", p.role || "N/A", p.req, p.tab || "N/A", JSON.stringify(p)]);
-  } catch (e) {}
+  return returnJSON({ status: "success", message: `Synced ${count} files across ${chunks.length} chunks.` });
 }
 
 function generateBackendContext() {
@@ -323,13 +438,10 @@ function generateBackendContext() {
 
   sheets.forEach(s => {
     const name = s.getName();
-    if (name.includes("Log") || name.includes("SYS_Changelog")) return;
-    
+    if (name.includes("Log") || name.includes("Changelog")) return;
     const data = s.getDataRange().getValues();
     context += `\nTAB: ${name}\n`;
-    data.slice(0, 50).forEach(row => {
-      context += `| ${row.join(" | ")} |\n`;
-    });
+    data.slice(0, 50).forEach(row => context += `| ${row.join(" | ")} |\n`);
   });
 
   const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID);
@@ -357,7 +469,7 @@ function syncVersionsFromGitHub() {
         const url = `https://raw.githubusercontent.com/SignStoreERP/signos-app/main/${fileName}`;
         const html = UrlFetchApp.fetch(url).getContentText();
         const match = html.match(/<title>.*?((?:v|V)\d+(?:\.\d+)*).*?<\/title>/);
-        if (match && match[1]) sheet.getRange(i + 1, 6).setValue(match[1]); // Col F
+        if (match && match[1]) sheet.getRange(i + 1, 6).setValue(match[1]); // Dev_Ver is Col F
       } catch (e) {}
     }
   }
@@ -368,16 +480,32 @@ function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     if (!payload.commits) return returnJSON({status: "ignored"});
-
     const ss = SpreadsheetApp.openById(DATA_SS_ID);
     const logSheet = ss.getSheetByName("SYS_Changelog");
-    
     payload.commits.forEach(c => {
-      const ts = new Date(c.timestamp);
-      logSheet.appendRow([ts, c.author.name, c.id.substring(0, 7), c.message, c.added.length+c.modified.length, c.url, "DEV"]);
+      logSheet.appendRow([new Date(c.timestamp), c.author.name, c.id.substring(0, 7), c.message, c.added.length+c.modified.length, c.url, "DEV"]);
     });
-
     syncVersionsFromGitHub();
     return returnJSON({ status: "success" });
   } catch(e) { return returnJSON({ status: "error" }); }
+}
+
+// ==========================================
+//  UTILITIES & AUTOMATION
+// ==========================================
+
+function returnJSON(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function logActivity(p) {
+  try {
+    const ss = SpreadsheetApp.openById(LOG_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Access_Logs");
+    sheet.appendRow([new Date(), p.ip || "Unknown", p.user || "GUEST", p.role || "N/A", p.req, p.tab || "N/A", JSON.stringify(p)]);
+  } catch (e) {}
+}
+
+function archiveDailyLogs() {
+  try { processArchive(true); } catch(e) { console.error("Auto Archive Failed", e); }
 }
