@@ -1,6 +1,6 @@
 /**
  * ULTRA-SIMPLE RETAIL ENGINE: Acrylic Signs
- * Pure Fixed-Tier Lookup Math + v1.3 UI Integration
+ * Pure Fixed-Tier Lookup Math + No Setup or Design Fees
  */
 function calculateAcrylic(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -34,20 +34,16 @@ function calculateAcrylic(inputs, data) {
     if (inputs.shape === 'CNC Simple') routerFee = parseFloat(data.Retail_Fee_Router_Easy) || 0;
     else if (inputs.shape === 'CNC Complex' || inputs.shape === 'Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard) || 0;
 
-    const setupFee = parseFloat(data.Retail_Fee_Setup) || 0;
-    const designFee = inputs.incDesign ? (parseFloat(data.Retail_Fee_Design) || 0) : 0;
     const minOrder = parseFloat(data.Retail_Min_Order) || 0;
     
-    let grandTotalRaw = retailPrint + setupFee + routerFee + designFee;
+    let grandTotalRaw = retailPrint + routerFee;
     let grandTotal = Math.max(grandTotalRaw, minOrder);
 
     return {
         retail: {
             unitPrice: grandTotal / inputs.qty,
             printTotal: retailPrint,
-            setupFee: setupFee,
             routerFee: routerFee,
-            designFee: designFee,
             grandTotal: grandTotal,
             isMinApplied: grandTotalRaw < minOrder
         },
