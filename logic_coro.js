@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Custom Coroplast (v2.2)
- * Implements Yield-Based Bounding Box overriding.
+ * PURE PHYSICS ENGINE: Custom Coroplast (v2.3)
+ * Bug Fix: Corrected split array index for dimension parsing.
  */
 function calculateCoro(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -18,7 +18,7 @@ function calculateCoro(inputs, data) {
     // A. Bounding Box Search
     Object.keys(data).forEach(key => {
         if (key.startsWith(`RET_COR${thickStr}_`) && key.endsWith(`_${sideStr}_1`)) {
-            const dimStr = key.split('_')[4]; 
+            const dimStr = key.split('_')[2]; // Changed from [1] to [2]
             const stdShort = parseInt(dimStr.substring(0, 2), 10);
             const stdLong = parseInt(dimStr.substring(2), 10);
             const stdArea = stdShort * stdLong;
@@ -38,17 +38,14 @@ function calculateCoro(inputs, data) {
     const tierLog = [];
 
     if (bestP1 !== null) {
-        // MATCH: Apply Yield Envelope Price
         const appliedBase = inputs.qty >= t1Qty ? bestP10 : bestP1;
         retailPrint = appliedBase * inputs.qty;
-        baseSqFtRate = bestP1 / sqft; // For display math only
-        
+        baseSqFtRate = bestP1 / sqft;
         tierLog.push(
             { q: 1, base: bestP1, unit: bestP1 },
             { q: t1Qty, base: bestP10, unit: bestP10 }
         );
     } else {
-        // NO MATCH: Oversize / Fallback to Area Curves
         let minSignPrice = inputs.thickness === '10mm' ? 75 : 25;
         if (inputs.thickness === '10mm') {
             if (sqft <= 3.99) baseSqFtRate = 25.00;
@@ -76,7 +73,6 @@ function calculateCoro(inputs, data) {
         );
     }
 
-    // B. Finishing Fees
     let routerFee = 0;
     if (inputs.shape === 'CNC Simple') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30);
     if (inputs.shape === 'CNC Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50);
@@ -91,7 +87,7 @@ function calculateCoro(inputs, data) {
 
     tierLog.forEach(t => t.unit = (t.unit * t.q + routerFee) / t.q);
 
-    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    // --- 2. COST ENGINE ---
     const costSheet = inputs.thickness === '10mm' ? parseFloat(data.Cost_Stock_10mm_4x8 || 33.49) : parseFloat(data.Cost_Stock_4mm_4x8 || 8.40);
     const costPerSqFt = costSheet / 32;
     const wastePct = parseFloat(data.Waste_Factor || 1.10);
@@ -130,23 +126,12 @@ function calculateCoro(inputs, data) {
 
     return {
         retail: {
-            unitPrice: (retailPrint + routerFee) / inputs.qty,
-            printTotal: retailPrint,
-            routerFee: routerFee,
-            setupFee: feeSetup,
-            designFee: feeDesign,
-            grandTotal: grandTotal,
-            isMinApplied: grandTotalRaw < minOrder,
-            tiers: tierLog,
-            yieldLabel: bestLabel ? `Yield Box: ${bestLabel}` : "Area Curve"
+            unitPrice: (retailPrint + routerFee) / inputs.qty, printTotal: retailPrint, routerFee: routerFee, setupFee: feeSetup, designFee: feeDesign,
+            grandTotal: grandTotal, isMinApplied: grandTotalRaw < minOrder, tiers: tierLog, yieldLabel: bestLabel ? `Yield Box: ${bestLabel}` : "Area Curve"
         },
         cost: {
             total: subTotal,
-            breakdown: {
-                rawBlanks: rawMat, wasteCost: wasteCost, wastePct: (wastePct - 1) * 100, totalInk: totalInk,
-                costSetup: costSetupPrint + costCutSetup, costCut: costCutLabor + costCutMach, runHrs: printHrs + runHrsCNC,
-                costMachine: costPrintMach + costCutMach, costOp: costPrintOp + costCutLabor, riskCost: riskBuffer, riskPct: (riskFactor - 1) * 100
-            }
+            breakdown: { rawBlanks: rawMat, wasteCost: wasteCost, wastePct: (wastePct - 1) * 100, totalInk: totalInk, costSetup: costSetupPrint + costCutSetup, costCut: costCutLabor + costCutMach, runHrs: printHrs + runHrsCNC, costMachine: costPrintMach + costCutMach, costOp: costPrintOp + costCutLabor, riskCost: riskBuffer, riskPct: (riskFactor - 1) * 100 }
         },
         metrics: { margin: (grandTotal - subTotal) / grandTotal }
     };
