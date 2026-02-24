@@ -18,7 +18,7 @@ function calculateCoro(inputs, data) {
     // A. Bounding Box Search
     Object.keys(data).forEach(key => {
         if (key.startsWith(`RET_COR${thickStr}_`) && key.endsWith(`_${sideStr}_1`)) {
-            const dimStr = key.split('_')[2]; // Changed from [1] to [2]
+            const dimStr = key.split('_')[2]; 
             const stdShort = parseInt(dimStr.substring(0, 2), 10);
             const stdLong = parseInt(dimStr.substring(2), 10);
             const stdArea = stdShort * stdLong;
@@ -26,7 +26,7 @@ function calculateCoro(inputs, data) {
             if (reqShort <= stdShort && reqLong <= stdLong && stdArea < bestFitArea) {
                 bestFitArea = stdArea;
                 bestP1 = parseFloat(data[key]);
-                bestP10 = parseFloat(data[key.replace('_1', '_10')]);
+                bestP10 = parseFloat(data[key.replace(/_1$/, '_10')]) || bestP1;
                 bestLabel = `${stdShort}x${stdLong}`;
             }
         }
