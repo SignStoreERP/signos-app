@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Foam Core Boards (v1.2)
- * Implements Yield Bounding Box logic.
+ * PURE PHYSICS ENGINE: Foam Core Boards (v1.3)
+ * Bug Fix: Corrected split array index for dimension parsing.
  */
 function calculateFoam(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -15,7 +15,7 @@ function calculateFoam(inputs, data) {
 
     Object.keys(data).forEach(key => {
         if (key.startsWith(`RET_FOM316_`) && key.endsWith(`_${sideStr}_1`)) {
-            const dimStr = key.split('_')[4]; 
+            const dimStr = key.split('_')[2]; // Changed from [1] to [2]
             const stdShort = parseInt(dimStr.substring(0, 2), 10);
             const stdLong = parseInt(dimStr.substring(2), 10);
             const stdArea = stdShort * stdLong;
@@ -34,11 +34,9 @@ function calculateFoam(inputs, data) {
     const tierLog = [];
 
     if (bestP1 !== null) {
-        // MATCH: Yield Envelope Price
         baseUnitPrice = inputs.qty >= t1Qty ? bestP10 : bestP1;
         tierLog.push({ q: 1, base: bestP1, unit: bestP1 }, { q: t1Qty, base: bestP10, unit: bestP10 });
     } else {
-        // NO MATCH: Fallback Area Curves
         let baseSqFtRate = 0;
         if (sqft <= parseFloat(data.FOM3_T1_Max || 3.99)) baseSqFtRate = parseFloat(data.FOM3_T1_Rate || 8.33);
         else if (sqft <= parseFloat(data.FOM3_T2_Max || 15.99)) baseSqFtRate = parseFloat(data.FOM3_T2_Rate || 8.00);
