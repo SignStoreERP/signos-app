@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: PVC Signs (v1.6)
- * Implements Yield Bounding Box logic.
+ * PURE PHYSICS ENGINE: PVC Signs (v1.6.1)
+ * Bug Fix: Corrected split array index for dimension parsing.
  */
 function calculatePVC(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -16,8 +16,12 @@ function calculatePVC(inputs, data) {
     let bestP1 = null, bestP10 = null, bestLabel = "";
 
     Object.keys(data).forEach(key => {
+        // Find Blue Sheet keys for this thickness/side
         if (key.startsWith(`RET_PVC${thickStr}_`) && key.endsWith(`_${sideStr}_1`)) {
-            const dimStr = key.split('_')[4]; 
+            
+            // THE FIX: Target index [2] of the array to grab the dimension string
+            const dimStr = key.split('_')[2]; 
+            
             const stdShort = parseInt(dimStr.substring(0, 2), 10);
             const stdLong = parseInt(dimStr.substring(2), 10);
             const stdArea = stdShort * stdLong;
@@ -74,7 +78,14 @@ function calculatePVC(inputs, data) {
     else if (inputs.shape === 'Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50.00);
 
     const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
-    const grandTotalRaw = retailPrint + routerFee + feeDesign;
+    
+    // Apply 10% No-Laminate Deduction logic for PVC
+    let lamDeduction = 0;
+    if (typeof inputs.lam !== 'undefined' && !inputs.lam) {
+        lamDeduction = retailPrint * 0.10;
+    }
+
+    const grandTotalRaw = (retailPrint - lamDeduction) + routerFee + feeDesign;
     const minOrder = bestP1 !== null ? 0 : parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
@@ -118,8 +129,8 @@ function calculatePVC(inputs, data) {
 
     return {
         retail: {
-            unitPrice: (retailPrint + routerFee) / inputs.qty, printTotal: retailPrint, routerFee: routerFee, designFee: feeDesign,
-            grandTotal: grandTotal, isMinApplied: grandTotalRaw < minOrder, tiers: simTiers, yieldLabel: bestLabel ? `Yield Box: ${bestLabel}` : "Area Curve"
+            unitPrice: ((retailPrint - lamDeduction) + routerFee) / inputs.qty, printTotal: retailPrint - lamDeduction, routerFee: routerFee, designFee: feeDesign,
+            grandTotal: grandTotal, isMinApplied: grandTotalRaw < minOrder, tiers: tierLog, yieldLabel: bestLabel ? `Yield Box: ${bestLabel}` : "Area Curve"
         },
         cost: {
             total: subTotal + riskBuffer,
