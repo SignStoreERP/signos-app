@@ -14,23 +14,43 @@ function calculateAcrylic(inputs, data) {
     if (thk === '3/4') thk = '0.75';
     if (thk === '1') thk = '1';
 
-    // --- 1. RETAIL ENGINE (MARKET VALUE) ---
-    let baseRate = 0;
+// --- 1. RETAIL ENGINE (MARKET VALUE) ---
+const sqft = (inputs.w * inputs.h) / 144;
+const totalSqFt = sqft * inputs.qty;
 
-    if (thk === '0.25') {
-        if (totalSqFt <= parseFloat(data.ACR_14_T1_Max || 10)) baseRate = parseFloat(data.ACR_14_T1_Rate || 40);
-        else if (totalSqFt <= parseFloat(data.ACR_14_T2_Max || 20)) baseRate = parseFloat(data.ACR_14_T2_Rate || 35);
-        else baseRate = parseFloat(data.ACR_14_T3_Rate || 30);
-    } else if (thk === '0.5') {
-        if (totalSqFt <= parseFloat(data.ACR_12_T1_Max || 10)) baseRate = parseFloat(data.ACR_12_T1_Rate || 45);
-        else baseRate = parseFloat(data.ACR_12_T2_Rate || 40);
-    } else if (thk === '0.75') {
-        if (totalSqFt <= parseFloat(data.ACR_34_T1_Max || 10)) baseRate = parseFloat(data.ACR_34_T1_Rate || 55);
-        else baseRate = parseFloat(data.ACR_34_T2_Rate || 50);
+let baseSqFtRate = 0;
+
+// NEW LOGIC: Explicit Thickness & Tier Routing
+if (inputs.thickness.includes('1/4')) {
+    if (totalSqFt <= parseFloat(data.ACR_14_T1_Max ?? 10)) {
+        baseSqFtRate = parseFloat(data.ACR_14_T1_Rate ?? 40);
+    } else if (totalSqFt <= parseFloat(data.ACR_14_T2_Max ?? 20)) {
+        baseSqFtRate = parseFloat(data.ACR_14_T2_Rate ?? 35);
     } else {
-        if (totalSqFt <= parseFloat(data.ACR_1IN_T1_Max || 10)) baseRate = parseFloat(data.ACR_1IN_T1_Rate || 60);
-        else baseRate = parseFloat(data.ACR_1IN_T2_Rate || 55);
+        baseSqFtRate = parseFloat(data.ACR_14_T3_Rate ?? 30);
     }
+} 
+else if (inputs.thickness.includes('1/2')) {
+    if (totalSqFt <= parseFloat(data.ACR_12_T1_Max ?? 10)) {
+        baseSqFtRate = parseFloat(data.ACR_12_T1_Rate ?? 45);
+    } else {
+        baseSqFtRate = parseFloat(data.ACR_12_T2_Rate ?? 40);
+    }
+} 
+else if (inputs.thickness.includes('3/4')) {
+    if (totalSqFt <= parseFloat(data.ACR_34_T1_Max ?? 10)) {
+        baseSqFtRate = parseFloat(data.ACR_34_T1_Rate ?? 55);
+    } else {
+        baseSqFtRate = parseFloat(data.ACR_34_T2_Rate ?? 50);
+    }
+} 
+else if (inputs.thickness.includes('1')) {
+    if (totalSqFt <= parseFloat(data.ACR_1IN_T1_Max ?? 10)) {
+        baseSqFtRate = parseFloat(data.ACR_1IN_T1_Rate ?? 60);
+    } else {
+        baseSqFtRate = parseFloat(data.ACR_1IN_T2_Rate ?? 55);
+    }
+}
 
     // Adders
     if (inputs.method === 'direct_white') baseRate += parseFloat(data.Retail_Adder_2ndSurf || 5);
