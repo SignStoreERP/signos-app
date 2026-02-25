@@ -136,11 +136,12 @@ function updateSwatches() {
     const grid = document.getElementById('color-grid');
     grid.innerHTML = '';
     selectedColor = null;
+    
     document.getElementById('selected-color-label').innerText = 'Select from below';
     document.getElementById('selected-color-label').classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-100');
     document.getElementById('selected-color-label').classList.add('bg-orange-50', 'text-orange-600', 'border-orange-200');
 
-    // Using .includes() to accurately match "751" to "751RA" in the backend sheet
+    // Filter matched series
     let filtered = allColors.filter(c => {
         if (!c.Series_ID) return false;
         const matchesSeries = String(c.Series_ID).includes(String(series));
@@ -148,19 +149,32 @@ function updateSwatches() {
         return matchesSeries && isInStock;
     });
     
+    // FIX 1: If no swatches exist, provide a fallback "Custom / TBD" button so the user can proceed cleanly
     if(filtered.length === 0) {
-        grid.innerHTML = '<div class="text-xs font-bold text-gray-400 p-2 w-full text-center">No swatches listed in backend for this series.</div>';
+        const fallbackBtn = document.createElement('button');
+        fallbackBtn.className = "w-full py-2 rounded border-2 border-blue-400 bg-blue-50 text-blue-700 text-xs font-bold shadow-sm hover:bg-blue-100 transition focus:outline-none flex items-center justify-center";
+        fallbackBtn.innerText = "Set Color as Custom / TBD";
+        fallbackBtn.onclick = () => {
+            selectedColor = { Color_Code: 'TBD', Display_Name: 'Custom/Unlisted Color' };
+            const label = document.getElementById('selected-color-label');
+            label.innerText = `Custom Color (TBD)`;
+            label.classList.remove('bg-orange-50', 'text-orange-600', 'border-orange-200');
+            label.classList.add('bg-blue-50', 'text-blue-600', 'border-blue-100');
+            runCalc();
+        };
+        grid.appendChild(fallbackBtn);
+        fallbackBtn.click(); // Auto-select it
         return;
     }
 
     filtered.forEach(c => {
         const btn = document.createElement('button');
-        // Added overflow-hidden to contain the background image perfectly within the circle
         btn.className = "w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none flex items-center justify-center relative group overflow-hidden";
         
+        // Grab Hex Code or URL
         let hexOrUrl = (c.Hex_Code && c.Hex_Code !== 'N/A' && c.Hex_Code.trim() !== '') ? c.Hex_Code.trim() : '#ffffff';
         
-        // NEW LOGIC: Check if the backend cell contains an image URL instead of a Hex Code
+        // FIX 2: Better image logic. If the backend cell starts with "http", render as an image.
         if (hexOrUrl.toLowerCase().startsWith('http')) {
             btn.style.backgroundImage = `url('${hexOrUrl}')`;
             btn.style.backgroundSize = 'cover';
@@ -170,7 +184,10 @@ function updateSwatches() {
             btn.style.backgroundColor = hexOrUrl;
             if(hexOrUrl.toUpperCase() === '#FFFFFF') {
                 btn.classList.add('border-gray-200');
-                if(c.Hex_Code === 'N/A' || !c.Hex_Code) btn.innerHTML = '<span class="text-[8px] font-black text-gray-400">CLR</span>';
+                // Only stamp "CLR" if the spreadsheet is actually missing data entirely
+                if(!c.Hex_Code || c.Hex_Code === 'N/A' || c.Hex_Code.trim() === '') {
+                    btn.innerHTML = '<span class="text-[8px] font-black text-gray-400">CLR</span>';
+                }
             }
         }
         
