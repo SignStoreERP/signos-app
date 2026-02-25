@@ -35,9 +35,13 @@
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Material Series</label>
                 <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="updateSwatches(); runCalc();">
-                    <option value="751" selected>Oracal 751 (Flat Surfaces)</option>
-                    <option value="951">Oracal 951 (Vehicles & Rivets)</option>
-                    <option value="8500">Oracal 8500 (Flat Lighted Sign Faces)</option>
+                    <option value="651">Oracal 651 (Intermediate / Short Term)</option>
+                    <option value="751" selected>Oracal 751 (High Perf / Flat Surfaces)</option>
+                    <option value="951">Oracal 951 (Premium Cast / Vehicles)</option>
+                    <option value="8500">Oracal 8500 (Translucent / Backlit)</option>
+                    <option value="8800">Oracal 8800 (Premium Translucent)</option>
+                    <option value="Glass">Etched / Frosted Glass Film</option>
+                    <option value="Specialty">Specialty (Metallic / Fluorescent)</option>
                 </select>
             </div>
         </div>
@@ -76,7 +80,6 @@
         <!-- LINE ITEMS -->
         <div class="space-y-1 text-xs text-blue-900/70 pt-1">
             <div class="flex justify-between"><span>Cut Vinyl (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
-            <div class="flex justify-between text-pink-700 hidden" id="row-weed"><span>Complex Weeding:</span><span id="ui-weed" class="font-bold">$0.00</span></div>
         </div>
 
         <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
@@ -136,15 +139,16 @@ function updateSwatches() {
     document.getElementById('selected-color-label').classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-100');
     document.getElementById('selected-color-label').classList.add('bg-orange-50', 'text-orange-600', 'border-orange-200');
 
-    // FIX: Using .includes() so "751" correctly matches "751RA" in the backend sheet
+    // Using .includes() to accurately match "751" to "751RA" in the backend sheet
     let filtered = allColors.filter(c => {
+        if (!c.Series_ID) return false;
         const matchesSeries = String(c.Series_ID).includes(String(series));
         const isInStock = (c.In_Stock === true || String(c.In_Stock).toUpperCase() === 'TRUE');
         return matchesSeries && isInStock;
     });
     
     if(filtered.length === 0) {
-        grid.innerHTML = '<div class="text-xs font-bold text-gray-400 p-2 w-full text-center">No swatches listed. Specify custom color in notes.</div>';
+        grid.innerHTML = '<div class="text-xs font-bold text-gray-400 p-2 w-full text-center">No swatches listed in backend for this series.</div>';
         return;
     }
 
@@ -209,13 +213,6 @@ function runCalc() {
         document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
         document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
         document.getElementById('ui-print').innerText = fmt(ret.printTotal);
-
-        if (ret.weedTotal > 0) {
-            document.getElementById('row-weed').classList.remove('hidden');
-            document.getElementById('ui-weed').innerText = fmt(ret.weedTotal);
-        } else {
-            document.getElementById('row-weed').classList.add('hidden');
-        }
 
         const minOrder = parseFloat(backendData.Retail_Min_Order || 45);
         document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
