@@ -53,20 +53,13 @@
         </div>
     </div>
     <div class="bg-blue-50 p-6 border-t border-blue-100 shadow-inner">
-        <div class="flex justify-between items-end mb-2">
-            <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
-            <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
-        </div>
+        <div class="flex justify-between items-end mb-2"><span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span><span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span></div>
         <div class="border-t border-blue-200/50 my-3"></div>
         <div class="space-y-1 text-xs text-blue-900/70 pt-1">
             <div class="flex justify-between"><span>Printed Decals (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
         </div>
         <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
-            <div>
-                <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
-                <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $35</span>
-                <div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
-            </div>
+            <div><span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span><span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $35</span><div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div></div>
             <span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
         </div>
     </div>
@@ -111,9 +104,21 @@ function runCalc() {
 }
 window.addEventListener('load', async () => {
     if (typeof injectHeader === 'function') injectHeader("Decals & Stickers");
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
     try {
         const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Decals`);
         backendData = await req.json();
+        
+        // FIX: Re-enable the successful connection status change
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            if(statusDot) {
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                statusDot.classList.remove("animate-pulse");
+            }
+        }
         runCalc(); 
     } catch(e) { console.error(e); }
 });
