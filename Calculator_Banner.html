@@ -31,11 +31,8 @@
         <div class="grid grid-cols-2 gap-4 pt-2">
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Material</label>
-                <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
+                <select id="material" class="w-full border p-2 rounded bg-gray-100 text-gray-600 font-bold text-sm h-[42px] outline-none" disabled>
                     <option value="13oz">13oz Standard Scrim</option>
-                    <option value="15oz">15oz Smooth Blockout</option>
-                    <option value="18oz">18oz Heavy Duty</option>
-                    <option value="Mesh">8oz Fence Mesh</option>
                 </select>
             </div>
             <div>
@@ -78,7 +75,6 @@
         <!-- LINE ITEMS -->
         <div class="space-y-1 text-xs text-blue-900/70 pt-1">
             <div class="flex justify-between"><span>Printed Banners (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
-            <div class="flex justify-between text-blue-600 hidden" id="row-finish"><span>Finishing Adders:</span><span id="ui-finish" class="font-bold">$0.00</span></div>
         </div>
 
         <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
@@ -127,31 +123,6 @@ function enforceSheetLimits(maxShort, maxLong) {
     }
 }
 
-// SAFE UI CONSTRAINT: Lock 15oz and Mesh to Single-Sided
-document.addEventListener('DOMContentLoaded', function() {
-    const matDropdown = document.getElementById('material');
-    if (matDropdown) {
-        matDropdown.addEventListener('change', function(e) {
-            const sidesDropdown = document.getElementById('sides');
-            if (!sidesDropdown) return;
-            
-            const isSSOnly = e.target.value === '15oz' || e.target.value === 'Mesh';
-            
-            for (let i = 0; i < sidesDropdown.options.length; i++) {
-                if (sidesDropdown.options[i].value === '2') {
-                    sidesDropdown.options[i].disabled = isSSOnly;
-                }
-            }
-            
-            if (isSSOnly && sidesDropdown.value === '2') {
-                sidesDropdown.value = '1'; 
-            }
-            
-            if (typeof runCalc === 'function') runCalc(); 
-        });
-    }
-});
-
 function runCalc() {
     if(!backendData.Retail_Min_Order) return;
     enforceSheetLimits(62, 1800); // 62" printable width max
@@ -161,7 +132,6 @@ function runCalc() {
             qty: parseFloat(document.getElementById('qty').value) || 1,
             w: parseFloat(document.getElementById('w').value) || 72,
             h: parseFloat(document.getElementById('h').value) || 36,
-            material: document.getElementById('material').value, 
             sides: parseInt(document.getElementById('sides').value) || 1,
             pockets: document.getElementById('pockets').value,
             windSlits: document.getElementById('windSlits').value
@@ -173,20 +143,13 @@ function runCalc() {
         const ret = result.retail;
         const fmt = (n) => "$" + (n || 0).toFixed(2);
         
-        // Exact raw sqft for UI display purposes
-        const totalSqFt = ((inputs.w * inputs.h) / 144) * inputs.qty;
+        // Use Math.ceil just like the math engine to display the rounded sqft
+        const totalSqFt = Math.ceil((inputs.w * inputs.h) / 144) * inputs.qty;
 
-        document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(1);
+        document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(0);
         document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
         document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
         document.getElementById('ui-print').innerText = fmt(ret.printTotal);
-
-        if (ret.finishingTotal > 0) {
-            document.getElementById('row-finish').classList.remove('hidden');
-            document.getElementById('ui-finish').innerText = fmt(ret.finishingTotal);
-        } else { 
-            document.getElementById('row-finish').classList.add('hidden'); 
-        }
 
         const minOrder = parseFloat(backendData.Retail_Min_Order || 50);
         document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
@@ -196,7 +159,7 @@ function runCalc() {
         const pktTxt = inputs.pockets === 'None' ? 'Hem & Grommets' : `${inputs.pockets} Pole Pockets`;
         const slitTxt = inputs.windSlits === 'Yes' ? ' w/ Wind Slits' : '';
         
-        document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.material} Vinyl Banners.\n${sideTxt}. ${pktTxt}.${slitTxt}`;
+        document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" 13oz Vinyl Banners.\n${sideTxt}. ${pktTxt}.${slitTxt}`;
 
     } catch(e) {
         console.error(e);
