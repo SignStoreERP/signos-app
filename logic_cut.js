@@ -1,19 +1,19 @@
 /**
  * ULTRA-SIMPLE RETAIL ENGINE: Cut Vinyl Lettering
- * Pure SqFt Lookup (Material Only). Weeding & Masking do NOT add to price.
+ * Specific support for 751, 951, and 8500.
  */
 function calculateCutVinyl(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
     
-    // 1. Material Base Rate Lookup (Hardcoded per Blue Sheet targets)
+    // 1. Material Base Rate Lookup
     let baseRate = 0;
-    if (inputs.material === '651') baseRate = 8.00;
-    else if (inputs.material === '751') baseRate = 10.00;
-    else if (inputs.material === '951') baseRate = 12.00;
-    else if (inputs.material === '8500') baseRate = 12.00;
-    else if (inputs.material === '8800') baseRate = 15.00; // Kept proportional
-    else if (inputs.material === 'Glass') baseRate = 15.00; // Kept proportional
-    else if (inputs.material === 'Specialty') baseRate = 12.00; // Kept proportional
+    if (inputs.material === '951') {
+        baseRate = parseFloat(data.Retail_Price_951) || 22.00;
+    } else if (inputs.material === '8500') {
+        baseRate = parseFloat(data.Retail_Price_8500) || 20.00;
+    } else {
+        baseRate = parseFloat(data.Retail_Price_751) || 18.00; // 751 Default
+    }
 
     let unitPrint = baseRate * sqft;
     let retailPrint = unitPrint * inputs.qty;
@@ -31,16 +31,25 @@ function calculateCutVinyl(inputs, data) {
 
     retailPrint *= (1 - discPct);
 
-    // 3. Shop Minimum Guard
+    // 3. Weeding Complexity Adder
+    let retailWeed = 0;
+    if (inputs.weeding === 'Complex') {
+        const weedAdder = parseFloat(data.Retail_Weed_Complex_Add) || 5.00;
+        retailWeed = weedAdder * sqft * inputs.qty;
+    }
+
+    // 4. Shop Minimum Guard
     const minOrder = parseFloat(data.Retail_Min_Order) || 45;
-    let grandTotal = Math.max(retailPrint, minOrder);
+    let grandTotalRaw = retailPrint + retailWeed;
+    let grandTotal = Math.max(grandTotalRaw, minOrder);
 
     return {
         retail: {
             unitPrice: grandTotal / inputs.qty,
             printTotal: retailPrint,
+            weedTotal: retailWeed,
             grandTotal: grandTotal,
-            isMinApplied: retailPrint < minOrder
+            isMinApplied: grandTotalRaw < minOrder
         },
         cost: { total: 0 } 
     };
