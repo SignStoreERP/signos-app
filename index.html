@@ -60,21 +60,37 @@
 </div>
 
 <script>
-    let currentPin = "";
-    function press(num) { if (currentPin.length < 6) { currentPin += num; updateDisplay(); } }
-    function clearPin() { currentPin = ""; updateDisplay(); resetStatus(); }
-    function updateDisplay() { document.getElementById("pin-display").innerText = "•".repeat(currentPin.length); }
-    function resetStatus() { 
-        const msg = document.getElementById("status-msg");
-        msg.innerText = "AUTHORIZED PERSONNEL ONLY";
-        msg.className = "text-center text-[10px] font-bold text-gray-400 h-4 uppercase tracking-wide";
-    }
+let currentPin = "";
+
+function press(num) { 
+    if (currentPin.length < 6) { 
+        currentPin += num; 
+        updateDisplay(); 
+    } 
+}
+
+function clearPin() { 
+    currentPin = ""; 
+    updateDisplay(); 
+    resetStatus(); 
+}
+
+function updateDisplay() { 
+    document.getElementById("pin-display").innerText = "•".repeat(currentPin.length); 
+}
+
+function resetStatus() {
+    const msg = document.getElementById("status-msg");
+    msg.innerText = "AUTHORIZED PERSONNEL ONLY";
+    msg.className = "text-center text-[10px] font-bold text-gray-400 h-4 uppercase tracking-wide";
+}
 
 async function submitPin() {
     if (currentPin.length < 6) return;
+    
     const msg = document.getElementById("status-msg");
     const btn = document.getElementById("btn-go");
-
+    
     msg.innerText = "AUTHENTICATING...";
     msg.className = "text-center text-[10px] font-bold text-blue-500 h-4 uppercase tracking-wide animate-pulse";
     btn.disabled = true;
@@ -91,29 +107,58 @@ async function submitPin() {
             sessionStorage.setItem("signos_user", data.name);
             sessionStorage.setItem("signos_role", data.role);
             
-            // NEW: SAVE PERMISSIONS OBJECT
+            // SAVE PERMISSIONS OBJECT
             const perms = data.permissions || { roadmap: "None", backup: "None" };
             sessionStorage.setItem("signos_perms", JSON.stringify(perms));
-
+            
             let mode = (data.role === "PROD") ? 'production' : (data.role === "ADMIN" ? 'admin' : 'sales');
-            sessionStorage.setItem("signos_mode", mode); 
-
+            sessionStorage.setItem("signos_mode", mode);
+            
             setTimeout(() => { window.location.href = `menu.html?mode=${mode}`; }, 500);
         } else {
             throw new Error(data.message || "Invalid PIN");
         }
     } catch (e) {
-        // ... (Error handling remains the same) ...
         msg.innerText = e.message.toUpperCase();
         msg.className = "text-center text-[10px] font-bold text-red-500 h-4 uppercase tracking-wide";
         document.getElementById("login-card").classList.add("shake");
         setTimeout(() => document.getElementById("login-card").classList.remove("shake"), 500);
+        
         currentPin = "";
         updateDisplay();
         btn.disabled = false;
     }
 }
 
+// --- NEW: PHYSICAL KEYBOARD SUPPORT ---
+document.addEventListener('keydown', function(event) {
+    // Prevent interfering with normal browser shortcuts (like Ctrl+R to refresh)
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+    const key = event.key;
+
+    // 1. Validate and accept number inputs (0-9)
+    if (/^[2-10]$/.test(key)) {
+        press(key);
+    } 
+    // 2. Handle 'Enter' key to submit
+    else if (key === 'Enter') {
+        submitPin();
+    } 
+    // 3. Handle 'Backspace' to delete the last number
+    else if (key === 'Backspace') {
+        if (currentPin.length > 0) {
+            currentPin = currentPin.slice(0, -1);
+            updateDisplay();
+            resetStatus();
+        }
+    } 
+    // 4. Handle 'Escape' or 'c' to clear the entire PIN
+    else if (key === 'Escape' || key.toLowerCase() === 'c') {
+        clearPin();
+    }
+});
 </script>
 </body>
 </html>
+
