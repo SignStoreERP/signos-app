@@ -1,33 +1,23 @@
 /**
- * ULTRA-SIMPLE RETAIL ENGINE: Vehicle & Wall Wraps
- * Pure SqFt Lookup + Installation Adders
+ * ULTRA-SIMPLE RETAIL ENGINE: Interior Wall Wraps
+ * Dynamic Line Item Math + Installation Adders
  */
-function calculateWrap(inputs, data) {
-    const sqft = (inputs.w * inputs.h) / 144;
+function calculateWall(inputs, data) {
+    let totalSqFt = 0;
     
-    // 1. Material & Install Base Rate Lookup
-    let baseRate = 0;
-    let installRate = 0;
+    // 1. Iterate through dynamic wall panels
+    inputs.panels.forEach(p => {
+        totalSqFt += (p.w * p.h) / 144;
+    });
+    
+    // Multiply by the "Fleet" quantity (if they are ordering 3 identical sets of these walls)
+    totalSqFt *= inputs.qty;
 
-    if (inputs.application === 'Vehicle') {
-        baseRate = parseFloat(data.Retail_Price_Vehicle_SqFt) || 15.00;
-        if (inputs.install === 'Yes') {
-            installRate = parseFloat(data.Retail_Install_Vehicle_SqFt) || 5.00;
-        }
-    } else {
-        baseRate = parseFloat(data.Retail_Price_Wall_SqFt) || 10.00;
-        if (inputs.install === 'Yes') {
-            installRate = parseFloat(data.Retail_Install_Wall_SqFt) || 3.00;
-        }
-    }
+    // 2. Material Base Rate Lookup
+    const baseRate = parseFloat(data.Retail_Price_Wall_SqFt) || 10.00;
+    let retailPrint = baseRate * totalSqFt;
 
-    let unitPrint = baseRate * sqft;
-    let unitInstall = installRate * sqft;
-
-    let retailPrint = unitPrint * inputs.qty;
-    let retailInstall = unitInstall * inputs.qty;
-
-    // 2. Volume Discounts (Tiers 1 & 2 - Applied to Print Only)
+    // 3. Volume Discounts (Tiers 1 & 2 - Applied to Print Only)
     let discPct = 0;
     const t2Qty = parseFloat(data.Tier_2_Qty) || 5;
     const t1Qty = parseFloat(data.Tier_1_Qty) || 3;
@@ -37,10 +27,16 @@ function calculateWrap(inputs, data) {
     } else if (inputs.qty >= t1Qty) {
         discPct = parseFloat(data.Tier_1_Disc) || 0.05;
     }
-
     retailPrint *= (1 - discPct);
 
-    // 3. Shop Minimum Guard
+    // 4. Installation Adder
+    let retailInstall = 0;
+    if (inputs.install === 'Yes') {
+        const installRate = parseFloat(data.Retail_Install_Wall_SqFt) || 3.00;
+        retailInstall = installRate * totalSqFt;
+    }
+
+    // 5. Shop Minimum Guard
     const minOrder = parseFloat(data.Retail_Min_Order) || 150;
     let grandTotalRaw = retailPrint + retailInstall;
     let grandTotal = Math.max(grandTotalRaw, minOrder);
