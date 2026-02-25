@@ -9,7 +9,6 @@
     <script src="logic_cut.js"></script>
     <style>
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        /* Custom scrollbar for the color grid */
         .color-scroll::-webkit-scrollbar { width: 6px; }
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -36,13 +35,9 @@
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Material Series</label>
                 <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="updateSwatches(); runCalc();">
-                    <option value="651">Oracal 651 (Intermediate / Short Term)</option>
-                    <option value="751">Oracal 751 (High Perf / Vehicles)</option>
-                    <option value="951">Oracal 951 (Premium Cast)</option>
-                    <option value="8500">Oracal 8500 (Translucent / Backlit)</option>
-                    <option value="8800">Oracal 8800 (Premium Translucent)</option>
-                    <option value="Glass">Etched / Frosted Glass Film</option>
-                    <option value="Specialty">Specialty (Metallic / Fluorescent)</option>
+                    <option value="751" selected>Oracal 751 (Flat Surfaces)</option>
+                    <option value="951">Oracal 951 (Vehicles & Rivets)</option>
+                    <option value="8500">Oracal 8500 (Flat Lighted Sign Faces)</option>
                 </select>
             </div>
         </div>
@@ -81,6 +76,7 @@
         <!-- LINE ITEMS -->
         <div class="space-y-1 text-xs text-blue-900/70 pt-1">
             <div class="flex justify-between"><span>Cut Vinyl (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
+            <div class="flex justify-between text-pink-700 hidden" id="row-weed"><span>Complex Weeding:</span><span id="ui-weed" class="font-bold">$0.00</span></div>
         </div>
 
         <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
@@ -140,8 +136,12 @@ function updateSwatches() {
     document.getElementById('selected-color-label').classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-100');
     document.getElementById('selected-color-label').classList.add('bg-orange-50', 'text-orange-600', 'border-orange-200');
 
-    // Filter colors that match the selected material series and are In Stock
-    let filtered = allColors.filter(c => String(c.Series_ID) === String(series) && (c.In_Stock === true || String(c.In_Stock).toUpperCase() === 'TRUE'));
+    // FIX: Using .includes() so "751" correctly matches "751RA" in the backend sheet
+    let filtered = allColors.filter(c => {
+        const matchesSeries = String(c.Series_ID).includes(String(series));
+        const isInStock = (c.In_Stock === true || String(c.In_Stock).toUpperCase() === 'TRUE');
+        return matchesSeries && isInStock;
+    });
     
     if(filtered.length === 0) {
         grid.innerHTML = '<div class="text-xs font-bold text-gray-400 p-2 w-full text-center">No swatches listed. Specify custom color in notes.</div>';
@@ -160,16 +160,14 @@ function updateSwatches() {
             if(c.Hex_Code === 'N/A') btn.innerHTML = '<span class="text-[8px] font-black text-gray-400">CLR</span>';
         }
         
-        // Tooltip for hover
         btn.title = `${c.Color_Code} - ${c.Display_Name}`;
         
         btn.onclick = () => {
-            // Remove selection ring from all
             Array.from(grid.children).forEach(child => {
                 child.classList.remove('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent');
                 child.classList.add('border-gray-300');
             });
-            // Add selection ring to clicked
+            
             btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent');
             btn.classList.remove('border-gray-300');
             
@@ -212,6 +210,13 @@ function runCalc() {
         document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
         document.getElementById('ui-print').innerText = fmt(ret.printTotal);
 
+        if (ret.weedTotal > 0) {
+            document.getElementById('row-weed').classList.remove('hidden');
+            document.getElementById('ui-weed').innerText = fmt(ret.weedTotal);
+        } else {
+            document.getElementById('row-weed').classList.add('hidden');
+        }
+
         const minOrder = parseFloat(backendData.Retail_Min_Order || 45);
         document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
         document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
@@ -236,7 +241,6 @@ window.addEventListener('load', async () => {
     const statusDot = document.getElementById("status-dot");
 
     try {
-        // Fetch Pricing Data & Color Database concurrently
         const [configReq, colorReq] = await Promise.all([
             fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Cut_Vinyl`),
             fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Vinyl`)
