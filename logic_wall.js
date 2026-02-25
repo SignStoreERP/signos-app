@@ -1,6 +1,6 @@
 /**
  * ULTRA-SIMPLE RETAIL ENGINE: Interior Wall Wraps
- * Supports GF226 Smooth vs 3M IJ8624 Textured
+ * Supports GF226 Smooth vs 3M IJ8624 Textured vs Perf
  */
 function calculateWall(inputs, data) {
     let totalRetailPrint = 0;
@@ -19,6 +19,9 @@ function calculateWall(inputs, data) {
         if (p.material === 'textured') {
             printUnit = parseFloat(data.Retail_Price_Wall_Text_SqFt) || 15.00;
             installUnit = parseFloat(data.Retail_Install_Wall_Text_SqFt) || 5.00;
+        } else if (p.material.startsWith('perf')) {
+            printUnit = parseFloat(data.Retail_Price_Perf_SqFt) || 12.00; 
+            installUnit = parseFloat(data.Retail_Install_Wall_Smooth_SqFt) || 3.00;
         } else {
             printUnit = parseFloat(data.Retail_Price_Wall_Smooth_SqFt) || 10.00;
             installUnit = parseFloat(data.Retail_Install_Wall_Smooth_SqFt) || 3.00;
