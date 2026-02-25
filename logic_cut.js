@@ -1,30 +1,24 @@
 /**
  * ULTRA-SIMPLE RETAIL ENGINE: Cut Vinyl Lettering
- * Pure SqFt Lookup + Weeding Adders
+ * Pure SqFt Lookup (Material Only). Weeding & Masking do NOT add to price.
  */
 function calculateCutVinyl(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
     
-    // 1. Material Base Rate Lookup
+    // 1. Material Base Rate Lookup (Hardcoded per Blue Sheet targets)
     let baseRate = 0;
-    if (inputs.material === '651') baseRate = parseFloat(data.Retail_Price_Intermediate || data.Retail_Price_651_SqFt) || 12.00;
-    else if (inputs.material === '751') baseRate = parseFloat(data.Retail_Price_751 || data.Retail_Price_751_SqFt) || 18.00;
-    else if (inputs.material === '951') baseRate = parseFloat(data.Retail_Price_951) || 22.00;
-    else if (inputs.material === '8500') baseRate = parseFloat(data.Retail_Price_8500) || 20.00;
-    else if (inputs.material === '8800') baseRate = parseFloat(data.Retail_Price_8800) || 25.00;
-    else if (inputs.material === 'Glass') baseRate = parseFloat(data.Retail_Price_Glass) || 25.00;
-    else if (inputs.material === 'Specialty') baseRate = parseFloat(data.Retail_Price_Specialty) || 16.00;
+    if (inputs.material === '651') baseRate = 8.00;
+    else if (inputs.material === '751') baseRate = 10.00;
+    else if (inputs.material === '951') baseRate = 12.00;
+    else if (inputs.material === '8500') baseRate = 12.00;
+    else if (inputs.material === '8800') baseRate = 15.00; // Kept proportional
+    else if (inputs.material === 'Glass') baseRate = 15.00; // Kept proportional
+    else if (inputs.material === 'Specialty') baseRate = 12.00; // Kept proportional
 
     let unitPrint = baseRate * sqft;
-
-    // 2. Weeding Adder (Flat rate per SqFt)
-    if (inputs.weeding === 'Complex') {
-        unitPrint += (parseFloat(data.Retail_Weed_Complex_Add) || 5.00) * sqft;
-    }
-
     let retailPrint = unitPrint * inputs.qty;
 
-    // 3. Volume Discounts (Tiers 1 & 2)
+    // 2. Volume Discounts (Tiers 1 & 2)
     let discPct = 0;
     const t2Qty = parseFloat(data.Tier_2_Qty) || 50;
     const t1Qty = parseFloat(data.Tier_1_Qty) || 10;
@@ -37,7 +31,7 @@ function calculateCutVinyl(inputs, data) {
 
     retailPrint *= (1 - discPct);
 
-    // 4. Shop Minimum Guard
+    // 3. Shop Minimum Guard
     const minOrder = parseFloat(data.Retail_Min_Order) || 45;
     let grandTotal = Math.max(retailPrint, minOrder);
 
