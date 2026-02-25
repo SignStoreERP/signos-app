@@ -1,25 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SignOS Menu v6.1</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="signos-core.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SignOS Menu v6.0 (Mobile)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans flex flex-col pb-10">
 
 <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center text-xs shadow-md shrink-0 sticky top-0 z-50">
-    <div class="flex items-center gap-2">
-        <span class="font-bold text-gray-200 uppercase" id="auth-user">---</span>
-        <span class="bg-gray-800 text-blue-400 px-2 py-0.5 rounded border border-gray-700 font-bold uppercase" id="auth-role">---</span>
-        <span id="super-badge" class="hidden bg-red-600 text-white px-1.5 py-0.5 rounded font-black text-[9px] uppercase tracking-widest ml-1">SUPER</span>
+    <div class="flex flex-col leading-tight">
+        <span class="text-gray-400 text-[10px] uppercase tracking-wider">Welcome</span>
+        <span class="font-bold text-white text-sm truncate max-w-[150px]" id="auth-user">---</span>
     </div>
-    <div class="flex gap-3 items-center">
-        <button onclick="location.reload()" class="text-gray-400 hover:text-white transition" title="Refresh Dash">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        </button>
-        <button onclick="logout()" class="text-red-400 hover:text-white font-bold uppercase tracking-wider transition">Logout</button>
+    <div class="flex items-center gap-3">
+        <span class="bg-gray-800 px-2 py-1 rounded text-[10px] font-mono text-blue-400 border border-gray-700" id="auth-role">---</span>
+        <button onclick="logout()" class="text-red-400 hover:text-white text-[10px] font-bold border border-red-900/50 bg-red-900/10 px-3 py-1.5 rounded transition">EXIT</button>
     </div>
 </div>
 
@@ -40,15 +37,12 @@
         CONNECTING TO BACKEND...
     </div>
 
-    <!-- MAIN PRODUCT GRID -->
-    <div id="menu-container" class="space-y-8 hidden"></div>
+    <div id="menu-container" class="hidden space-y-8"></div>
 
-    <!-- ADMIN UTILITIES -->
-    <div id="admin-workflow" class="mt-12 hidden">
-        <div class="flex items-center gap-3 mb-4">
-            <div class="h-px bg-gray-200 flex-1"></div>
-            <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Admin Utilities</h2>
-            <div class="h-px bg-gray-200 flex-1"></div>
+    <div id="admin-workflow" class="hidden mt-10 pt-8 border-t-2 border-dashed border-gray-200">
+        <div class="flex justify-between items-end mb-4 px-1">
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">ADMIN TOOLS</h3>
+            <span id="super-badge" class="hidden bg-purple-100 text-purple-700 border border-purple-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm">SUPER USER</span>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <a href="admin_roadmap.html" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-orange-500 active:scale-95 transition flex flex-col items-center text-center gap-2">
@@ -67,41 +61,165 @@
                 <span class="text-2xl">📜</span>
                 <span class="text-xs font-bold text-gray-700">History</span>
             </a>
-            <a href="dev_dashboard.html" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-red-500 active:scale-95 transition flex flex-col items-center text-center gap-2">
-                <span class="text-2xl">🚀</span>
-                <span class="text-xs font-bold text-gray-700">Mission Ctrl</span>
-            </a>
-            <a href="admin_cost_matrix.html" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-indigo-500 active:scale-95 transition flex flex-col items-center text-center gap-2">
-                <span class="text-2xl">🧱</span>
-                <span class="text-xs font-bold text-gray-700">Cost Matrix</span>
-            </a>
-            <a href="admin_retail_matrix.html" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-pink-500 active:scale-95 transition flex flex-col items-center text-center gap-2">
-                <span class="text-2xl">💳</span>
-                <span class="text-xs font-bold text-gray-700">Retail Matrix</span>
-            </a>
-            <a href="admin_analytics.html" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-teal-500 active:scale-95 transition flex flex-col items-center text-center gap-2">
-                <span class="text-2xl">📈</span>
-                <span class="text-xs font-bold text-gray-700">Heatmap</span>
-            </a>
         </div>
     </div>
 </div>
 
 <script>
+// 1. SAFETY VALVE
 function val(obj, key) {
     if (!obj) return "";
     return obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "";
 }
 
+// 2. STYLE MAP
+const ICON_STYLES = {
+    blue: "bg-blue-50 text-blue-600",
+    green: "bg-green-50 text-green-600",
+    purple: "bg-purple-50 text-purple-600",
+    red: "bg-red-50 text-red-600",
+    orange: "bg-orange-50 text-orange-600",
+    slate: "bg-slate-50 text-slate-600",
+    teal: "bg-teal-50 text-teal-600",
+    indigo: "bg-indigo-50 text-indigo-600",
+    pink: "bg-pink-50 text-pink-600",
+    yellow: "bg-yellow-50 text-yellow-600",
+    gray: "bg-gray-100 text-gray-600"
+};
+
+// 3. RENDER LOGIC 
+function renderMenu(data, role) {
+    const container = document.getElementById('menu-container');
+    container.innerHTML = "";
+
+    // Get Categories
+    const cats = [...new Set(data.map(i => val(i, 'Category')))].filter(c => c);
+
+    // Define Custom Sort Order
+    const sortOrder = ["Rigid Signs", "Roll Media", "Services", "System"];
+    
+    cats.sort((a, b) => {
+        const idxA = sortOrder.indexOf(a);
+        const idxB = sortOrder.indexOf(b);
+        if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+    });
+
+    cats.forEach(cat => {
+        const section = document.createElement('div');
+        section.innerHTML = `<h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">${cat}</h2>`;
+        
+        const grid = document.createElement('div');
+        grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
+
+        data.filter(i => val(i, 'Category') === cat).forEach(mod => {
+            
+            // --- NEW: TWIN-ENGINE PERMISSION CHECK ---
+            const checkTrue = (v) => v === true || String(v).toUpperCase() === "TRUE";
+            
+            let isAllowed = false;
+            if (role === 'SUPER') {
+                isAllowed = true;
+            } else if (role === 'ADMIN') {
+                isAllowed = IS_DEV_ENV ? checkTrue(val(mod, 'Dev_ADMIN')) : checkTrue(val(mod, 'Live_ADMIN'));
+            } else if (role === 'SALES') {
+                isAllowed = IS_DEV_ENV ? checkTrue(val(mod, 'Dev_SALES')) : checkTrue(val(mod, 'Live_SALES'));
+            } else if (role === 'PROD') {
+                isAllowed = IS_DEV_ENV ? checkTrue(val(mod, 'Dev_PROD')) : checkTrue(val(mod, 'Live_PROD'));
+            }
+
+            if (!isAllowed && role !== 'SUPER') return;
+
+            // Version Logic
+            const liveVer = val(mod, 'Live_Ver');
+            const devVer = val(mod, 'Dev_Ver');
+
+            let verText = "";
+            let verClass = "";
+
+            if (IS_DEV_ENV) {
+                if (!devVer || devVer === '') return;
+                verText = `DEV ${devVer}`;
+                verClass = "bg-orange-100 text-orange-800 border-orange-200";
+            } else {
+                if (!liveVer || liveVer === '') return;
+                verText = `v${liveVer.replace('v','')}`; // Shorten for mobile
+                verClass = "bg-green-100 text-green-800 border-green-200";
+            }
+
+            // Render Item
+            const displayName = val(mod, 'Display_Name');
+            const fileLink = val(mod, 'File_Link');
+            const iconColor = val(mod, 'Icon');
+            const iconPath = val(mod, 'Icon_Path');
+            
+            let targetMode = (role === 'PROD') ? 'production' : (role === 'ADMIN' || role === 'SUPER' ? 'dev' : 'sales');
+
+            const link = document.createElement('a');
+            link.href = `${fileLink}?mode=${targetMode}`;
+            
+            link.className = "relative bg-white p-4 rounded-xl shadow-sm border border-gray-200 active:scale-98 active:bg-gray-50 transition-all duration-100 flex items-center justify-between group";
+
+            const colorClass = ICON_STYLES[(iconColor || 'blue').toLowerCase()] || ICON_STYLES['blue'];
+            const draftBadge = (!isAllowed && role === 'SUPER') 
+                ? `<div class="absolute -top-2 -right-2 text-[8px] font-bold bg-purple-600 text-white px-2 py-0.5 rounded-full shadow-sm z-10">HIDDEN</div>` 
+                : '';
+
+            const iconHtml = iconPath 
+                ? `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="${iconPath}"></path></svg>` 
+                : `<span class="text-xl font-bold">●</span>`;
+
+            link.innerHTML = `
+                ${draftBadge}
+                <div class="flex items-center gap-4 w-full">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${colorClass} shadow-inner">
+                        ${iconHtml}
+                    </div>
+                    <div class="flex-1 min-w-0"> 
+                        <h3 class="font-bold text-gray-800 text-sm truncate">${displayName}</h3>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${verClass}">${verText}</span>
+                        </div>
+                    </div>
+                    <div class="text-gray-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(link);
+        });
+
+        if (grid.children.length > 0) {
+            section.appendChild(grid);
+            container.appendChild(section);
+        }
+    });
+}
+
+// 4. MAIN INIT
 window.onload = async function() {
-    const user = sessionStorage.getItem('signos_user') || 'Guest';
-    const rawRole = sessionStorage.getItem('signos_role') || 'VIEW';
-    const role = rawRole === 'SUPER' ? 'ADMIN' : rawRole; // SUPER assumes ADMIN clearance for standard grid
+    const user = sessionStorage.getItem('signos_user');
+    const role = sessionStorage.getItem('signos_role');
+    
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
 
     document.getElementById('auth-user').innerText = user;
-    document.getElementById('auth-role').innerText = rawRole;
+    document.getElementById('auth-role').innerText = role;
 
+    // Environment Badge Logic
     const envEl = document.getElementById('env-badge');
+    if (IS_DEV_ENV) {
+        envEl.innerHTML = `<span class="text-orange-600 font-bold">⚠️ DEV MODE</span> <span class="text-gray-300 mx-1">|</span> <span class="text-gray-400">${clientIP}</span>`;
+    } else {
+        envEl.innerHTML = `<span class="text-green-600 font-bold">● LIVE</span> <span class="text-gray-300 mx-1">|</span> <span class="text-gray-400">${clientIP}</span>`;
+    }
+
+    // IP Address Fix
     const ipWatcher = setInterval(() => {
         if (clientIP !== 'Unknown') {
             if (IS_DEV_ENV) {
@@ -114,216 +232,40 @@ window.onload = async function() {
     }, 100);
     setTimeout(() => clearInterval(ipWatcher), 5000);
 
-    // Admin Tools Visibility
-    if (rawRole === 'ADMIN' || rawRole === 'SUPER') {
+    // Admin Visibility
+    if (role === 'ADMIN' || role === 'SUPER') {
         document.getElementById('admin-workflow').classList.remove('hidden');
+        if (role === 'SUPER') document.getElementById('super-badge').classList.remove('hidden');
+        
+        // Backup Permission Check
+        const perms = JSON.parse(sessionStorage.getItem('signos_perms') || '{}');
+        const btnBackup = document.getElementById('btn-backup');
+        if (role !== 'SUPER' && perms.backup !== 'Run' && perms.backup !== 'Full') {
+            if(btnBackup) btnBackup.classList.add('hidden');
+        }
     }
-    if (rawRole === 'SUPER') document.getElementById('super-badge').classList.remove('hidden');
 
-    const perms = JSON.parse(sessionStorage.getItem('signos_perms') || '{}');
-    const btnBackup = document.getElementById('btn-backup');
-    if (rawRole !== 'SUPER' && perms.backup !== 'Run' && perms.backup !== 'Full') {
-        btnBackup.classList.add('hidden');
-    }
-
-    // Fetch Modules List
+    // --- FETCH MENU DATA ---
     try {
-        const response = await fetch(`${SCRIPT_URL}?tab=SYS_Modules&ip=${clientIP}&user=${user}&role=${rawRole}&req=table`);
+        const response = await fetch(`${SCRIPT_URL}?tab=SYS_Modules&ip=${clientIP}&user=${user}&role=${role}&req=table`);
         const data = await response.json();
 
+        // Safety Check
         if (data.error) throw new Error(data.error);
         if (!Array.isArray(data)) throw new Error("Invalid Data Format");
 
+        // Hide Loader & Render
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('menu-container').classList.remove('hidden');
-
-        renderMenu(data, rawRole, role);
+        
+        renderMenu(data, role);
 
     } catch (e) {
-        console.error(e);
-        document.getElementById('loader').innerHTML = `<span class="text-red-500">API ERROR: CHECK CONNECTION</span>`;
+        document.getElementById('loader').innerText = "CONNECTION FAILED: " + e.message;
+        document.getElementById('loader').classList.add('text-red-500', 'font-bold');
+        console.error("Menu Load Error:", e);
     }
 };
-
-function renderMenu(data, rawRole, mappedRole) {
-    const container = document.getElementById('menu-container');
-    const groups = {};
-
-    // Do not render these tools inside the main grid, as they have their own section at the bottom
-    const excludedAdminTools = ['SYS_Roadmap', 'SYS_Changelog', 'SYS_Log_Analyzer', 'SYS_Log_Backup', 'SYS_Health', 'SYS_Dev_Dash', 'SYS_Matrix', 'SYS_Ret_Matrix', 'SYS_Sim', 'SYS_Analytics'];
-
-    data.forEach(mod => {
-        const modId = val(mod, 'Module_ID');
-        if (!modId || excludedAdminTools.includes(modId)) return;
-
-        // Permissions Check
-        const roleCol = IS_DEV_ENV ? `Dev_${mappedRole}` : `Live_${mappedRole}`;
-        const isAllowed = String(val(mod, roleCol)).toUpperCase() === 'TRUE';
-        if (!isAllowed && rawRole !== 'SUPER') return;
-
-        // Versioning Logic
-        const liveVer = val(mod, 'Live_Ver');
-        const devVer = val(mod, 'Dev_Ver');
-        let verText = "";
-        let verClass = "";
-
-        if (IS_DEV_ENV) {
-            if (!devVer || devVer === '') return;
-            verText = `DEV ${devVer}`;
-            verClass = "bg-orange-100 text-orange-800 border-orange-200";
-        } else {
-            if (!liveVer || liveVer === '') return;
-            verText = `${liveVer}`;
-            verClass = "bg-green-100 text-green-800 border-green-200";
-        }
-
-        const cat = val(mod, 'Category') || 'Other';
-        if (!groups[cat]) groups[cat] = [];
-        
-        mod._verText = verText;
-        mod._verClass = verClass;
-        groups[cat].push(mod);
-    });
-
-    // Build the grid
-    Object.keys(groups).forEach(category => {
-        const catDiv = document.createElement('div');
-        
-        let gridHtml = `
-        <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-200 pb-1">${category}</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        `;
-
-        groups[category].forEach(mod => {
-            const iconPath = val(mod, 'Icon_Path');
-            const iconColor = val(mod, 'Icon') || 'gray';
-            const devStatus = val(mod, 'Dev_Status') || '';
-
-            let iconContent = iconPath 
-                ? `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path></svg>`
-                : `<span class="w-4 h-4 rounded-full bg-${iconColor}-500 inline-block"></span>`;
-
-            let healthHTML = "";
-            if (val(mod, 'Module_ID').startsWith('PROD_')) {
-                healthHTML = `
-                <span id="health-text-${val(mod, 'Module_ID')}" class="text-[8px] font-bold text-gray-400 flex items-center gap-1 tracking-wider ml-2 border-l border-gray-200 pl-2">
-                    <span id="health-dot-${val(mod, 'Module_ID')}" class="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse"></span> PINGING
-                </span>`;
-            }
-
-            const statusHtml = devStatus ? `<div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 truncate">${devStatus}</div>` : '';
-
-            gridHtml += `
-            <a href="${val(mod, 'File_Link')}" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 active:scale-95 transition flex items-center justify-between group">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-${iconColor}-50 text-${iconColor}-600 rounded-lg group-hover:bg-${iconColor}-600 group-hover:text-white transition shrink-0">
-                        ${iconContent}
-                    </div>
-                    <div class="min-w-0">
-                        <h3 class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition truncate">${val(mod, 'Display_Name')}</h3>
-                        ${statusHtml}
-                        <div class="flex items-center mt-1.5">
-                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${mod._verClass}">${mod._verText}</span>
-                            ${healthHTML}
-                        </div>
-                    </div>
-                </div>
-                <div class="text-gray-300 shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </div>
-            </a>
-            `;
-        });
-
-        gridHtml += `</div>`;
-        catDiv.innerHTML = gridHtml;
-        container.appendChild(catDiv);
-    });
-
-    // Start Health Checks with a Staggered Delay (Every 500ms)
-    let delay = 0;
-    data.forEach(mod => {
-        if(val(mod, 'Module_ID').startsWith('PROD_') && val(mod, 'File_Link')) {
-            setTimeout(() => testModuleHealth(mod), delay);
-            delay += 500;
-        }
-    });
-}
-
-// --- DYNAMIC HEALTH MONITOR ---
-function testModuleHealth(mod) {
-    const modId = val(mod, 'Module_ID');
-    const fileLink = val(mod, 'File_Link');
-
-    if (!fileLink || !fileLink.endsWith('.html')) {
-        updateHealthUI(modId, 'HIDE');
-        return;
-    }
-
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = `${fileLink}?t=${Date.now()}`;
-
-    iframe.onload = function() {
-        let attempts = 0;
-        const maxAttempts = 20; // 10 sec timeout
-
-        const checkInterval = setInterval(() => {
-            attempts++;
-            try {
-                const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
-                const statusEl = innerDoc.getElementById('status-text');
-
-                if (statusEl && statusEl.innerText === 'ONLINE') {
-                    clearInterval(checkInterval);
-                    updateHealthUI(modId, 'PASS');
-                    if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                }
-                else if (statusEl && statusEl.innerText === 'OFFLINE') {
-                    throw new Error("Backend Offline");
-                }
-                else if (attempts >= maxAttempts) {
-                    throw new Error("Timeout");
-                }
-            } catch(e) {
-                if (e.message === "Timeout" || e.message === "Backend Offline" || attempts >= maxAttempts) {
-                    clearInterval(checkInterval);
-                    updateHealthUI(modId, 'ERR');
-                    if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                }
-            }
-        }, 500);
-    };
-
-    iframe.onerror = function() {
-        updateHealthUI(modId, '404');
-        if (document.body.contains(iframe)) document.body.removeChild(iframe);
-    };
-
-    document.body.appendChild(iframe);
-}
-
-function updateHealthUI(modId, state) {
-    const dot = document.getElementById(`health-dot-${modId}`);
-    const txt = document.getElementById(`health-text-${modId}`);
-    if(!dot || !txt) return;
-
-    if (state === 'PASS') {
-        dot.className = "w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]";
-        txt.innerHTML = dot.outerHTML + " PASS";
-        txt.classList.replace('text-gray-400', 'text-green-600');
-    } else if (state === 'ERR') {
-        dot.className = "w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_4px_rgba(220,38,38,0.6)] animate-pulse";
-        txt.innerHTML = dot.outerHTML + " CRASH";
-        txt.classList.replace('text-gray-400', 'text-red-600');
-    } else if (state === '404') {
-        dot.className = "w-1.5 h-1.5 rounded-full bg-gray-800";
-        txt.innerHTML = dot.outerHTML + " 404";
-        txt.classList.replace('text-gray-400', 'text-gray-800');
-    } else if (state === 'HIDE') {
-        txt.style.display = 'none';
-    }
-}
 </script>
 </body>
 </html>
