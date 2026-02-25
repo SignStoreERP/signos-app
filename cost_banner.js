@@ -134,3 +134,85 @@ function calculateBanner(inputs, data) {
         metrics: { margin: (grandTotal - (subTotal * riskFactor)) / grandTotal }
     };
 }
+// ==========================================
+// SIMULATOR CONFIGURATION SCHEMA
+// ==========================================
+window.BANNER_CONFIG = {
+    tab: 'PROD_Vinyl_Banners',
+    engine: calculateBanner,
+    controls: [
+        { id: 'w', label: 'Width (in)', type: 'number', def: 72 },
+        { id: 'h', label: 'Height (in)', type: 'number', def: 36 },
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'13oz', t:'13oz Standard'}, {v:'15oz', t:'15oz Blockout'}, {v:'18oz', t:'18oz Heavy'}, {v:'Mesh', t:'8oz Mesh'}] },
+        { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'hems', label: 'Tape Hems', type: 'toggle', def: true },
+        { id: 'grommets', label: 'Grommets', type: 'toggle', def: true },
+        { id: 'pockets', label: 'Pole Pockets', type: 'toggle', def: false },
+        { id: 'windSlits', label: 'Wind Slits', type: 'toggle', def: false },
+        { id: 'files', label: 'Files', type: 'number', def: 1 },
+        { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
+        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
+    ],
+    retails: [
+        { heading: 'Material Tiers ($/SqFt)', key: 'BAN13_T1_Rate', label: '13oz Rate (1ft Tall)' },
+        { key: 'BAN13_T2_Rate', label: '13oz Rate (<10sf)' },
+        { key: 'BAN13_T3_Rate', label: '13oz Rate (>10sf)' },
+        { key: 'Retail_Price_Base_15oz', label: '15oz Rate ($)' },
+        { key: 'Retail_Price_Base_18oz', label: '18oz Rate ($)' },
+        { key: 'Retail_Price_Base_Mesh', label: 'Mesh Rate ($)' },
+        { heading: 'Adders & Finishings', key: 'Retail_Adder_DS_SqFt', label: 'Double Sided ($/sf)' },
+        { key: 'Retail_Fin_PolePkt_LF', label: 'Pole Pocket ($/LF)' },
+        { key: 'Retail_Price_WindSlits_SqFt', label: 'Wind Slits ($/sf)' },
+        { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'T1 Trigger (Qty)' },
+        { key: 'Tier_1_Disc', label: 'T1 Discount (%)' }
+    ],
+    costs: [
+        { heading: 'Roll Media', key: 'Cost_Media_13oz', label: '13oz Vinyl ($/sf)' },
+        { key: 'Cost_Media_15oz', label: '15oz Blockout ($/sf)' },
+        { key: 'Cost_Media_18oz', label: '18oz Heavy ($/sf)' },
+        { key: 'Cost_Media_Mesh', label: '8oz Mesh ($/sf)' },
+        { heading: 'Finishings & Ink', key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
+        { key: 'Cost_Grommet', label: 'Grommet ($/ea)' },
+        { key: 'Cost_Hem_Tape', label: 'Hem Tape ($/LF)' },
+        { heading: 'Machine Speeds & Time', key: 'Speed_Print_Roll', label: 'Print Spd (SqFt/hr)' },
+        { key: 'Time_Setup_Job', label: 'Setup Job (Mins)' },
+        { key: 'Time_Handling', label: 'Handling (Mins)' },
+        { key: 'Time_Hem_LF', label: 'Hemming (Mins/LF)' },
+        { key: 'Time_PolePkt_LF', label: 'Pockets (Mins/LF)' },
+        { heading: 'Rates & Overhead', key: 'Rate_Operator', label: 'Print Op ($/Hr)' },
+        { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
+        { key: 'Rate_Machine_Print', label: 'Printer Mach ($/Hr)' },
+        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' },
+        { key: 'Waste_Factor', label: 'Waste Buffer' }
+    ],
+    renderReceipt: function(data, fmt) {
+        let retailHTML = `<div><h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
+        <div class="space-y-1 text-xs text-gray-700">
+        <div class="flex justify-between"><span>Base Print:</span> <span>${fmt(data.retail.printTotal)}</span></div>
+        ${data.retail.pocketsTotal > 0 ? `<div class="flex justify-between text-orange-700"><span>Pole Pockets:</span> <span>${fmt(data.retail.pocketsTotal)}</span></div>` : ''}
+        ${data.retail.slitsTotal > 0 ? `<div class="flex justify-between text-teal-700"><span>Wind Slits:</span> <span>${fmt(data.retail.slitsTotal)}</span></div>` : ''}
+        <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
+        ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
+        <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
+        </div></div>`;
+
+        let costHTML = `<div class="mt-6"><h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
+        <div class="space-y-1 text-xs text-gray-700">`;
+        if (data.cost.breakdown) {
+            const b = data.cost.breakdown;
+            costHTML += `
+            <div class="flex justify-between"><span>Roll Material:</span> <span>${fmt(b.rawMedia)}</span></div>
+            <div class="flex justify-between"><span>Ink:</span> <span>${fmt(b.rawInk)}</span></div>
+            ${b.rawTape > 0 ? `<div class="flex justify-between"><span>Hem Tape:</span> <span>${fmt(b.rawTape)}</span></div>` : ''}
+            ${b.rawGrom > 0 ? `<div class="flex justify-between"><span>Grommets:</span> <span>${fmt(b.rawGrom)}</span></div>` : ''}
+            <div class="flex justify-between"><span>Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
+            <div class="flex justify-between"><span>Print Run:</span> <span>${fmt(b.costPrint)}</span></div>
+            <div class="flex justify-between"><span>Finishing Labor:</span> <span>${fmt(b.costFinish)}</span></div>
+            <div class="border-t border-gray-200 mt-2 pt-1"></div>
+            <div class="flex justify-between text-red-600"><span>Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 15}%):</span> <span>(Calculated Above)</span></div>
+            <div class="flex justify-between text-orange-500 opacity-80"><span>Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> <span>(+ ${fmt(b.riskCost)})</span></div>`;
+        }
+        costHTML += `<div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div></div></div>`;
+        return retailHTML + costHTML;
+    }
+};
