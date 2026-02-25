@@ -36,11 +36,12 @@
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Material Series</label>
                 <select id="material" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="updateSwatches(); runCalc();">
                     <option value="651">Oracal 651 (Intermediate / Short Term)</option>
-                    <option value="751" selected>Oracal 751 (Flat Surfaces)</option>
+                    <option value="751" selected>Oracal 751 (High Perf / Flat Surfaces)</option>
                     <option value="951">Oracal 951 (Premium Cast / Vehicles)</option>
                     <option value="8500">Oracal 8500 (Translucent / Backlit)</option>
                     <option value="8800">Oracal 8800 (Premium Translucent)</option>
-                    <option value="Glass">Etched / Frosted Glass Film</option>
+                    <option value="8510">Oracal 8510 (Etched / Frosted Glass)</option>
+                    <option value="8810">Oracal 8810 (Frosted Cast Glass)</option>
                     <option value="Specialty">Specialty (Metallic / Fluorescent)</option>
                 </select>
             </div>
@@ -154,14 +155,23 @@ function updateSwatches() {
 
     filtered.forEach(c => {
         const btn = document.createElement('button');
-        const hex = (c.Hex_Code && c.Hex_Code !== 'N/A') ? c.Hex_Code : '#ffffff';
+        // Added overflow-hidden to contain the background image perfectly within the circle
+        btn.className = "w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none flex items-center justify-center relative group overflow-hidden";
         
-        btn.className = "w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none flex items-center justify-center relative group";
-        btn.style.backgroundColor = hex;
+        let hexOrUrl = (c.Hex_Code && c.Hex_Code !== 'N/A' && c.Hex_Code.trim() !== '') ? c.Hex_Code.trim() : '#ffffff';
         
-        if(hex === '#FFFFFF' || hex === '#ffffff') {
+        // NEW LOGIC: Check if the backend cell contains an image URL instead of a Hex Code
+        if (hexOrUrl.toLowerCase().startsWith('http')) {
+            btn.style.backgroundImage = `url('${hexOrUrl}')`;
+            btn.style.backgroundSize = 'cover';
+            btn.style.backgroundPosition = 'center';
             btn.classList.add('border-gray-200');
-            if(c.Hex_Code === 'N/A') btn.innerHTML = '<span class="text-[8px] font-black text-gray-400">CLR</span>';
+        } else {
+            btn.style.backgroundColor = hexOrUrl;
+            if(hexOrUrl.toUpperCase() === '#FFFFFF') {
+                btn.classList.add('border-gray-200');
+                if(c.Hex_Code === 'N/A' || !c.Hex_Code) btn.innerHTML = '<span class="text-[8px] font-black text-gray-400">CLR</span>';
+            }
         }
         
         btn.title = `${c.Color_Code} - ${c.Display_Name}`;
