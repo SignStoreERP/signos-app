@@ -1,10 +1,9 @@
 /**
  * ULTRA-SIMPLE RETAIL ENGINE: Custom Coroplast
- * Pure Area-Curve Lookup Math + No Setup or Design Fees
+ * Pure Area-Curve Lookup Math + Router Fees (No Hardware)
  */
 function calculateCoro(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
-    const totalSqFt = sqft * inputs.qty;
     const thk = inputs.thickness;
 
     let baseRate = 0;
@@ -35,7 +34,7 @@ function calculateCoro(inputs, data) {
         }
     }
 
-    // Apply strict minimum per-sign price (prevents a 1x1 sign being $2)
+    // Evaluate base per-sign print price
     let unitPrint = baseRate * sqft;
     if (unitPrint < minSignPrice) unitPrint = minSignPrice;
 
@@ -45,41 +44,30 @@ function calculateCoro(inputs, data) {
         unitPrint += (dsAdder * sqft);
     }
 
-    // 3. Contour Cut Markup (e.g. 25% addition)
-    if (inputs.shape === 'Contour') {
-        unitPrint *= (1 + (parseFloat(data.Retail_Adder_Contour_Pct) || 0.25));
-    }
-
     let retailPrint = unitPrint * inputs.qty;
 
-    // 4. Volume Discount (10+ Qty Break)
+    // 3. Volume Discount (10+ Qty Break)
     const t1Qty = parseFloat(data.Tier_1_Qty) || 10;
     if (inputs.qty >= t1Qty) {
         const discPct = parseFloat(data.Tier_1_Disc) || 0.05;
         retailPrint *= (1 - discPct);
     }
 
-    // 5. Hardware (Stakes & Grommets)
-    let stakeTotal = 0;
-    if (inputs.stakes === 'Standard') stakeTotal = inputs.qty * (parseFloat(data.Retail_Stake_Std) || 2.5);
-    if (inputs.stakes === 'HeavyDuty') stakeTotal = inputs.qty * (parseFloat(data.Retail_Stake_HD) || 4);
+    // 4. Router Fee
+    let routerFee = 0;
+    if (inputs.shape === 'CNC Simple') routerFee = parseFloat(data.Retail_Fee_Router_Easy) || 30;
+    else if (inputs.shape === 'CNC Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard) || 50;
 
-    let grommetTotal = 0;
-    if (inputs.grommets > 0) {
-        grommetTotal = inputs.grommets * inputs.qty * (parseFloat(data.Retail_Price_Grommet) || 0.25);
-    }
-
-    // 6. Shop Minimum Guard
+    // 5. Shop Minimum Guard
     const minOrder = parseFloat(data.Retail_Min_Order) || 50;
-    let grandTotalRaw = retailPrint + stakeTotal + grommetTotal;
+    let grandTotalRaw = retailPrint + routerFee;
     let grandTotal = Math.max(grandTotalRaw, minOrder);
 
     return {
         retail: {
             unitPrice: grandTotal / inputs.qty,
             printTotal: retailPrint,
-            stakeTotal: stakeTotal,
-            grommetTotal: grommetTotal,
+            routerFee: routerFee,
             grandTotal: grandTotal,
             isMinApplied: grandTotalRaw < minOrder
         },
