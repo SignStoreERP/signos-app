@@ -13,33 +13,25 @@
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Installation</label>
                 <select id="install" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                    <option value="No">No (Print Only)</option><option value="Yes">Yes (Add Labor)</option>
+                    <option value="Yes" selected>Yes (Add Labor)</option>
+                    <option value="No">No (Print Only)</option>
                 </select>
             </div>
         </div>
         <div class="border-t border-gray-200 my-2"></div>
         <div>
             <div class="flex justify-between items-end mb-2">
-                <label class="block text-[10px] font-black text-gray-600 uppercase tracking-widest">Wall Sections</label>
+                <label class="block text-[10px] font-black text-gray-600 uppercase tracking-widest">Wall & Window Sections</label>
                 <button onclick="addPanel()" class="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition">+ ADD SECTION</button>
             </div>
             <div id="panel-container" class="space-y-3 max-h-64 overflow-y-auto panel-scroll pr-1"></div>
-        </div>
-        <div class="border-t border-gray-200 my-2"></div>
-        <div class="grid grid-cols-1 gap-4">
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Laminate Choice</label>
-                <select id="laminate" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                    <option value="Matte">Standard Matte Laminate</option><option value="Gloss">Standard Gloss Laminate</option>
-                </select>
-            </div>
         </div>
     </div>
     <div class="bg-blue-50 p-6 border-t border-blue-100 shadow-inner">
         <div class="flex justify-between items-end mb-2"><span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span><span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span></div>
         <div class="border-t border-blue-200/50 my-3"></div>
         <div class="space-y-1 text-xs text-blue-900/70 pt-1">
-            <div class="flex justify-between"><span>Printed Wall Wrap (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
+            <div class="flex justify-between"><span>Printed Graphics (<span id="lbl-sqft">0</span> sqft):</span><span id="ui-print" class="font-bold">$0.00</span></div>
             <div class="flex justify-between text-orange-700 hidden" id="row-install"><span>Installation Labor:</span><span id="ui-install" class="font-bold">$0.00</span></div>
         </div>
         <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
@@ -54,14 +46,15 @@
 </div>
 <script>
 let backendData = {};
-let panels = [{ id: Date.now(), label: 'Main Wall', w: 120, h: 96, material: 'smooth' }];
+let panels = [{ id: Date.now(), label: 'Main Wall', w: 120, h: 96, material: 'smooth', laminate: 'Matte' }];
 
 function renderPanels() {
     const container = document.getElementById('panel-container'); container.innerHTML = '';
     panels.forEach((p, index) => {
         const isOnly = panels.length === 1;
+        const isPerf = p.material.startsWith('perf');
         container.innerHTML += `
-        <div class="flex flex-col gap-2 bg-white p-2 rounded shadow-sm border border-gray-200">
+        <div class="flex flex-col gap-2 bg-white p-2 rounded shadow-sm border ${isPerf ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-200'}">
             <div class="flex items-end gap-2">
                 <div class="flex-1">
                     <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">Name</label>
@@ -69,30 +62,61 @@ function renderPanels() {
                 </div>
                 <div class="w-16">
                     <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5 text-center">W (in)</label>
-                    <input type="number" value="${p.w}" oninput="updatePanel(${p.id}, 'w', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
+                    <input type="number" value="${p.w}" oninput="updateDim(${p.id}, 'w', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
                 </div>
                 <div class="w-16">
                     <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5 text-center">H (in)</label>
-                    <input type="number" value="${p.h}" oninput="updatePanel(${p.id}, 'h', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
+                    <input type="number" value="${p.h}" oninput="updateDim(${p.id}, 'h', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
                 </div>
                 ${!isOnly ? `<button onclick="removePanel(${p.id})" class="h-[26px] w-7 flex items-center justify-center bg-red-50 text-red-500 border border-red-100 rounded hover:bg-red-500 hover:text-white transition">X</button>` : `<div class="w-7"></div>`}
             </div>
-            <select onchange="updatePanel(${p.id}, 'material', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold text-gray-600 bg-gray-50 outline-none focus:border-blue-500">
-                <option value="smooth" ${p.material === 'smooth' ? 'selected' : ''}>Smooth (GF 226)</option>
-                <option value="textured" ${p.material === 'textured' ? 'selected' : ''}>Textured (3M IJ8624)</option>
-            </select>
+            <div class="grid grid-cols-2 gap-2 border-t border-gray-100 pt-1.5 mt-1">
+                <select onchange="updatePanel(${p.id}, 'material', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold ${isPerf ? 'text-indigo-700 bg-indigo-50' : 'text-gray-600 bg-gray-50'} outline-none focus:border-blue-500">
+                    <option value="smooth" ${p.material === 'smooth' ? 'selected' : ''}>Smooth (GF 226)</option>
+                    <option value="textured" ${p.material === 'textured' ? 'selected' : ''}>Textured (3M IJ8624)</option>
+                    <option value="perf6040" ${p.material === 'perf6040' ? 'selected' : ''}>Window Perf (60/40)</option>
+                    <option value="perf7030" ${p.material === 'perf7030' ? 'selected' : ''}>Window Perf (70/30)</option>
+                </select>
+                <select onchange="updatePanel(${p.id}, 'laminate', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold text-gray-600 bg-gray-50 outline-none focus:border-blue-500">
+                     ${isPerf ? `
+                     <option value="Optically Clear" ${p.laminate === 'Optically Clear' ? 'selected' : ''}>Optically Clear Lam</option>
+                     <option value="Spray Lam" ${p.laminate === 'Spray Lam' ? 'selected' : ''}>Spray Lam</option>
+                     <option value="No Lam" ${p.laminate === 'No Lam' ? 'selected' : ''}>No Lam</option>
+                     ` : `
+                     <option value="Matte" ${p.laminate === 'Matte' ? 'selected' : ''}>Standard Matte Lam</option>
+                     <option value="Gloss" ${p.laminate === 'Gloss' ? 'selected' : ''}>Standard Gloss Lam</option>
+                     `}
+                </select>
+            </div>
         </div>`;
     });
     runCalc();
 }
-function updatePanel(id, field, val) { const p = panels.find(x => x.id === id); if(p) { if(field === 'label' || field === 'material') p[field] = val; else p[field] = parseFloat(val) || 0; runCalc(); } }
-function addPanel() { panels.push({ id: Date.now(), label: `Wall ${panels.length + 1}`, w: 120, h: 96, material: 'smooth' }); renderPanels(); }
+
+function updatePanel(id, field, val) { 
+    const p = panels.find(x => x.id === id); 
+    if(p) { 
+        p[field] = val; 
+        if (field === 'material') {
+            p.laminate = val.startsWith('perf') ? 'No Lam' : 'Matte'; // Smart Defaulting
+        }
+        renderPanels(); 
+    } 
+}
+
+// FIX: Separate function for dimensions so it doesn't redraw the DOM and steal typing focus
+function updateDim(id, field, val) { 
+    const p = panels.find(x => x.id === id); 
+    if(p) { p[field] = parseFloat(val) || 0; runCalc(); } 
+}
+
+function addPanel() { panels.push({ id: Date.now(), label: `Area ${panels.length + 1}`, w: 120, h: 96, material: 'smooth', laminate: 'Matte' }); renderPanels(); }
 function removePanel(id) { panels = panels.filter(x => x.id !== id); renderPanels(); }
 
 function runCalc() {
     if(!backendData.Retail_Min_Order) return;
     try {
-        const inputs = { qty: parseFloat(document.getElementById('qty').value) || 1, panels: panels, laminate: document.getElementById('laminate').value, install: document.getElementById('install').value };
+        const inputs = { qty: parseFloat(document.getElementById('qty').value) || 1, panels: panels, install: document.getElementById('install').value };
         const result = calculateWall(inputs, backendData);
         if (!result || !result.retail) return;
         const ret = result.retail; const fmt = (n) => "$" + (n || 0).toFixed(2);
@@ -109,16 +133,29 @@ function runCalc() {
         document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
         
         const instTxt = inputs.install === 'Yes' ? 'Installation Labor Included.' : 'Print Only (No Install).';
-        const panelTxt = panels.map(p => ` - ${p.label}: ${p.w}" x ${p.h}" [${p.material === 'textured' ? '3M IJ8624' : 'GF 226'}]`).join('\n');
-        document.getElementById('job-desc').value = `(x${inputs.qty}) Interior Wall Wrap. \nLam: ${inputs.laminate}.\nSections:\n${panelTxt}\n${instTxt}`;
+        const panelTxt = panels.map(p => {
+            let matName = p.material === 'textured' ? '3M IJ8624' : (p.material === 'perf6040' ? 'Perf 60/40' : (p.material === 'perf7030' ? 'Perf 70/30' : 'GF 226 Smooth'));
+            return ` - ${p.label}: ${p.w}" x ${p.h}" [${matName} | ${p.laminate}]`;
+        }).join('\n');
+        document.getElementById('job-desc').value = `(x${inputs.qty}) Environmental Graphics Package.\nAreas:\n${panelTxt}\n\n${instTxt}`;
     } catch(e) { console.error(e); }
 }
 window.addEventListener('load', async () => {
     if (typeof injectHeader === 'function') injectHeader("Interior Wall Wraps");
     renderPanels(); 
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
     try {
         const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Vinyl_Wraps`);
         backendData = await req.json();
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            if(statusDot) {
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                statusDot.classList.remove("animate-pulse");
+            }
+        }
         runCalc(); 
     } catch(e) { console.error(e); }
 });
