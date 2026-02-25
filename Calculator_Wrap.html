@@ -13,7 +13,8 @@
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Include Installation?</label>
                 <select id="install" class="w-full border p-2 rounded bg-white font-bold text-sm h-[46px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                    <option value="No">No (Print Only)</option><option value="Yes">Yes (Add Labor)</option>
+                    <option value="Yes" selected>Yes (Add Labor)</option>
+                    <option value="No">No (Print Only)</option>
                 </select>
             </div>
         </div>
@@ -24,17 +25,6 @@
                 <button onclick="addPanel()" class="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition">+ ADD AREA</button>
             </div>
             <div id="panel-container" class="space-y-3 max-h-64 overflow-y-auto panel-scroll pr-1"></div>
-        </div>
-        <div class="border-t border-gray-200 my-2"></div>
-        <div class="grid grid-cols-1 gap-4">
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Laminate Choice</label>
-                <select id="laminate" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                    <option value="Gloss">3M 8518 Gloss</option>
-                    <option value="Luster">3M 8519 Luster</option>
-                    <option value="Matte">3M 8520 Matte</option>
-                </select>
-            </div>
         </div>
     </div>
     <div class="bg-blue-50 p-6 border-t border-blue-100 shadow-inner">
@@ -56,7 +46,7 @@
 </div>
 <script>
 let backendData = {};
-let panels = [{ id: Date.now(), label: 'Driver Side', w: 120, h: 60, material: 'wrap', included: false }];
+let panels = [{ id: Date.now(), label: 'Driver Side', w: 120, h: 60, material: 'wrap', laminate: 'Gloss', included: false }];
 
 function renderPanels() {
     const container = document.getElementById('panel-container'); container.innerHTML = '';
@@ -72,49 +62,73 @@ function renderPanels() {
                 </div>
                 <div class="w-14">
                     <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5 text-center">W (in)</label>
-                    <input type="number" value="${p.w}" oninput="updatePanel(${p.id}, 'w', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
+                    <input type="number" value="${p.w}" oninput="updateDim(${p.id}, 'w', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
                 </div>
                 <div class="w-14">
                     <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5 text-center">H (in)</label>
-                    <input type="number" value="${p.h}" oninput="updatePanel(${p.id}, 'h', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
+                    <input type="number" value="${p.h}" oninput="updateDim(${p.id}, 'h', this.value)" class="w-full border p-1 rounded text-xs font-bold text-gray-700 outline-none text-center focus:border-blue-500 bg-gray-50">
                 </div>
                 <div class="flex gap-1 ml-1">
-                    <button onclick="duplicatePanel(${p.id})" title="Duplicate" class="h-[26px] w-7 flex items-center justify-center bg-gray-100 text-gray-500 border border-gray-200 rounded hover:bg-gray-200 transition">++</button>
+                    <button onclick="duplicatePanel(${p.id})" title="Duplicate" class="h-[26px] px-2 text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-600 hover:text-white transition">COPY</button>
                     ${!isOnly ? `<button onclick="removePanel(${p.id})" title="Remove" class="h-[26px] w-7 flex items-center justify-center bg-red-50 text-red-500 border border-red-100 rounded hover:bg-red-500 hover:text-white transition">X</button>` : `<div class="w-7"></div>`}
                 </div>
             </div>
-            <div class="flex items-center gap-3 border-t border-gray-100 pt-1.5">
-                <div class="w-1/2">
-                     <select onchange="updatePanel(${p.id}, 'material', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold ${isPerf ? 'text-indigo-700 bg-indigo-50' : 'text-gray-600 bg-gray-50'} outline-none focus:border-blue-500">
-                         <option value="wrap" ${p.material === 'wrap' ? 'selected' : ''}>3M IJ180 Cast</option>
-                         <option value="perf6040" ${p.material === 'perf6040' ? 'selected' : ''}>Perf (60/40)</option>
-                         <option value="perf7030" ${p.material === 'perf7030' ? 'selected' : ''}>Perf (70/30)</option>
-                         <option value="perfdual" ${p.material === 'perfdual' ? 'selected' : ''}>Dual Black Perf</option>
-                     </select>
-                </div>
-                <div class="w-1/2 flex items-center ${isPerf ? '' : 'opacity-30 pointer-events-none'}">
-                     <label class="flex items-center gap-1.5 text-[9px] font-bold ${isPerf && p.included ? 'text-green-600' : 'text-gray-500'} cursor-pointer">
-                         <input type="checkbox" onchange="updatePanel(${p.id}, 'included', this.checked)" ${p.included ? 'checked' : ''} class="w-3 h-3 rounded text-blue-600">
-                         Included in wrap
-                     </label>
-                </div>
+            <div class="grid grid-cols-2 gap-2 border-t border-gray-100 pt-1.5 mt-1">
+                <select onchange="updatePanel(${p.id}, 'material', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold ${isPerf ? 'text-indigo-700 bg-indigo-50' : 'text-gray-600 bg-gray-50'} outline-none focus:border-blue-500">
+                    <option value="wrap" ${p.material === 'wrap' ? 'selected' : ''}>3M IJ180 Cast</option>
+                    <option value="perf6040" ${p.material === 'perf6040' ? 'selected' : ''}>Perf (60/40)</option>
+                    <option value="perf7030" ${p.material === 'perf7030' ? 'selected' : ''}>Perf (70/30)</option>
+                    <option value="perfdual" ${p.material === 'perfdual' ? 'selected' : ''}>Dual Black Perf</option>
+                </select>
+                <select onchange="updatePanel(${p.id}, 'laminate', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold text-gray-600 bg-gray-50 outline-none focus:border-blue-500">
+                     ${isPerf ? `
+                     <option value="Optically Clear" ${p.laminate === 'Optically Clear' ? 'selected' : ''}>Optically Clear Lam</option>
+                     <option value="Spray Lam" ${p.laminate === 'Spray Lam' ? 'selected' : ''}>Spray Lam</option>
+                     <option value="No Lam" ${p.laminate === 'No Lam' ? 'selected' : ''}>No Lam</option>
+                     ` : `
+                     <option value="Gloss" ${p.laminate === 'Gloss' ? 'selected' : ''}>3M 8518 Gloss</option>
+                     <option value="Luster" ${p.laminate === 'Luster' ? 'selected' : ''}>3M 8519 Luster</option>
+                     <option value="Matte" ${p.laminate === 'Matte' ? 'selected' : ''}>3M 8520 Matte</option>
+                     `}
+                </select>
+            </div>
+            <div class="flex items-center justify-end pt-1 ${isPerf ? '' : 'hidden'}">
+                 <label class="flex items-center gap-1.5 text-[9px] font-bold ${isPerf && p.included ? 'text-green-600' : 'text-gray-500'} cursor-pointer">
+                     <input type="checkbox" onchange="updatePanel(${p.id}, 'included', this.checked)" ${p.included ? 'checked' : ''} class="w-3 h-3 rounded text-blue-600">
+                     Included in larger wrap (No charge)
+                 </label>
             </div>
         </div>`;
     });
     runCalc();
 }
+
 function updatePanel(id, field, val) { 
     const p = panels.find(x => x.id === id); 
     if(p) { 
-        if(field === 'label' || field === 'material') p[field] = val; 
-        else if (field === 'included') p[field] = val; 
-        else p[field] = parseFloat(val) || 0; 
-        if (field === 'material' && val === 'wrap') p.included = false; 
+        p[field] = val; 
+        
+        // Smart Defaults
+        if (field === 'material') {
+            if (val.startsWith('perf')) {
+                p.laminate = 'No Lam';
+            } else {
+                p.laminate = 'Gloss';
+                p.included = false;
+            }
+        }
         renderPanels(); 
     } 
 }
-function addPanel() { panels.push({ id: Date.now(), label: `Area ${panels.length + 1}`, w: 120, h: 60, material: 'wrap', included: false }); renderPanels(); }
-function duplicatePanel(id) { const p = panels.find(x => x.id === id); if(p) { panels.push({ id: Date.now(), label: p.label + ' (Copy)', w: p.w, h: p.h, material: p.material, included: p.included }); renderPanels(); } }
+
+// FIX: Dimensions only trigger math calculation, preventing loss of cursor focus
+function updateDim(id, field, val) { 
+    const p = panels.find(x => x.id === id); 
+    if(p) { p[field] = parseFloat(val) || 0; runCalc(); } 
+}
+
+function addPanel() { panels.push({ id: Date.now(), label: `Area ${panels.length + 1}`, w: 120, h: 60, material: 'wrap', laminate: 'Gloss', included: false }); renderPanels(); }
+function duplicatePanel(id) { const p = panels.find(x => x.id === id); if(p) { panels.push({ id: Date.now(), label: p.label + ' (Copy)', w: p.w, h: p.h, material: p.material, laminate: p.laminate, included: p.included }); renderPanels(); } }
 function removePanel(id) { panels = panels.filter(x => x.id !== id); renderPanels(); }
 
 function runCalc() {
@@ -137,23 +151,33 @@ function runCalc() {
         document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
         const instTxt = inputs.install === 'Yes' ? 'Installation Labor Included.' : 'Print Only (No Install).';
-        const lamTxt = document.getElementById('laminate').options[document.getElementById('laminate').selectedIndex].text;
         
         const panelTxt = panels.map(p => {
-            let matName = p.material === 'wrap' ? '3M IJ180 Cast' : (p.material === 'perfdual' ? 'Dual Black Perf' : 'Window Perf');
+            let matName = p.material === 'wrap' ? '3M IJ180 Cast' : (p.material === 'perfdual' ? 'Dual Black Perf' : (p.material === 'perf7030' ? 'Perf 70/30' : 'Perf 60/40'));
             let incName = (p.material.startsWith('perf') && p.included) ? ' (Cost Included)' : '';
-            return ` - ${p.label}: ${p.w}" x ${p.h}" [${matName}]${incName}`;
+            return ` - ${p.label}: ${p.w}" x ${p.h}" [${matName} | ${p.laminate}]${incName}`;
         }).join('\n');
         
-        document.getElementById('job-desc').value = `(x${inputs.qty}) Vehicle Graphics Package.\nLam: ${lamTxt}\nAreas:\n${panelTxt}\n\n${instTxt}`;
+        document.getElementById('job-desc').value = `(x${inputs.qty}) Vehicle Graphics Package.\nAreas:\n${panelTxt}\n\n${instTxt}`;
     } catch(e) { console.error(e); }
 }
 window.addEventListener('load', async () => {
     if (typeof injectHeader === 'function') injectHeader("Vehicle Wraps");
     renderPanels(); 
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
     try {
         const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Vinyl_Wraps`);
         backendData = await req.json();
+        
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            if(statusDot) {
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                statusDot.classList.remove("animate-pulse");
+            }
+        }
         runCalc(); 
     } catch(e) { console.error(e); }
 });
