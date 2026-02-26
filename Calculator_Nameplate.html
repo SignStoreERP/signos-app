@@ -7,7 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_nameplate.js"></script>
-    <style>input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }</style>
+    <style>
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .color-scroll::-webkit-scrollbar { width: 6px; }
+        .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
+        .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
@@ -17,26 +22,30 @@
         <div class="p-6 space-y-4">
             <div class="grid grid-cols-3 gap-3">
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="10" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="2" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
             </div>
 
             <div class="border-t border-gray-100 pt-3">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Engraving Style</label>
-                <select id="style" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="toggleStyle(); runCalc();">
-                    <option value="Standard">Standard Front Engrave (Mattes)</option>
+                <select id="style" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="updateSwatches()">
+                    <option value="Front">Standard Front Engrave (Mattes)</option>
                     <option value="Reverse">Reverse Engrave (Ultra-Mattes + Paint Fill)</option>
                 </select>
             </div>
 
-            <div class="grid grid-cols-1 gap-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Background Material Color</label>
-                    <select id="materialColor" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()"></select>
+            <div id="paint-wrap" class="hidden bg-orange-50 border border-orange-200 p-3 rounded-lg">
+                <label class="block text-[10px] font-bold text-orange-700 uppercase mb-1">Engraved Text Color (Paint Fill)</label>
+                <select id="paintColor" class="w-full border border-orange-300 p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-orange-500 outline-none" onchange="updateSwatches()"></select>
+            </div>
+
+            <div class="mt-2">
+                <div class="flex justify-between items-end mb-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Substrate Color</label>
+                    <span id="selected-color-label" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">None Selected</span>
                 </div>
-                <div id="paint-wrap" class="hidden bg-orange-50 border border-orange-200 p-3 rounded-lg">
-                    <label class="block text-[10px] font-bold text-orange-700 uppercase mb-1">Engraved Text Color (Paint Fill)</label>
-                    <select id="paintColor" class="w-full border border-orange-300 p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-orange-500 outline-none" onchange="runCalc()"></select>
+                <div id="color-grid" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
+                    <div class="text-xs text-gray-400 font-bold italic w-full text-center py-4 animate-pulse">Loading Swatches...</div>
                 </div>
             </div>
         </div>
@@ -51,6 +60,7 @@
             
             <div class="space-y-1 text-xs text-blue-900/70 pt-1">
                 <div class="flex justify-between"><span>Nameplates (<span id="lbl-sqin">0</span> sq in):</span><span id="ui-print" class="font-bold">$0.00</span></div>
+                <div class="flex justify-between"><span>File Setup:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
             </div>
 
             <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
@@ -65,73 +75,98 @@
 
         <!-- DESCRIPTION GENERATOR -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
-            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-20 text-gray-600 font-mono outline-none" readonly></textarea>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description for Production</label>
+            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-24 text-gray-600 font-mono outline-none" readonly></textarea>
         </div>
     </div>
 
     <script>
         let backendData = {};
+        let rowmarkData = [];
+        let paintData = [];
+        let activeMaterial = null;
 
-        // SIMULATED API DATA INJECTIONS
-        const matMattes = [
-            { id: "2XX-402", text: "Black Face / White Core" },
-            { id: "2XX-407", text: "Black Face / Gold Core" },
-            { id: "2XX-204", text: "White Face / Black Core" },
-            { id: "2XX-602", text: "Red Face / White Core" },
-            { id: "2XX-512", text: "Blue Face / White Core" },
-            { id: "2XX-324", text: "Light Grey Face / Black Core" }
-        ];
-
-        const matUltraMattes = [
-            { id: "3X2-401", text: "Black Background / Clear Core" },
-            { id: "3X2-201", text: "White Background / Clear Core" },
-            { id: "3X2-511", text: "Blue Background / Clear Core" },
-            { id: "3X2-731", text: "Vintage Gold Background / Clear Core" },
-            { id: "3X2-371", text: "Vintage Silver Background / Clear Core" }
-        ];
-
-        const paintColors = [
-            { id: "SW0001", text: "Mulberry Silk (SW0001)" },
-            { id: "SW0006", text: "Toile Red (SW0006)" },
-            { id: "SW0009", text: "Eastlake Gold (SW0009)" },
-            { id: "SW0032", text: "Needlepoint Navy (SW0032)" },
-            { id: "BLACK", text: "Standard Black" },
-            { id: "WHITE", text: "Standard White" }
-        ];
-
-        function toggleStyle() {
+        function updateSwatches() {
             const style = document.getElementById('style').value;
             const paintWrap = document.getElementById('paint-wrap');
-            const matSelect = document.getElementById('materialColor');
+            const paintSelect = document.getElementById('paintColor');
+            const grid = document.getElementById('color-grid');
             
-            matSelect.innerHTML = '';
-            
+            let activePaintHex = "#FFFFFF";
+            let activePaintName = "";
+
             if (style === 'Reverse') {
                 paintWrap.classList.remove('hidden');
-                matUltraMattes.forEach(m => matSelect.innerHTML += `<option value="${m.id}">${m.text}</option>`);
+                activePaintHex = paintData.find(p => p.Code === paintSelect.value)?.Hex_Code || "#FFFFFF";
+                activePaintName = paintData.find(p => p.Code === paintSelect.value)?.Name || "";
             } else {
                 paintWrap.classList.add('hidden');
-                matMattes.forEach(m => matSelect.innerHTML += `<option value="${m.id}">${m.text}</option>`);
             }
-        }
 
-        function initData() {
-            const paintSelect = document.getElementById('paintColor');
-            paintSelect.innerHTML = '';
-            paintColors.forEach(p => paintSelect.innerHTML += `<option value="${p.id}">${p.text}</option>`);
-            toggleStyle();
+            grid.innerHTML = '';
+            activeMaterial = null;
+
+            // Filter Rowmark table based on style (Mattes vs Ultra-Mattes)
+            const filtered = rowmarkData.filter(c => {
+                const isReverseMat = c.Series.includes('Reverse');
+                if (style === 'Reverse') return isReverseMat;
+                return !isReverseMat;
+            });
+
+            filtered.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = "w-10 h-10 rounded border-2 border-gray-300 shadow-sm hover:scale-105 transition focus:outline-none relative group overflow-hidden";
+                
+                // Build Split-Color Thumbnail
+                let capHex = c.Cap_Hex || '#000000';
+                let coreHex = c.Core_Hex || '#FFFFFF';
+
+                // If Reverse Engrave, the core (clear text) becomes the selected Paint Color
+                if (style === 'Reverse') {
+                    coreHex = activePaintHex;
+                }
+
+                btn.style.background = `linear-gradient(135deg, ${capHex} 50%, ${coreHex} 50%)`;
+                btn.title = `${c.Item_Code} - ${c.Cap_Color} / ${c.Core_Color}`;
+
+                btn.onclick = () => {
+                    Array.from(grid.children).forEach(child => child.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-500', 'border-transparent'));
+                    btn.classList.add('ring-2', 'ring-offset-2', 'ring-blue-500', 'border-transparent');
+                    
+                    activeMaterial = c;
+                    const thickTxt = c.Thickness ? `(${c.Thickness})` : "";
+                    
+                    if (style === 'Reverse') {
+                        document.getElementById('selected-color-label').innerText = `[${c.Item_Code}] ${c.Cap_Color} Back / ${activePaintName} Text ${thickTxt}`;
+                    } else {
+                        document.getElementById('selected-color-label').innerText = `[${c.Item_Code}] ${c.Cap_Color} Face / ${c.Core_Color} Text ${thickTxt}`;
+                    }
+                    
+                    runCalc();
+                };
+
+                grid.appendChild(btn);
+            });
+
+            // Auto-select first item
+            if (grid.firstChild) grid.firstChild.click();
         }
 
         function runCalc() {
+            if(!backendData.Retail_Min_Order || !activeMaterial) return;
+
             try {
+                const style = document.getElementById('style').value;
+                const paintSelect = document.getElementById('paintColor');
+                const paintName = paintData.find(p => p.Code === paintSelect.value)?.Name || "";
+
                 const inputs = {
                     qty: parseFloat(document.getElementById('qty').value) || 1,
-                    w: parseFloat(document.getElementById('w').value) || 8,
+                    w: parseFloat(document.getElementById('w').value) || 10,
                     h: parseFloat(document.getElementById('h').value) || 2,
-                    style: document.getElementById('style').value,
-                    materialColor: document.getElementById('materialColor').options[document.getElementById('materialColor').selectedIndex].text,
-                    paintColor: document.getElementById('paintColor').options[document.getElementById('paintColor').selectedIndex]?.text || ''
+                    isReverse: style === 'Reverse',
+                    mat: activeMaterial,
+                    paint: style === 'Reverse' ? paintName : null
                 };
 
                 const result = calculateNameplate(inputs, backendData);
@@ -146,13 +181,18 @@
                 document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
                 document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
                 document.getElementById('ui-print').innerText = fmt(ret.printTotal);
+                document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
 
                 const minOrder = parseFloat(backendData.Retail_Min_Order || 35);
                 document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-                const pntTxt = inputs.style === 'Reverse' ? `\nPaint Fill: ${inputs.paintColor}` : '';
-                document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Engraved Nameplates.\nStyle: ${inputs.style}\nMaterial: ${inputs.materialColor}${pntTxt}`;
+                // Exact Production Description Generation
+                let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
+                let pntTxt = inputs.isReverse ? `\nBackground Color: ${inputs.mat.Cap_Color}\nPaint Fill (Text): [${paintSelect.value}] ${inputs.paint}` : `\nCap Color (Face): ${inputs.mat.Cap_Color}\nCore Color (Text): ${inputs.mat.Core_Color}`;
+                let engTxt = inputs.isReverse ? "Reverse Engraved (Painted Back)" : "Front Engraved";
+
+                document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates.\nBrand: ${brandTxt}\nStyle: ${engTxt}${pntTxt}\nSKU: ${inputs.mat.Item_Code}`;
 
             } catch(e) { console.error(e); }
         }
@@ -160,34 +200,30 @@
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("ADA Etch Nameplates");
             
-            initData();
-
             const statusText = document.getElementById("status-text");
             const statusDot = document.getElementById("status-dot");
 
             try {
-                // Fetching placeholder backend config directly for Dev Sandbox
-                backendData = {
-                    Retail_Price_SqIn_Base: 0.50,
-                    Retail_Adder_Reverse_SqIn: 0.20,
-                    Retail_Min_Order: 35,
-                    Cost_Sheet_Standard: 65,
-                    Cost_Sheet_Reverse: 85,
-                    Cost_Paint_SqIn: 0.01,
-                    Time_Preflight_Job: 10,
-                    Time_Engraver_Load_Per_Item: 2,
-                    Time_Engrave_SqIn: 0.25,
-                    Time_Paint_Setup: 15,
-                    Time_Paint_SqIn: 0.10,
-                    Rate_Operator: 25,
-                    Rate_Machine_Engraver: 10,
-                    Rate_Shop_Labor: 20,
-                    Waste_Factor: 1.20,
-                    Factor_Risk: 1.05
-                };
+                // TRIPLE FETCH: Math Config, Rowmark Swatches, Paint Swatches
+                const [reqConfig, reqRowmark, reqPaint] = await Promise.all([
+                    fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Nameplates`),
+                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Rowmark`),
+                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Paint`)
+                ]);
+
+                backendData = await reqConfig.json();
+                rowmarkData = await reqRowmark.json();
+                paintData = await reqPaint.json();
+
+                // Populate Paint Dropdown
+                const paintSelect = document.getElementById('paintColor');
+                paintSelect.innerHTML = '';
+                paintData.forEach(p => {
+                    paintSelect.innerHTML += `<option value="${p.Code}">${p.Name} (${p.Code})</option>`;
+                });
 
                 if(statusText) {
-                    statusText.innerText = "ONLINE (SANDBOX DATA)";
+                    statusText.innerText = "ONLINE";
                     statusText.className = "font-bold text-green-500";
                     if(statusDot) {
                         statusDot.className = "w-2 h-2 rounded-full bg-green-500";
@@ -195,9 +231,13 @@
                     }
                 }
                 
-                runCalc();
+                updateSwatches();
             } catch(e) {
-                console.error(e);
+                if(statusText) {
+                    statusText.innerText = "OFFLINE (API FAILED)";
+                    statusText.className = "font-bold text-red-500";
+                }
+                console.error("API Load Failed:", e);
             }
         });
     </script>
