@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Nameplates v3.0</title>
+    <title>Bulk Nameplates v3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_nameplate.js"></script>
@@ -34,6 +34,7 @@
                     <div id="sheet-warn" class="hidden mb-2 bg-yellow-50 text-yellow-700 text-[10px] font-bold px-3 py-1.5 rounded border border-yellow-200 transition-opacity">
                         ⚠️ Max Parent Sheet Limit (24" x 48") Reached.
                     </div>
+                    
                     <div class="grid grid-cols-4 gap-3">
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Total Qty</label>
@@ -125,9 +126,7 @@
                             <input type="text" id="paint-search" placeholder="Search colors..." oninput="filterPaint()" class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-xs font-bold text-gray-800 outline-none focus:border-orange-500 shadow-sm transition">
                         </div>
                         <div id="selected-paint-label" class="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200 mb-2 truncate">None Selected</div>
-                        
                         <div id="paint-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
-
                         <div id="custom-pms-wrap" class="hidden mt-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
                             <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-1.5 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
                         </div>
@@ -138,7 +137,6 @@
                 <div class="bg-gray-50 p-4 border border-gray-200 rounded-xl mt-4 relative z-20">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Production Ticket Details</label>
                     <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug custom-scroll shadow-inner" readonly></textarea>
-                    
                     <button onclick="copyTicket(this)" class="w-full mt-3 bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-4 border border-gray-300 rounded shadow-sm text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
                         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                         Copy Ticket & Roster
@@ -151,7 +149,6 @@
                         <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price (Avg)</span>
                         <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
                     </div>
-                    
                     <div class="border-t border-blue-200/50 my-2"></div>
                     
                     <div id="ui-line-items" class="space-y-1 text-xs text-blue-900/80 pt-1 pb-2">
@@ -159,7 +156,6 @@
                     </div>
 
                     <div class="border-t border-blue-200/50 mb-2"></div>
-
                     <div class="flex justify-between items-end">
                         <div>
                             <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
@@ -181,7 +177,7 @@
                     <!-- Loading State Overlay -->
                     <div id="canvas-loading-overlay" class="absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
                         <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
-                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse mt-3 text-center leading-relaxed">Connecting to Source Data...<br>Downloading Custom Fonts</span>
+                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse mt-3 text-center leading-relaxed">Connecting to Source Data...<br>Fetching Core Tables</span>
                     </div>
 
                     <!-- Header -->
@@ -197,6 +193,7 @@
                             <div class="flex justify-between items-end mb-2">
                                 <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sign #1 (Master Template)</span>
                             </div>
+                            
                             <div id="master-template-preview" class="w-full relative rounded shadow-xl overflow-hidden flex flex-col items-center justify-center border border-gray-700 aspect-box" style="height: 100px; background-color: #000;">
                                 <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
                             </div>
@@ -208,15 +205,14 @@
                         <div id="bulk-preview-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 content-start">
                             <!-- Injected via JS -->
                         </div>
-
                     </div>
 
-                    <!-- PRODUCTION WARNINGS (ADA constraints removed) -->
+                    <!-- PRODUCTION WARNINGS -->
                     <div id="overflow-warn-box" class="hidden m-3 shrink-0 bg-orange-100 border border-orange-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
                         <span class="text-[10px] text-orange-900 font-bold leading-tight uppercase tracking-wide">⚠️ Layout Overflow</span>
                         <span class="text-[9px] text-orange-800 leading-tight">A sign text overflows its physical bounds. Consider Auto-Shrinking or deleting the outlier name.</span>
                     </div>
-
+                    
                     <div id="bright-warn-box" class="hidden m-3 mt-0 shrink-0 bg-amber-100 border border-amber-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
                         <span class="text-[10px] text-amber-900 font-bold leading-tight uppercase tracking-wide">⚠️ Contrast Warning</span>
                         <span class="text-[9px] text-amber-800 leading-tight">"Bright" face selected. Verify contrast ratio compliance with client.</span>
@@ -233,7 +229,6 @@
                             <button onclick="applyBulkQty()" class="bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-black px-2 py-1 rounded transition uppercase">Set</button>
                         </div>
                     </div>
-                    
                     <div id="roster-editor" class="flex-1 border border-gray-200 bg-white rounded shadow-inner overflow-y-auto custom-scroll p-2 space-y-2">
                         <div class="text-center text-xs text-gray-400 italic py-8">Awaiting text import...</div>
                     </div>
@@ -276,22 +271,28 @@
             for (let i = 0; i < count; i++) {
                 const ls = lineSettings[i];
                 
-                // Build Font Options dynamically
-                let fontOpts = systemFonts.map(f => `<option value="${f.CSS_Family}" ${ls.font === f.CSS_Family ? 'selected' : ''}>${f.Font_Name}</option>`).join('');
+                // Provide fallback if fonts failed to load
+                let fontOpts = '';
+                if (systemFonts && systemFonts.length > 0) {
+                    fontOpts = systemFonts.map(f => `<option value="${f.CSS_Family}" ${ls.font === f.CSS_Family ? 'selected' : ''}>${f.Font_Name}</option>`).join('');
+                } else {
+                    fontOpts = '<option value="sans-serif">System Default</option>';
+                }
 
                 container.innerHTML += `
                     <div class="flex items-center gap-2 bg-white border border-indigo-200 p-1.5 rounded shadow-sm">
                         <span class="text-[10px] font-black text-indigo-700 w-12 text-center uppercase">Line ${i+1}</span>
-                        <select onchange="updateLineSetting(${i}, 'font', this.value)" class="flex-1 border border-gray-200 rounded text-xs font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
+                        <select onchange="updateLineSetting(${i}, 'font', this.value)" class="flex-1 border border-gray-200 rounded text-xs font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
                             ${fontOpts}
                         </select>
-                        <div class="flex items-center gap-1">
-                            <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-16 border border-gray-200 p-1 rounded font-black text-indigo-900 text-xs text-center outline-none focus:border-indigo-500">
-                            <span class="text-indigo-800 font-black text-xs opacity-50 pr-1">"</span>
+                        <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 p-0.5 rounded shadow-inner">
+                            <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-12 bg-transparent font-black text-indigo-900 text-[10px] text-center outline-none">
+                            <span class="text-indigo-800 font-black text-[9px] pr-1">"</span>
                         </div>
                     </div>
                 `;
             }
+            runCalc();
         }
 
         function updateLineSetting(index, field, val) {
@@ -332,7 +333,7 @@
             document.getElementById('btn-case-upper').className = mode === 'upper' ? "px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" : "px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent";
             document.getElementById('btn-case-title').className = mode === 'title' ? "px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" : "px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent";
             document.getElementById('btn-case-lower').className = mode === 'lower' ? "px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" : "px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent";
-            processBulkList(); 
+            processBulkList();
         }
 
         function formatCase(str) {
@@ -346,6 +347,7 @@
         function processBulkList() {
             const rawText = document.getElementById('bulk-list').value;
             const linesPerSign = parseInt(document.getElementById('lines-per-sign').value) || 1;
+            
             const lines = rawText.split(/\r?\n/).map(s => formatCase(s.trim())).filter(s => s.length > 0);
             
             const newParsed = [];
@@ -355,10 +357,10 @@
                 const chunk = lines.slice(i, i + linesPerSign);
                 let existingQty = 1;
                 if (parsedRoster[signIndex]) existingQty = parsedRoster[signIndex].qty;
-
+                
                 newParsed.push({ id: signIndex, texts: chunk, qty: existingQty });
                 signIndex++;
-                
+
                 if (signIndex >= 50) {
                     document.getElementById('bulk-warn').classList.remove('hidden');
                     break;
@@ -372,29 +374,26 @@
             runCalc();
         }
 
-        /* CORRECTED CODE */
         function renderRosterEditor() {
             const editor = document.getElementById('roster-editor');
             if (parsedRoster.length === 0) {
-                editor.innerHTML = 'Awaiting text import...';
+                editor.innerHTML = '<div class="text-center text-xs text-gray-400 italic py-8">Awaiting text import...</div>';
                 return;
             }
 
             let html = '';
             parsedRoster.forEach((sign, i) => {
-                const textPreview = sign.texts.join(' / ');
-                // Ensure you include the full HTML template literal here
+                const textPreview = sign.texts.join(' <span class="text-gray-300 mx-1">/</span> ');
                 html += `
-                    <div class="flex items-center justify-between p-2 border-b">
-                        <span class="text-xs truncate">${textPreview}</span>
-                        <div class="flex items-center gap-2">
-                            <input type="number" value="${sign.qty}" 
-                                   onchange="setSignQty(${sign.id}, this.value)" 
-                                   class="w-12 text-center border rounded">
-                        </div>
-                    </div>`;
-            }); // This closing bracket was the primary issue 
-
+                <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded p-1.5 gap-2">
+                    <div class="text-xs font-bold text-gray-700 truncate flex-1 pl-1" title="${sign.texts.join(' / ')}">${i+1}. ${textPreview}</div>
+                    <div class="flex items-center shrink-0 border border-gray-300 rounded bg-white overflow-hidden shadow-sm">
+                        <button onclick="updateSignQty(${sign.id}, -1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">-</button>
+                        <input type="number" min="1" value="${sign.qty}" onchange="setSignQty(${sign.id}, this.value)" class="w-10 text-center text-xs font-bold text-blue-700 outline-none">
+                        <button onclick="updateSignQty(${sign.id}, 1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">+</button>
+                    </div>
+                </div>`;
+            });
             editor.innerHTML = html;
         }
 
@@ -428,7 +427,7 @@
             runCalc();
         }
 
-        // --- TYPOGRAPHY PHYSICS ENGINE (Per Line) ---
+        // --- TYPOGRAPHY PHYSICS ENGINE ---
         function calcMaxHeightForText(text, fontStyle, availableW) {
             if(!text) return 999;
             const canvas = document.getElementById('math-canvas');
@@ -447,7 +446,7 @@
             const mode = document.getElementById('overflow-mode').value;
             const availableW = inputs.w - 0.5; // 0.25 margin both sides
             const availableH = inputs.h - 0.5;
-            
+
             let hasOverflowWarn = false;
 
             // 1. If shrink_all, find absolute max allowed per line index across ALL signs
@@ -473,7 +472,7 @@
                 for (let i = 0; i < linesPerSign; i++) {
                     let text = sign.texts[i];
                     if (!text) continue;
-
+                    
                     let ls = lineSettings[i];
                     let targetH = mode === 'shrink_all' ? shrinkAllMaxHeights[i] : ls.height;
 
@@ -490,12 +489,12 @@
 
                     lines.push({
                         text: text,
-                        fontClass: `font-dyn-${ls.font}`,
+                        fontFam: ls.font || 'sans-serif',
                         targetH: targetH,
                         cssCqw: `${(targetH / inputs.w) * 100}cqw`
                     });
                 }
-                
+
                 // Vertical Check
                 let totalH = lines.reduce((sum, line) => sum + (line.targetH / 0.72 * 1.2), 0); // Approx total block height
                 if (totalH > availableH && mode === 'strict') hasOverflowWarn = true;
@@ -507,18 +506,21 @@
         }
 
         function renderBulkPreviews(inputs, activePaintHex, mathData) {
+            if (!mathData || !mathData.renderData) return;
+
             const grid = document.getElementById('bulk-preview-grid');
             const masterPrev = document.getElementById('master-template-preview');
             const divider = document.getElementById('grid-divider');
             
             const ratio = inputs.h / inputs.w;
+            
             masterPrev.style.height = 'auto';
-            masterPrev.style.paddingBottom = `${ratio * 100}%`;
+            masterPrev.style.paddingBottom = `${ratio * 100}%`; 
             masterPrev.style.backgroundColor = selectedMat ? selectedMat.Cap_Hex : '#000';
 
+            // Master Template Inject - FIXED MISSING INDEX BUG
             if (mathData.renderData.length > 0) {
-                // Access the first sign object in the array
-                let sign1 = mathData.renderData[0]; 
+                let sign1 = mathData.renderData;
                 masterPrev.innerHTML = buildSignHTML(sign1, inputs, activePaintHex, false);
             } else {
                 masterPrev.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>`;
@@ -540,27 +542,22 @@
             grid.innerHTML = '';
             for (let i = 1; i < mathData.renderData.length; i++) {
                 let sign = mathData.renderData[i];
+                
                 const box = document.createElement('div');
                 box.className = "w-full relative rounded-sm border border-black/30 shadow-md overflow-hidden bg-black flex flex-col items-center justify-center aspect-box";
-                box.style.paddingBottom = `${ratio * 100}%`; 
+                box.style.paddingBottom = `${ratio * 100}%`;
                 box.style.backgroundColor = selectedMat.Cap_Hex;
-                
                 box.innerHTML = buildSignHTML(sign, inputs, activePaintHex, true);
+                
                 grid.appendChild(box);
             }
         }
 
         function buildSignHTML(sign, inputs, activePaintHex, showBadge) {
-                // Ensure selectedMat exists before accessing properties
-            if (!selectedMat) return '';
-
             let color = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
-    
-            // Check if sign.lines exists to prevent crashes
-            if (!sign.lines) return '';
 
             let linesHtml = sign.lines.map(line => {
-                return `<span class="leading-tight whitespace-nowrap ${line.fontClass}" style="color: ${color}; font-size: ${line.cssCqw};">${line.text}</span>`;
+                return `<span class="leading-tight whitespace-nowrap font-bold" style="color: ${color}; font-family: '${line.fontFam}', sans-serif; font-size: ${line.cssCqw};">${line.text}</span>`;
             }).join('');
 
             let badgeHtml = (showBadge && sign.qty > 1) 
@@ -656,7 +653,6 @@
                 btn.onclick = () => {
                     Array.from(grid.children).forEach(child => child.classList.remove('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent'));
                     btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent');
-                    
                     selectedMat = c;
 
                     if (currentMode === 'reverse') {
@@ -683,7 +679,6 @@
                             }
                         }
                     }
-
                     updateMaterialLabel();
                     runCalc();
                 };
@@ -721,14 +716,13 @@
                 btn.className = "paint-btn w-6 h-6 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
                 btn.style.backgroundColor = p.Hex_Code;
                 btn.title = `${p.Name} (${p.Code})`;
-                
                 btn.dataset.name = p.Name.toLowerCase();
                 btn.dataset.code = p.Code.toLowerCase();
 
                 if (selectedPaint && selectedPaint.Code === p.Code) {
                     btn.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
                 }
-                
+
                 btn.onclick = () => {
                     Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent'));
                     btn.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
@@ -741,7 +735,6 @@
                 };
                 fragment.appendChild(btn);
             });
-            
             grid.appendChild(fragment);
             filterPaint(); 
         }
@@ -802,7 +795,6 @@
                     }
                 }
 
-                // Sum all quantities from parsed roster
                 totalSystemQty = parsedRoster.reduce((sum, sign) => sum + sign.qty, 0);
                 document.getElementById('qty').value = totalSystemQty;
 
@@ -819,7 +811,7 @@
                 const mathData = computeTypographyMath(inputs);
                 renderBulkPreviews(inputs, activePaintHex, mathData);
 
-                // Warning Triggers (ADA Size Warning Removed)
+                // Warning Triggers
                 const warnOverflow = document.getElementById('overflow-warn-box');
                 warnOverflow.classList.toggle('hidden', !mathData.hasOverflowWarn);
 
@@ -845,8 +837,7 @@
                 
                 document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
                 document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-
-                // Summary Line Items (Setup fee explicitly removed from UI display here)
+                
                 document.getElementById('ui-line-items').innerHTML = `
                     <div class="flex justify-between"><span>${inputs.qty}x Nameplates (${inputs.w}" x ${inputs.h}"):</span><span class="font-bold">${fmt(ret.printTotal)}</span></div>
                 `;
@@ -868,7 +859,7 @@
                 }
 
                 parsedRoster.forEach(sign => {
-                    finalDesc += `(x${sign.qty}) ${sign.texts.join(' / ')}\n`; 
+                    finalDesc += `(x${sign.qty}) ${sign.texts.join(' / ')}\n`;
                 });
 
                 document.getElementById('job-desc').value = finalDesc;
@@ -879,7 +870,7 @@
         function copyTicket(btn) {
             const desc = document.getElementById('job-desc');
             desc.select();
-            desc.setSelectionRange(0, 99999); 
+            desc.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(desc.value);
             
             const originalHTML = btn.innerHTML;
@@ -903,6 +894,7 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
+                // Fetch Core Tables first to ensure UI resolves properly
                 const [reqConfig, reqRowmark, reqSW, reqPMS, reqFonts] = await Promise.all([
                     fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Nameplates`),
                     fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Rowmark`),
@@ -911,55 +903,66 @@
                     fetch(`${SCRIPT_URL}?req=table&tab=REF_Fonts`)
                 ]);
 
-                backendData = await reqConfig.json();
-                rowmarkData = await reqRowmark.json();
-                
+                // Safe parsing with Error Handling
+                const configData = await reqConfig.json();
+                if (configData.error) throw new Error(configData.error);
+                backendData = configData;
+
+                const rowData = await reqRowmark.json();
+                rowmarkData = Array.isArray(rowData) ? rowData : [];
+
                 const stdColors = [
                     { Code: 'STD-WHT', Name: 'Standard White', Hex_Code: '#FFFFFF' },
                     { Code: 'STD-BLK', Name: 'Standard Black', Hex_Code: '#000000' }
                 ];
 
                 const rawSW = await reqSW.json();
-                let formattedSW = rawSW.map(p => {
-                    let hex = p.Hex_Code || p.HEX_Code || p['Hex_Code '] || '#FFFFFF';
-                    hex = hex.trim();
-                    if (!hex.startsWith('#') && hex !== 'Transparent') hex = '#' + hex;
-                    return { Code: p.Code || 'Unknown', Name: p.Name || 'Unknown', Hex_Code: hex };
-                });
+                let formattedSW = [];
+                if (Array.isArray(rawSW)) {
+                    formattedSW = rawSW.map(p => {
+                        let hex = p.Hex_Code || p.HEX_Code || p['Hex_Code '] || '#FFFFFF';
+                        hex = hex.trim();
+                        if (!hex.startsWith('#') && hex !== 'Transparent') hex = '#' + hex;
+                        return { Code: p.Code || 'Unknown', Name: p.Name || 'Unknown', Hex_Code: hex };
+                    });
+                }
                 swData = [...stdColors, ...formattedSW];
 
                 const rawPMS = await reqPMS.json();
-                let formattedPMS = rawPMS.map(p => ({
-                    Code: p['PMS Name / Code'] || 'Unknown', 
-                    Name: p['PMS Name / Code'] || 'Unknown', 
-                    Hex_Code: p['HEX Code'] || '#FFFFFF'
-                }));
+                let formattedPMS = [];
+                if (Array.isArray(rawPMS)) {
+                    formattedPMS = rawPMS.map(p => ({
+                        Code: p['PMS Name / Code'] || 'Unknown', 
+                        Name: p['PMS Name / Code'] || 'Unknown', 
+                        Hex_Code: p['HEX Code'] || '#FFFFFF'
+                    }));
+                }
                 pmsData = [...stdColors, ...formattedPMS];
 
-                // 1. Process Custom Font Engine Data
+                // 1. Process Custom Font Engine Data (Safely handling if the table is missing from backend)
                 const rawFonts = await reqFonts.json();
-                systemFonts = rawFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
-                
-                // 2. Dynamically Inject @font-face CSS Rules for downloaded files
-                if(systemFonts.length > 0) {
-                    let fontStyles = document.createElement('style');
-                    systemFonts.forEach(f => {
-                        fontStyles.innerHTML += `
-                        @font-face {
-                            font-family: '${f.CSS_Family}';
-                            src: url('https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/${f.File_Name}') format('truetype');
-                        }
-                        .font-dyn-${f.CSS_Family} { font-family: '${f.CSS_Family}', sans-serif; }
-                        `;
-                    });
-                    document.head.appendChild(fontStyles);
+                if (Array.isArray(rawFonts)) {
+                    systemFonts = rawFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
                     
-                        // Fallback to the first font in the array if Arimo is missing
-                        let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts[0];
-                        if (defaultFont) {
-                            lineSettings.forEach(ls => ls.font = defaultFont.CSS_Family);
-                        }
-                
+                    if(systemFonts.length > 0) {
+                        let fontStyles = document.createElement('style');
+                        systemFonts.forEach(f => {
+                            fontStyles.innerHTML += `
+                            @font-face {
+                                font-family: '${f.CSS_Family}';
+                                src: url('https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/${f.File_Name}') format('truetype');
+                            }
+                            `;
+                        });
+                        document.head.appendChild(fontStyles);
+                        
+                        let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
+                        lineSettings.forEach(ls => ls.font = defaultFont.CSS_Family);
+                    }
+                } else {
+                    console.warn("Fonts table missing or returned an error. Using system fallbacks.", rawFonts);
+                }
+
                 if(statusText) {
                     statusText.innerText = "ONLINE";
                     statusText.className = "font-bold text-green-500";
@@ -983,7 +986,8 @@
                 }
                 console.error("API Load Failed:", e);
             } finally {
-                if (loadingOverlay && loadingOverlay.innerText !== '⚠️ CONNECTION FAILED') {
+                // Ensure the loading overlay disappears as long as it didn't explicitly trigger the fail state
+                if (loadingOverlay && !loadingOverlay.innerHTML.includes('Failed')) {
                     loadingOverlay.classList.add('hidden');
                 }
             }
