@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Etch Nameplates v1.3</title>
+    <title>ADA Etch Nameplates v1.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_nameplate.js"></script>
@@ -12,7 +12,8 @@
         .color-scroll::-webkit-scrollbar { width: 6px; }
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .aspect-box { container-type: inline-size; transition: all 0.3s ease-in-out; }
+        /* Setup for responsive container queries */
+        .aspect-box { container-type: inline-size; transition: all 0.2s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
@@ -35,15 +36,45 @@
                 </div>
             </div>
 
-            <!-- 2. TEXT & LAYOUT CONTROLS -->
+            <!-- 2. PREVIEW VISUALIZER (Moved up) -->
+            <div class="bg-gray-800 p-4 shadow-inner flex flex-col items-center justify-center relative rounded-xl border border-gray-900">
+                <span class="absolute top-2 right-3 text-[8px] font-black text-gray-500 uppercase tracking-widest z-10">Ratio & Alignment Preview</span>
+                
+                <!-- Constrained Container to prevent vertical blowout -->
+                <div class="w-full flex justify-center items-center relative mt-4 mb-2" style="height: 180px;">
+                    <!-- The Canvas (Native Aspect Ratio) -->
+                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex flex-col items-center justify-center overflow-hidden border border-black/20" style="background-color: #000;">
+                        <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
+                    </div>
+                </div>
+
+                <!-- Warnings -->
+                <div id="overflow-warn-box" class="hidden w-full mt-2 bg-orange-100 border border-orange-300 p-2 rounded shadow-sm text-center">
+                    <span class="text-[10px] text-orange-900 font-bold uppercase tracking-widest">⚠️ Layout Overflow / Text Too Large</span>
+                </div>
+                <div id="bright-warn-box" class="hidden w-full mt-2 bg-amber-100 border border-amber-300 p-2 rounded shadow-sm text-center">
+                    <span class="text-[10px] text-amber-900 font-bold uppercase tracking-widest">⚠️ Bright Face Selected - Verify Contrast</span>
+                </div>
+            </div>
+
+            <!-- 3. TEXT & LAYOUT CONTROLS -->
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 shadow-sm relative z-20">
-                <div class="flex justify-between items-end mb-3">
+                <div class="flex justify-between items-end mb-3 border-b border-indigo-100 pb-2">
                     <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-widest">Sign Text & Layout</label>
-                    <select id="lines-per-sign" onchange="updateLineControls()" class="border border-indigo-200 p-1 rounded bg-white text-xs font-bold text-indigo-800 outline-none shadow-sm">
-                        <option value="1">1 Line</option>
-                        <option value="2">2 Lines</option>
-                        <option value="3">3 Lines</option>
-                    </select>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1">
+                            <label class="text-[9px] font-bold text-indigo-700 uppercase">Lines:</label>
+                            <select id="lines-per-sign" onchange="updateLineControls()" class="border border-indigo-200 p-1 rounded bg-white text-xs font-bold text-indigo-800 outline-none shadow-sm">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1 border-l border-indigo-200 pl-3">
+                            <label class="text-[9px] font-bold text-indigo-700 uppercase">Gap (in):</label>
+                            <input type="number" id="line-spacing" value="0.125" step="0.125" min="0" onchange="runCalc()" class="w-14 border border-indigo-200 p-1 rounded font-black text-indigo-900 text-xs text-center outline-none shadow-inner">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Dynamic Line Controls injected here -->
@@ -56,26 +87,6 @@
                         <option value="shrink">Auto-Shrink to Fit</option>
                         <option value="strict">Strict Size (Allow Overflow with Warning)</option>
                     </select>
-                </div>
-            </div>
-
-            <!-- 3. PREVIEW VISUALIZER -->
-            <div class="bg-gray-800 p-4 shadow-inner flex flex-col items-center justify-center min-h-[160px] relative rounded-xl border border-gray-900">
-                <span class="absolute top-2 right-3 text-[8px] font-black text-gray-500 uppercase tracking-widest">Ratio & Alignment Preview</span>
-                
-                <div class="w-full max-w-[400px] mt-4 mb-2">
-                    <!-- The Canvas (Dynamically Sized) -->
-                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex flex-col items-center justify-center relative overflow-hidden border border-black/20" style="background-color: #000; height: 100px;">
-                        <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
-                    </div>
-                </div>
-
-                <!-- Warnings -->
-                <div id="overflow-warn-box" class="hidden w-full mt-2 bg-orange-100 border border-orange-300 p-2 rounded shadow-sm text-center">
-                    <span class="text-[10px] text-orange-900 font-bold uppercase tracking-widest">⚠️ Layout Overflow / Text Too Large</span>
-                </div>
-                <div id="bright-warn-box" class="hidden w-full mt-2 bg-amber-100 border border-amber-300 p-2 rounded shadow-sm text-center">
-                    <span class="text-[10px] text-amber-900 font-bold uppercase tracking-widest">⚠️ Bright Face Selected - Verify Contrast</span>
                 </div>
             </div>
 
@@ -157,9 +168,9 @@
         let currentMode = 'front';
         
         let lineSettings = [
-            { text: 'SAMPLE', font: '', height: 0.625 },
-            { text: '', font: '', height: 0.375 },
-            { text: '', font: '', height: 0.375 }
+            { text: 'SAMPLE', font: '', height: 0.625, caseType: 'upper' },
+            { text: '', font: '', height: 0.375, caseType: 'title' },
+            { text: '', font: '', height: 0.375, caseType: 'title' }
         ];
 
         // --- LINE CONTROLS ---
@@ -174,16 +185,22 @@
                 if(fontOpts === '') fontOpts = '<option value="sans-serif">System Default</option>';
 
                 container.innerHTML += `
-                    <div class="flex flex-col gap-1 bg-white border border-indigo-200 p-2 rounded shadow-sm">
-                        <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1.5 bg-white border border-indigo-200 p-2 rounded shadow-sm">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-50 pb-1.5">
                             <span class="text-[10px] font-black text-indigo-700 uppercase">Line ${i+1}</span>
-                            <div class="flex items-center gap-2">
-                                <select onchange="updateLineSetting(${i}, 'font', this.value)" class="w-32 border border-gray-200 rounded text-[10px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
+                            <div class="flex items-center gap-1.5 flex-1 justify-end">
+                                <select onchange="updateLineSetting(${i}, 'font', this.value)" class="w-24 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
                                     ${fontOpts}
                                 </select>
-                                <div class="flex items-center gap-1">
-                                    <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-14 border border-gray-200 p-1 rounded font-black text-indigo-900 text-[10px] text-center outline-none focus:border-indigo-500 shadow-inner">
-                                    <span class="text-indigo-800 font-black text-[10px] opacity-50">"</span>
+                                <select onchange="updateLineSetting(${i}, 'caseType', this.value)" class="w-24 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
+                                    <option value="upper" ${ls.caseType === 'upper' ? 'selected' : ''}>UPPERCASE</option>
+                                    <option value="title" ${ls.caseType === 'title' ? 'selected' : ''}>Title Case</option>
+                                    <option value="lower" ${ls.caseType === 'lower' ? 'selected' : ''}>lowercase</option>
+                                    <option value="exact" ${ls.caseType === 'exact' ? 'selected' : ''}>As Typed</option>
+                                </select>
+                                <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 p-0.5 rounded shadow-inner">
+                                    <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-12 bg-transparent font-black text-indigo-900 text-[10px] text-center outline-none">
+                                    <span class="text-indigo-800 font-black text-[9px] pr-1">"</span>
                                 </div>
                             </div>
                         </div>
@@ -201,10 +218,20 @@
                 lineSettings[index].height = h;
             } else if (field === 'text') {
                 lineSettings[index].text = val;
+            } else if (field === 'caseType') {
+                lineSettings[index].caseType = val;
             } else {
                 lineSettings[index].font = val;
             }
             runCalc();
+        }
+
+        function formatLineCase(str, mode) {
+            if (!str) return "";
+            if (mode === 'upper') return str.toUpperCase();
+            if (mode === 'lower') return str.toLowerCase();
+            if (mode === 'title') return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+            return str;
         }
 
         // --- TYPOGRAPHY PHYSICS ---
@@ -464,50 +491,65 @@
                 const canvas = document.getElementById('preview-canvas');
                 const warn = document.getElementById('overflow-warn-box');
                 const warnBright = document.getElementById('bright-warn-box');
+                const gapInches = parseFloat(document.getElementById('line-spacing').value) || 0;
                 
                 let hasOverflowWarn = false;
                 const availableW = inputs.w - 0.5;
                 const availableH = inputs.h - 0.5;
 
-                // Configure Canvas container exactly like bulk tool
-                const ratio = inputs.h / inputs.w;
-                canvas.style.height = 'auto';
-                canvas.style.paddingBottom = `${ratio * 100}%`; 
+                // 1. Constrained Aspect Ratio (CSS Fix for Vertical Blowout)
+                const signRatio = inputs.w / inputs.h;
+                canvas.style.aspectRatio = `${inputs.w} / ${inputs.h}`;
                 canvas.style.backgroundColor = selectedMat.Cap_Hex;
-                let textColor = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
+                
+                // If sign is taller than container's natural limit, lock height to 100% and scale width. Else, lock width.
+                if (inputs.w >= inputs.h) {
+                    canvas.style.width = "100%";
+                    canvas.style.height = "auto";
+                } else {
+                    canvas.style.height = "100%";
+                    canvas.style.width = "auto";
+                }
 
+                let textColor = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
                 let renderedLines = [];
+                
                 for(let i=0; i<linesCount; i++){
                     let ls = lineSettings[i];
-                    if(!ls.text) continue;
+                    let formattedText = formatLineCase(ls.text, ls.caseType);
+                    
+                    if(!formattedText) continue;
                     let targetH = ls.height;
 
                     if(mode === 'shrink') {
-                        let maxH = calcMaxHeightForText(ls.text, ls.font, availableW);
+                        let maxH = calcMaxHeightForText(formattedText, ls.font, availableW);
                         if (targetH > maxH) targetH = Math.max(0.125, Math.floor(maxH / 0.125) * 0.125);
                     }
 
-                    let absoluteMax = calcMaxHeightForText(ls.text, ls.font, availableW);
+                    let absoluteMax = calcMaxHeightForText(formattedText, ls.font, availableW);
                     if (targetH > absoluteMax) hasOverflowWarn = true;
 
                     renderedLines.push({
-                        text: ls.text,
+                        text: formattedText,
                         fontFam: ls.font,
-                        cssCqw: `${(targetH / inputs.w) * 100}cqw`
+                        cssCqw: `${(targetH / inputs.w) * 100}cqw` // Font size mapped to container query width
                     });
                 }
 
                 // Vertical Overflow Check
-                let totalH = renderedLines.reduce((sum, line) => sum + (parseFloat(line.cssCqw) * inputs.w / 100 / 0.72 * 1.2), 0);
-                if (totalH > availableH && mode === 'strict') hasOverflowWarn = true;
+                let totalTextH = renderedLines.reduce((sum, line) => sum + (parseFloat(line.cssCqw) * inputs.w / 100 / 0.72 * 1.2), 0);
+                let totalGapH = renderedLines.length > 1 ? (renderedLines.length - 1) * gapInches : 0;
+                if ((totalTextH + totalGapH) > availableH && mode === 'strict') hasOverflowWarn = true;
 
                 // Build HTML
                 let linesHtml = renderedLines.map(line => {
                     return `<span class="leading-tight whitespace-nowrap" style="color: ${textColor}; font-family: '${line.fontFam}', sans-serif; font-size: ${line.cssCqw};">${line.text}</span>`;
                 }).join('');
 
+                const gapCqw = `${(gapInches / inputs.w) * 100}cqw`;
+                
                 canvas.innerHTML = `
-                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-[2cqw] pointer-events-none">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-[2cqw] pointer-events-none" style="gap: ${gapCqw};">
                         ${linesHtml}
                     </div>
                 `;
@@ -522,7 +564,11 @@
                 let explicitNotes = `${bevelTxt}No backers. No hardware. No installation. No raised copy. No braille.`;
                 
                 let textCopy = [];
-                for(let i=0; i<linesCount; i++) { if(lineSettings[i].text) textCopy.push(lineSettings[i].text); }
+                for(let i=0; i<linesCount; i++) { 
+                    if(lineSettings[i].text) {
+                        textCopy.push(formatLineCase(lineSettings[i].text, lineSettings[i].caseType)); 
+                    }
+                }
                 let combinedText = textCopy.join(' / ');
 
                 let finalDesc = "";
