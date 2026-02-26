@@ -1,710 +1,218 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>God Mode: Pricing Analyzer v5.1</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="signos-core.js"></script>
+/**
+ * PURE PHYSICS ENGINE: Vinyl Banners (v10.4)
+ * Uses Math.ceil() for Yield Bounding Boxes.
+ */
+function calculateBanner(inputs, data) {
+    const sqft = (inputs.w * inputs.h) / 144;
+    const totalSqFt = sqft * inputs.qty;
+    const minDim = Math.min(inputs.w, inputs.h);
+    const isOversize = minDim > parseFloat(data.Constraint_Max_Width_Inhouse || 62);
 
-    <!-- LOAD ALL PHYSICS ENGINES -->
-    <script src="cost_yard.js"></script>
-    <script src="cost_coro.js"></script>
-    <script src="cost_pvc.js"></script>
-    <script src="cost_foam.js"></script>
-    <script src="cost_banner.js"></script>
-    <script src="cost_acm.js"></script>
-    <script src="cost_acrylic.js"></script>
-    <script src="cost_cut.js"></script>
-    <script src="cost_decal.js"></script>
-    <script src="cost_wrap.js"></script>
-    <script src="cost_wall.js"></script>
+    // --- 1. RETAIL ENGINE (MARKET VALUE) ---
+    // Yield Math: Round up to nearest foot
+    const minFt = Math.ceil(Math.min(inputs.w, inputs.h) / 12);
+    const maxFt = Math.ceil(Math.max(inputs.w, inputs.h) / 12);
+    const wStr = minFt < 10 ? `0${minFt}` : `${minFt}`;
+    const hStr = maxFt < 10 ? `0${maxFt}` : `${maxFt}`;
+    const sideStr = inputs.sides === 2 ? 'DS' : 'SS';
+    const blueKey = `RET_BAN_${wStr}${hStr}_${sideStr}`;
 
-    <style>
-        /* Unlocked body scrolling */
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; overflow-y: auto; }
+    let baseRate = 0;
+    let matLabel = "13oz Scrim";
+    let retailPrint = 0;
+    let tierLog = [];
+
+    // Bounding Box Lookup
+    if (inputs.material === '13oz' && data[`${blueKey}_1`]) {
+        // MATCH: Apply Yield Envelope
+        const p1 = parseFloat(data[`${blueKey}_1`]);
+        const p10 = parseFloat(data[`${blueKey}_10`]);
+        const appliedBase = inputs.qty >= 10 ? p10 : p1;
         
-        #signos-island { min-height: calc(100vh - 40px); margin: 20px auto; max-width: 1800px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); }
+        retailPrint = appliedBase * inputs.qty;
+        baseRate = p1 / sqft; // For display purposes
         
-        @keyframes pulse-danger { 0% { background-color: #fee2e2; } 50% { background-color: #fecaca; } 100% { background-color: #fee2e2; } }
-        .loss-alert { animation: pulse-danger 2s infinite; color: #991b1b; font-weight: 800; border: 1px solid #fca5a5 !important; }
-        
-        .sticky-col { position: sticky; left: 0; background: #f8fafc; z-index: 20; font-weight: bold; border-right: 2px solid #e2e8f0; }
-        .sticky-row { position: sticky; top: 0; background: #f8fafc; z-index: 30; font-weight: bold; border-bottom: 2px solid #e2e8f0; }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.1s; cursor: crosshair; border: 1px solid #f1f5f9; }
-        .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 5px 10px rgba(0,0,0,0.1); border-color: #3b82f6; }
-    </style>
-</head>
-<body class="p-0 sm:p-4">
+        tierLog.push(
+            { q: 1, base: baseRate, d: 0, unitBase: p1 },
+            { q: 10, base: baseRate, d: 0, unitBase: p10 }
+        );
+    } else {
+        // NO MATCH: Oversize / Special Material Fallback
+        if (inputs.material === '13oz') {
+            if (minDim <= 12) baseRate = parseFloat(data.BAN13_T1_Rate || 6.50);
+            else if (sqft < parseFloat(data.BAN13_T2_Max || 10)) baseRate = parseFloat(data.BAN13_T2_Rate || 6.00);
+            else baseRate = parseFloat(data.BAN13_T3_Rate || 5.00);
+        } else if (inputs.material === '15oz') {
+            matLabel = "15oz Smooth Blockout"; baseRate = parseFloat(data.Retail_Price_Base_15oz || 6.50);
+        } else if (inputs.material === '18oz') {
+            matLabel = "18oz Heavy Blockout"; baseRate = parseFloat(data.Retail_Price_Base_18oz || 8.00);
+        } else if (inputs.material === 'Mesh') {
+            matLabel = "8oz Mesh"; baseRate = parseFloat(data.Retail_Price_Base_Mesh || 7.00);
+        }
 
-    <!-- Island Mode Container (Now expands vertically if needed) -->
-    <div id="signos-island" class="bg-white rounded-2xl flex flex-col border border-gray-200">
-        
-        <!-- Header Hook -->
-        <div id="main-card" class="w-full shrink-0 border-b border-gray-800"></div>
+        if (inputs.sides === 2) baseRate += parseFloat(data.Retail_Adder_DS_SqFt || 3.00);
 
-        <!-- Main Layout Grid -->
-        <div class="flex flex-1 flex-col lg:flex-row">
-            
-            <!-- LEFT COLUMN: PRODUCT MENU -->
-            <div class="w-full lg:w-64 glass-panel flex flex-col border-r border-gray-200 p-4 space-y-6 shrink-0 z-10 shadow-sm">
-                <div>
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Engine Selection</label>
-                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[40vh] lg:max-h-[70vh]"></div>
-                </div>
-                <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white shrink-0 hidden lg:block">
-                    <div class="flex items-center space-x-2 mb-1">
-                        <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                        <span class="text-[10px] font-black uppercase tracking-widest">God Mode Active</span>
-                    </div>
-                    <p class="text-[9px] text-slate-400 leading-tight">All calculations executing in local memory sandboxes.</p>
-                </div>
-            </div>
+        let discPct = 0, currentBestTier = 0, i = 1;
+        while(data[`Tier_${i}_Qty`]) {
+            const tQty = parseFloat(data[`Tier_${i}_Qty`]);
+            const tDisc = parseFloat(data[`Tier_${i}_Disc`] || 0);
+            tierLog.push({ q: tQty, d: tDisc, unitBase: (baseRate * (1-tDisc)) * sqft });
+            if (inputs.qty >= tQty) currentBestTier = tDisc;
+            i++;
+        }
+        retailPrint = (baseRate * (1 - currentBestTier)) * totalSqFt;
+    }
 
-            <!-- CENTER WORKSPACE: CHART & SETTINGS -->
-            <div class="flex-1 flex flex-col bg-slate-50 relative min-w-0">
-                
-                <!-- Center Toolbar -->
-                <div class="h-auto lg:h-14 bg-white border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between p-4 lg:px-6 z-10 shrink-0 gap-3">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex bg-gray-100 p-1 rounded-xl" id="view-toggles">
-                            <button onclick="setView('chart')" id="btn-view-chart" class="px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition">Line Chart</button>
-                            <button onclick="setView('heatmap')" id="btn-view-heatmap" class="px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition">Heatmap</button>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2 border-l border-gray-200 pl-4 ml-2">
-                            <label class="text-[10px] font-black text-gray-400 uppercase">Data Stream:</label>
-                            <select id="hm-analysis-mode" onchange="generateMatrix()" class="text-[10px] font-bold bg-transparent border-none text-blue-600 uppercase outline-none cursor-pointer">
-                                <option value="retail">Market (Retail + Profit)</option>
-                                <option value="cost">Physics (Hard Cost)</option>
-                                <option value="margin">Net Margin (%)</option>
-                            </select>
-                        </div>
-                    </div>
+    // Finishing Adders
+    let retailPockets = 0;
+    if (inputs.pockets) retailPockets = ((inputs.w / 12) * 2) * inputs.qty * parseFloat(data.Retail_Fin_PolePkt_LF || 3.00);
+    let retailSlits = 0;
+    if (inputs.windSlits) retailSlits = totalSqFt * parseFloat(data.Retail_Price_WindSlits_SqFt || 1.00);
 
-                    <div id="chart-controls" class="flex items-center space-x-3">
-                        <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
-                            <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Simulate Qty:</label>
-                            <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-16 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
-                        </div>
-                    </div>
-                </div>
+    const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
+    const feeSetup = inputs.setupPerFile ? (parseFloat(data.Retail_Fee_Setup || 15) * inputs.files) : parseFloat(data.Retail_Fee_Setup || 15);
 
-                <!-- Canvas Area (Dark Overlay Loading State) -->
-                <div id="canvas-area" class="flex-1 relative flex flex-col p-4 overflow-hidden min-h-[400px]">
-                    <div id="loader" class="absolute inset-0 bg-gray-900/60 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all rounded-xl">
-                        <div class="animate-spin rounded-full h-14 w-14 border-4 border-white border-t-blue-500 mb-4"></div>
-                        <span class="text-xs font-black text-white tracking-widest uppercase">Computing Matrix...</span>
-                    </div>
+    const grandTotalRaw = retailPrint + retailPockets + retailSlits + feeDesign + feeSetup;
+    const minOrder = data[`${blueKey}_1`] ? 0 : parseFloat(data.Retail_Min_Order || 50);
+    const grandTotal = Math.max(grandTotalRaw, minOrder);
 
-                    <!-- CHART -->
-                    <div id="view-chart" class="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 relative min-h-0">
-                        <canvas id="physicsChart"></canvas>
-                    </div>
+    // Format UI Tiers
+    const simTiers = tierLog.map(t => {
+        const trPrint = t.unitBase * t.q;
+        const trPocket = inputs.pockets ? ((inputs.w/12)*2 * t.q * parseFloat(data.Retail_Fin_PolePkt_LF || 3)) : 0;
+        const trSlits = inputs.windSlits ? ((sqft * t.q) * parseFloat(data.Retail_Price_WindSlits_SqFt || 1)) : 0;
+        const total = Math.max(trPrint + trPocket + trSlits + feeSetup + feeDesign, minOrder);
+        return { q: t.q, base: baseRate * (1 - (t.d||0)), unit: total / t.q };
+    });
 
-                    <!-- HEATMAP -->
-                    <div id="view-heatmap" class="hidden flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative min-h-0">
-                        <table class="border-collapse text-[11px] w-full table-fixed">
-                            <thead id="heatmap-head" class="sticky-row"></thead>
-                            <tbody id="heatmap-body"></tbody>
-                        </table>
-                    </div>
-                </div>
+    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    const prodW = inputs.hems ? inputs.w + 2 : inputs.w;
+    const prodH = inputs.hems ? inputs.h + 2 : inputs.h;
+    const prodSqFt = (prodW * prodH) / 144;
+    const totalProdSqFt = prodSqFt * inputs.qty;
 
-                <!-- Product Specifications -->
-                <div class="bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_rgba(0,0,0,0.02)] z-20">
-                    <div class="px-6 py-2 bg-gray-100 border-b border-gray-200">
-                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Base Specifications (Affects Chart & Heatmap)</label>
-                    </div>
-                    <div id="product-specific-controls" class="p-4 flex flex-wrap gap-4 overflow-y-auto max-h-48 custom-scrollbar">
-                        <!-- Dynamic Controls Injected Here -->
-                    </div>
-                </div>
+    let costVinylRaw = 0;
+    if (inputs.material === '13oz') costVinylRaw = parseFloat(data.Cost_Media_13oz || 0.26);
+    else if (inputs.material === '15oz') costVinylRaw = parseFloat(data.Cost_Media_15oz || 0.46);
+    else if (inputs.material === '18oz') costVinylRaw = parseFloat(data.Cost_Media_18oz || 0.39);
+    else costVinylRaw = parseFloat(data.Cost_Media_Mesh || 0.33);
 
-                <!-- Overrides Section -->
-                <div class="h-64 border-t-4 border-gray-300 bg-gray-50 flex flex-col shrink-0 z-10 relative">
-                    <div class="flex flex-col md:flex-row items-center justify-between border-b border-gray-200 bg-gray-200 pr-4">
-                        <div class="flex text-[10px] font-black uppercase tracking-widest text-center cursor-pointer w-full md:w-auto">
-                            <div id="tab-ovr-retail" onclick="switchOvrTab('retail')" class="flex-1 md:flex-none px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition">Market Vars (Blue)</div>
-                            <div id="tab-ovr-cost" onclick="switchOvrTab('cost')" class="flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent">Physics Vars (Red)</div>
-                        </div>
-                        <div class="flex items-center gap-3 py-2 md:py-0 w-full md:w-auto justify-center md:justify-end">
-                            <button onclick="resetOverrides()" class="text-[9px] font-bold text-gray-500 hover:text-blue-600 transition uppercase">Reset To Default</button>
-                            <button onclick="exportMatrix()" class="text-[9px] font-black bg-gray-900 text-white px-3 py-1.5 rounded shadow hover:bg-black transition">EXPORT PAYLOAD</button>
-                        </div>
-                    </div>
-                    
-                    <div id="ovr-retail-wrap" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                        <div id="retail-inputs" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-                    </div>
-                    
-                    <div id="ovr-cost-wrap" class="hidden flex-1 overflow-y-auto p-4 custom-scrollbar">
-                        <div id="cost-inputs" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-                    </div>
-                </div>
-            </div>
+    const wastePct = parseFloat(data.Waste_Factor || 1.15);
+    const costMedia = totalProdSqFt * costVinylRaw * wastePct;
+    const costInk = totalProdSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * inputs.sides;
+    const perimLF = ((inputs.w + inputs.h) * 2) / 12 * inputs.qty;
+    const costTape = inputs.hems ? (perimLF * parseFloat(data.Cost_Hem_Tape || 0.08)) * wastePct : 0;
 
-            <!-- RIGHT COLUMN: POINT INSPECTION -->
-            <div class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)] min-h-[400px] lg:min-h-0">
-                <div class="p-4 bg-gray-900 border-b border-gray-800">
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-center">Point Inspection</label>
-                </div>
-                
-                <div id="inspection-meta" class="p-6 bg-slate-50 border-b border-gray-200 text-center flex flex-col items-center justify-center min-h-[120px]">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point on the chart to inspect.</span>
-                </div>
+    let costGrom = 0, gromCount = 0;
+    if (inputs.grommets) {
+        gromCount = Math.max(Math.ceil(perimLF / 2), 4 * inputs.qty);
+        costGrom = gromCount * parseFloat(data.Cost_Grommet || 0.13) * wastePct;
+    }
 
-                <div id="receipt-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50">
-                    <!-- Receipt Injected Here -->
-                </div>
-            </div>
+    const rateOp = parseFloat(data.Rate_Operator || 25);
+    const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
+    const costSetup = ((parseFloat(data.Time_Setup_Job || 15) + parseFloat(data.Time_Handling || 2)) / 60) * rateOp;
 
-        </div>
-    </div>
+    const printHrs = totalProdSqFt / parseFloat(data.Speed_Print_Roll || 150) * inputs.sides;
+    const costPrintOp = printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10);
+    const costPrintMach = printHrs * parseFloat(data.Rate_Machine_Print || 5);
 
-<script>
-    // --- SYSTEM CONFIG ---
-    const ALL_MODULES = new Array(
-        { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
-        { id: 'coro', name: 'Custom Coroplast', config: window.CORO_CONFIG },
-        { id: 'pvc', name: 'PVC Signs', config: window.PVC_CONFIG },
-        { id: 'foam', name: 'Foam Core', config: window.FOAM_CONFIG },
-        { id: 'acm', name: 'ACM Signs', config: window.ACM_CONFIG },
-        { id: 'acrylic', name: 'Acrylic Signs', config: window.ACRYLIC_CONFIG },
-        { id: 'banner', name: 'Vinyl Banners', config: window.BANNER_CONFIG },
-        { id: 'cut', name: 'Cut Vinyl', config: window.CUT_CONFIG },
-        { id: 'decal', name: 'Decals & Stickers', config: window.DECAL_CONFIG },
-        { id: 'wrap', name: 'Vehicle Wraps', config: window.WRAP_CONFIG },
-        { id: 'wall', name: 'Interior Wall Wraps', config: window.WALL_CONFIG }
-    );
-    
-    const MODULES = ALL_MODULES.filter(m => m.config);
-    const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 600, 750, 1000);
-    
-    let activeConfig = null;
-    let backendData = {};
-    let chartInstance = null;
-    let currentView = 'chart';
-    let currentChartDataMap = {}; 
+    const finishHrs = ((inputs.hems ? perimLF * 0.5 : 0) + (inputs.grommets ? gromCount * 1.0 : 0) + (inputs.windSlits ? totalSqFt * 0.1 : 0) + (inputs.pockets ? (inputs.w/12)*2 * inputs.qty * 2 : 0) + (perimLF * 0.25)) / 60;
+    const costFinish = finishHrs * rateShop;
 
-    window.onload = () => {
-        injectHeader("God Mode: Pricing Analyzer v5.1", true);
-        renderProductMenu();
-        if(MODULES.length > 0) loadProduct(MODULES.id);
+    const subTotal = costMedia + costInk + costTape + costGrom + costSetup + costPrintOp + costPrintMach + costFinish;
+    const riskFactor = parseFloat(data.Factor_Risk || 1.05);
+
+    return {
+        retail: {
+            unitPrice: (retailPrint + retailPockets + retailSlits) / inputs.qty,
+            printTotal: retailPrint, pocketTotal: retailPockets, slitTotal: retailSlits,
+            setupFee: feeSetup, designFee: feeDesign, grandTotal: grandTotal, isMinApplied: grandTotalRaw < minOrder,
+            isOversize: isOversize, tiers: simTiers, baseRate: baseRate, matLabel: matLabel, yieldLabel: data[`${blueKey}_1`] ? `Yield Box: ${minFt}'x${maxFt}'` : "Area Curve"
+        },
+        cost: { total: subTotal * riskFactor, breakdown: { rawMedia: costMedia, unitMedia: costVinylRaw, rawInk: costInk, rawTape: costTape, rawGrom: costGrom, costSetup: costSetup, costPrint: costPrintOp + costPrintMach, costFinish: costFinish, riskCost: subTotal * (riskFactor - 1), wastePct: (wastePct - 1) * 100, riskPct: (riskFactor - 1) * 100 } },
+        metrics: { margin: (grandTotal - (subTotal * riskFactor)) / grandTotal }
     };
+}
+// ==========================================
+// SIMULATOR CONFIGURATION SCHEMA
+// ==========================================
+window.BANNER_CONFIG = {
+    tab: 'PROD_Vinyl_Banners',
+    engine: calculateBanner,
+    controls: [
+        { id: 'w', label: 'Width (in)', type: 'number', def: 72 },
+        { id: 'h', label: 'Height (in)', type: 'number', def: 36 },
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'13oz', t:'13oz Standard'}, {v:'15oz', t:'15oz Blockout'}, {v:'18oz', t:'18oz Heavy'}, {v:'Mesh', t:'8oz Mesh'}] },
+        { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'hems', label: 'Tape Hems', type: 'toggle', def: true },
+        { id: 'grommets', label: 'Grommets', type: 'toggle', def: true },
+        { id: 'pockets', label: 'Pole Pockets', type: 'toggle', def: false },
+        { id: 'windSlits', label: 'Wind Slits', type: 'toggle', def: false },
+        { id: 'files', label: 'Files', type: 'number', def: 1 },
+        { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
+        { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
+    ],
+    retails: [
+        { heading: 'Material Tiers ($/SqFt)', key: 'BAN13_T1_Rate', label: '13oz Rate (1ft Tall)' },
+        { key: 'BAN13_T2_Rate', label: '13oz Rate (<10sf)' },
+        { key: 'BAN13_T3_Rate', label: '13oz Rate (>10sf)' },
+        { key: 'Retail_Price_Base_15oz', label: '15oz Rate ($)' },
+        { key: 'Retail_Price_Base_18oz', label: '18oz Rate ($)' },
+        { key: 'Retail_Price_Base_Mesh', label: 'Mesh Rate ($)' },
+        { heading: 'Adders & Finishings', key: 'Retail_Adder_DS_SqFt', label: 'Double Sided ($/sf)' },
+        { key: 'Retail_Fin_PolePkt_LF', label: 'Pole Pocket ($/LF)' },
+        { key: 'Retail_Price_WindSlits_SqFt', label: 'Wind Slits ($/sf)' },
+        { heading: 'Volume Discounts', key: 'Tier_1_Qty', label: 'T1 Trigger (Qty)' },
+        { key: 'Tier_1_Disc', label: 'T1 Discount (%)' }
+    ],
+    costs: [
+        { heading: 'Roll Media', key: 'Cost_Media_13oz', label: '13oz Vinyl ($/sf)' },
+        { key: 'Cost_Media_15oz', label: '15oz Blockout ($/sf)' },
+        { key: 'Cost_Media_18oz', label: '18oz Heavy ($/sf)' },
+        { key: 'Cost_Media_Mesh', label: '8oz Mesh ($/sf)' },
+        { heading: 'Finishings & Ink', key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
+        { key: 'Cost_Grommet', label: 'Grommet ($/ea)' },
+        { key: 'Cost_Hem_Tape', label: 'Hem Tape ($/LF)' },
+        { heading: 'Machine Speeds & Time', key: 'Speed_Print_Roll', label: 'Print Spd (SqFt/hr)' },
+        { key: 'Time_Setup_Job', label: 'Setup Job (Mins)' },
+        { key: 'Time_Handling', label: 'Handling (Mins)' },
+        { key: 'Time_Hem_LF', label: 'Hemming (Mins/LF)' },
+        { key: 'Time_PolePkt_LF', label: 'Pockets (Mins/LF)' },
+        { heading: 'Rates & Overhead', key: 'Rate_Operator', label: 'Print Op ($/Hr)' },
+        { key: 'Rate_Shop_Labor', label: 'Shop Labor ($/Hr)' },
+        { key: 'Rate_Machine_Print', label: 'Printer Mach ($/Hr)' },
+        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' },
+        { key: 'Waste_Factor', label: 'Waste Buffer' }
+    ],
+    renderReceipt: function(data, fmt) {
+        let retailHTML = `<div><h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
+        <div class="space-y-1 text-xs text-gray-700">
+        <div class="flex justify-between"><span>Base Print:</span> <span>${fmt(data.retail.printTotal)}</span></div>
+        ${data.retail.pocketsTotal > 0 ? `<div class="flex justify-between text-orange-700"><span>Pole Pockets:</span> <span>${fmt(data.retail.pocketsTotal)}</span></div>` : ''}
+        ${data.retail.slitsTotal > 0 ? `<div class="flex justify-between text-teal-700"><span>Wind Slits:</span> <span>${fmt(data.retail.slitsTotal)}</span></div>` : ''}
+        <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
+        ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
+        <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
+        </div></div>`;
 
-    function renderProductMenu() {
-        const container = document.getElementById('product-menu');
-        MODULES.forEach(m => {
-            const btn = document.createElement('button');
-            btn.id = 'nav-' + m.id;
-            btn.className = "w-full text-left px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-between group text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm";
-            btn.innerHTML = '<span>' + m.name.toUpperCase() + '</span><span class="opacity-0 group-hover:opacity-100 text-blue-400">→</span>';
-            btn.onclick = () => loadProduct(m.id);
-            container.appendChild(btn);
-        });
-    }
-
-    async function loadProduct(id) {
-        document.getElementById('loader').classList.remove('hidden');
-        
-        document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100'));
-        document.getElementById('nav-' + id).classList.add('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100');
-        
-        activeConfig = MODULES.find(m => m.id === id).config;
-        document.getElementById('receipt-container').innerHTML = '';
-        document.getElementById('inspection-meta').innerHTML = '<span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point to inspect.</span>';
-
-        // Auto-configure UI tools
-        if (id === 'yard') {
-            document.getElementById('chart-controls').classList.add('hidden');
-            document.getElementById('btn-view-heatmap').classList.add('hidden');
-            setView('chart');
-        } else {
-            document.getElementById('chart-controls').classList.remove('hidden');
-            document.getElementById('btn-view-heatmap').classList.remove('hidden');
-            document.getElementById('chart-qty').value = 1; // Reset Qty default
-            setView('chart');
+        let costHTML = `<div class="mt-6"><h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
+        <div class="space-y-1 text-xs text-gray-700">`;
+        if (data.cost.breakdown) {
+            const b = data.cost.breakdown;
+            costHTML += `
+            <div class="flex justify-between"><span>Roll Material:</span> <span>${fmt(b.rawMedia)}</span></div>
+            <div class="flex justify-between"><span>Ink:</span> <span>${fmt(b.rawInk)}</span></div>
+            ${b.rawTape > 0 ? `<div class="flex justify-between"><span>Hem Tape:</span> <span>${fmt(b.rawTape)}</span></div>` : ''}
+            ${b.rawGrom > 0 ? `<div class="flex justify-between"><span>Grommets:</span> <span>${fmt(b.rawGrom)}</span></div>` : ''}
+            <div class="flex justify-between"><span>Setup Labor:</span> <span>${fmt(b.costSetup)}</span></div>
+            <div class="flex justify-between"><span>Print Run:</span> <span>${fmt(b.costPrint)}</span></div>
+            <div class="flex justify-between"><span>Finishing Labor:</span> <span>${fmt(b.costFinish)}</span></div>
+            <div class="border-t border-gray-200 mt-2 pt-1"></div>
+            <div class="flex justify-between text-red-600"><span>Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 15}%):</span> <span>(Calculated Above)</span></div>
+            <div class="flex justify-between text-orange-500 opacity-80"><span>Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> <span>(+ ${fmt(b.riskCost)})</span></div>`;
         }
-
-        buildDynamicControls();
-
-        try {
-            const req = await fetch(SCRIPT_URL + '?req=view_module&tab=' + activeConfig.tab);
-            backendData = await req.json();
-            renderOverrides();
-            generateMatrix();
-        } catch (e) { 
-            console.error("Sync Error", e); 
-        } finally {
-            document.getElementById('loader').classList.add('hidden');
-        }
+        costHTML += `<div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div></div></div>`;
+        return retailHTML + costHTML;
     }
-
-    // --- UI BUILDERS ---
-
-    function buildDynamicControls() {
-        const ctrlBox = document.getElementById('product-specific-controls');
-        ctrlBox.innerHTML = '';
-        activeConfig.controls.forEach(c => {
-            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; // Handled dynamically in views
-            
-            let html = '<div class="min-w-[120px]"><label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">' + c.label + '</label>';
-            if(c.type === 'select') {
-                html += '<select id="ctrl_' + c.id + '" class="w-full border border-gray-200 bg-white rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onchange="generateMatrix()">';
-                c.opts.forEach(o => html += '<option value="' + o.v + '">' + o.t + '</option>');
-                html += '</select></div>';
-            } else if(c.type === 'toggle') {
-                html += '<label class="flex items-center gap-2 mt-2 cursor-pointer bg-white border border-gray-200 px-3 py-1 rounded shadow-sm hover:bg-gray-50 transition"><input type="checkbox" id="ctrl_' + c.id + '" onchange="generateMatrix()" ' + (c.def?'checked':'') + ' class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-black text-gray-600 uppercase">Enable</span></label></div>';
-            } else {
-                html += '<input type="number" id="ctrl_' + c.id + '" value="' + c.def + '" class="w-full border border-gray-200 bg-white rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onchange="generateMatrix()"></div>';
-            }
-            ctrlBox.insertAdjacentHTML('beforeend', html);
-        });
-    }
-
-    function switchOvrTab(tab) {
-        const tRet = document.getElementById('tab-ovr-retail');
-        const tCst = document.getElementById('tab-ovr-cost');
-        const wRet = document.getElementById('ovr-retail-wrap');
-        const wCst = document.getElementById('ovr-cost-wrap');
-        
-        if(tab === 'retail') {
-            tRet.className = "flex-1 md:flex-none px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition";
-            tCst.className = "flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
-            wRet.classList.remove('hidden'); wCst.classList.add('hidden');
-        } else {
-            tCst.className = "flex-1 md:flex-none px-6 py-2 bg-red-100 text-red-700 border-b-2 border-red-600 transition";
-            tRet.className = "flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
-            wCst.classList.remove('hidden'); wRet.classList.add('hidden');
-        }
-    }
-
-    function renderOverrides() {
-        const retailBox = document.getElementById('retail-inputs');
-        const costBox = document.getElementById('cost-inputs');
-        retailBox.innerHTML = ""; costBox.innerHTML = "";
-
-        const createCard = (item, color) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = `bg-white p-2 rounded shadow-sm border border-gray-200 border-l-4 border-l-${color}-500 hover:shadow-md transition`;
-            let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
-            wrapper.innerHTML = `
-                <label class="text-[8px] font-black text-gray-400 uppercase truncate block mb-1" title="${item.key}">${item.label}</label>
-                <input type="text" id="ovr_${item.key}" value="${val}" onchange="generateMatrix()" class="w-full bg-gray-50 border border-gray-200 rounded px-1.5 py-1 text-xs font-mono font-bold text-${color}-700 focus:border-${color}-500 outline-none text-right">
-            `;
-            return wrapper;
-        };
-
-        activeConfig.retails.forEach(item => retailBox.appendChild(createCard(item, 'blue')));
-        activeConfig.costs.forEach(item => costBox.appendChild(createCard(item, 'red')));
-    }
-
-    function setView(view) {
-        currentView = view;
-        document.getElementById('view-heatmap').classList.toggle('hidden', view !== 'heatmap');
-        document.getElementById('view-chart').classList.toggle('hidden', view !== 'chart');
-        
-        document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
-        document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
-        
-        generateMatrix();
-    }
-
-    // --- LOGIC ENGINE ---
-
-    function generateMatrix() {
-        if(!activeConfig) return;
-
-        // Harvest Overrides
-        const simData = { ...backendData };
-        let overridesList = new Array();
-        activeConfig.retails.forEach(i => overridesList.push(i));
-        activeConfig.costs.forEach(i => overridesList.push(i));
-        
-        overridesList.forEach(o => {
-            const el = document.getElementById('ovr_' + o.key);
-            if(el && el.value !== "") simData[o.key] = isNaN(el.value) ? el.value : parseFloat(el.value);
-            else delete simData[o.key];
-        });
-
-        currentChartDataMap = {}; 
-
-        if (currentView === 'chart') drawLineChart(simData);
-        else drawHeatmap(simData);
-    }
-
-    // Standardize Bounds Math
-    function getProductBounds(id) {
-        if (id === 'coro' || id === 'acm' || id === 'pvc' || id === 'foam' || id === 'acrylic') return { w: 10, h: 5, sqft: 50 };
-        if (id === 'banner') return { w: 12, h: 6, sqft: 60 };
-        return { w: 54, h: 10, sqft: 50 }; // Vinyl, Wrap, Wall, Decal
-    }
-
-    function drawLineChart(simData) {
-        const id = activeConfig.id;
-        const mode = document.getElementById('hm-analysis-mode').value;
-        const isYard = id === 'yard';
-        const bounds = getProductBounds(id);
-        
-        const steps = isYard ? X_STEPS_YARD : new Array();
-        if (!isYard) {
-            for(let i=1; i<=bounds.sqft; i++) steps.push(i);
-        }
-
-        // Harvest Shared Base Inputs
-        let baseInputs = { files:1, incDesign:false };
-        activeConfig.controls.forEach(c => {
-            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
-            const el = document.getElementById('ctrl_' + c.id);
-            if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
-        });
-
-        // Hardcode Standard 4 Permutations per Product
-        let permutations = new Array();
-        
-        if (id === 'yard') {
-            permutations.push({ label: "1-Sided, No Stakes", inputs: { ...baseInputs, w:24, h:18, sides:1, hasStakes:false } });
-            permutations.push({ label: "1-Sided, W/ Stakes", inputs: { ...baseInputs, w:24, h:18, sides:1, hasStakes:true } });
-            permutations.push({ label: "2-Sided, No Stakes", inputs: { ...baseInputs, w:24, h:18, sides:2, hasStakes:false } });
-            permutations.push({ label: "2-Sided, W/ Stakes", inputs: { ...baseInputs, w:24, h:18, sides:2, hasStakes:true } });
-        } else if (id === 'coro') {
-            permutations.push({ label: "4mm Single-Sided", inputs: { ...baseInputs, thickness: '4mm', sides: 1 } });
-            permutations.push({ label: "4mm Double-Sided", inputs: { ...baseInputs, thickness: '4mm', sides: 2 } });
-            permutations.push({ label: "10mm Single-Sided", inputs: { ...baseInputs, thickness: '10mm', sides: 1 } });
-            permutations.push({ label: "10mm Double-Sided", inputs: { ...baseInputs, thickness: '10mm', sides: 2 } });
-        } else if (id === 'acm') {
-            permutations.push({ label: "3mm Single-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 1 } });
-            permutations.push({ label: "3mm Double-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 2 } });
-            permutations.push({ label: "6mm Single-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 1 } });
-            permutations.push({ label: "6mm Double-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 2 } });
-        } else if (id === 'pvc') {
-            permutations.push({ label: "3mm Single-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 1 } });
-            permutations.push({ label: "3mm Double-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 2 } });
-            permutations.push({ label: "6mm Single-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 1 } });
-            permutations.push({ label: "6mm Double-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 2 } });
-        } else if (id === 'foam') {
-            permutations.push({ label: "3/16\" Single-Sided", inputs: { ...baseInputs, thickness: '3/16', sides: 1 } });
-            permutations.push({ label: "3/16\" Double-Sided", inputs: { ...baseInputs, thickness: '3/16', sides: 2 } });
-        } else if (id === 'acrylic') {
-            permutations.push({ label: "1/4\" Thick", inputs: { ...baseInputs, thickness: '0.25' } });
-            permutations.push({ label: "1/2\" Thick", inputs: { ...baseInputs, thickness: '0.5' } });
-            permutations.push({ label: "3/4\" Thick", inputs: { ...baseInputs, thickness: '0.75' } });
-            permutations.push({ label: "1\" Thick", inputs: { ...baseInputs, thickness: '1' } });
-        } else if (id === 'banner') {
-            permutations.push({ label: "13oz Standard", inputs: { ...baseInputs, material: '13oz' } });
-            permutations.push({ label: "15oz Blockout", inputs: { ...baseInputs, material: '15oz' } });
-            permutations.push({ label: "18oz Heavy", inputs: { ...baseInputs, material: '18oz' } });
-            permutations.push({ label: "8oz Mesh", inputs: { ...baseInputs, material: 'Mesh' } });
-        } else if (id === 'decal') {
-            permutations.push({ label: "Standard (Cal)", inputs: { ...baseInputs, material: 'Standard' } });
-            permutations.push({ label: "Premium (Cast)", inputs: { ...baseInputs, material: 'Cast' } });
-            permutations.push({ label: "Clear (Oracal 3640)", inputs: { ...baseInputs, material: 'Clear' } });
-            permutations.push({ label: "Reflective", inputs: { ...baseInputs, material: 'Reflective' } });
-        } else if (id === 'cut') {
-            permutations.push({ label: "Flat (751)", inputs: { ...baseInputs, material: 'Flat' } });
-            permutations.push({ label: "Vehicle (951)", inputs: { ...baseInputs, material: 'Vehicle' } });
-            permutations.push({ label: "Backlit Std (8500)", inputs: { ...baseInputs, material: 'Backlit_8500' } });
-            permutations.push({ label: "Backlit Prem (8800)", inputs: { ...baseInputs, material: 'Backlit_8800' } });
-        } else if (id === 'wrap' || id === 'wall') {
-            if(id === 'wrap') {
-                permutations.push({ label: "Cast Wrap", inputs: { ...baseInputs, material: 'wrap' } });
-                permutations.push({ label: "Window Perf 60/40", inputs: { ...baseInputs, material: 'perf6040' } });
-                permutations.push({ label: "Spot Decal", inputs: { ...baseInputs, material: 'decal' } });
-            } else {
-                permutations.push({ label: "Smooth (GF226)", inputs: { ...baseInputs, material: 'smooth' } });
-                permutations.push({ label: "Textured (IJ8624)", inputs: { ...baseInputs, material: 'textured' } });
-                permutations.push({ label: "Window Perf", inputs: { ...baseInputs, material: 'perf6040' } });
-            }
-        }
-
-        const datasets = new Array();
-        const lineColors = new Array('#3b82f6', '#10b981', '#8b5cf6', '#f97316'); // Blue, Green, Purple, Orange
-        const profitColor = 'rgba(234, 179, 8, 0.3)'; // Translucent Yellow
-
-        permutations.forEach((perm, index) => {
-            const dataTarget = new Array(); // Primary plotted metric
-            const dataProfit = new Array(); // Secondary bar
-
-            steps.forEach(stepVal => {
-                let runInputs = { ...perm.inputs };
-                
-                if (isYard) {
-                    runInputs.qty = stepVal;
-                } else {
-                    runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
-                    runInputs.w = 12; // Lock width to 1ft to model linear length
-                    runInputs.h = stepVal * 12; 
-                    if (id === 'wrap' || id === 'wall') {
-                        runInputs.panels = [{ label: "Panel", qty: 1, w: runInputs.w, h: runInputs.h, material: runInputs.material, included: false }];
-                    }
-                }
-                
-                if (typeof activeConfig.dynamicUI === 'function') runInputs = activeConfig.dynamicUI(runInputs);
-                
-                try {
-                    const res = activeConfig.engine(runInputs, simData);
-                    const pointKey = 'ch-' + index + '-' + stepVal;
-                    currentChartDataMap[pointKey] = { res, inputs: runInputs };
-
-                    if (!res || !res.retail) { dataTarget.push(null); dataProfit.push(null); return; }
-
-                    const unitRet = res.retail.unitPrice;
-                    const unitCst = res.cost.total / runInputs.qty;
-                    const margin = res.metrics.margin;
-
-                    // Plot based on Mode Dropdown
-                    if (mode === 'retail') {
-                        dataTarget.push(unitRet);
-                        dataProfit.push(Math.max(unitRet - unitCst, 0));
-                    } else if (mode === 'cost') {
-                        dataTarget.push(unitCst);
-                    } else {
-                        dataTarget.push(margin * 100);
-                    }
-
-                } catch(e) {
-                    dataTarget.push(null); dataProfit.push(null);
-                }
-            });
-
-            // Push primary line
-            let dLabel = perm.label;
-            if(mode === 'retail') dLabel += " (Retail)";
-            else if(mode === 'cost') dLabel += " (Cost)";
-            else dLabel += " (Margin %)";
-
-            datasets.push({
-                type: 'line',
-                label: dLabel,
-                data: dataTarget,
-                borderColor: lineColors[index % lineColors.length],
-                backgroundColor: lineColors[index % lineColors.length],
-                borderWidth: 3, tension: 0.1, pointRadius: 3,
-                _permIndex: index
-            });
-
-            // Push profit bar ONLY in retail mode
-            if (mode === 'retail') {
-                datasets.push({
-                    type: 'bar',
-                    label: perm.label + " (Profit)",
-                    data: dataProfit,
-                    backgroundColor: profitColor,
-                    borderWidth: 1, borderColor: '#ca8a04',
-                    _permIndex: index
-                });
-            }
-        });
-
-        if (chartInstance) chartInstance.destroy();
-        const ctx = document.getElementById('physicsChart').getContext('2d');
-        
-        let xTitle = isYard ? 'Quantity Ordered' : 'Total Square Footage (Size)';
-        let yTitle = mode === 'margin' ? 'Net Margin (%)' : 'Money / Unit ($)';
-
-        chartInstance = new Chart(ctx, {
-            data: { labels: steps, datasets: datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) label += ': ';
-                                if (context.parsed.y !== null) {
-                                    if(mode === 'margin') label += context.parsed.y.toFixed(1) + '%';
-                                    else label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { title: { display: true, text: xTitle, font: { weight: 'bold' } } },
-                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: true }
-                },
-                onClick: (e) => {
-                    // FIX: Nearest intersection targets the exact line/bar the user clicked
-                    const elements = chartInstance.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
-                    if (elements.length > 0) {
-                        const element = elements;
-                        const datasetIndex = element.datasetIndex;
-                        const dataIndex = element.index;
-                        const stepVal = steps[dataIndex];
-                        
-                        const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
-                        const pointKey = 'ch-' + permIndex + '-' + stepVal;
-                        
-                        let valDisplay = chartInstance.data.datasets[datasetIndex].data[dataIndex];
-                        let displayStr = mode === 'margin' ? valDisplay.toFixed(1) + '%' : '$' + valDisplay.toFixed(2);
-                        
-                        renderInspection(pointKey, displayStr);
-                    }
-                }
-            }
-        });
-    }
-
-    function drawHeatmap(simData) {
-        const mode = document.getElementById('hm-analysis-mode').value;
-        const id = activeConfig.id;
-        
-        if (id === 'yard') return; // Yard has no heatmap
-
-        const bounds = getProductBounds(id);
-        const maxW = bounds.w;
-        const maxH = bounds.h;
-
-        const header = document.getElementById('heatmap-head');
-        const body = document.getElementById('heatmap-body');
-        header.innerHTML = ""; body.innerHTML = "";
-
-        let headHtml = '<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>';
-        for(let w=1; w<=maxW; w++) headHtml += '<th class="p-2 border border-slate-200">' + w + '\'</th>';
-        header.innerHTML = headHtml + '</tr>';
-
-        // Harvest Controls
-        let baseInputs = { qty: parseInt(document.getElementById('chart-qty').value) || 1 };
-        activeConfig.controls.forEach(c => {
-            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
-            const el = document.getElementById('ctrl_' + c.id);
-            if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
-        });
-
-        for (let h=1; h<=maxH; h++) {
-            const row = document.createElement('tr');
-            row.innerHTML = '<td class="p-2 border border-slate-200 sticky-col text-center text-slate-400 font-black bg-slate-50">' + h + '\'</td>';
-            
-            for (let w=1; w<=maxW; w++) {
-                const wInches = w * 12;
-                const hInches = h * 12;
-                const cell = document.createElement('td');
-
-                let inputs = { ...baseInputs, w: wInches, h: hInches };
-                if (id === 'wrap' || id === 'wall') inputs.panels = [{ label: "Panel", qty: 1, w: wInches, h: hInches, material: inputs.material, included: false }];
-                if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
-
-                try {
-                    const res = activeConfig.engine(inputs, simData);
-                    const pointKey = 'hm-' + w + '-' + h;
-                    currentChartDataMap[pointKey] = { res, inputs };
-
-                    let val = 0, display = "";
-                    cell.className = "heatmap-cell border border-gray-100 text-center relative group text-slate-700 font-black";
-
-                    if (mode === 'retail') {
-                        val = res.retail.unitPrice;
-                        display = "$" + val.toFixed(2);
-                    } else if (mode === 'cost') {
-                        val = res.cost.total / inputs.qty;
-                        display = "$" + val.toFixed(2);
-                        cell.style.backgroundColor = "#fff5f5";
-                    } else {
-                        const margin = res.metrics ? res.metrics.margin * 100 : 0;
-                        display = margin.toFixed(1) + "%";
-                        if (margin < 0) cell.classList.add('loss-alert');
-                        else cell.style.backgroundColor = 'rgba(34, 197, 94, ' + Math.min(margin/70, 0.8) + ')';
-                    }
-
-                    cell.innerText = display;
-                    cell.onclick = () => renderInspection(pointKey, display);
-                } catch(e) {
-                    cell.className = "heatmap-cell border border-gray-100 text-center bg-red-50 text-red-500 font-black text-[9px]";
-                    cell.innerHTML = "ERR";
-                }
-                row.appendChild(cell);
-            }
-            body.appendChild(row);
-        }
-    }
-
-    // --- RECEIPT RENDERER ---
-
-    function renderInspection(pointKey, valDisplay) {
-        const payload = currentChartDataMap[pointKey];
-        if (!payload) return;
-        
-        const res = payload.res;
-        const inputs = payload.inputs;
-        
-        document.getElementById('inspection-meta').innerHTML = `
-            <div class="flex flex-col items-center">
-                <span class="text-blue-600 font-black text-2xl tracking-tighter mb-1">${valDisplay}</span>
-                <span class="text-[10px] font-black text-gray-500 bg-gray-100 px-3 py-1 rounded-full uppercase border border-gray-200">Size: ${inputs.w}" x ${inputs.h}"</span>
-                <span class="text-[9px] font-bold text-gray-400 uppercase mt-2">Simulated Qty: ${inputs.qty}</span>
-            </div>
-        `;
-
-        const container = document.getElementById('receipt-container');
-        const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
-        
-        let retailLines = `<div class="flex justify-between text-[10px] font-bold"><span>Base Print:</span><span>${fmt(res.retail.printTotal)}</span></div>`;
-        if(res.retail.routerFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>CNC Routing:</span><span>${fmt(res.retail.routerFee)}</span></div>`;
-        if(res.retail.contourFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>Contour Cut:</span><span>${fmt(res.retail.contourFee)}</span></div>`;
-        if(res.retail.weedFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-pink-600"><span>Complex Weed:</span><span>${fmt(res.retail.weedFee)}</span></div>`;
-        if(res.retail.stakeTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-blue-600"><span>Hardware/Stakes:</span><span>${fmt(res.retail.stakeTotal)}</span></div>`;
-        if(res.retail.installTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-indigo-600"><span>Installation:</span><span>${fmt(res.retail.installTotal)}</span></div>`;
-        if(res.retail.setupFee) retailLines += `<div class="flex justify-between text-[10px] font-bold"><span>Setup Fee:</span><span>${fmt(res.retail.setupFee)}</span></div>`;
-        
-        let costLines = "";
-        const b = res.cost.breakdown || {};
-        
-        const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0) + (b.stakeCost || 0) + (b.rawLam || 0) + (b.rawTape || 0) + (b.materials || 0);
-        const labor = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0) + (b.costSetup || 0) + (b.costFinish || 0) + (b.costWeed || 0) + (b.installLabor || 0) + (b.printLabor || 0) + (b.machine || 0);
-        
-        costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Materials & Ink:</span><span>${fmt(mats)}</span></div>`;
-        costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Labor & Machine:</span><span>${fmt(labor)}</span></div>`;
-        if(b.wasteCost) costLines += `<div class="flex justify-between text-[10px] font-bold text-red-400"><span>Waste Buffer:</span><span>${fmt(b.wasteCost)}</span></div>`;
-
-        container.innerHTML = `
-            <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm">
-                <label class="text-[9px] font-black text-blue-600 uppercase block mb-2 border-b border-blue-200 pb-1 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Market Engine</label>
-                <div class="space-y-1.5">${retailLines}</div>
-                <div class="flex justify-between text-xs font-black border-t-2 border-blue-200 mt-2 pt-2 text-blue-900"><span>Total Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>
-            </div>
-            <div class="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm mt-4">
-                <label class="text-[9px] font-black text-red-600 uppercase block mb-2 border-b border-red-200 pb-1 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Physics Engine</label>
-                <div class="space-y-1.5">${costLines}</div>
-                <div class="flex justify-between text-xs font-black border-t-2 border-red-200 mt-2 pt-2 text-red-900"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>
-                <div class="flex justify-between text-[11px] font-black text-red-600 mt-2 pt-2 border-t border-red-100 bg-white p-2 rounded"><span>Net Profit:</span><span>${fmt(res.retail.grandTotal - res.cost.total)} (${(res.metrics.margin*100).toFixed(1)}%)</span></div>
-            </div>
-        `;
-    }
-
-    function resetOverrides() {
-        document.querySelectorAll('#override-container input').forEach(i => i.value = "");
-        generateMatrix();
-    }
-
-    function exportMatrix() {
-        const allOvr = new Array();
-        activeConfig.retails.forEach(i => allOvr.push(i));
-        activeConfig.costs.forEach(i => allOvr.push(i));
-        
-        const payload = new Array();
-        allOvr.forEach(o => {
-            const val = document.getElementById('ovr_' + o.key).value;
-            if(val !== "") payload.push({ product: activeConfig.tab, cost: o.key, value: val });
-        });
-
-        if(payload.length === 0) return alert("No overrides detected.");
-        navigator.clipboard.writeText(JSON.stringify(payload));
-        alert("Payload Copied to Clipboard. Ready to commit to SYS_Cost_Matrix.");
-    }
-</script>
-
-</body>
-</html>
+};
