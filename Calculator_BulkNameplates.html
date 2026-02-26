@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk ADA Nameplates v2.0</title>
+    <title>Bulk ADA Nameplates v2.1</title>
     <!-- Load Benchmark ADA Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lora:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,9 @@
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .aspect-box { container-type: size; transition: all 0.3s ease-in-out; }
+        
+        /* Container Query setup based on inline-size to fix the invisible text issue */
+        .aspect-box { container-type: inline-size; transition: all 0.3s ease-in-out; }
         
         .font-sans-serif { font-family: 'Roboto', sans-serif; font-weight: 500; }
         .font-serif-style { font-family: 'Lora', serif; font-weight: 700; }
@@ -22,154 +24,111 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
-    <div id="main-card" class="max-w-5xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
+    <div id="main-card" class="max-w-6xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
         <div class="grid grid-cols-1 lg:grid-cols-2">
             
-            <!-- LEFT COLUMN: INPUTS -->
-            <div class="p-6 space-y-4 border-r border-gray-200 bg-gray-50/50 flex flex-col h-full">
+            <!-- LEFT COLUMN: INPUTS & PRICING -->
+            <div class="p-6 border-r border-gray-200 bg-gray-50/50 flex flex-col h-full">
                 
-                <div class="flex items-center justify-between mb-1 border-b border-gray-200 pb-2">
-                    <h2 class="text-lg font-black text-gray-800 tracking-tight">Bulk Roster Data</h2>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded">Max 50 per batch</span>
-                </div>
-
-                <!-- DIMENSIONS -->
-                <div>
-                    <div id="sheet-warn" class="hidden mb-2 bg-yellow-50 text-yellow-700 text-[10px] font-bold px-3 py-1.5 rounded border border-yellow-200 transition-opacity">
-                        ⚠️ Max Parent Sheet Limit (24" x 48") Reached.
+                <div class="flex-1 space-y-4">
+                    <div class="flex items-center justify-between mb-1 border-b border-gray-200 pb-2">
+                        <h2 class="text-lg font-black text-gray-800 tracking-tight">Bulk Roster Data</h2>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded">Max 50 per batch</span>
                     </div>
-                    <div class="grid grid-cols-3 gap-3">
+
+                    <!-- DIMENSIONS -->
+                    <div>
+                        <div id="sheet-warn" class="hidden mb-2 bg-yellow-50 text-yellow-700 text-[10px] font-bold px-3 py-1.5 rounded border border-yellow-200 transition-opacity">
+                            ⚠️ Max Parent Sheet Limit (24" x 48") Reached.
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1" title="Determined by Roster Quantities">Total Qty</label>
+                                <input type="number" id="qty" value="0" readonly class="w-full border border-gray-200 p-2 rounded font-black text-blue-800 text-lg text-center bg-blue-50 outline-none cursor-not-allowed shadow-inner">
+                            </div>
+                            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="10" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="enforceSheetLimits(); runCalc()"></div>
+                            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="2" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="enforceSheetLimits(); runCalc()"></div>
+                        </div>
+                    </div>
+
+                    <!-- DESIGN SETTINGS -->
+                    <div class="grid grid-cols-3 gap-3 pt-2">
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1" title="Determined by Roster Quantities">Total Qty</label>
-                            <input type="number" id="qty" value="0" readonly class="w-full border border-gray-200 p-2 rounded font-black text-blue-800 text-lg text-center bg-blue-50 outline-none cursor-not-allowed shadow-inner">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
+                            <select id="font-style" onchange="runCalc()" class="w-full border p-2 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
+                                <option value="sans">Sans-Serif (Roboto)</option>
+                                <option value="serif">Serif (Lora)</option>
+                            </select>
                         </div>
-                        <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="10" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="enforceSheetLimits(); runCalc()"></div>
-                        <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="2" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="enforceSheetLimits(); runCalc()"></div>
-                    </div>
-                </div>
-
-                <!-- DESIGN SETTINGS -->
-                <div class="grid grid-cols-3 gap-3 pt-2">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
-                        <select id="font-style" onchange="runCalc()" class="w-full border p-2 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
-                            <option value="sans">Sans-Serif (Roboto)</option>
-                            <option value="serif">Serif (Lora)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Lines Per Sign</label>
-                        <select id="lines-per-sign" onchange="processBulkList()" class="w-full border p-2 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
-                            <option value="1">1 Line</option>
-                            <option value="2">2 Lines</option>
-                            <option value="3">3 Lines</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Bevel Edges</label>
-                        <select id="bevel-edges" onchange="runCalc()" class="w-full border p-2 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
-                            <option value="Yes">Yes (Beveled)</option>
-                            <option value="No">No Bevel</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- BULK TEXT AREA -->
-                <div class="pt-2">
-                    <label class="flex justify-between items-end text-[10px] font-bold text-gray-500 uppercase mb-1">
-                        <span>1. Paste Source Text</span>
-                        <span id="bulk-warn" class="hidden text-red-500 animate-pulse">Max 50 Signs Reached!</span>
-                    </label>
-                    <textarea id="bulk-list" oninput="processBulkList()" rows="4" placeholder="JOHN DOE\nCONFERENCE ROOM\n..." class="w-full border border-gray-300 p-2 rounded bg-white text-xs font-mono outline-none focus:border-blue-500 shadow-inner"></textarea>
-                </div>
-
-                <!-- LINE ITEM EDITOR -->
-                <div class="flex-1 flex flex-col min-h-[150px]">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">2. Verify & Set Quantities</label>
-                    <div id="roster-editor" class="flex-1 border border-gray-200 bg-white rounded shadow-inner overflow-y-auto custom-scroll p-2 space-y-2">
-                        <div class="text-center text-xs text-gray-400 italic py-6">Awaiting text import...</div>
-                    </div>
-                </div>
-
-                <!-- ENGRAVE STYLE -->
-                <div class="pt-2 border-t border-gray-200 shrink-0">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Engrave Direction</label>
-                    <div class="flex bg-gray-100 p-1 rounded-lg">
-                        <button id="btn-front" onclick="setMode('front')" class="flex-1 py-1.5 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700">FRONT ENGRAVE</button>
-                        <button id="btn-reverse" onclick="setMode('reverse')" class="flex-1 py-1.5 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent">REVERSE ENGRAVED</button>
-                    </div>
-                </div>
-
-                <!-- REVERSE SUB-TABS -->
-                <div id="reverse-tabs" class="hidden flex bg-gray-200 p-1 rounded-lg shrink-0">
-                    <button id="btn-tab-mat" onclick="setReverseTab('mat')" class="flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest">Step 1: Face Color</button>
-                    <button id="btn-tab-paint" onclick="setReverseTab('paint')" class="flex-1 py-1.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest">Step 2: Paint Color</button>
-                </div>
-
-                <!-- STEP 1: MATERIAL SWATCHES -->
-                <div id="mat-container" class="shrink-0">
-                    <div id="selected-color-label" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 mb-2 truncate">Loading...</div>
-                    <div id="rowmark-grid" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2 custom-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
-                </div>
-
-                <!-- STEP 2: PAINT FILL -->
-                <div id="paint-container" class="hidden shrink-0 relative z-20">
-                    <div class="flex bg-orange-100 p-1 rounded-lg mb-2">
-                        <button id="btn-pms" onclick="setPaintSystem('PMS')" class="flex-1 py-1 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200">PMS Match</button>
-                        <button id="btn-sw" onclick="setPaintSystem('SW')" class="flex-1 py-1 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest">Sherwin Williams</button>
-                    </div>
-                    <div class="relative mb-2">
-                        <input type="text" id="paint-search" placeholder="Search colors..." oninput="filterPaint()" class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-xs font-bold text-gray-800 outline-none focus:border-orange-500 shadow-sm transition">
-                    </div>
-                    <div id="selected-paint-label" class="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200 mb-2 truncate">None Selected</div>
-                    
-                    <div id="paint-grid" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-2 custom-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
-
-                    <div id="custom-pms-wrap" class="hidden mt-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
-                        <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-1.5 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- RIGHT COLUMN: BULK PREVIEW & RECEIPT -->
-            <div class="flex flex-col h-full bg-white relative z-0">
-                
-                <!-- THE BULK VISUALIZER GRID -->
-                <div class="flex-1 p-4 bg-gray-800 shadow-inner relative overflow-hidden flex flex-col min-h-[300px]">
-                    
-                    <div id="canvas-loading-overlay" class="absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
-                        <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
-                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse">Connecting to Source Data...</span>
-                    </div>
-
-                    <div class="flex justify-between items-center mb-2 shrink-0">
-                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dynamic Preview (Uniform Scale)</span>
-                    </div>
-
-                    <!-- Scrollable Grid of Miniature Canvases -->
-                    <div id="bulk-preview-grid" class="flex-1 overflow-y-auto custom-scroll pr-2 grid grid-cols-2 md:grid-cols-3 gap-3 content-start">
-                        <!-- Populated via JS -->
-                        <div class="w-full aspect-[5/1] bg-gray-700 rounded border border-gray-600 flex items-center justify-center">
-                            <span class="text-gray-500 text-[8px] font-black uppercase">Awaiting Roster</span>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Lines Per Sign</label>
+                            <select id="lines-per-sign" onchange="processBulkList()" class="w-full border p-2 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
+                                <option value="1">1 Line</option>
+                                <option value="2">2 Lines</option>
+                                <option value="3">3 Lines</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Bevel Edges</label>
+                            <select id="bevel-edges" onchange="runCalc()" class="w-full border p-2 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
+                                <option value="Yes">Yes (Beveled)</option>
+                                <option value="No">No Bevel</option>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- PHYSICS/PRODUCTION WARNINGS -->
-                    <div id="prod-warn-box" class="hidden mt-3 shrink-0 bg-red-100 border border-red-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
-                        <span class="text-[10px] text-red-900 font-bold leading-tight uppercase tracking-wide">🛑 Production Warning: Text Too Small</span>
-                        <span id="prod-warn-text" class="text-[9px] text-red-800 leading-tight">Calculated font height falls below minimum. Characters will not engrave cleanly.</span>
+                    <!-- BULK TEXT AREA -->
+                    <div class="pt-2">
+                        <label class="flex justify-between items-end text-[10px] font-bold text-gray-500 uppercase mb-1">
+                            <span>1. Paste Source Text</span>
+                            <span id="bulk-warn" class="hidden text-red-500 animate-pulse">Max 50 Signs Reached!</span>
+                        </label>
+                        <textarea id="bulk-list" oninput="processBulkList()" rows="6" placeholder="JOHN DOE\nCONFERENCE ROOM\n..." class="w-full border border-gray-300 p-3 rounded bg-white text-sm font-mono outline-none focus:border-blue-500 shadow-inner"></textarea>
                     </div>
 
-                    <div id="bright-warn-box" class="hidden mt-2 shrink-0 bg-amber-100 border border-amber-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
-                        <span class="text-[10px] text-amber-900 font-bold leading-tight uppercase tracking-wide">⚠️ Contrast Warning</span>
-                        <span class="text-[9px] text-amber-800 leading-tight">"Bright" face selected. Verify contrast ratio compliance with client.</span>
+                    <!-- ENGRAVE STYLE -->
+                    <div class="pt-2 border-t border-gray-200 mt-2 shrink-0">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Engrave Direction</label>
+                        <div class="flex bg-gray-100 p-1 rounded-lg">
+                            <button id="btn-front" onclick="setMode('front')" class="flex-1 py-1.5 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700">FRONT ENGRAVE</button>
+                            <button id="btn-reverse" onclick="setMode('reverse')" class="flex-1 py-1.5 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent">REVERSE ENGRAVED</button>
+                        </div>
+                    </div>
+
+                    <!-- REVERSE SUB-TABS -->
+                    <div id="reverse-tabs" class="hidden flex bg-gray-200 p-1 rounded-lg shrink-0">
+                        <button id="btn-tab-mat" onclick="setReverseTab('mat')" class="flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest">Step 1: Face Color</button>
+                        <button id="btn-tab-paint" onclick="setReverseTab('paint')" class="flex-1 py-1.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest">Step 2: Paint Color</button>
+                    </div>
+
+                    <!-- STEP 1: MATERIAL SWATCHES -->
+                    <div id="mat-container" class="shrink-0">
+                        <div id="selected-color-label" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 mb-2 truncate">Loading...</div>
+                        <div id="rowmark-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+                    </div>
+
+                    <!-- STEP 2: PAINT FILL -->
+                    <div id="paint-container" class="hidden shrink-0 relative z-20">
+                        <div class="flex bg-orange-100 p-1 rounded-lg mb-2">
+                            <button id="btn-pms" onclick="setPaintSystem('PMS')" class="flex-1 py-1 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200">PMS Match</button>
+                            <button id="btn-sw" onclick="setPaintSystem('SW')" class="flex-1 py-1 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest">Sherwin Williams</button>
+                        </div>
+                        <div class="relative mb-2">
+                            <input type="text" id="paint-search" placeholder="Search colors..." oninput="filterPaint()" class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-xs font-bold text-gray-800 outline-none focus:border-orange-500 shadow-sm transition">
+                        </div>
+                        <div id="selected-paint-label" class="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200 mb-2 truncate">None Selected</div>
+                        
+                        <div id="paint-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+
+                        <div id="custom-pms-wrap" class="hidden mt-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                            <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-1.5 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
+                        </div>
                     </div>
                 </div>
 
-                <!-- RESULTS MODULE -->
-                <div class="bg-blue-50 p-6 border-t-2 border-blue-200 shrink-0">
+                <!-- RESULTS MODULE (Moved to Bottom Left) -->
+                <div class="bg-blue-50 p-6 rounded-xl shadow-inner border border-blue-200 mt-6 shrink-0">
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price (Avg)</span>
                         <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
@@ -185,13 +144,65 @@
                         </div>
                         <span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
                     </div>
+                </div>
 
-                    <button onclick="copyTicket(this)" class="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 px-4 rounded text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-md">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            </div>
+
+            <!-- RIGHT COLUMN: BULK PREVIEW, VERIFY & RECEIPT -->
+            <div class="flex flex-col h-full bg-white relative z-0 p-6 space-y-5">
+                
+                <!-- THE BULK VISUALIZER GRID -->
+                <div class="bg-gray-800 rounded-xl shadow-inner relative overflow-hidden flex flex-col min-h-[300px] border border-gray-900">
+                    
+                    <div id="canvas-loading-overlay" class="absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+                        <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
+                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse">Connecting to Source Data...</span>
+                    </div>
+
+                    <div class="p-3 bg-gray-900 flex justify-between items-center border-b border-black shrink-0">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dynamic Preview (Uniform Scale)</span>
+                    </div>
+
+                    <!-- Scrollable Grid of Miniature Canvases -->
+                    <div class="flex-1 p-4 overflow-y-auto custom-scroll relative">
+                        <div id="bulk-preview-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 content-start">
+                            <!-- Populated via JS -->
+                            <div class="col-span-full h-24 bg-gray-700/50 rounded border border-gray-600 border-dashed flex items-center justify-center">
+                                <span class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Awaiting Roster Input</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PHYSICS/PRODUCTION WARNINGS -->
+                    <div id="prod-warn-box" class="hidden m-3 shrink-0 bg-red-100 border border-red-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
+                        <span class="text-[10px] text-red-900 font-bold leading-tight uppercase tracking-wide">🛑 Production Warning: Text Too Small</span>
+                        <span id="prod-warn-text" class="text-[9px] text-red-800 leading-tight">Calculated font height falls below minimum. Characters will not engrave cleanly.</span>
+                    </div>
+
+                    <div id="bright-warn-box" class="hidden m-3 mt-0 shrink-0 bg-amber-100 border border-amber-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
+                        <span class="text-[10px] text-amber-900 font-bold leading-tight uppercase tracking-wide">⚠️ Contrast Warning</span>
+                        <span class="text-[9px] text-amber-800 leading-tight">"Bright" face selected. Verify contrast ratio compliance with client.</span>
+                    </div>
+                </div>
+
+                <!-- LINE ITEM EDITOR (Moved under Preview) -->
+                <div class="flex-1 flex flex-col min-h-[200px]">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">2. Verify & Set Quantities</label>
+                    <div id="roster-editor" class="flex-1 border border-gray-200 bg-white rounded shadow-inner overflow-y-auto custom-scroll p-2 space-y-2">
+                        <div class="text-center text-xs text-gray-400 italic py-8">Awaiting text import...</div>
+                    </div>
+                </div>
+
+                <!-- TICKET & CLIPBOARD -->
+                <div class="bg-gray-50 p-4 border border-gray-200 rounded-xl shrink-0">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">3. Production Ticket Details</label>
+                    <!-- Job Desc Text Area Restored -->
+                    <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug custom-scroll shadow-inner" readonly></textarea>
+                    
+                    <button onclick="copyTicket(this)" class="w-full mt-3 bg-white hover:bg-gray-100 text-gray-700 font-bold py-2.5 px-4 border border-gray-300 rounded shadow-sm text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                         Copy Ticket & Roster
                     </button>
-                    <!-- Hidden textarea to hold the formatted payload for the copy command -->
-                    <textarea id="job-desc" class="hidden"></textarea>
                 </div>
 
             </div>
@@ -278,7 +289,7 @@
         function renderRosterEditor() {
             const editor = document.getElementById('roster-editor');
             if (parsedRoster.length === 0) {
-                editor.innerHTML = '<div class="text-center text-xs text-gray-400 italic py-6">Awaiting text import...</div>';
+                editor.innerHTML = '<div class="text-center text-xs text-gray-400 italic py-8">Awaiting text import...</div>';
                 return;
             }
 
@@ -287,10 +298,10 @@
                 const textPreview = sign.texts.join(' <span class="text-gray-300 mx-1">/</span> ');
                 html += `
                 <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded p-1.5 gap-2">
-                    <div class="text-[10px] font-bold text-gray-700 truncate flex-1 pl-1" title="${sign.texts.join(' / ')}">${i+1}. ${textPreview}</div>
+                    <div class="text-xs font-bold text-gray-700 truncate flex-1 pl-1" title="${sign.texts.join(' / ')}">${i+1}. ${textPreview}</div>
                     <div class="flex items-center shrink-0 border border-gray-300 rounded bg-white overflow-hidden">
                         <button onclick="updateSignQty(${sign.id}, -1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">-</button>
-                        <input type="number" min="1" value="${sign.qty}" onchange="setSignQty(${sign.id}, this.value)" class="w-8 text-center text-xs font-bold text-blue-700 outline-none">
+                        <input type="number" min="1" value="${sign.qty}" onchange="setSignQty(${sign.id}, this.value)" class="w-10 text-center text-xs font-bold text-blue-700 outline-none">
                         <button onclick="updateSignQty(${sign.id}, 1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">+</button>
                     </div>
                 </div>`;
@@ -322,7 +333,7 @@
 
         // --- TYPOGRAPHY PHYSICS ENGINE ---
         function calculateTypographyScale(inputs) {
-            if (parsedRoster.length === 0) return { finalFontHeight: 0, isTooSmall: false, uniformScaleStr: "10cqh" };
+            if (parsedRoster.length === 0) return { finalFontHeight: 0, isTooSmall: false, uniformScaleStr: "10cqw" };
 
             const fontStyle = document.getElementById('font-style').value;
             const fontName = fontStyle === 'serif' ? 'Lora' : 'Roboto';
@@ -344,7 +355,7 @@
             });
 
             // If empty
-            if (maxTextWidthPx === 0) return { finalFontHeight: 1, isTooSmall: false, uniformScaleStr: "20cqh" };
+            if (maxTextWidthPx === 0) return { finalFontHeight: 1, isTooSmall: false, uniformScaleStr: "10cqw" };
 
             // 2. Establish Available Canvas Constraints
             // 0.25" physical margin all the way around (0.5" total removed)
@@ -365,15 +376,15 @@
             const finalFontHeight = Math.min(maxFontHeightVertical, maxFontHeightHorizontal);
             const isTooSmall = finalFontHeight < minRequiredHeight;
 
-            // 5. Translation to CSS Container Queries (cqh)
-            // If final physical font height is 0.5", and sign height is 2", font is 25% of sign height
-            const cqhPercent = (finalFontHeight / inputs.h) * 100;
+            // 5. Translation to CSS Container Queries (cqw)
+            // Fix applied: Width-based percentage prevents the 0-height padding bug.
+            const cqwPercent = (finalFontHeight / inputs.w) * 100;
 
             return { 
                 finalFontHeight: finalFontHeight, 
                 isTooSmall: isTooSmall, 
                 minRequiredHeight: minRequiredHeight,
-                uniformScaleStr: `${cqhPercent}cqh`,
+                uniformScaleStr: `${cqwPercent}cqw`,
                 fontClass: fontStyle === 'serif' ? 'font-serif-style' : 'font-sans-serif'
             };
         }
@@ -394,14 +405,14 @@
 
             parsedRoster.forEach(sign => {
                 const box = document.createElement('div');
-                box.className = "w-full relative rounded-sm border border-black/20 shadow-md overflow-hidden bg-black flex flex-col items-center justify-center aspect-box";
+                box.className = "w-full relative rounded-sm border border-black/30 shadow-md overflow-hidden bg-black flex flex-col items-center justify-center aspect-box";
                 box.style.paddingBottom = `${ratio * 100}%`; 
                 
                 box.style.backgroundColor = selectedMat.Cap_Hex;
                 
                 // Flex container inside absolute to stack lines perfectly
                 const innerWrap = document.createElement('div');
-                innerWrap.className = "absolute inset-0 flex flex-col items-center justify-center text-center p-[2cqi]"; // 2% dynamic padding
+                innerWrap.className = "absolute inset-0 flex flex-col items-center justify-center text-center p-[2cqw]"; // margin padding
                 
                 sign.texts.forEach(text => {
                     const textSpan = document.createElement('span');
@@ -417,7 +428,7 @@
                 // Add quantity badge if > 1
                 if (sign.qty > 1) {
                     const badge = document.createElement('div');
-                    badge.className = "absolute top-1 right-1 bg-blue-500 text-white text-[8px] font-black px-1 rounded-sm shadow";
+                    badge.className = "absolute top-1 right-1 bg-blue-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm shadow-md z-10 border border-blue-600";
                     badge.innerText = `x${sign.qty}`;
                     box.appendChild(badge);
                 }
@@ -492,7 +503,7 @@
 
             filtered.forEach((c, index) => {
                 const btn = document.createElement('button');
-                btn.className = "w-6 h-6 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden shrink-0";
+                btn.className = "w-8 h-8 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden shrink-0";
                 
                 let capHex = c.Cap_Hex || '#000000';
                 let coreHex = c.Core_Hex || '#FFFFFF';
@@ -554,8 +565,8 @@
             const listToUse = activePaintSystem === 'PMS' ? pmsData : swData;
             
             const customBtn = document.createElement('button');
-            customBtn.className = "w-full py-1 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
-            customBtn.innerText = "+ Custom Match...";
+            customBtn.className = "w-full py-1.5 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
+            customBtn.innerText = "+ Custom / Unlisted Color...";
             customBtn.onclick = () => {
                 Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent'));
                 customBtn.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
@@ -570,7 +581,7 @@
             const fragment = document.createDocumentFragment();
             listToUse.forEach((p, index) => {
                 const btn = document.createElement('button');
-                btn.className = "paint-btn w-6 h-6 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
+                btn.className = "paint-btn w-8 h-8 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
                 btn.style.backgroundColor = p.Hex_Code;
                 btn.title = `${p.Name} (${p.Code})`;
                 
@@ -710,7 +721,7 @@
 
                 // --- TICKET GENERATION ---
                 let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
-                const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : '';
+                const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : 'Straight Cut Edge. ';
                 let explicitNotes = `${bevelTxt}No backers. No hardware. No installation. No raised copy. No braille.`;
                 let finalDesc = "";
 
@@ -731,21 +742,19 @@
 
         function copyTicket(btn) {
             const desc = document.getElementById('job-desc');
-            desc.classList.remove('hidden'); 
             desc.select();
             desc.setSelectionRange(0, 99999); 
             navigator.clipboard.writeText(desc.value);
-            desc.classList.add('hidden'); 
             
             const originalHTML = btn.innerHTML;
             btn.innerHTML = "✅ COPIED TO CLIPBOARD!";
-            btn.classList.add('bg-green-600', 'hover:bg-green-700');
-            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-green-100', 'text-green-800', 'border-green-300');
+            btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
             
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
-                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.remove('bg-green-100', 'text-green-800', 'border-green-300');
+                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
             }, 2500);
         }
 
@@ -787,8 +796,6 @@
                     Hex_Code: p['HEX Code'] || '#FFFFFF'
                 }));
                 pmsData = [...stdColors, ...formattedPMS];
-
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
                 
                 setPaintSystem('PMS'); 
                 setMode('front');      
@@ -798,6 +805,11 @@
                     loadingOverlay.innerHTML = '<span class="text-[10px] font-black text-red-500 uppercase tracking-widest">⚠️ Connection Failed</span>';
                 }
                 console.error("API Load Failed:", e);
+            } finally {
+                // Ensure loading overlay is always removed if connection attempt finishes
+                if (loadingOverlay && loadingOverlay.innerText !== '⚠️ CONNECTION FAILED') {
+                    loadingOverlay.classList.add('hidden');
+                }
             }
         });
     </script>
