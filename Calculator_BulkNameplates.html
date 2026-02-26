@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk ADA Nameplates v2.6</title>
+    <title>Bulk ADA Nameplates v2.7</title>
     <!-- Load Benchmark ADA Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lora:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -55,20 +55,15 @@
                     </div>
                 </div>
 
-                <!-- 2. MASTER TEMPLATE DESIGNER -->
+                <!-- 2. MASTER TEMPLATE CONTROLS (Moved preview to right column) -->
                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4 shadow-sm relative z-20">
-                    <div class="flex justify-between items-end mb-2">
-                        <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-widest">Master Template Designer</label>
+                    <div class="flex justify-between items-end mb-3">
+                        <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-widest">Master Template Layout</label>
                         <select id="lines-per-sign" onchange="updateLineControls(); processBulkList();" class="border border-indigo-200 p-1 rounded bg-white text-xs font-bold text-indigo-800 outline-none shadow-sm">
                             <option value="1">1 Line Per Sign</option>
                             <option value="2">2 Lines Per Sign</option>
                             <option value="3">3 Lines Per Sign</option>
                         </select>
-                    </div>
-
-                    <!-- Zoomed Preview of Sign 1 -->
-                    <div id="master-template-preview" class="w-full relative bg-gray-800 rounded-lg shadow-inner overflow-hidden flex flex-col items-center justify-center border border-gray-900 mb-3 aspect-box" style="height: 100px;">
-                        <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
                     </div>
 
                     <!-- Dynamic Line Controls -->
@@ -78,7 +73,7 @@
 
                     <!-- Overflow Behavior Toggle -->
                     <div class="mt-3 pt-3 border-t border-indigo-100">
-                        <label class="block text-[10px] font-bold text-indigo-800 uppercase mb-1">Layout Overflow Behavior</label>
+                        <label class="block text-[10px] font-bold text-indigo-800 uppercase mb-1">Text Overflow Handling</label>
                         <select id="overflow-mode" onchange="runCalc()" class="w-full border border-indigo-200 p-1.5 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-indigo-500 shadow-sm">
                             <option value="strict">Strict Template (Allow Overflow with Warning)</option>
                             <option value="shrink_outlier">Auto-Shrink Outliers (Keep others uniform)</option>
@@ -181,37 +176,52 @@
 
             </div>
 
-            <!-- RIGHT COLUMN: BULK PREVIEW & ROSTER EDITOR -->
+            <!-- RIGHT COLUMN: UNIFIED BATCH VISUALIZER -->
             <div class="lg:col-span-7 flex flex-col h-full bg-white relative z-0 p-6 space-y-5">
                 
-                <!-- THE BULK VISUALIZER GRID -->
-                <div class="bg-gray-800 rounded-xl shadow-inner relative overflow-hidden flex flex-col min-h-[400px] border border-gray-900">
+                <!-- THE DYNAMIC BATCH PREVIEW -->
+                <div class="bg-gray-800 rounded-xl shadow-inner relative overflow-hidden flex flex-col min-h-[500px] border border-gray-900">
                     
+                    <!-- Loading State Overlay -->
                     <div id="canvas-loading-overlay" class="absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
                         <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
                         <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse">Connecting to Source Data...</span>
                     </div>
 
+                    <!-- Header -->
                     <div class="p-3 bg-gray-900 flex justify-between items-center border-b border-black shrink-0">
                         <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dynamic Batch Preview</span>
                     </div>
 
-                    <!-- Scrollable Grid of Miniature Canvases -->
-                    <div class="flex-1 p-4 overflow-y-auto custom-scroll relative">
-                        <div id="bulk-preview-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 content-start">
-                            <div class="col-span-full h-24 bg-gray-700/50 rounded border border-gray-600 border-dashed flex items-center justify-center">
-                                <span class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Awaiting Roster Input</span>
+                    <!-- Canvas Area -->
+                    <div class="flex-1 p-5 overflow-y-auto custom-scroll relative flex flex-col gap-5">
+                        
+                        <!-- 1. Master Template Viewer (Sign #1) -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sign #1 (Master Template)</span>
+                            </div>
+                            <!-- Added 'relative' to prevent escape -->
+                            <div id="master-template-preview" class="w-full relative rounded shadow-xl overflow-hidden flex flex-col items-center justify-center border border-gray-700 aspect-box" style="height: 100px; background-color: #000;">
+                                <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
                             </div>
                         </div>
+
+                        <div id="grid-divider" class="border-t border-gray-700 w-full hidden"></div>
+
+                        <!-- 2. Grid for the Rest (Sign #2-50) -->
+                        <div id="bulk-preview-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 content-start">
+                            <!-- Injected via JS -->
+                        </div>
+
                     </div>
 
-                    <!-- PHYSICS/PRODUCTION WARNINGS -->
+                    <!-- PHYSICS/PRODUCTION WARNINGS (Footer of Canvas) -->
                     <div id="prod-warn-box" class="hidden m-3 shrink-0 bg-red-100 border border-red-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
                         <span class="text-[10px] text-red-900 font-bold leading-tight uppercase tracking-wide">🛑 Production Warning: Text Too Small</span>
                         <span class="text-[9px] text-red-800 leading-tight">A calculated font height falls below minimum standard. Characters will not engrave cleanly.</span>
                     </div>
 
-                    <!-- OVERFLOW WARNING -->
                     <div id="overflow-warn-box" class="hidden m-3 mt-0 shrink-0 bg-orange-100 border border-orange-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
                         <span class="text-[10px] text-orange-900 font-bold leading-tight uppercase tracking-wide">⚠️ Layout Overflow</span>
                         <span class="text-[9px] text-orange-800 leading-tight">A sign text overflows its physical bounds. Consider Auto-Shrinking or deleting the outlier name.</span>
@@ -507,6 +517,7 @@
         function renderBulkPreviews(inputs, activePaintHex, mathData) {
             const grid = document.getElementById('bulk-preview-grid');
             const masterPrev = document.getElementById('master-template-preview');
+            const divider = document.getElementById('grid-divider');
             
             const ratio = inputs.h / inputs.w;
             masterPrev.style.height = 'auto';
@@ -521,15 +532,22 @@
                 masterPrev.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>`;
             }
 
-            if (parsedRoster.length === 0) {
-                grid.innerHTML = `<div class="col-span-full h-24 bg-gray-700/50 rounded border border-gray-600 border-dashed flex flex-col items-center justify-center">
-                    <span class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Awaiting Roster Input</span>
-                </div>`;
+            // Divider Logic
+            if (mathData.renderData.length > 1) {
+                divider.classList.remove('hidden');
+            } else {
+                divider.classList.add('hidden');
+            }
+
+            if (parsedRoster.length <= 1) {
+                grid.innerHTML = '';
                 return;
             }
 
+            // Render remaining signs in the grid
             grid.innerHTML = '';
-            mathData.renderData.forEach(sign => {
+            for (let i = 1; i < mathData.renderData.length; i++) {
+                let sign = mathData.renderData[i];
                 const box = document.createElement('div');
                 box.className = "w-full relative rounded-sm border border-black/30 shadow-md overflow-hidden bg-black flex flex-col items-center justify-center aspect-box";
                 box.style.paddingBottom = `${ratio * 100}%`; 
@@ -537,7 +555,7 @@
                 
                 box.innerHTML = buildSignHTML(sign, inputs, activePaintHex, true);
                 grid.appendChild(box);
-            });
+            }
         }
 
         function buildSignHTML(sign, inputs, activePaintHex, showBadge) {
