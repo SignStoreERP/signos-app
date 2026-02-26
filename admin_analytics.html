@@ -22,16 +22,18 @@
     <script src="cost_wrap.js"></script>
 
     <style>
-        body { overflow: hidden; } /* Desktop App feel */
+        body { overflow: hidden; } 
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .heatmap-cell { min-width: 65px; height: 55px; }
+        .heatmap-active { ring: 2px; ring-color: #000; z-index: 10; position: relative; transform: scale(1.05); }
     </style>
 </head>
 <body class="bg-gray-100 h-screen font-sans flex flex-col">
 
-    <!-- INJECTED HEADER WILL APPEAR HERE via signos-core.js -->
+    <!-- INJECTED HEADER WILL APPEAR HERE -->
     <div id="header-container"></div>
 
     <div class="flex flex-1 overflow-hidden">
@@ -41,12 +43,10 @@
             <div class="p-4 border-b border-gray-800 bg-gray-950">
                 <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400">Select Product</h3>
             </div>
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1" id="product-menu">
-                <!-- Buttons injected here -->
-            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1" id="product-menu"></div>
         </div>
 
-        <!-- CENTER WORKSPACE: GRAPH & TABLE -->
+        <!-- CENTER WORKSPACE -->
         <div class="flex-1 flex flex-col bg-white overflow-hidden relative">
             
             <!-- Workspace Toolbar -->
@@ -55,28 +55,54 @@
                     <button id="btn-view-retail" onclick="setViewMode('retail')" class="bg-blue-600 text-white px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm transition">Retail & Profit View</button>
                     <button id="btn-view-cost" onclick="setViewMode('cost')" class="bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition">Hard Cost View</button>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">X-Axis Mode:</span>
-                    <select id="axis-mode" onchange="runGraphEngine()" class="border border-gray-300 rounded text-xs font-bold p-1 outline-none bg-white text-gray-700">
-                        <option value="qty">By Quantity (1 - 1000)</option>
-                        <option value="sqft">By Square Footage (1' - 100')</option>
-                    </select>
+                
+                <div class="flex items-center gap-4">
+                    <!-- Dynamic Dimension Inputs -->
+                    <div id="dim-inputs" class="hidden flex items-center gap-2 border-r border-gray-300 pr-4">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Max Width:</label>
+                        <input type="number" id="max-w" value="10" min="1" max="50" onchange="runGraphEngine()" class="w-14 border border-gray-300 rounded text-center text-xs font-bold p-1">
+                        <span class="text-gray-400 text-xs font-bold">ft</span>
+                        
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-2">Max Height:</label>
+                        <input type="number" id="max-h" value="10" min="1" max="50" onchange="runGraphEngine()" class="w-14 border border-gray-300 rounded text-center text-xs font-bold p-1">
+                        <span class="text-gray-400 text-xs font-bold">ft</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Analysis Mode:</span>
+                        <select id="axis-mode" onchange="runGraphEngine()" class="border border-gray-300 rounded text-xs font-bold p-1 outline-none bg-white text-gray-700">
+                            <option value="qty">Line Chart (Volume/Qty)</option>
+                            <option value="sqft">Heatmap (Dimensions)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <!-- Chart Area -->
-            <div class="flex-1 p-6 relative">
-                <div id="loader" class="absolute inset-0 bg-white/80 z-20 hidden flex items-center justify-center">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <!-- Visualization Area -->
+            <div class="flex-1 p-6 relative overflow-auto custom-scrollbar bg-gray-50/50" id="viz-container">
+                <div id="loader" class="absolute inset-0 bg-white/80 z-20 hidden flex flex-col items-center justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-3"></div>
+                    <span class="text-xs font-bold text-gray-500 tracking-widest uppercase">Calculating Physics Matrix...</span>
                 </div>
-                <canvas id="mainChart"></canvas>
+                
+                <!-- Chart Canvas -->
+                <div id="chart-wrapper" class="w-full h-full relative">
+                    <canvas id="mainChart"></canvas>
+                </div>
+
+                <!-- Heatmap Table -->
+                <div id="heatmap-wrapper" class="hidden min-w-max pb-10">
+                    <table class="border-collapse bg-white shadow-sm" id="heatmap-table">
+                        <!-- Injected via JS -->
+                    </table>
+                </div>
             </div>
 
-            <!-- Horizontal Detail Table (Click to Load) -->
-            <div class="h-48 border-t-4 border-gray-200 bg-gray-50 shrink-0 flex flex-col">
+            <!-- Horizontal Detail Table -->
+            <div class="h-48 border-t-4 border-gray-200 bg-gray-50 shrink-0 flex flex-col shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-10">
                 <div class="bg-gray-200 text-gray-600 px-4 py-1 text-[10px] font-black uppercase tracking-widest flex justify-between">
                     <span>Point Inspection Receipt</span>
-                    <span id="inspect-title" class="text-blue-600">Click a point on the graph</span>
+                    <span id="inspect-title" class="text-blue-600">Click a point on the graph or heatmap</span>
                 </div>
                 <div class="flex-1 overflow-x-auto p-4 custom-scrollbar">
                     <table class="w-full text-left border-collapse" id="inspect-table">
@@ -104,7 +130,6 @@
             </div>
             
             <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2 bg-gray-50" id="override-container">
-                <!-- Inputs injected here -->
                 <div class="text-center text-gray-400 text-xs mt-10 uppercase tracking-widest">Select a product</div>
             </div>
 
@@ -112,7 +137,6 @@
                 <button onclick="exportOverrides()" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-2.5 rounded text-xs tracking-widest transition shadow-md">
                     EXPORT MATRIX PAYLOAD
                 </button>
-                <p class="text-[9px] text-gray-400 text-center mt-2 leading-tight">Copy this output to update backend prices.</p>
             </div>
         </div>
     </div>
@@ -134,13 +158,12 @@
     
     const MODULES = ALL_MODULES.filter(m => m.config);
     const X_STEPS_QTY = [1-18];
-    const X_STEPS_SQFT = [1-7, 10, 11, 19-21]; // SqFt markers
 
     let activeConfig = null;
     let backendData = {};
     let chartInstance = null;
     let viewMode = 'retail'; // 'retail' or 'cost'
-    let currentChartDataMap = {}; // Stores raw results for the receipt click
+    let currentChartDataMap = {}; // Stores math results
 
     window.onload = () => {
         injectHeader("God Mode Analyzer", false);
@@ -166,7 +189,17 @@
         activeConfig = MODULES.find(m => m.id === id).config;
         document.getElementById('loader').classList.remove('hidden');
         document.getElementById('inspect-body').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-400 italic">No point selected</td></tr>';
-        document.getElementById('inspect-title').innerText = "Click a point on the graph";
+        document.getElementById('inspect-title').innerText = "Click a point to inspect";
+
+        // Auto-switch mode based on product logic
+        const modeSelect = document.getElementById('axis-mode');
+        if (id === 'yard') {
+            modeSelect.value = 'qty';
+            modeSelect.disabled = true; // Yard signs are always by Qty
+        } else {
+            modeSelect.value = 'sqft';
+            modeSelect.disabled = false;
+        }
 
         try {
             const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
@@ -180,7 +213,7 @@
         }
     }
 
-    // --- OVERRIDE PANEL LOGIC ---
+    // --- OVERRIDE PANEL ---
 
     function buildOverrides() {
         const container = document.getElementById('override-container');
@@ -231,14 +264,11 @@
             }
         });
         if(diffs.length === 0) { alert("No overrides detected."); return; }
-        
-        const payload = JSON.stringify(diffs, null, 2);
-        navigator.clipboard.writeText(payload);
-        alert(`Exported ${diffs.length} overrides to Clipboard. Ready to paste into Matrix.`);
-        console.log("PAYLOAD:", payload);
+        navigator.clipboard.writeText(JSON.stringify(diffs, null, 2));
+        alert(`Exported ${diffs.length} overrides to Clipboard. Ready to commit to backend Matrix.`);
     }
 
-    // --- GRAPH ENGINE ---
+    // --- LOGIC ENGINE ---
 
     function setViewMode(mode) {
         viewMode = mode;
@@ -253,10 +283,36 @@
         runGraphEngine();
     }
 
+    // Physics Constraint Checker
+    function isSizeValid(wInches, hInches, data) {
+        const maxW = parseFloat(data.Constraint_Max_W);
+        const maxH = parseFloat(data.Constraint_Max_H);
+        const maxRoll = parseFloat(data.Constraint_Max_Width_Inhouse);
+
+        // Rigid Rules
+        if (!isNaN(maxW) && !isNaN(maxH)) {
+            if ((wInches <= maxW && hInches <= maxH) || (wInches <= maxH && hInches <= maxW)) return true;
+            return false;
+        }
+        // Roll Rules (No seaming allowed)
+        if (!isNaN(maxRoll)) {
+            if (Math.min(wInches, hInches) <= maxRoll) return true;
+            return false; 
+        }
+        
+        // Fallback safety logic based on type
+        if (activeConfig.id.includes('banner') || activeConfig.id.includes('wrap') || activeConfig.id.includes('decal')) {
+            if (Math.min(wInches, hInches) > 62) return false;
+        } else if (activeConfig.id !== 'yard') {
+            if (Math.min(wInches, hInches) > 60 || Math.max(wInches, hInches) > 120) return false; 
+        }
+        return true;
+    }
+
     function runGraphEngine() {
         if(!activeConfig) return;
 
-        // 1. Harvest Current Simulation Data
+        // Apply Sandbox Data
         let simData = { ...backendData };
         [...activeConfig.retails, ...activeConfig.costs].forEach(item => {
             let val = document.getElementById('ovr_' + item.key).value;
@@ -266,15 +322,29 @@
             else delete simData[item.key];
         });
 
-        // 2. Define Chart Permutations
+        currentChartDataMap = {}; // Reset Map
+
         const axisMode = document.getElementById('axis-mode').value;
-        const steps = axisMode === 'qty' ? X_STEPS_QTY : X_STEPS_SQFT;
-        
+
+        if (axisMode === 'qty') {
+            document.getElementById('dim-inputs').classList.add('hidden');
+            document.getElementById('heatmap-wrapper').classList.add('hidden');
+            document.getElementById('chart-wrapper').classList.remove('hidden');
+            drawLineChart(simData);
+        } else {
+            document.getElementById('dim-inputs').classList.remove('hidden');
+            document.getElementById('chart-wrapper').classList.add('hidden');
+            document.getElementById('heatmap-wrapper').classList.remove('hidden');
+            drawHeatmap(simData);
+        }
+    }
+
+    // --- CHART VIEWS ---
+
+    function drawLineChart(simData) {
         let permutations = [];
-        const isYard = activeConfig.id === 'yard';
         
-        // Define base specs based on the calculator type to get logical graphing lines
-        if (isYard) {
+        if (activeConfig.id === 'yard') {
             permutations = [
                 { label: "1-Sided, No Stakes", inputs: { w:24, h:18, sides:1, hasStakes:false, files:1, incDesign:false } },
                 { label: "1-Sided, W/ Stakes", inputs: { w:24, h:18, sides:1, hasStakes:true, files:1, incDesign:false } },
@@ -282,49 +352,27 @@
                 { label: "2-Sided, W/ Stakes", inputs: { w:24, h:18, sides:2, hasStakes:true, files:1, incDesign:false } }
             ];
         } else {
-            // Generic SqFt Permutations (Assuming WxH is the driving factor)
+            // General setup for sqft products inside a qty chart
             const mats = activeConfig.controls.find(c => c.id === 'thickness' || c.id === 'material')?.opts || [{v:'Std', t:'Standard'}];
-            
-            // Limit to max 4 lines so chart isn't unreadable (First 2 mats, SS and DS)
             mats.slice(0, 2).forEach(mat => {
                 permutations.push({ label: `${mat.t} (1-Sided)`, inputs: { thickness: mat.v, material: mat.v, sides: 1, w:24, h:24, files:1, lam:true, shape:'Rectangle', incDesign:false } });
                 permutations.push({ label: `${mat.t} (2-Sided)`, inputs: { thickness: mat.v, material: mat.v, sides: 2, w:24, h:24, files:1, lam:true, shape:'Rectangle', incDesign:false } });
             });
         }
 
-        // 3. Build Datasets
         const datasets = [];
-        const colors = [
-            { line: '#2563EB', bar: 'rgba(37, 99, 235, 0.2)' }, // Blue
-            { line: '#059669', bar: 'rgba(5, 150, 105, 0.2)' }, // Green
-            { line: '#D97706', bar: 'rgba(217, 119, 6, 0.2)' }, // Orange
-            { line: '#7C3AED', bar: 'rgba(124, 58, 237, 0.2)' } // Purple
-        ];
-
-        currentChartDataMap = {}; // Reset global map for table clicks
+        const colors = [ { line: '#2563EB', bar: 'rgba(37, 99, 235, 0.2)' }, { line: '#059669', bar: 'rgba(5, 150, 105, 0.2)' }, { line: '#D97706', bar: 'rgba(217, 119, 6, 0.2)' }, { line: '#7C3AED', bar: 'rgba(124, 58, 237, 0.2)' } ];
 
         permutations.forEach((perm, index) => {
             const color = colors[index % colors.length];
-            const lineData = [];
-            const barData1 = []; // Profit (Retail View) or Materials (Cost View)
-            const barData2 = []; // Blank (Retail View) or Labor (Cost View)
+            const lineData = []; const barData1 = []; const barData2 = []; 
 
-            steps.forEach(stepVal => {
-                // Adjust inputs based on axis mode
-                let runInputs = { ...perm.inputs };
-                if (axisMode === 'qty') {
-                    runInputs.qty = stepVal;
-                } else {
-                    runInputs.qty = 1;
-                    runInputs.w = 12;
-                    runInputs.h = stepVal * 12; // Force SqFt
-                }
-
+            X_STEPS_QTY.forEach(qtyStep => {
+                let runInputs = { ...perm.inputs, qty: qtyStep };
                 if (typeof activeConfig.dynamicUI === 'function') runInputs = activeConfig.dynamicUI(runInputs);
                 
                 const res = activeConfig.engine(runInputs, simData);
-                const pointKey = `${index}-${stepVal}`;
-                currentChartDataMap[pointKey] = res; // Store for receipt generation
+                currentChartDataMap[`${index}-${qtyStep}`] = { ...res, _qty: qtyStep }; 
 
                 if (!res || !res.retail) {
                     lineData.push(null); barData1.push(null); barData2.push(null); return;
@@ -337,122 +385,134 @@
                 } else {
                     lineData.push(res.cost.total);
                     const b = res.cost.breakdown || {};
-                    const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0);
+                    const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0) + (b.stakeCost || 0);
                     const labor = (b.costOp || b.costPrintLabor || b.costPrint || 0) + (b.costCut || b.costCutLabor || 0) + (b.costFinish || 0);
                     barData1.push(mats);
                     barData2.push(labor);
                 }
             });
 
-            // Push Line (Total)
-            datasets.push({
-                type: 'line',
-                label: perm.label + (viewMode === 'retail' ? ' (Retail)' : ' (Total Cost)'),
-                data: lineData,
-                borderColor: color.line,
-                backgroundColor: color.line,
-                borderWidth: 3,
-                tension: 0.1,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                _permIndex: index // Custom ref for clicks
-            });
-
-            // Push Bars
+            datasets.push({ type: 'line', label: perm.label + (viewMode==='retail' ? ' (Total Retail)' : ' (Total Cost)'), data: lineData, borderColor: color.line, backgroundColor: color.line, borderWidth: 3, tension: 0.1, pointRadius: 4, pointHoverRadius: 6, _permIndex: index });
+            
             if (viewMode === 'retail') {
-                datasets.push({
-                    type: 'bar',
-                    label: perm.label + ' (Profit)',
-                    data: barData1,
-                    backgroundColor: color.bar,
-                    borderWidth: 1,
-                    borderColor: color.line,
-                    _permIndex: index
-                });
+                datasets.push({ type: 'bar', label: perm.label + ' (Net Profit)', data: barData1, backgroundColor: color.bar, borderWidth: 1, borderColor: color.line, _permIndex: index });
             } else {
-                datasets.push({
-                    type: 'bar',
-                    label: perm.label + ' (Materials)',
-                    data: barData1,
-                    backgroundColor: 'rgba(239, 68, 68, 0.4)', // Red tint for Mats
-                    borderWidth: 1,
-                    borderColor: '#EF4444',
-                    _permIndex: index
-                });
-                datasets.push({
-                    type: 'bar',
-                    label: perm.label + ' (Labor/Mach)',
-                    data: barData2,
-                    backgroundColor: 'rgba(245, 158, 11, 0.4)', // Orange tint for Labor
-                    borderWidth: 1,
-                    borderColor: '#F59E0B',
-                    _permIndex: index
-                });
+                datasets.push({ type: 'bar', label: perm.label + ' (Materials)', data: barData1, backgroundColor: 'rgba(239, 68, 68, 0.4)', borderWidth: 1, borderColor: '#EF4444', _permIndex: index });
+                datasets.push({ type: 'bar', label: perm.label + ' (Labor/Mach)', data: barData2, backgroundColor: 'rgba(245, 158, 11, 0.4)', borderWidth: 1, borderColor: '#F59E0B', _permIndex: index });
             }
         });
 
-        drawChart(steps, datasets, axisMode);
-    }
-
-    function drawChart(labels, datasets, axisMode) {
         if (chartInstance) chartInstance.destroy();
-        
         const ctx = document.getElementById('mainChart').getContext('2d');
-        const xTitle = axisMode === 'qty' ? 'Quantity Ordered' : 'Total Square Footage';
-
         chartInstance = new Chart(ctx, {
-            data: { labels: labels, datasets: datasets },
+            data: { labels: X_STEPS_QTY, datasets: datasets },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
+                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                 plugins: {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
+                                const stepVal = context.chart.data.labels[context.dataIndex];
+                                const permIndex = context.dataset._permIndex;
+                                const res = currentChartDataMap[`${permIndex}-${stepVal}`];
+                                
                                 let label = context.dataset.label || '';
-                                if (label) label += ': ';
-                                if (context.parsed.y !== null) {
-                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
-                                    // Add unit breakdown
-                                    const qtyOrSqft = context.label;
-                                    label += ` ($${(context.parsed.y / qtyOrSqft).toFixed(2)}/unit)`;
+                                let val = context.parsed.y;
+                                
+                                if (label.includes('Profit') && res) {
+                                    return `${label}: $${val.toFixed(2)} (Margin: ${(res.metrics.margin*100).toFixed(1)}%)`;
                                 }
-                                return label;
+                                return `${label}: $${val.toFixed(2)} ($${(val/stepVal).toFixed(2)} ea)`;
                             }
                         }
                     }
                 },
                 scales: {
-                    x: { title: { display: true, text: xTitle, font: { weight: 'bold' } } },
-                    y: { 
-                        title: { display: true, text: 'Money ($)', font: { weight: 'bold' } },
-                        beginAtZero: true,
-                        ticks: { callback: function(value) { return '$' + value; } }
-                    }
+                    x: { title: { display: true, text: 'Total Quantity Ordered', font: { weight: 'bold' } } },
+                    y: { title: { display: true, text: 'Money ($)', font: { weight: 'bold' } }, beginAtZero: true }
                 },
                 onClick: (e) => {
-                    const canvasPosition = Chart.helpers.getRelativePosition(e, chartInstance);
-                    const dataX = chartInstance.scales.x.getValueForPixel(canvasPosition.x);
                     const elements = chartInstance.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
-                    
                     if (elements.length > 0) {
                         const dataIndex = elements.index;
                         const datasetIndex = elements.datasetIndex;
-                        const stepVal = labels[dataIndex];
+                        const stepVal = X_STEPS_QTY[dataIndex];
                         const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
-                        
-                        renderReceiptTable(permIndex, stepVal, axisMode);
+                        renderReceiptTable(permIndex, stepVal);
                     }
                 }
             }
         });
     }
 
-    // --- HORIZONTAL RECEIPT TABLE ---
+    function drawHeatmap(simData) {
+        const maxW = parseInt(document.getElementById('max-w').value) || 10;
+        const maxH = parseInt(document.getElementById('max-h').value) || 10;
 
-    function renderReceiptTable(permIndex, stepVal, axisMode) {
-        const pointKey = `${permIndex}-${stepVal}`;
+        let tableHtml = `<thead><tr><th class="p-2 border border-gray-200 bg-gray-100 text-[10px] text-gray-500 uppercase">H \\ W</th>`;
+        for (let w = 1; w <= maxW; w++) tableHtml += `<th class="p-2 border border-gray-200 bg-gray-100 text-xs text-gray-800">${w}'</th>`;
+        tableHtml += `</tr></thead><tbody>`;
+
+        for (let h = 1; h <= maxH; h++) {
+            tableHtml += `<tr><th class="p-2 border border-gray-200 bg-gray-100 text-xs text-gray-800">${h}'</th>`;
+            
+            for (let w = 1; w <= maxW; w++) {
+                const wInches = w * 12;
+                const hInches = h * 12;
+
+                if (!isSizeValid(wInches, hInches, simData)) {
+                    tableHtml += `<td class="p-2 border border-gray-200 bg-gray-200 text-center text-gray-400" title="Exceeds Manufacturing Limits">
+                        <div class="diagonal-stripes w-full h-full text-[8px] font-bold">N/A</div></td>`;
+                    continue;
+                }
+
+                // Default Heatmap Inputs (1-Sided, Standard Qty 1)
+                let inputs = { qty: 1, w: wInches, h: hInches, sides: 1, incDesign: false, files: 1, shape: 'Rectangle', rounded: false, mask: false, install: 'No' };
+                
+                // Inherit standard material specs from config definitions
+                activeConfig.controls.forEach(c => { if(inputs[c.id] === undefined && c.opts) inputs[c.id] = c.opts.v; });
+                if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
+
+                const res = activeConfig.engine(inputs, simData);
+                const pointKey = `hm-${w}-${h}`;
+                currentChartDataMap[pointKey] = { ...res, _qty: 1 }; 
+
+                let cellContent = "";
+                let bgClass = "bg-white hover:bg-gray-50";
+
+                if (viewMode === 'retail') {
+                    const margin = res.metrics.margin;
+                    const mPct = (margin * 100).toFixed(1) + '%';
+                    const isFail = margin < 0.70; // 70% Target Margin limit
+                    bgClass = isFail ? 'bg-red-50 hover:bg-red-100 text-red-700' : 'bg-green-50 hover:bg-green-100 text-green-700';
+                    cellContent = `<div class="text-[11px] font-black">${mPct}</div><div class="text-[9px] font-mono opacity-70">$${res.retail.unitPrice.toFixed(2)}/ea</div>`;
+                } else {
+                    bgClass = 'bg-orange-50 hover:bg-orange-100 text-orange-800';
+                    const b = res.cost.breakdown;
+                    const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0);
+                    cellContent = `<div class="text-[11px] font-black">$${res.cost.total.toFixed(2)}</div><div class="text-[9px] font-mono opacity-70">M:$${mats.toFixed(2)}</div>`;
+                }
+
+                tableHtml += `<td class="p-1 border border-gray-200 text-center cursor-pointer transition ${bgClass} heatmap-cell" id="cell-${pointKey}" onclick="selectHeatmapCell('${pointKey}')">
+                    ${cellContent}</td>`;
+            }
+            tableHtml += `</tr>`;
+        }
+        tableHtml += `</tbody>`;
+        document.getElementById('heatmap-table').innerHTML = tableHtml;
+    }
+
+    function selectHeatmapCell(pointKey) {
+        document.querySelectorAll('.heatmap-cell').forEach(c => c.classList.remove('heatmap-active', 'ring-2', 'ring-blue-600', 'z-10'));
+        const el = document.getElementById('cell-' + pointKey);
+        if(el) el.classList.add('heatmap-active', 'ring-2', 'ring-blue-600', 'z-10');
+        renderReceiptTable('hm', pointKey);
+    }
+
+    // --- RECEIPT RENDERER ---
+
+    function renderReceiptTable(permIndex, stepVal) {
+        const pointKey = permIndex === 'hm' ? stepVal : `${permIndex}-${stepVal}`;
         const res = currentChartDataMap[pointKey];
         const tbody = document.getElementById('inspect-body');
         const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
@@ -462,22 +522,23 @@
             return;
         }
 
-        document.getElementById('inspect-title').innerHTML = `Inspection: <b class="text-gray-800">${axisMode === 'qty' ? 'Qty' : 'SqFt'} ${stepVal}</b>`;
+        const displayLabel = permIndex === 'hm' ? `Size: ${stepVal.split('-')[1]}' x ${stepVal.split('-')[2]}'` : `Quantity: ${res._qty}`;
+        document.getElementById('inspect-title').innerHTML = `Inspection: <b class="text-gray-800">${displayLabel}</b>`;
 
         let html = '';
 
         // Retail Lines
-        html += `
-            <tr class="bg-blue-50/50 border-b border-gray-100">
-                <td class="py-1.5 font-bold text-blue-700">RETAIL</td>
-                <td class="py-1.5">Base Print Price</td>
-                <td class="py-1.5 text-right font-mono">${fmt(res.retail.printTotal / (axisMode === 'qty' ? stepVal : 1))}</td>
-                <td class="py-1.5 text-right font-bold">${fmt(res.retail.printTotal)}</td>
-            </tr>
-        `;
+        html += `<tr class="bg-blue-50/50 border-b border-gray-100">
+                <td class="py-1.5 font-bold text-blue-700">RETAIL</td><td class="py-1.5">Base Print Price</td>
+                <td class="py-1.5 text-right font-mono">${fmt(res.retail.printTotal / res._qty)}</td><td class="py-1.5 text-right font-bold">${fmt(res.retail.printTotal)}</td>
+            </tr>`;
+        
         if (res.retail.routerFee) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">CNC Routing Fee</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold text-orange-600">${fmt(res.retail.routerFee)}</td></tr>`;
-        if (res.retail.stakeTotal) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">Hardware / Stakes</td><td class="py-1.5 text-right font-mono">${fmt(res.retail.stakeTotal / stepVal)}</td><td class="py-1.5 text-right font-bold">${fmt(res.retail.stakeTotal)}</td></tr>`;
+        if (res.retail.contourFee) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">Contour Cut Fee</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold text-orange-600">${fmt(res.retail.contourFee)}</td></tr>`;
+        if (res.retail.weedFee) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">Complex Weeding</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold text-orange-600">${fmt(res.retail.weedFee)}</td></tr>`;
+        if (res.retail.stakeTotal) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">Hardware / Stakes</td><td class="py-1.5 text-right font-mono">${fmt(res.retail.stakeTotal / res._qty)}</td><td class="py-1.5 text-right font-bold">${fmt(res.retail.stakeTotal)}</td></tr>`;
         if (res.retail.setupFee) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">Setup Fee</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold">${fmt(res.retail.setupFee)}</td></tr>`;
+        
         html += `<tr class="bg-blue-100 border-b-2 border-blue-200"><td colspan="3" class="py-1.5 font-black text-blue-900 text-right">TOTAL RETAIL:</td><td class="py-1.5 text-right font-black text-blue-900">${fmt(res.retail.grandTotal)}</td></tr>`;
 
         // Cost Lines
@@ -487,29 +548,20 @@
         const labMach = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0);
         const setup = (b.costSetup || 0);
         
-        html += `
-            <tr class="bg-red-50/50 border-b border-gray-100">
-                <td class="py-1.5 font-bold text-red-700 mt-2">COST</td>
-                <td class="py-1.5">Raw Materials & Media</td>
-                <td class="py-1.5 text-right font-mono">${fmt(mats / (axisMode === 'qty' ? stepVal : 1))}</td>
-                <td class="py-1.5 text-right font-bold">${fmt(mats)}</td>
+        html += `<tr class="bg-red-50/50 border-b border-gray-100">
+                <td class="py-1.5 font-bold text-red-700 mt-2">COST</td><td class="py-1.5">Raw Materials & Media</td>
+                <td class="py-1.5 text-right font-mono">${fmt(mats / res._qty)}</td><td class="py-1.5 text-right font-bold">${fmt(mats)}</td>
             </tr>
-            <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Ink Usage</td><td class="py-1.5 text-right font-mono">${fmt(ink / (axisMode === 'qty' ? stepVal : 1))}</td><td class="py-1.5 text-right font-bold">${fmt(ink)}</td></tr>
+            <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Ink Usage</td><td class="py-1.5 text-right font-mono">${fmt(ink / res._qty)}</td><td class="py-1.5 text-right font-bold">${fmt(ink)}</td></tr>
             <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Setup Labor</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold">${fmt(setup)}</td></tr>
-            <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Labor & Machine Run</td><td class="py-1.5 text-right font-mono">${fmt(labMach / (axisMode === 'qty' ? stepVal : 1))}</td><td class="py-1.5 text-right font-bold text-orange-600">${fmt(labMach)}</td></tr>
-            <tr class="bg-red-100 border-b-2 border-red-200"><td colspan="3" class="py-1.5 font-black text-red-900 text-right">TOTAL HARD COST:</td><td class="py-1.5 text-right font-black text-red-900">${fmt(res.cost.total)}</td></tr>
-        `;
+            <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Labor & Machine Run</td><td class="py-1.5 text-right font-mono">${fmt(labMach / res._qty)}</td><td class="py-1.5 text-right font-bold text-orange-600">${fmt(labMach)}</td></tr>
+            <tr class="bg-red-100 border-b-2 border-red-200"><td colspan="3" class="py-1.5 font-black text-red-900 text-right">TOTAL HARD COST:</td><td class="py-1.5 text-right font-black text-red-900">${fmt(res.cost.total)}</td></tr>`;
 
         // Analytics
         const margin = res.metrics.margin;
         const mPct = (margin * 100).toFixed(1) + "%";
         const mClass = margin < 0.70 ? 'text-red-600' : 'text-green-600';
-        html += `
-            <tr>
-                <td colspan="3" class="py-2 font-black text-gray-500 text-right">NET PROFIT & MARGIN:</td>
-                <td class="py-2 text-right font-black ${mClass}">${fmt(res.retail.grandTotal - res.cost.total)} (${mPct})</td>
-            </tr>
-        `;
+        html += `<tr><td colspan="3" class="py-2 font-black text-gray-500 text-right">NET PROFIT & MARGIN:</td><td class="py-2 text-right font-black ${mClass}">${fmt(res.retail.grandTotal - res.cost.total)} (${mPct})</td></tr>`;
 
         tbody.innerHTML = html;
     }
