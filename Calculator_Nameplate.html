@@ -12,71 +12,122 @@
         .color-scroll::-webkit-scrollbar { width: 6px; }
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .aspect-box { transition: all 0.3s ease-in-out; }
+        @keyframes pulse-warn { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .bright-warning { animation: pulse-warn 2s infinite; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
-    <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
+    <div id="main-card" class="max-w-4xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
-        <!-- INPUTS -->
-        <div class="p-6 space-y-4">
-            <div class="grid grid-cols-3 gap-3">
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="10" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="2" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
-            </div>
-
-            <div class="border-t border-gray-100 pt-3">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Engraving Style</label>
-                <select id="style" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="updateSwatches()">
-                    <option value="Front">Standard Front Engrave (Mattes)</option>
-                    <option value="Reverse">Reverse Engrave (Ultra-Mattes + Paint Fill)</option>
-                </select>
-            </div>
-
-            <div id="paint-wrap" class="hidden bg-orange-50 border border-orange-200 p-3 rounded-lg">
-                <label class="block text-[10px] font-bold text-orange-700 uppercase mb-1">Engraved Text Color (Paint Fill)</label>
-                <select id="paintColor" class="w-full border border-orange-300 p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-orange-500 outline-none" onchange="updateSwatches()"></select>
-            </div>
-
-            <div class="mt-2">
-                <div class="flex justify-between items-end mb-1">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Substrate Color</label>
-                    <span id="selected-color-label" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">None Selected</span>
-                </div>
-                <div id="color-grid" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
-                    <div class="text-xs text-gray-400 font-bold italic w-full text-center py-4 animate-pulse">Loading Swatches...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- RESULTS -->
-        <div class="bg-blue-50 p-6 border-t border-blue-100 shadow-inner">
-            <div class="flex justify-between items-end mb-2">
-                <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
-                <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
-            </div>
-            <div class="border-t border-blue-200/50 my-3"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-0">
             
-            <div class="space-y-1 text-xs text-blue-900/70 pt-1">
-                <div class="flex justify-between"><span>Nameplates (<span id="lbl-sqin">0</span> sq in):</span><span id="ui-print" class="font-bold">$0.00</span></div>
-                <div class="flex justify-between"><span>File Setup:</span><span id="ui-setup" class="font-bold">$0.00</span></div>
-            </div>
-
-            <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
-                <div>
-                    <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
-                    <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $35</span>
-                    <div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+            <!-- LEFT COLUMN: INPUTS -->
+            <div class="p-6 space-y-6 border-r border-gray-200 bg-white">
+                
+                <div class="grid grid-cols-3 gap-3">
+                    <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="10" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="2" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
                 </div>
-                <span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
-            </div>
-        </div>
 
-        <!-- DESCRIPTION GENERATOR -->
-        <div class="bg-gray-50 p-4 border-t border-gray-200">
-            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description for Production</label>
-            <textarea id="job-desc" class="w-full text-xs p-2 border rounded bg-white h-24 text-gray-600 font-mono outline-none" readonly></textarea>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Engrave Direction</label>
+                    <div class="flex bg-gray-100 p-1 rounded-lg">
+                        <button id="btn-front" onclick="setMode('front')" class="flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700">FRONT ENGRAVE</button>
+                        <button id="btn-reverse" onclick="setMode('reverse')" class="flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent">REVERSE (ADA)</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label id="cap-label" class="block text-[10px] font-bold text-gray-500 uppercase">Surface Material / Cap Color</label>
+                            <span id="selected-color-label" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Loading...</span>
+                        </div>
+                        <div id="rowmark-grid" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
+                            <div class="text-xs text-gray-400 font-bold italic w-full text-center py-4 animate-pulse">Fetching Rowmark Array...</div>
+                        </div>
+                    </div>
+
+                    <!-- Reverse Specifics: Paint Fill -->
+                    <div id="reverse-options" class="hidden space-y-4 pt-4 border-t border-gray-200">
+                        <div>
+                            <label class="block text-[10px] font-bold text-orange-700 uppercase mb-1">Engraved Text Color (Paint Fill)</label>
+                            <div class="relative">
+                                <input type="text" id="paint-search" placeholder="Search Sherwin Williams..." oninput="filterPaint()" onclick="document.getElementById('paint-list').classList.remove('hidden')" class="w-full bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 text-sm font-bold text-orange-900 outline-none focus:border-orange-500">
+                                <div id="paint-list" class="absolute z-20 w-full bg-white border border-orange-200 rounded-b-lg shadow-xl max-h-40 overflow-y-auto color-scroll text-xs hidden mt-1">
+                                    <!-- JS Injection -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Or Enter Custom PMS Code</label>
+                                <input type="text" id="pms-code" placeholder="e.g. PMS 281 C" oninput="runCalc()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: PREVIEW & PRICING -->
+            <div class="bg-slate-50 flex flex-col">
+                
+                <!-- Preview Window -->
+                <div class="bg-gray-800 p-8 shadow-inner flex items-center justify-center min-h-[250px] relative">
+                    <span class="absolute top-3 right-4 text-[9px] font-black text-gray-500 uppercase tracking-widest">Ratio Preview</span>
+                    
+                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex items-center justify-center relative overflow-hidden border border-black/20" style="width: 100%; max-width: 340px; background-color: #000;">
+                        <span id="preview-text" class="font-black text-center pointer-events-none px-4 leading-tight truncate w-full" style="font-size: 28px; color: #fff;">SAMPLE TEXT</span>
+                        <div id="preview-series-tag" class="absolute bottom-1 left-2 text-[8px] font-bold uppercase opacity-50"></div>
+                    </div>
+                </div>
+
+                <!-- Warning Box for Bright -->
+                <div id="bright-warn-box" class="hidden bg-amber-100 border-y border-amber-300 p-3 px-6 flex items-start gap-3 shadow-inner">
+                    <div class="text-amber-600 mt-0.5 text-lg">⚠️</div>
+                    <div class="text-[11px] text-amber-900 font-medium">
+                        <strong class="uppercase tracking-tighter font-black">Warning:</strong> You selected a <span class="font-black underline italic">BRIGHT</span> color. Please verify with artwork. Most standard signs use standard "White".
+                    </div>
+                </div>
+
+                <!-- Results Area -->
+                <div class="p-6 flex-1 flex flex-col">
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
+                        <span id="ui-unit" class="text-3xl font-black text-blue-900 tracking-tight">$0.00</span>
+                    </div>
+                    
+                    <div class="border-t border-blue-200/50 my-3"></div>
+                    
+                    <div class="space-y-1 text-xs text-blue-900/70 pt-1">
+                        <div class="flex justify-between"><span>Engraved Plates (<span id="lbl-sqin">0</span> sq in):</span><span id="ui-print" class="font-bold">$0.00</span></div>
+                        <div class="flex justify-between text-gray-400 italic"><span>Setup Fee (Removed per v2.1):</span><span class="font-bold">$0.00</span></div>
+                    </div>
+
+                    <div class="mt-auto pt-4">
+                        <div class="flex justify-between items-end border-t-2 border-blue-800 pt-2">
+                            <div>
+                                <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
+                                <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Min: $35</span>
+                                <div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+                            </div>
+                            <span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description Generator -->
+                <div class="bg-gray-100 p-4 border-t border-gray-200 shrink-0">
+                    <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Production Ticket Details</label>
+                    <textarea id="job-desc" class="w-full text-[11px] p-2 border border-gray-300 shadow-inner rounded bg-white h-24 text-gray-700 font-mono outline-none" readonly></textarea>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -84,89 +135,141 @@
         let backendData = {};
         let rowmarkData = [];
         let paintData = [];
-        let activeMaterial = null;
+        
+        let selectedMat = null;
+        let selectedPaint = null;
+        let currentMode = 'front';
+
+        function setMode(mode) {
+            currentMode = mode;
+            const btnF = document.getElementById('btn-front');
+            const btnR = document.getElementById('btn-reverse');
+            const revOpts = document.getElementById('reverse-options');
+            const capLab = document.getElementById('cap-label');
+
+            if (mode === 'front') {
+                btnF.className = "flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700";
+                btnR.className = "flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent";
+                revOpts.classList.add('hidden');
+                capLab.innerText = "Surface Material / Cap Color";
+            } else {
+                btnR.className = "flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700";
+                btnF.className = "flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent";
+                revOpts.classList.remove('hidden');
+                capLab.innerText = "Substrate Color (Faces Outward)";
+            }
+            
+            updateSwatches();
+        }
 
         function updateSwatches() {
-            const style = document.getElementById('style').value;
-            const paintWrap = document.getElementById('paint-wrap');
-            const paintSelect = document.getElementById('paintColor');
-            const grid = document.getElementById('color-grid');
-            
-            let activePaintHex = "#FFFFFF";
-            let activePaintName = "";
-
-            if (style === 'Reverse') {
-                paintWrap.classList.remove('hidden');
-                activePaintHex = paintData.find(p => p.Code === paintSelect.value)?.Hex_Code || "#FFFFFF";
-                activePaintName = paintData.find(p => p.Code === paintSelect.value)?.Name || "";
-            } else {
-                paintWrap.classList.add('hidden');
-            }
-
+            const grid = document.getElementById('rowmark-grid');
             grid.innerHTML = '';
-            activeMaterial = null;
-
+            
             // Filter Rowmark table based on style (Mattes vs Ultra-Mattes)
             const filtered = rowmarkData.filter(c => {
                 const isReverseMat = c.Series.includes('Reverse');
-                if (style === 'Reverse') return isReverseMat;
+                if (currentMode === 'reverse') return isReverseMat;
                 return !isReverseMat;
             });
 
-            filtered.forEach(c => {
+            filtered.forEach((c, index) => {
                 const btn = document.createElement('button');
                 btn.className = "w-10 h-10 rounded border-2 border-gray-300 shadow-sm hover:scale-105 transition focus:outline-none relative group overflow-hidden";
                 
-                // Build Split-Color Thumbnail
                 let capHex = c.Cap_Hex || '#000000';
                 let coreHex = c.Core_Hex || '#FFFFFF';
 
-                // If Reverse Engrave, the core (clear text) becomes the selected Paint Color
-                if (style === 'Reverse') {
-                    coreHex = activePaintHex;
+                // Reverse Engrave Thumbnail: Shows the Substrate Cap (Background) and a generic transparent cut
+                if (currentMode === 'reverse') {
+                    coreHex = '#e2e8f0'; // Represents the etched clear back before paint
                 }
 
                 btn.style.background = `linear-gradient(135deg, ${capHex} 50%, ${coreHex} 50%)`;
-                btn.title = `${c.Item_Code} - ${c.Cap_Color} / ${c.Core_Color}`;
+                btn.title = `${c.Item_Code} - ${c.Cap_Color}`;
 
                 btn.onclick = () => {
                     Array.from(grid.children).forEach(child => child.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-500', 'border-transparent'));
                     btn.classList.add('ring-2', 'ring-offset-2', 'ring-blue-500', 'border-transparent');
                     
-                    activeMaterial = c;
+                    selectedMat = c;
                     const thickTxt = c.Thickness ? `(${c.Thickness})` : "";
-                    
-                    if (style === 'Reverse') {
-                        document.getElementById('selected-color-label').innerText = `[${c.Item_Code}] ${c.Cap_Color} Back / ${activePaintName} Text ${thickTxt}`;
-                    } else {
-                        document.getElementById('selected-color-label').innerText = `[${c.Item_Code}] ${c.Cap_Color} Face / ${c.Core_Color} Text ${thickTxt}`;
-                    }
+                    document.getElementById('selected-color-label').innerText = `[${c.Item_Code}] ${c.Cap_Color} ${thickTxt}`;
                     
                     runCalc();
                 };
 
                 grid.appendChild(btn);
+                
+                // Auto-select first item or default 222-402
+                if (currentMode === 'front' && c.Item_Code === '222-402') setTimeout(() => btn.click(), 10);
+                if (currentMode === 'reverse' && index === 0) setTimeout(() => btn.click(), 10);
             });
-
-            // Auto-select first item
-            if (grid.firstChild) grid.firstChild.click();
         }
 
+        function filterPaint() {
+            const query = document.getElementById('paint-search').value.toLowerCase();
+            const list = document.getElementById('paint-list');
+            list.innerHTML = '';
+            
+            const matches = paintData.filter(p => p.Name.toLowerCase().includes(query) || p.Code.toLowerCase().includes(query));
+            
+            matches.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "p-2 hover:bg-orange-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0";
+                div.onclick = () => {
+                    selectedPaint = p;
+                    document.getElementById('paint-search').value = `${p.Name} (${p.Code})`;
+                    list.classList.add('hidden');
+                    // Clear custom PMS if they select a real SW color
+                    document.getElementById('pms-code').value = '';
+                    runCalc();
+                };
+                div.innerHTML = `
+                    <span class="font-bold text-gray-700">${p.Name} <span class="text-[9px] text-gray-400 ml-1">${p.Code}</span></span>
+                    <div class="w-4 h-4 rounded-full border border-black/20 shadow-inner" style="background:${p.Hex_Code}"></div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Close paint dropdown if clicked outside
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('#paint-search') && !e.target.closest('#paint-list')) {
+                document.getElementById('paint-list').classList.add('hidden');
+            }
+        });
+
         function runCalc() {
-            if(!backendData.Retail_Min_Order || !activeMaterial) return;
+            if(!backendData.Retail_Min_Order || !selectedMat) return;
 
             try {
-                const style = document.getElementById('style').value;
-                const paintSelect = document.getElementById('paintColor');
-                const paintName = paintData.find(p => p.Code === paintSelect.value)?.Name || "";
+                const pmsCode = document.getElementById('pms-code').value.trim();
+                const isReverse = currentMode === 'reverse';
+
+                // Determine Active Paint Name
+                let finalPaintName = "";
+                let activePaintHex = "#FFFFFF"; // Default paint color for preview
+
+                if (isReverse) {
+                    if (pmsCode !== "") {
+                        finalPaintName = `CUSTOM: ${pmsCode}`;
+                        activePaintHex = "#e2e8f0"; // Generic light grey for custom PMS in preview
+                    } else if (selectedPaint) {
+                        finalPaintName = `[${selectedPaint.Code}] ${selectedPaint.Name}`;
+                        activePaintHex = selectedPaint.Hex_Code;
+                    } else {
+                        finalPaintName = "TBD / None Selected";
+                    }
+                }
 
                 const inputs = {
                     qty: parseFloat(document.getElementById('qty').value) || 1,
                     w: parseFloat(document.getElementById('w').value) || 10,
                     h: parseFloat(document.getElementById('h').value) || 2,
-                    isReverse: style === 'Reverse',
-                    mat: activeMaterial,
-                    paint: style === 'Reverse' ? paintName : null
+                    isReverse: isReverse,
+                    mat: selectedMat,
+                    paint: finalPaintName
                 };
 
                 const result = calculateNameplate(inputs, backendData);
@@ -181,15 +284,46 @@
                 document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
                 document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
                 document.getElementById('ui-print').innerText = fmt(ret.printTotal);
-                document.getElementById('ui-setup').innerText = fmt(ret.setupFee);
 
                 const minOrder = parseFloat(backendData.Retail_Min_Order || 35);
                 document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-                // Exact Production Description Generation
+                // --- UPDATE PREVIEW CANVAS ---
+                const canvas = document.getElementById('preview-canvas');
+                const text = document.getElementById('preview-text');
+                const tag = document.getElementById('preview-series-tag');
+                const warn = document.getElementById('bright-warn-box');
+
+                // Ratio Math
+                const maxW = 340;
+                const ratio = inputs.h / inputs.w;
+                canvas.style.height = `${maxW * ratio}px`;
+                
+                // Adjust font size based on ratio
+                let fSize = (maxW * ratio) * 0.4;
+                if (fSize > 40) fSize = 40;
+                text.style.fontSize = `${fSize}px`;
+
+                tag.innerText = `${selectedMat.Series} ${selectedMat.Thickness}`;
+                tag.style.color = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
+
+                if (currentMode === 'front') {
+                    canvas.style.backgroundColor = selectedMat.Cap_Hex;
+                    text.style.color = selectedMat.Core_Hex;
+                } else {
+                    // For Reverse Engrave: The background is the Cap_Color, the engraved text is filled with Paint
+                    canvas.style.backgroundColor = selectedMat.Cap_Hex;
+                    text.style.color = activePaintHex;
+                }
+
+                // Bright Warning Logic
+                const isBright = selectedMat.Cap_Color.includes('Bright');
+                warn.classList.toggle('hidden', !isBright);
+
+                // --- DESCRIPTION GENERATION ---
                 let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
-                let pntTxt = inputs.isReverse ? `\nBackground Color: ${inputs.mat.Cap_Color}\nPaint Fill (Text): [${paintSelect.value}] ${inputs.paint}` : `\nCap Color (Face): ${inputs.mat.Cap_Color}\nCore Color (Text): ${inputs.mat.Core_Color}`;
+                let pntTxt = inputs.isReverse ? `\nBackground Color: ${inputs.mat.Cap_Color}\nPaint Fill (Text): ${inputs.paint}` : `\nCap Color (Face): ${inputs.mat.Cap_Color}\nCore Color (Text): ${inputs.mat.Core_Color}`;
                 let engTxt = inputs.isReverse ? "Reverse Engraved (Painted Back)" : "Front Engraved";
 
                 document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates.\nBrand: ${brandTxt}\nStyle: ${engTxt}${pntTxt}\nSKU: ${inputs.mat.Item_Code}`;
@@ -215,12 +349,12 @@
                 rowmarkData = await reqRowmark.json();
                 paintData = await reqPaint.json();
 
-                // Populate Paint Dropdown
-                const paintSelect = document.getElementById('paintColor');
-                paintSelect.innerHTML = '';
-                paintData.forEach(p => {
-                    paintSelect.innerHTML += `<option value="${p.Code}">${p.Name} (${p.Code})</option>`;
-                });
+                // Setup default paint selection
+                if(paintData.length > 0) {
+                    selectedPaint = paintData;
+                    document.getElementById('paint-search').value = `${selectedPaint.Name} (${selectedPaint.Code})`;
+                }
+                filterPaint(); // Initialize dropdown items
 
                 if(statusText) {
                     statusText.innerText = "ONLINE";
@@ -231,7 +365,8 @@
                     }
                 }
                 
-                updateSwatches();
+                setMode('front'); // Kicks off swatch build and default selection
+                
             } catch(e) {
                 if(statusText) {
                     statusText.innerText = "OFFLINE (API FAILED)";
