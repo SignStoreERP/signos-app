@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>God Mode: Pricing Analyzer v4.6</title>
+    <title>God Mode: Pricing Analyzer v5.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,181 +24,156 @@
 
     <style>
         body { background-color: #f1f5f9; overflow: hidden; font-family: 'Inter', sans-serif; }
-        
-        /* SignOS Island Mode */
-        #signos-island { height: calc(100vh - 40px); margin: 20px auto; max-width: 1700px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -6px rgba(0, 0, 0, 0.1); }
-        
-        /* Side Panels */
+        #signos-island { height: calc(100vh - 40px); margin: 20px auto; max-width: 1800px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); }
         
-        /* Profit Guard Pulse */
         @keyframes pulse-danger { 0% { background-color: #fee2e2; } 50% { background-color: #fecaca; } 100% { background-color: #fee2e2; } }
         .loss-alert { animation: pulse-danger 2s infinite; color: #991b1b; font-weight: 800; border: 1px solid #fca5a5 !important; }
         
-        /* Sticky Heatmap Axes */
         .sticky-col { position: sticky; left: 0; background: #f8fafc; z-index: 20; font-weight: bold; border-right: 2px solid #e2e8f0; }
         .sticky-row { position: sticky; top: 0; background: #f8fafc; z-index: 30; font-weight: bold; border-bottom: 2px solid #e2e8f0; }
         
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.15s; cursor: crosshair; border: 1px solid #f1f5f9; }
-        .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: #3b82f6; }
-        
-        /* Slider Styling */
-        input[type=range] { height: 4px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; cursor: pointer; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
-        /* Override Input Grouping */
-        .override-group-retail { border-left: 3px solid #3b82f6; padding-left: 8px; margin-bottom: 12px; }
-        .override-group-cost { border-left: 3px solid #ef4444; padding-left: 8px; margin-bottom: 12px; }
+        .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.1s; cursor: crosshair; border: 1px solid #f1f5f9; }
+        .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 5px 10px rgba(0,0,0,0.1); border-color: #3b82f6; }
     </style>
 </head>
 <body class="p-0 sm:p-4">
 
     <div id="signos-island" class="bg-white rounded-2xl overflow-hidden flex flex-col border border-gray-200">
         
-        <!-- HEADER HOOK -->
         <div id="main-card" class="w-full shrink-0 border-b border-gray-800"></div>
 
         <div class="flex flex-1 overflow-hidden">
             
-            <!-- LEFT COLUMN: ENGINE & SCRUBBER -->
-            <div class="w-72 glass-panel flex flex-col border-r border-gray-100 p-4 space-y-6">
+            <!-- LEFT COLUMN: PRODUCT MENU -->
+            <div class="w-64 glass-panel flex flex-col border-r border-gray-200 p-4 space-y-6 shrink-0 z-10 shadow-sm">
                 <div>
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Engine Selection</label>
-                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[35vh]"></div>
+                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[70vh]"></div>
                 </div>
-
-                <div class="h-px bg-gray-100"></div>
-
-                <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Physics Scrubber</label>
-                    <div class="space-y-5">
-                        <div id="scrub-w">
-                            <div class="flex justify-between mb-1">
-                                <label class="text-[10px] font-bold text-gray-500 uppercase">Max Width</label>
-                                <span id="val-max-w" class="text-xs font-mono font-bold text-blue-600">8'</span>
-                            </div>
-                            <input type="range" id="limit-w" min="1" max="50" value="8" step="1" oninput="syncRange('w', this.value)" class="w-full">
-                        </div>
-                        <div id="scrub-h">
-                            <div class="flex justify-between mb-1">
-                                <label class="text-[10px] font-bold text-gray-500 uppercase">Max Height</label>
-                                <span id="val-max-h" class="text-xs font-mono font-bold text-blue-600">4'</span>
-                            </div>
-                            <input type="range" id="limit-h" min="1" max="50" value="4" step="1" oninput="syncRange('h', this.value)" class="w-full">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Unit Qty</label>
-                                <input type="number" id="ctrl_qty" value="1" onchange="generateMatrix()" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none">
-                            </div>
-                        </div>
-                        
-                        <!-- DYNAMIC PRODUCT SETTINGS INJECTED HERE -->
-                        <div id="product-specific-controls" class="space-y-3 pb-4"></div>
-                    </div>
-                </div>
-
                 <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white shrink-0">
                     <div class="flex items-center space-x-2 mb-1">
                         <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                        <span class="text-[10px] font-black uppercase tracking-widest">Telemetry active</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest">God Mode Active</span>
                     </div>
-                    <p class="text-[9px] text-slate-400 leading-tight">Physics variables are currently being simulated in local memory.</p>
+                    <p class="text-[9px] text-slate-400 leading-tight">All calculations executing in local memory sandboxes.</p>
                 </div>
             </div>
 
-            <!-- CENTER WORKSPACE -->
-            <div class="flex-1 flex flex-col bg-slate-50 relative">
+            <!-- CENTER WORKSPACE: CHART & SETTINGS -->
+            <div class="flex-1 flex flex-col bg-slate-50 relative overflow-hidden">
                 
-                <!-- Toolbar -->
-                <div class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10">
-                    <div class="flex items-center space-x-6">
+                <!-- Center Toolbar -->
+                <div class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10 shrink-0">
+                    <div class="flex items-center space-x-4">
                         <div class="flex bg-gray-100 p-1 rounded-xl" id="view-toggles">
-                            <button onclick="setView('heatmap')" id="btn-view-heatmap" class="px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase">Heatmap</button>
-                            <button onclick="setView('chart')" id="btn-view-chart" class="px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase">Line Chart</button>
+                            <button onclick="setView('chart')" id="btn-view-chart" class="px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition">Line Chart</button>
+                            <button onclick="setView('heatmap')" id="btn-view-heatmap" class="px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition">Heatmap</button>
                         </div>
-                        <div class="h-6 w-px bg-gray-200"></div>
-                        <div class="flex items-center space-x-4">
-                            <label class="text-[10px] font-black text-gray-400 uppercase">Data Stream:</label>
-                            <select id="analysis-mode" onchange="generateMatrix()" class="text-[10px] font-black bg-transparent border-none focus:ring-0 cursor-pointer text-blue-600 uppercase">
-                                <option value="retail">Market Value (Retail)</option>
-                                <option value="cost">Production Physics (Cost)</option>
-                                <option value="margin">Net Profit Margin (%)</option>
+                        
+                        <div id="heatmap-mode-toggles" class="hidden flex items-center space-x-2 border-l border-gray-200 pl-4 ml-2">
+                            <label class="text-[10px] font-black text-gray-400 uppercase">View:</label>
+                            <select id="hm-analysis-mode" onchange="generateMatrix()" class="text-[10px] font-bold bg-transparent border-none text-blue-600 uppercase outline-none">
+                                <option value="retail">Retail Price</option>
+                                <option value="cost">Hard Cost</option>
+                                <option value="margin">Net Margin (%)</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div id="chart-controls" class="flex items-center space-x-3">
+                        <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
+                            <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Simulate Qty:</label>
+                            <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
+                        </div>
+                        <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
+                            <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Max SqFt:</label>
+                            <input type="number" id="chart-max-sqft" value="20" min="5" max="100" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
                         </div>
                     </div>
                 </div>
 
-                <!-- Canvas -->
-                <div id="canvas-area" class="flex-1 overflow-hidden flex flex-col p-6">
+                <!-- Canvas Area (Dark Overlay Loading State) -->
+                <div id="canvas-area" class="flex-1 relative flex flex-col p-4 overflow-hidden">
+                    <div id="loader" class="absolute inset-0 bg-gray-900/60 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all">
+                        <div class="animate-spin rounded-full h-14 w-14 border-4 border-white border-t-blue-500 mb-4"></div>
+                        <span class="text-xs font-black text-white tracking-widest uppercase">Computing Matrix...</span>
+                    </div>
+
+                    <!-- CHART -->
+                    <div id="view-chart" class="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 relative min-h-0">
+                        <canvas id="physicsChart"></canvas>
+                    </div>
+
                     <!-- HEATMAP -->
-                    <div id="view-heatmap" class="flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative">
+                    <div id="view-heatmap" class="hidden flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative min-h-0">
                         <table class="border-collapse text-[11px] w-full table-fixed">
                             <thead id="heatmap-head" class="sticky-row"></thead>
                             <tbody id="heatmap-body"></tbody>
                         </table>
                     </div>
-                    
-                    <!-- CHART -->
-                    <div id="view-chart" class="hidden flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 relative">
-                        <canvas id="physicsChart"></canvas>
+                </div>
+
+                <!-- Product Specifications -->
+                <div class="bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_rgba(0,0,0,0.02)] z-20">
+                    <div class="px-6 py-2 bg-gray-100 border-b border-gray-200">
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Base Specifications (Affects Chart/Heatmap Base Logic)</label>
+                    </div>
+                    <div id="product-specific-controls" class="p-4 flex flex-wrap gap-4 overflow-y-auto max-h-32 custom-scrollbar">
+                        <!-- Dynamic Controls Injected Here -->
                     </div>
                 </div>
 
-                <!-- Inspection Receipt -->
-                <div class="h-44 bg-white border-t border-gray-200 p-4 flex space-x-6 shrink-0 z-10">
-                    <div class="w-1/4 border-r border-gray-100 flex flex-col justify-center">
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Point Inspection</label>
-                        <div id="inspection-meta" class="text-center p-4 bg-slate-50 rounded-xl border border-dashed border-gray-200 text-[10px] text-gray-400 italic">
-                            Select a data point on the canvas to inspect financial telemetry
+                <!-- Overrides Section -->
+                <div class="h-48 border-t-4 border-gray-300 bg-gray-50 flex flex-col shrink-0 z-10 relative">
+                    <div class="flex items-center justify-between border-b border-gray-200 bg-gray-200 pr-4">
+                        <div class="flex text-[10px] font-black uppercase tracking-widest text-center cursor-pointer">
+                            <div id="tab-ovr-retail" onclick="switchOvrTab('retail')" class="px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition">Market Vars (Blue)</div>
+                            <div id="tab-ovr-cost" onclick="switchOvrTab('cost')" class="px-6 py-2 text-gray-500 hover:text-gray-700 transition">Physics Vars (Red)</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="resetOverrides()" class="text-[9px] font-bold text-gray-500 hover:text-blue-600 transition uppercase">Reset To Default</button>
+                            <button onclick="exportMatrix()" class="text-[9px] font-black bg-gray-800 text-white px-3 py-1 rounded shadow hover:bg-black transition">EXPORT PAYLOAD</button>
                         </div>
                     </div>
-                    <div id="receipt-container" class="flex-1 overflow-y-auto custom-scrollbar"></div>
+                    
+                    <div id="ovr-retail-wrap" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        <div id="retail-inputs" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
+                    </div>
+                    
+                    <div id="ovr-cost-wrap" class="hidden flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        <div id="cost-inputs" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: OVERRIDES -->
-            <div class="w-80 glass-panel border-l border-gray-100 flex flex-col">
-                <div class="p-4 border-b border-gray-100 flex justify-between items-center">
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Environment Overrides</label>
-                    <button onclick="resetOverrides()" class="text-[9px] font-bold text-blue-500 hover:underline uppercase">Reset</button>
+            <!-- RIGHT COLUMN: POINT INSPECTION -->
+            <div class="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)]">
+                <div class="p-4 bg-gray-900 border-b border-gray-800">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-center">Point Inspection</label>
                 </div>
                 
-                <div id="override-container" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-6">
-                    <div id="group-retail" class="override-group-retail hidden">
-                        <label class="text-[9px] font-black text-blue-600 uppercase mb-3 block tracking-tighter">Market Variables (Retail)</label>
-                        <div id="retail-inputs" class="space-y-2"></div>
-                    </div>
-                    
-                    <div id="group-cost" class="override-group-cost hidden">
-                        <label class="text-[9px] font-black text-red-600 uppercase mb-3 block tracking-tighter">Physics Variables (Cost)</label>
-                        <div id="cost-inputs" class="space-y-2"></div>
-                    </div>
-                    
-                    <div id="no-product-msg" class="text-center py-20 text-gray-400 text-xs italic">
-                        Select an engine to begin simulation
-                    </div>
+                <div id="inspection-meta" class="p-6 bg-slate-50 border-b border-gray-200 text-center flex flex-col items-center justify-center min-h-[120px]">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a data point on the chart to inspect.</span>
                 </div>
 
-                <div class="p-4 border-t border-gray-100 bg-white">
-                    <button onclick="exportMatrix()" class="w-full text-[10px] font-black bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 tracking-widest uppercase">Export Matrix Payload</button>
+                <div id="receipt-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50">
+                    <!-- Receipt Injected Here -->
                 </div>
             </div>
+
         </div>
     </div>
 
 <script>
     // --- SYSTEM CONFIG ---
-    // Safely mapping array without brackets to prevent parser stripping
     const ALL_MODULES = new Array(
         { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
-        { id: 'coro', name: 'Coroplast', config: window.CORO_CONFIG },
+        { id: 'coro', name: 'Custom Coroplast', config: window.CORO_CONFIG },
         { id: 'pvc', name: 'PVC Signs', config: window.PVC_CONFIG },
         { id: 'foam', name: 'Foam Core', config: window.FOAM_CONFIG },
         { id: 'acm', name: 'ACM Signs', config: window.ACM_CONFIG },
@@ -211,18 +186,16 @@
     );
     
     const MODULES = ALL_MODULES.filter(m => m.config);
-    
-    // Explicit array definition to avoid bracket bugs
-    const X_STEPS_QTY = new Array(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 600, 750, 1000);
+    const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 600, 750, 1000);
     
     let activeConfig = null;
     let backendData = {};
     let chartInstance = null;
-    let currentView = 'heatmap';
+    let currentView = 'chart';
     let currentChartDataMap = {}; 
 
     window.onload = () => {
-        injectHeader("God Mode: Pricing Analyzer v4.6", true);
+        injectHeader("God Mode: Pricing Analyzer v5.0", true);
         renderProductMenu();
         if(MODULES.length > 0) loadProduct(MODULES.id);
     };
@@ -240,36 +213,24 @@
     }
 
     async function loadProduct(id) {
+        document.getElementById('loader').classList.remove('hidden');
+        
         document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100'));
         document.getElementById('nav-' + id).classList.add('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100');
         
         activeConfig = MODULES.find(m => m.id === id).config;
-        
-        document.getElementById('no-product-msg').classList.add('hidden');
-        document.getElementById('group-retail').classList.remove('hidden');
-        document.getElementById('group-cost').classList.remove('hidden');
         document.getElementById('receipt-container').innerHTML = '';
-        document.getElementById('inspection-meta').innerHTML = 'Select a data point on the canvas to inspect financial telemetry';
+        document.getElementById('inspection-meta').innerHTML = '<span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point to inspect.</span>';
 
-        // Set Connection Header visually
-        const statusText = document.getElementById("status-text");
-        const statusDot = document.getElementById("status-dot");
-        if(statusText) {
-            statusText.innerText = "CONNECTING...";
-            statusText.className = "font-bold text-gray-400";
-        }
-
-        // Auto-switch view based on logic
+        // Auto-configure UI tools based on product type
         if (id === 'yard') {
-            document.getElementById('btn-view-heatmap').style.display = 'none';
-            document.getElementById('scrub-w').style.display = 'none';
-            document.getElementById('scrub-h').style.display = 'none';
+            document.getElementById('chart-controls').classList.add('hidden');
+            document.getElementById('btn-view-heatmap').classList.add('hidden');
             setView('chart');
         } else {
-            document.getElementById('btn-view-heatmap').style.display = 'block';
-            document.getElementById('scrub-w').style.display = 'block';
-            document.getElementById('scrub-h').style.display = 'block';
-            setView('heatmap');
+            document.getElementById('chart-controls').classList.remove('hidden');
+            document.getElementById('btn-view-heatmap').classList.remove('hidden');
+            setView('chart'); // Always default to chart per request
         }
 
         buildDynamicControls();
@@ -277,24 +238,12 @@
         try {
             const req = await fetch(SCRIPT_URL + '?req=view_module&tab=' + activeConfig.tab);
             backendData = await req.json();
-            
-            if(statusText) {
-                statusText.innerText = "ONLINE";
-                statusText.className = "font-bold text-green-500";
-                if(statusDot) {
-                    statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-                    statusDot.classList.remove("animate-pulse");
-                }
-            }
-            
             renderOverrides();
             generateMatrix();
         } catch (e) { 
             console.error("Sync Error", e); 
-            if(statusText) {
-                statusText.innerText = "OFFLINE";
-                statusText.className = "font-bold text-red-500";
-            }
+        } finally {
+            document.getElementById('loader').classList.add('hidden');
         }
     }
 
@@ -304,20 +253,37 @@
         const ctrlBox = document.getElementById('product-specific-controls');
         ctrlBox.innerHTML = '';
         activeConfig.controls.forEach(c => {
-            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; // Handled by scrubbers
+            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; // Handled dynamically in views
             
-            let html = '<div><label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">' + c.label + '</label>';
+            let html = '<div class="min-w-[120px]"><label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">' + c.label + '</label>';
             if(c.type === 'select') {
-                html += '<select id="ctrl_' + c.id + '" class="w-full border border-gray-200 rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none" onchange="generateMatrix()">';
+                html += '<select id="ctrl_' + c.id + '" class="w-full border border-gray-200 bg-white rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onchange="generateMatrix()">';
                 c.opts.forEach(o => html += '<option value="' + o.v + '">' + o.t + '</option>');
                 html += '</select></div>';
             } else if(c.type === 'toggle') {
-                html += '<label class="flex items-center gap-2 mt-4 cursor-pointer"><input type="checkbox" id="ctrl_' + c.id + '" onchange="generateMatrix()" ' + (c.def?'checked':'') + ' class="w-4 h-4 text-blue-600 rounded"><span class="text-xs font-bold text-gray-700">Enable</span></label></div>';
+                html += '<label class="flex items-center gap-2 mt-2 cursor-pointer bg-white border border-gray-200 px-3 py-1 rounded shadow-sm hover:bg-gray-50"><input type="checkbox" id="ctrl_' + c.id + '" onchange="generateMatrix()" ' + (c.def?'checked':'') + ' class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-black text-gray-600 uppercase">Enable</span></label></div>';
             } else {
-                html += '<input type="number" id="ctrl_' + c.id + '" value="' + c.def + '" class="w-full border border-gray-200 rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none" onchange="generateMatrix()"></div>';
+                html += '<input type="number" id="ctrl_' + c.id + '" value="' + c.def + '" class="w-full border border-gray-200 bg-white rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onchange="generateMatrix()"></div>';
             }
             ctrlBox.insertAdjacentHTML('beforeend', html);
         });
+    }
+
+    function switchOvrTab(tab) {
+        const tRet = document.getElementById('tab-ovr-retail');
+        const tCst = document.getElementById('tab-ovr-cost');
+        const wRet = document.getElementById('ovr-retail-wrap');
+        const wCst = document.getElementById('ovr-cost-wrap');
+        
+        if(tab === 'retail') {
+            tRet.className = "px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition";
+            tCst.className = "px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
+            wRet.classList.remove('hidden'); wCst.classList.add('hidden');
+        } else {
+            tCst.className = "px-6 py-2 bg-red-100 text-red-700 border-b-2 border-red-600 transition";
+            tRet.className = "px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
+            wCst.classList.remove('hidden'); wRet.classList.add('hidden');
+        }
     }
 
     function renderOverrides() {
@@ -325,67 +291,40 @@
         const costBox = document.getElementById('cost-inputs');
         retailBox.innerHTML = ""; costBox.innerHTML = "";
 
-        const createRow = (item, colorClass) => {
-            const row = document.createElement('div');
-            row.className = "flex items-center justify-between space-x-2";
+        const createCard = (item, color) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = `bg-white p-2 rounded shadow-sm border border-gray-200 border-l-4 border-l-${color}-500 hover:shadow-md transition`;
             let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
-            row.innerHTML = `
-                <label class="text-[9px] font-bold text-gray-500 truncate w-2/3 uppercase tracking-tighter" title="${item.key}">${item.label}</label>
-                <input type="text" id="ovr_${item.key}" value="${val}" onchange="generateMatrix()" class="w-16 bg-white border border-gray-100 rounded px-1.5 py-1 text-[10px] font-black text-right focus:border-${colorClass}-400 outline-none shadow-sm text-${colorClass}-600">
+            wrapper.innerHTML = `
+                <label class="text-[8px] font-black text-gray-400 uppercase truncate block mb-1" title="${item.key}">${item.label}</label>
+                <input type="text" id="ovr_${item.key}" value="${val}" onchange="generateMatrix()" class="w-full bg-gray-50 border border-gray-200 rounded px-1.5 py-1 text-xs font-mono font-bold text-${color}-700 focus:border-${color}-500 outline-none text-right">
             `;
-            return row;
+            return wrapper;
         };
 
-        activeConfig.retails.forEach(item => retailBox.appendChild(createRow(item, 'blue')));
-        activeConfig.costs.forEach(item => costBox.appendChild(createRow(item, 'red')));
+        activeConfig.retails.forEach(item => retailBox.appendChild(createCard(item, 'blue')));
+        activeConfig.costs.forEach(item => costBox.appendChild(createCard(item, 'red')));
     }
 
     function setView(view) {
         currentView = view;
         document.getElementById('view-heatmap').classList.toggle('hidden', view !== 'heatmap');
         document.getElementById('view-chart').classList.toggle('hidden', view !== 'chart');
+        document.getElementById('heatmap-mode-toggles').classList.toggle('hidden', view !== 'heatmap');
         
-        document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
-        document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
+        document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
+        document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
         
-        generateMatrix();
-    }
-
-    function syncRange(axis, val) {
-        document.getElementById('val-max-' + axis).innerText = val + "'";
         generateMatrix();
     }
 
     // --- LOGIC ENGINE ---
-
-    function isSizeValid(wInches, hInches, data) {
-        const maxW = parseFloat(data.Constraint_Max_W);
-        const maxH = parseFloat(data.Constraint_Max_H);
-        const maxRoll = parseFloat(data.Constraint_Max_Width_Inhouse);
-
-        if (!isNaN(maxW) && !isNaN(maxH)) {
-            return ((wInches <= maxW && hInches <= maxH) || (wInches <= maxH && hInches <= maxW));
-        }
-        if (!isNaN(maxRoll)) {
-            return (Math.min(wInches, hInches) <= maxRoll);
-        }
-        
-        // Fallbacks
-        const id = activeConfig.id;
-        if (id === 'banner' || id === 'wrap' || id === 'decal' || id === 'cut' || id === 'wall') {
-            return Math.min(wInches, hInches) <= 62;
-        } else if (id !== 'yard') {
-            return (Math.min(wInches, hInches) <= 60 && Math.max(wInches, hInches) <= 120);
-        }
-        return true;
-    }
 
     function generateMatrix() {
         if(!activeConfig) return;
 
         // Harvest Overrides
         const simData = { ...backendData };
-        // Manual array push to avoid brackets stripping
         let overridesList = new Array();
         activeConfig.retails.forEach(i => overridesList.push(i));
         activeConfig.costs.forEach(i => overridesList.push(i));
@@ -396,30 +335,206 @@
             else delete simData[o.key];
         });
 
-        currentChartDataMap = {}; // Reset Map
+        currentChartDataMap = {}; 
 
-        if (currentView === 'chart') {
-            drawLineChart(simData);
-        } else {
-            drawHeatmap(simData);
+        if (currentView === 'chart') drawLineChart(simData);
+        else drawHeatmap(simData);
+    }
+
+    function drawLineChart(simData) {
+        const isYard = activeConfig.id === 'yard';
+        const steps = isYard ? X_STEPS_YARD : new Array();
+        
+        if (!isYard) {
+            const maxSqFt = parseInt(document.getElementById('chart-max-sqft').value) || 20;
+            for(let i=1; i<=maxSqFt; i++) steps.push(i);
         }
+
+        let permutations = new Array();
+        
+        if (isYard) {
+            permutations.push({ label: "1-Sided, No Stakes", inputs: { w:24, h:18, sides:1, hasStakes:false, files:1, incDesign:false } });
+            permutations.push({ label: "1-Sided, W/ Stakes", inputs: { w:24, h:18, sides:1, hasStakes:true, files:1, incDesign:false } });
+            permutations.push({ label: "2-Sided, No Stakes", inputs: { w:24, h:18, sides:2, hasStakes:false, files:1, incDesign:false } });
+            permutations.push({ label: "2-Sided, W/ Stakes", inputs: { w:24, h:18, sides:2, hasStakes:true, files:1, incDesign:false } });
+        } else {
+            // Dynamically combine up to 4 permutations based on product options
+            let baseInputs = { files:1, incDesign:false };
+            activeConfig.controls.forEach(c => {
+                if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
+                const el = document.getElementById('ctrl_' + c.id);
+                if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
+            });
+
+            // Find key variants to show lines for (e.g. Thickness + Sides)
+            const pCtl = activeConfig.controls.find(c => c.id === 'thickness' || c.id === 'material');
+            const sCtl = activeConfig.controls.find(c => c.id === 'sides');
+
+            let opt1 = pCtl && pCtl.opts ? pCtl.opts.slice(0, 2) : new Array({v:baseInputs[pCtl?.id]||'Std', t:'Standard'});
+            let opt2 = sCtl && sCtl.opts ? sCtl.opts.slice(0, 2) : new Array({v:baseInputs[sCtl?.id]||1, t:''});
+
+            opt1.forEach(o1 => {
+                opt2.forEach(o2 => {
+                    let pIn = { ...baseInputs };
+                    if (pCtl) pIn[pCtl.id] = o1.v;
+                    if (sCtl) pIn[sCtl.id] = o2.v;
+                    let l = o1.t + (o2.t ? ` (${o2.t})` : '');
+                    permutations.push({ label: l, inputs: pIn });
+                });
+            });
+        }
+
+        const datasets = new Array();
+        const lineColors = new Array('#3b82f6', '#10b981', '#8b5cf6', '#f97316'); // Blue, Green, Purple, Orange
+        const profitColor = 'rgba(234, 179, 8, 0.4)'; // Translucent Yellow
+        const costColor = '#ef4444'; // Red
+
+        permutations.forEach((perm, index) => {
+            const dataRetail = new Array();
+            const dataProfit = new Array();
+            const dataCost = new Array();
+
+            steps.forEach(stepVal => {
+                let runInputs = { ...perm.inputs };
+                
+                if (isYard) {
+                    runInputs.qty = stepVal; // X-Axis is QTY
+                } else {
+                    runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
+                    runInputs.w = 12; // Lock width to 1ft
+                    runInputs.h = stepVal * 12; // X-Axis is SqFt
+                    if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
+                        runInputs.panels = [{ label: "Panel", qty: 1, w: runInputs.w, h: runInputs.h, material: runInputs.material, included: false }];
+                    }
+                }
+                
+                if (typeof activeConfig.dynamicUI === 'function') runInputs = activeConfig.dynamicUI(runInputs);
+                
+                try {
+                    const res = activeConfig.engine(runInputs, simData);
+                    const pointKey = 'ch-' + index + '-' + stepVal;
+                    currentChartDataMap[pointKey] = { res, inputs: runInputs };
+
+                    if (!res || !res.retail) { dataRetail.push(null); dataProfit.push(null); dataCost.push(null); return; }
+
+                    // We plot PER UNIT metrics
+                    const unitRet = res.retail.unitPrice;
+                    const unitCst = res.cost.total / runInputs.qty;
+                    
+                    dataRetail.push(unitRet);
+                    dataCost.push(unitCst);
+                    dataProfit.push(Math.max(unitRet - unitCst, 0));
+
+                } catch(e) {
+                    dataRetail.push(null); dataProfit.push(null); dataCost.push(null);
+                }
+            });
+
+            // Dataset 1: Retail Line (Visible)
+            datasets.push({
+                type: 'line',
+                label: perm.label + " (Retail/Ea)",
+                data: dataRetail,
+                borderColor: lineColors[index % lineColors.length],
+                backgroundColor: lineColors[index % lineColors.length],
+                borderWidth: 3, tension: 0.1, pointRadius: 3,
+                _permIndex: index
+            });
+
+            // Dataset 2: Profit Bar (Visible)
+            datasets.push({
+                type: 'bar',
+                label: perm.label + " (Profit/Ea)",
+                data: dataProfit,
+                backgroundColor: profitColor,
+                borderWidth: 1, borderColor: '#ca8a04',
+                _permIndex: index
+            });
+
+            // Dataset 3: Cost Line (Hidden by Default)
+            datasets.push({
+                type: 'line',
+                label: perm.label + " (Cost/Ea)",
+                data: dataCost,
+                borderColor: costColor,
+                backgroundColor: costColor,
+                borderWidth: 2, borderDash: [1], tension: 0.1, pointRadius: 0,
+                hidden: true,
+                _permIndex: index
+            });
+        });
+
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById('physicsChart').getContext('2d');
+        
+        const xTitle = isYard ? 'Quantity Ordered' : 'Total Square Footage (Size)';
+
+        chartInstance = new Chart(ctx, {
+            data: { labels: steps, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: xTitle, font: { weight: 'bold' } } },
+                    y: { title: { display: true, text: 'Money / Unit ($)', font: { weight: 'bold' } }, beginAtZero: true }
+                },
+                onClick: (e) => {
+                    const elements = chartInstance.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+                    if (elements.length > 0) {
+                        const dataIndex = elements.index;
+                        const datasetIndex = elements.datasetIndex;
+                        const stepVal = steps[dataIndex];
+                        const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
+                        const pointKey = 'ch-' + permIndex + '-' + stepVal;
+                        
+                        let valDisplay = chartInstance.data.datasets[datasetIndex].data[dataIndex];
+                        renderInspection(pointKey, '$' + valDisplay.toFixed(2));
+                    }
+                }
+            }
+        });
     }
 
     function drawHeatmap(simData) {
-        const mode = document.getElementById('analysis-mode').value;
-        const maxW = parseInt(document.getElementById('limit-w').value) || 10;
-        const maxH = parseInt(document.getElementById('limit-h').value) || 10;
+        const mode = document.getElementById('hm-analysis-mode').value;
+        const id = activeConfig.id;
         
+        // Define hardcoded max limits based on product reality, no user scrubbers
+        let maxW = 10, maxH = 5; // Default 5x10 rigid
+        if (id === 'yard') return; // Yard has no heatmap
+        if (id === 'coro' || id === 'pvc' || id === 'acm' || id === 'foam' || id === 'acrylic') {
+            maxW = 10; maxH = 5; // Up to 5x10 boards
+        } else if (id === 'banner') {
+            maxW = 12; maxH = 6; // User requested 6x12 cap for banners
+        } else {
+            maxW = 54; maxH = 10; // Vinyl/Decal/Wrap panelization limit (54ft x 10ft)
+        }
+
         const header = document.getElementById('heatmap-head');
         const body = document.getElementById('heatmap-body');
         header.innerHTML = ""; body.innerHTML = "";
 
         let headHtml = '<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>';
-        for(let w=1; w<=maxW; w++) headHtml += '<th class="p-3 border border-slate-200">' + w + '\'</th>';
+        for(let w=1; w<=maxW; w++) headHtml += '<th class="p-2 border border-slate-200">' + w + '\'</th>';
         header.innerHTML = headHtml + '</tr>';
 
         // Harvest Controls
-        let baseInputs = { qty: parseInt(document.getElementById('ctrl_qty').value) || 1 };
+        let baseInputs = { qty: parseInt(document.getElementById('chart-qty').value) || 1 };
         activeConfig.controls.forEach(c => {
             if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
             const el = document.getElementById('ctrl_' + c.id);
@@ -428,21 +543,15 @@
 
         for (let h=1; h<=maxH; h++) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td class="p-3 border border-slate-200 sticky-col text-center text-slate-400 font-black">' + h + '\'</td>';
+            row.innerHTML = '<td class="p-2 border border-slate-200 sticky-col text-center text-slate-400 font-black bg-slate-50">' + h + '\'</td>';
             
             for (let w=1; w<=maxW; w++) {
                 const wInches = w * 12;
                 const hInches = h * 12;
                 const cell = document.createElement('td');
 
-                if (!isSizeValid(wInches, hInches, simData)) {
-                    cell.className = "heatmap-cell border border-gray-100 text-center bg-gray-200 text-gray-400 font-black text-[9px]";
-                    cell.innerHTML = "N/A";
-                    row.appendChild(cell);
-                    continue;
-                }
-
                 let inputs = { ...baseInputs, w: wInches, h: hInches };
+                if (id === 'wrap' || id === 'wall') inputs.panels = [{ label: "Panel", qty: 1, w: wInches, h: hInches, material: inputs.material, included: false }];
                 if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
 
                 try {
@@ -470,7 +579,6 @@
                     cell.innerText = display;
                     cell.onclick = () => renderInspection(pointKey, display);
                 } catch(e) {
-                    console.error("Engine Math Error:", e);
                     cell.className = "heatmap-cell border border-gray-100 text-center bg-red-50 text-red-500 font-black text-[9px]";
                     cell.innerHTML = "ERR";
                 }
@@ -478,94 +586,6 @@
             }
             body.appendChild(row);
         }
-    }
-
-    function drawLineChart(simData) {
-        const mode = document.getElementById('analysis-mode').value;
-        
-        let permutations = new Array();
-        if (activeConfig.id === 'yard') {
-            permutations.push({ label: "1-Sided, No Stakes", inputs: { w:24, h:18, sides:1, hasStakes:false, files:1, incDesign:false } });
-            permutations.push({ label: "1-Sided, W/ Stakes", inputs: { w:24, h:18, sides:1, hasStakes:true, files:1, incDesign:false } });
-            permutations.push({ label: "2-Sided, No Stakes", inputs: { w:24, h:18, sides:2, hasStakes:false, files:1, incDesign:false } });
-            permutations.push({ label: "2-Sided, W/ Stakes", inputs: { w:24, h:18, sides:2, hasStakes:true, files:1, incDesign:false } });
-        } else {
-            let baseInputs = { w:24, h:24, qty:1 };
-            activeConfig.controls.forEach(c => {
-                if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
-                const el = document.getElementById('ctrl_' + c.id);
-                if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
-            });
-            permutations.push({ label: "Selected Configuration", inputs: baseInputs });
-        }
-
-        const datasets = new Array();
-        const colors = new Array('#3b82f6', '#10b981', '#f59e0b', '#8b5cf6');
-
-        permutations.forEach((perm, index) => {
-            const lineData = new Array();
-            X_STEPS_QTY.forEach(qty => {
-                let runInputs = { ...perm.inputs, qty: qty };
-                if (typeof activeConfig.dynamicUI === 'function') runInputs = activeConfig.dynamicUI(runInputs);
-                
-                try {
-                    const res = activeConfig.engine(runInputs, simData);
-                    const pointKey = 'ch-' + index + '-' + qty;
-                    currentChartDataMap[pointKey] = { res, inputs: runInputs };
-
-                    if (!res || !res.retail) { lineData.push(null); return; }
-
-                    if (mode === 'retail') lineData.push(res.retail.unitPrice);
-                    else if (mode === 'cost') lineData.push(res.cost.total / qty);
-                    else lineData.push(res.metrics.margin * 100);
-                } catch(e) {
-                    lineData.push(null);
-                }
-            });
-
-            datasets.push({
-                type: 'line',
-                label: perm.label,
-                data: lineData,
-                borderColor: colors[index % colors.length],
-                backgroundColor: colors[index % colors.length],
-                borderWidth: 3,
-                tension: 0.1,
-                pointRadius: 4,
-                _permIndex: index
-            });
-        });
-
-        if (chartInstance) chartInstance.destroy();
-        const ctx = document.getElementById('physicsChart').getContext('2d');
-        
-        let yLabel = mode === 'margin' ? 'Margin (%)' : 'Unit Price ($)';
-
-        chartInstance = new Chart(ctx, {
-            data: { labels: X_STEPS_QTY, datasets: datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { title: { display: true, text: 'Quantity Ordered', font: { weight: 'bold' } } },
-                    y: { title: { display: true, text: yLabel, font: { weight: 'bold' } }, beginAtZero: true }
-                },
-                onClick: (e) => {
-                    const elements = chartInstance.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
-                    if (elements.length > 0) {
-                        const dataIndex = elements.index;
-                        const datasetIndex = elements.datasetIndex;
-                        const qty = X_STEPS_QTY[dataIndex];
-                        const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
-                        const pointKey = 'ch-' + permIndex + '-' + qty;
-                        
-                        let valDisplay = chartInstance.data.datasets[datasetIndex].data[dataIndex];
-                        valDisplay = mode === 'margin' ? valDisplay.toFixed(1) + '%' : '$' + valDisplay.toFixed(2);
-                        
-                        renderInspection(pointKey, valDisplay);
-                    }
-                }
-            }
-        });
     }
 
     // --- RECEIPT RENDERER ---
@@ -579,8 +599,9 @@
         
         document.getElementById('inspection-meta').innerHTML = `
             <div class="flex flex-col items-center">
-                <span class="text-blue-600 font-black text-xl">${valDisplay}</span>
-                <span class="text-[9px] font-bold text-gray-400 uppercase mt-1">Size: ${inputs.w}" x ${inputs.h}" | Qty: ${inputs.qty}</span>
+                <span class="text-blue-600 font-black text-2xl tracking-tighter mb-1">${valDisplay}</span>
+                <span class="text-[10px] font-black text-gray-500 bg-gray-100 px-3 py-1 rounded-full uppercase border border-gray-200">Size: ${inputs.w}" x ${inputs.h}"</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase mt-2">Simulated Qty: ${inputs.qty}</span>
             </div>
         `;
 
@@ -592,33 +613,31 @@
         if(res.retail.contourFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>Contour Cut:</span><span>${fmt(res.retail.contourFee)}</span></div>`;
         if(res.retail.weedFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-pink-600"><span>Complex Weed:</span><span>${fmt(res.retail.weedFee)}</span></div>`;
         if(res.retail.stakeTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-blue-600"><span>Hardware/Stakes:</span><span>${fmt(res.retail.stakeTotal)}</span></div>`;
+        if(res.retail.installTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-indigo-600"><span>Installation:</span><span>${fmt(res.retail.installTotal)}</span></div>`;
         if(res.retail.setupFee) retailLines += `<div class="flex justify-between text-[10px] font-bold"><span>Setup Fee:</span><span>${fmt(res.retail.setupFee)}</span></div>`;
-        if(res.retail.designFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-purple-600"><span>Design Fee:</span><span>${fmt(res.retail.designFee)}</span></div>`;
         
         let costLines = "";
         const b = res.cost.breakdown || {};
         
         // Summing specific categories depending on which engine ran
         const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0) + (b.stakeCost || 0) + (b.rawLam || 0) + (b.rawTape || 0) + (b.materials || 0);
-        const labor = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0) + (b.costSetup || 0) + (b.costFinish || 0) + (b.costWeed || 0) + (b.installLabor || 0);
+        const labor = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0) + (b.costSetup || 0) + (b.costFinish || 0) + (b.costWeed || 0) + (b.installLabor || 0) + (b.printLabor || 0) + (b.machine || 0);
         
         costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Materials & Ink:</span><span>${fmt(mats)}</span></div>`;
         costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Labor & Machine:</span><span>${fmt(labor)}</span></div>`;
         if(b.wasteCost) costLines += `<div class="flex justify-between text-[10px] font-bold text-red-400"><span>Waste Buffer:</span><span>${fmt(b.wasteCost)}</span></div>`;
 
         container.innerHTML = `
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm">
-                    <label class="text-[9px] font-black text-blue-600 uppercase block mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</label>
-                    <div class="space-y-1">${retailLines}</div>
-                    <div class="flex justify-between text-[11px] font-black border-t border-blue-200 mt-2 pt-1 text-blue-900"><span>Total Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>
-                </div>
-                <div class="bg-red-50 p-3 rounded-xl border border-red-100 shadow-sm">
-                    <label class="text-[9px] font-black text-red-600 uppercase block mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</label>
-                    <div class="space-y-1">${costLines}</div>
-                    <div class="flex justify-between text-[11px] font-black border-t border-red-200 mt-2 pt-1 text-red-900"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>
-                    <div class="flex justify-between text-[10px] font-bold text-red-500 mt-1 pt-1 italic"><span>Net Margin:</span><span>${(res.metrics.margin*100).toFixed(1)}%</span></div>
-                </div>
+            <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm">
+                <label class="text-[9px] font-black text-blue-600 uppercase block mb-2 border-b border-blue-200 pb-1 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Market Engine</label>
+                <div class="space-y-1.5">${retailLines}</div>
+                <div class="flex justify-between text-xs font-black border-t-2 border-blue-200 mt-2 pt-2 text-blue-900"><span>Total Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>
+            </div>
+            <div class="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm mt-4">
+                <label class="text-[9px] font-black text-red-600 uppercase block mb-2 border-b border-red-200 pb-1 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Physics Engine</label>
+                <div class="space-y-1.5">${costLines}</div>
+                <div class="flex justify-between text-xs font-black border-t-2 border-red-200 mt-2 pt-2 text-red-900"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>
+                <div class="flex justify-between text-[11px] font-black text-red-600 mt-2 pt-2 border-t border-red-100 bg-white p-2 rounded"><span>Net Profit:</span><span>${fmt(res.retail.grandTotal - res.cost.total)} (${(res.metrics.margin*100).toFixed(1)}%)</span></div>
             </div>
         `;
     }
@@ -629,7 +648,6 @@
     }
 
     function exportMatrix() {
-        // Safe mapping to prevent array brackets bug
         const allOvr = new Array();
         activeConfig.retails.forEach(i => allOvr.push(i));
         activeConfig.costs.forEach(i => allOvr.push(i));
@@ -645,5 +663,6 @@
         alert("Payload Copied to Clipboard. Ready to commit to SYS_Cost_Matrix.");
     }
 </script>
+
 </body>
 </html>
