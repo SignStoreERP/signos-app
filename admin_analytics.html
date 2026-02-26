@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>God Mode: Pricing Analyzer v4.3</title>
+    <title>God Mode: Pricing Analyzer v4.5</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
 
+    <!-- LOAD ALL PHYSICS ENGINES -->
     <script src="cost_yard.js"></script>
     <script src="cost_coro.js"></script>
     <script src="cost_pvc.js"></script>
@@ -24,43 +25,31 @@
         body { background-color: #f1f5f9; overflow: hidden; font-family: 'Inter', sans-serif; }
         
         /* SignOS Island Mode */
-        #signos-island {
-            height: calc(100vh - 40px);
-            margin: 20px auto;
-            max-width: 1700px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -6px rgba(0, 0, 0, 0.1);
-        }
-
+        #signos-island { height: calc(100vh - 40px); margin: 20px auto; max-width: 1700px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -6px rgba(0, 0, 0, 0.1); }
+        
         /* Side Panels */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-        }
-
+        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); }
+        
         /* Profit Guard Pulse */
-        @keyframes pulse-danger {
-            0% { background-color: #fee2e2; }
-            50% { background-color: #fecaca; }
-            100% { background-color: #fee2e2; }
-        }
+        @keyframes pulse-danger { 0% { background-color: #fee2e2; } 50% { background-color: #fecaca; } 100% { background-color: #fee2e2; } }
         .loss-alert { animation: pulse-danger 2s infinite; color: #991b1b; font-weight: 800; border: 1px solid #fca5a5 !important; }
-
+        
         /* Sticky Heatmap Axes */
         .sticky-col { position: sticky; left: 0; background: #f8fafc; z-index: 20; font-weight: bold; border-right: 2px solid #e2e8f0; }
         .sticky-row { position: sticky; top: 0; background: #f8fafc; z-index: 30; font-weight: bold; border-bottom: 2px solid #e2e8f0; }
-
+        
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
+        
         .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.15s; cursor: crosshair; border: 1px solid #f1f5f9; }
         .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: #3b82f6; }
         
         /* Slider Styling */
         input[type=range] { height: 4px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; cursor: pointer; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
+        
         /* Override Input Grouping */
         .override-group-retail { border-left: 3px solid #3b82f6; padding-left: 8px; margin-bottom: 12px; }
         .override-group-cost { border-left: 3px solid #ef4444; padding-left: 8px; margin-bottom: 12px; }
@@ -70,38 +59,36 @@
 
     <div id="signos-island" class="bg-white rounded-2xl overflow-hidden flex flex-col border border-gray-200">
         
-        <div id="header-container"></div>
+        <!-- HEADER HOOK -->
+        <div id="main-card" class="w-full shrink-0 border-b border-gray-800"></div>
 
         <div class="flex flex-1 overflow-hidden">
             
+            <!-- LEFT COLUMN: ENGINE & SCRUBBER -->
             <div class="w-72 glass-panel flex flex-col border-r border-gray-100 p-4 space-y-6">
-                
                 <div>
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Engine Selection</label>
-                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[35vh]">
-                        </div>
+                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[35vh]"></div>
                 </div>
 
                 <div class="h-px bg-gray-100"></div>
 
-                <div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Physics Scrubber</label>
-                    
                     <div class="space-y-5">
-                        <div>
+                        <div id="scrub-w">
                             <div class="flex justify-between mb-1">
                                 <label class="text-[10px] font-bold text-gray-500 uppercase">Max Width</label>
                                 <span id="val-max-w" class="text-xs font-mono font-bold text-blue-600">8'</span>
                             </div>
-                            <input type="range" id="limit-w" min="1" max="50" value="8" step="1" oninput="syncRange('w', this.value)" class="w-full">
+                            <input type="range" id="limit-w" min="1" max="50" value="10" step="1" oninput="syncRange('w', this.value)" class="w-full">
                         </div>
-
-                        <div>
+                        <div id="scrub-h">
                             <div class="flex justify-between mb-1">
                                 <label class="text-[10px] font-bold text-gray-500 uppercase">Max Height</label>
                                 <span id="val-max-h" class="text-xs font-mono font-bold text-blue-600">4'</span>
                             </div>
-                            <input type="range" id="limit-h" min="1" max="50" value="4" step="1" oninput="syncRange('h', this.value)" class="w-full">
+                            <input type="range" id="limit-h" min="1" max="50" value="10" step="1" oninput="syncRange('h', this.value)" class="w-full">
                         </div>
 
                         <div class="grid grid-cols-2 gap-3 pt-2">
@@ -109,13 +96,14 @@
                                 <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Unit Qty</label>
                                 <input type="number" id="ctrl_qty" value="1" onchange="generateMatrix()" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
-                            <div id="product-specific-controls">
-                                </div>
                         </div>
+                        
+                        <!-- DYNAMIC PRODUCT SETTINGS INJECTED HERE -->
+                        <div id="product-specific-controls" class="space-y-3 pb-4"></div>
                     </div>
                 </div>
 
-                <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white">
+                <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white shrink-0">
                     <div class="flex items-center space-x-2 mb-1">
                         <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
                         <span class="text-[10px] font-black uppercase tracking-widest">Telemetry active</span>
@@ -124,13 +112,15 @@
                 </div>
             </div>
 
+            <!-- CENTER WORKSPACE -->
             <div class="flex-1 flex flex-col bg-slate-50 relative">
                 
+                <!-- Toolbar -->
                 <div class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10">
                     <div class="flex items-center space-x-6">
-                        <div class="flex bg-gray-100 p-1 rounded-xl">
+                        <div class="flex bg-gray-100 p-1 rounded-xl" id="view-toggles">
                             <button onclick="setView('heatmap')" id="btn-view-heatmap" class="px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase">Heatmap</button>
-                            <button onclick="setView('chart')" id="btn-view-chart" class="px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase">Analytics</button>
+                            <button onclick="setView('chart')" id="btn-view-chart" class="px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase">Line Chart</button>
                         </div>
                         <div class="h-6 w-px bg-gray-200"></div>
                         <div class="flex items-center space-x-4">
@@ -142,251 +132,469 @@
                             </select>
                         </div>
                     </div>
-                    
-                    <button onclick="exportMatrix()" class="text-[10px] font-black bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">COMMIT OVERRIDES</button>
                 </div>
 
+                <!-- Canvas -->
                 <div id="canvas-area" class="flex-1 overflow-hidden flex flex-col p-6">
-                    
+                    <!-- HEATMAP -->
                     <div id="view-heatmap" class="flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative">
                         <table class="border-collapse text-[11px] w-full table-fixed">
                             <thead id="heatmap-head" class="sticky-row"></thead>
                             <tbody id="heatmap-body"></tbody>
                         </table>
                     </div>
-
-                    <div id="view-chart" class="hidden flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                    
+                    <!-- CHART -->
+                    <div id="view-chart" class="hidden flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 relative">
                         <canvas id="physicsChart"></canvas>
                     </div>
-
                 </div>
 
-                <div class="h-44 bg-white border-t border-gray-200 p-4 flex space-x-6">
+                <!-- Inspection Receipt -->
+                <div class="h-44 bg-white border-t border-gray-200 p-4 flex space-x-6 shrink-0 z-10">
                     <div class="w-1/4 border-r border-gray-100 flex flex-col justify-center">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Point Inspection</label>
                         <div id="inspection-meta" class="text-center p-4 bg-slate-50 rounded-xl border border-dashed border-gray-200 text-[10px] text-gray-400 italic">
-                            Select a data point on the heatmap to inspect financial telemetry
+                            Select a data point on the canvas to inspect financial telemetry
                         </div>
                     </div>
-                    <div id="receipt-container" class="flex-1 overflow-y-auto custom-scrollbar">
-                        </div>
+                    <div id="receipt-container" class="flex-1 overflow-y-auto custom-scrollbar"></div>
                 </div>
             </div>
 
+            <!-- RIGHT COLUMN: OVERRIDES -->
             <div class="w-80 glass-panel border-l border-gray-100 flex flex-col">
                 <div class="p-4 border-b border-gray-100 flex justify-between items-center">
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Environment Overrides</label>
-                    <button onclick="resetOverrides()" class="text-[9px] font-bold text-blue-500 hover:underline">RESET</button>
+                    <button onclick="resetOverrides()" class="text-[9px] font-bold text-blue-500 hover:underline uppercase">Reset</button>
                 </div>
                 
                 <div id="override-container" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-6">
-                    <div id="group-retail" class="override-group-retail">
+                    <div id="group-retail" class="override-group-retail hidden">
                         <label class="text-[9px] font-black text-blue-600 uppercase mb-3 block tracking-tighter">Market Variables (Retail)</label>
                         <div id="retail-inputs" class="space-y-2"></div>
                     </div>
-
-                    <div id="group-cost" class="override-group-cost">
+                    
+                    <div id="group-cost" class="override-group-cost hidden">
                         <label class="text-[9px] font-black text-red-600 uppercase mb-3 block tracking-tighter">Physics Variables (Cost)</label>
                         <div id="cost-inputs" class="space-y-2"></div>
                     </div>
-
+                    
                     <div id="no-product-msg" class="text-center py-20 text-gray-400 text-xs italic">
                         Select an engine to begin simulation
                     </div>
                 </div>
-            </div>
 
+                <div class="p-4 border-t border-gray-100 bg-white">
+                    <button onclick="exportMatrix()" class="w-full text-[10px] font-black bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 tracking-widest uppercase">Export Matrix Payload</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script>
-        const ALL_MODULES = [
-            { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
-            { id: 'coro', name: 'Coroplast', config: window.CORO_CONFIG },
-            { id: 'pvc', name: 'PVC Signs', config: window.PVC_CONFIG },
-            { id: 'foam', name: 'Foam Core', config: window.FOAM_CONFIG },
-            { id: 'acm', name: 'ACM Signs', config: window.ACM_CONFIG },
-            { id: 'acrylic', name: 'Acrylic Signs', config: window.ACRYLIC_CONFIG },
-            { id: 'banner', name: 'Vinyl Banners', config: window.BANNER_CONFIG },
-            { id: 'cut', name: 'Cut Vinyl', config: window.CUT_CONFIG },
-            { id: 'decal', name: 'Decals & Stickers', config: window.DECAL_CONFIG },
-            { id: 'wrap', name: 'Vehicle Wraps', config: window.WRAP_CONFIG }
-        ];
+<script>
+    // --- SYSTEM CONFIG ---
+    const ALL_MODULES = [
+        { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
+        { id: 'coro', name: 'Coroplast', config: window.CORO_CONFIG },
+        { id: 'pvc', name: 'PVC Signs', config: window.PVC_CONFIG },
+        { id: 'foam', name: 'Foam Core', config: window.FOAM_CONFIG },
+        { id: 'acm', name: 'ACM Signs', config: window.ACM_CONFIG },
+        { id: 'acrylic', name: 'Acrylic Signs', config: window.ACRYLIC_CONFIG },
+        { id: 'banner', name: 'Vinyl Banners', config: window.BANNER_CONFIG },
+        { id: 'cut', name: 'Cut Vinyl', config: window.CUT_CONFIG },
+        { id: 'decal', name: 'Decals & Stickers', config: window.DECAL_CONFIG },
+        { id: 'wrap', name: 'Vehicle Wraps', config: window.WRAP_CONFIG }
+    ];
+    
+    const MODULES = ALL_MODULES.filter(m => m.config);
+    const X_STEPS_QTY = [1-17];
+    
+    let activeConfig = null;
+    let backendData = {};
+    let chartInstance = null;
+    let currentView = 'heatmap';
+    let currentChartDataMap = {}; 
 
-        const MODULES = ALL_MODULES.filter(m => m.config);
-        let activeConfig = null;
-        let backendData = {};
+    window.onload = () => {
+        injectHeader("God Mode: Pricing Analyzer v4.5", true);
+        renderProductMenu();
+        if(MODULES.length > 0) loadProduct(MODULES.id);
+    };
 
-        window.onload = () => {
-            if (typeof injectHeader === 'function') injectHeader("God Mode: Pricing Analyzer");
-            renderProductMenu();
-            if(MODULES.length > 0) loadProduct(MODULES[0].id);
+    function renderProductMenu() {
+        const container = document.getElementById('product-menu');
+        MODULES.forEach(m => {
+            const btn = document.createElement('button');
+            btn.id = `nav-${m.id}`;
+            btn.className = "w-full text-left px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-between group text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm";
+            btn.innerHTML = `<span>${m.name.toUpperCase()}</span><span class="opacity-0 group-hover:opacity-100 text-blue-400">→</span>`;
+            btn.onclick = () => loadProduct(m.id);
+            container.appendChild(btn);
+        });
+    }
+
+    async function loadProduct(id) {
+        document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100'));
+        document.getElementById(`nav-${id}`).classList.add('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100');
+        
+        activeConfig = MODULES.find(m => m.id === id).config;
+        
+        document.getElementById('no-product-msg').classList.add('hidden');
+        document.getElementById('group-retail').classList.remove('hidden');
+        document.getElementById('group-cost').classList.remove('hidden');
+        document.getElementById('receipt-container').innerHTML = '';
+        document.getElementById('inspection-meta').innerHTML = 'Select a data point on the canvas to inspect financial telemetry';
+
+        // Auto-switch view based on logic
+        if (id === 'yard') {
+            document.getElementById('btn-view-heatmap').style.display = 'none';
+            document.getElementById('scrub-w').style.display = 'none';
+            document.getElementById('scrub-h').style.display = 'none';
+            setView('chart');
+        } else {
+            document.getElementById('btn-view-heatmap').style.display = 'block';
+            document.getElementById('scrub-w').style.display = 'block';
+            document.getElementById('scrub-h').style.display = 'block';
+            setView('heatmap');
+        }
+
+        buildDynamicControls();
+
+        try {
+            const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
+            backendData = await req.json();
+            renderOverrides();
+            generateMatrix();
+        } catch (e) { console.error("Sync Error", e); }
+    }
+
+    // --- UI BUILDERS ---
+
+    function buildDynamicControls() {
+        const ctrlBox = document.getElementById('product-specific-controls');
+        ctrlBox.innerHTML = '';
+        activeConfig.controls.forEach(c => {
+            if (c.id === 'w' || c.id === 'h') return; // Handled by scrubbers
+            
+            let html = `<div><label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">${c.label}</label>`;
+            if(c.type === 'select') {
+                html += `<select id="ctrl_${c.id}" class="w-full border border-gray-200 rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none" onchange="generateMatrix()">`;
+                c.opts.forEach(o => html += `<option value="${o.v}">${o.t}</option>`);
+                html += `</select></div>`;
+            } else if(c.type === 'toggle') {
+                html += `<label class="flex items-center gap-2 mt-4 cursor-pointer"><input type="checkbox" id="ctrl_${c.id}" onchange="generateMatrix()" ${c.def?'checked':''} class="w-4 h-4 text-blue-600 rounded"><span class="text-xs font-bold text-gray-700">Enable</span></label></div>`;
+            } else {
+                html += `<input type="number" id="ctrl_${c.id}" value="${c.def}" class="w-full border border-gray-200 rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none" onchange="generateMatrix()"></div>`;
+            }
+            ctrlBox.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function renderOverrides() {
+        const retailBox = document.getElementById('retail-inputs');
+        const costBox = document.getElementById('cost-inputs');
+        retailBox.innerHTML = ""; costBox.innerHTML = "";
+
+        const createRow = (item, colorClass) => {
+            const row = document.createElement('div');
+            row.className = "flex items-center justify-between space-x-2";
+            let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
+            row.innerHTML = `
+                <label class="text-[9px] font-bold text-gray-500 truncate w-2/3 uppercase tracking-tighter" title="${item.key}">${item.label}</label>
+                <input type="text" id="ovr_${item.key}" value="${val}" onchange="generateMatrix()" class="w-16 bg-white border border-gray-100 rounded px-1.5 py-1 text-[10px] font-black text-right focus:border-${colorClass}-400 outline-none shadow-sm text-${colorClass}-600">
+            `;
+            return row;
         };
 
-        function renderProductMenu() {
-            const container = document.getElementById('product-menu');
-            MODULES.forEach(m => {
-                const btn = document.createElement('button');
-                btn.id = `nav-${m.id}`;
-                btn.className = "w-full text-left px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-between group text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm";
-                btn.innerHTML = `<span>${m.name.toUpperCase()}</span><span class="opacity-0 group-hover:opacity-100 text-blue-400">→</span>`;
-                btn.onclick = () => loadProduct(m.id);
-                container.appendChild(btn);
-            });
+        activeConfig.retails.forEach(item => retailBox.appendChild(createRow(item, 'blue')));
+        activeConfig.costs.forEach(item => costBox.appendChild(createRow(item, 'red')));
+    }
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('view-heatmap').classList.toggle('hidden', view !== 'heatmap');
+        document.getElementById('view-chart').classList.toggle('hidden', view !== 'chart');
+        
+        document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
+        document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
+        
+        generateMatrix();
+    }
+
+    function syncRange(axis, val) {
+        document.getElementById(`val-max-${axis}`).innerText = val + "'";
+        generateMatrix();
+    }
+
+    // --- LOGIC ENGINE ---
+
+    function isSizeValid(wInches, hInches, data) {
+        const maxW = parseFloat(data.Constraint_Max_W);
+        const maxH = parseFloat(data.Constraint_Max_H);
+        const maxRoll = parseFloat(data.Constraint_Max_Width_Inhouse);
+
+        if (!isNaN(maxW) && !isNaN(maxH)) {
+            return ((wInches <= maxW && hInches <= maxH) || (wInches <= maxH && hInches <= maxW));
         }
+        if (!isNaN(maxRoll)) {
+            return (Math.min(wInches, hInches) <= maxRoll);
+        }
+        
+        // Fallbacks
+        if (activeConfig.id.includes('banner') || activeConfig.id.includes('wrap') || activeConfig.id.includes('decal')) {
+            return Math.min(wInches, hInches) <= 62;
+        } else if (activeConfig.id !== 'yard') {
+            return (Math.min(wInches, hInches) <= 60 && Math.max(wInches, hInches) <= 120);
+        }
+        return true;
+    }
 
-        async function loadProduct(id) {
-            document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100'));
-            const activeBtn = document.getElementById(`nav-${id}`);
-            activeBtn.classList.add('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100');
+    function generateMatrix() {
+        if(!activeConfig) return;
 
-            activeConfig = MODULES.find(m => m.id === id).config;
-            document.getElementById('no-product-msg').classList.add('hidden');
+        // Harvest Overrides
+        const simData = { ...backendData };
+        [...activeConfig.retails, ...activeConfig.costs].forEach(o => {
+            const el = document.getElementById('ovr_' + o.key);
+            if(el && el.value !== "") simData[o.key] = isNaN(el.value) ? el.value : parseFloat(el.value);
+            else delete simData[o.key];
+        });
+
+        currentChartDataMap = {}; // Reset Map
+
+        if (currentView === 'chart') {
+            drawLineChart(simData);
+        } else {
+            drawHeatmap(simData);
+        }
+    }
+
+    function drawHeatmap(simData) {
+        const mode = document.getElementById('analysis-mode').value;
+        const maxW = parseInt(document.getElementById('limit-w').value) || 10;
+        const maxH = parseInt(document.getElementById('limit-h').value) || 10;
+        
+        const header = document.getElementById('heatmap-head');
+        const body = document.getElementById('heatmap-body');
+        header.innerHTML = ""; body.innerHTML = "";
+
+        let headHtml = `<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>`;
+        for(let w=1; w<=maxW; w++) headHtml += `<th class="p-3 border border-slate-200">${w}'</th>`;
+        header.innerHTML = headHtml + `</tr>`;
+
+        // Harvest Controls
+        let baseInputs = { qty: parseInt(document.getElementById('ctrl_qty').value) || 1 };
+        activeConfig.controls.forEach(c => {
+            if (c.id === 'w' || c.id === 'h') return;
+            const el = document.getElementById('ctrl_' + c.id);
+            if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
+        });
+
+        for (let h=1; h<=maxH; h++) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td class="p-3 border border-slate-200 sticky-col text-center text-slate-400 font-black">${h}'</td>`;
             
-            try {
-                const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
-                backendData = await req.json();
-                renderOverrides();
-                generateMatrix();
-            } catch (e) { console.error("Sync Error", e); }
-        }
+            for (let w=1; w<=maxW; w++) {
+                const wInches = w * 12;
+                const hInches = h * 12;
+                const cell = document.createElement('td');
 
-        function renderOverrides() {
-            const retailBox = document.getElementById('retail-inputs');
-            const costBox = document.getElementById('cost-inputs');
-            retailBox.innerHTML = "";
-            costBox.innerHTML = "";
-
-            const createRow = (item, colorClass) => {
-                const row = document.createElement('div');
-                row.className = "flex items-center justify-between space-x-2";
-                row.innerHTML = `
-                    <label class="text-[9px] font-bold text-gray-500 truncate w-2/3 uppercase tracking-tighter" title="${item.key}">${item.label}</label>
-                    <input type="text" id="ovr_${item.key}" placeholder="${backendData[item.key] || '0.00'}" 
-                           onchange="generateMatrix()" 
-                           class="w-16 bg-white border border-gray-100 rounded px-1.5 py-1 text-[10px] font-black text-right focus:border-${colorClass}-400 outline-none shadow-sm text-${colorClass}-600">
-                `;
-                return row;
-            };
-
-            activeConfig.retails.forEach(item => retailBox.appendChild(createRow(item, 'blue')));
-            activeConfig.costs.forEach(item => costBox.appendChild(createRow(item, 'red')));
-        }
-
-        function syncRange(axis, val) {
-            document.getElementById(`val-max-${axis}`).innerText = val + "'";
-            generateMatrix();
-        }
-
-        function generateMatrix() {
-            if(!activeConfig) return;
-
-            const mode = document.getElementById('analysis-mode').value;
-            const maxW = parseInt(document.getElementById('limit-w').value) * 12;
-            const maxH = parseInt(document.getElementById('limit-h').value) * 12;
-            
-            const steps = [12, 18, 24, 36, 48, 60, 72, 84, 96, 120].filter(s => s <= Math.max(maxW, maxH));
-
-            const header = document.getElementById('heatmap-head');
-            const body = document.getElementById('heatmap-body');
-            header.innerHTML = ""; body.innerHTML = "";
-
-            let headHtml = `<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>`;
-            steps.forEach(w => headHtml += `<th class="p-3 border border-slate-200">${w}"</th>`);
-            header.innerHTML = headHtml + `</tr>`;
-
-            const simData = { ...backendData };
-            [...activeConfig.retails, ...activeConfig.costs].forEach(o => {
-                const el = document.getElementById('ovr_' + o.key);
-                if(el && el.value !== "") simData[o.key] = isNaN(el.value) ? el.value : parseFloat(el.value);
-            });
-
-            steps.forEach(h => {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td class="p-3 border border-slate-200 sticky-col text-center text-slate-400 font-black">${h}"</td>`;
-                
-                steps.forEach(w => {
-                    const inputs = { qty: parseInt(document.getElementById('ctrl_qty').value)||1, w, h };
-                    const res = activeConfig.engine(inputs, simData);
-                    const cell = document.createElement('td');
-                    cell.className = "heatmap-cell text-center relative group text-slate-700 font-black";
-                    
-                    let val = 0;
-                    let display = "";
-                    
-                    if(mode === 'retail') {
-                        val = res.retail.unitPrice;
-                        display = "$" + val.toFixed(2);
-                    } else if(mode === 'cost') {
-                        val = res.cost.total / inputs.qty;
-                        display = "$" + val.toFixed(2);
-                        cell.style.backgroundColor = "#fff5f5";
-                    } else {
-                        const margin = ((res.retail.grandTotal - res.cost.total) / res.retail.grandTotal) * 100;
-                        display = margin.toFixed(1) + "%";
-                        if(margin < 0) cell.classList.add('loss-alert');
-                        else cell.style.backgroundColor = `rgba(34, 197, 94, ${Math.min(margin/70, 0.8)})`;
-                    }
-
-                    cell.innerText = display;
-                    cell.onclick = () => renderInspection(res, inputs, display);
+                if (!isSizeValid(wInches, hInches, simData)) {
+                    cell.className = "heatmap-cell border border-gray-100 text-center bg-gray-200 text-gray-400 font-black text-[9px]";
+                    cell.innerHTML = "N/A";
                     row.appendChild(cell);
-                });
-                body.appendChild(row);
+                    continue;
+                }
+
+                let inputs = { ...baseInputs, w: wInches, h: hInches };
+                if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
+
+                const res = activeConfig.engine(inputs, simData);
+                const pointKey = `hm-${w}-${h}`;
+                currentChartDataMap[pointKey] = { res, inputs };
+
+                let val = 0, display = "";
+                cell.className = "heatmap-cell border border-gray-100 text-center relative group text-slate-700 font-black";
+
+                if (mode === 'retail') {
+                    val = res.retail.unitPrice;
+                    display = "$" + val.toFixed(2);
+                } else if (mode === 'cost') {
+                    val = res.cost.total / inputs.qty;
+                    display = "$" + val.toFixed(2);
+                    cell.style.backgroundColor = "#fff5f5";
+                } else {
+                    const margin = res.metrics ? res.metrics.margin * 100 : 0;
+                    display = margin.toFixed(1) + "%";
+                    if (margin < 0) cell.classList.add('loss-alert');
+                    else cell.style.backgroundColor = `rgba(34, 197, 94, ${Math.min(margin/70, 0.8)})`;
+                }
+
+                cell.innerText = display;
+                cell.onclick = () => renderInspection(pointKey, display);
+                row.appendChild(cell);
+            }
+            body.appendChild(row);
+        }
+    }
+
+    function drawLineChart(simData) {
+        const mode = document.getElementById('analysis-mode').value;
+        
+        let permutations = [];
+        if (activeConfig.id === 'yard') {
+            permutations = [
+                { label: "1-Sided, No Stakes", inputs: { w:24, h:18, sides:1, hasStakes:false, files:1, incDesign:false } },
+                { label: "1-Sided, W/ Stakes", inputs: { w:24, h:18, sides:1, hasStakes:true, files:1, incDesign:false } },
+                { label: "2-Sided, No Stakes", inputs: { w:24, h:18, sides:2, hasStakes:false, files:1, incDesign:false } },
+                { label: "2-Sided, W/ Stakes", inputs: { w:24, h:18, sides:2, hasStakes:true, files:1, incDesign:false } }
+            ];
+        } else {
+            // General setup for sqft products (e.g. ACM 3mm vs 6mm)
+            let baseInputs = { w:24, h:24, qty:1 };
+            activeConfig.controls.forEach(c => {
+                if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
+                const el = document.getElementById('ctrl_' + c.id);
+                if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
             });
+            permutations.push({ label: "Selected Configuration", inputs: baseInputs });
         }
 
-        function renderInspection(res, inputs, valDisplay) {
-            const meta = document.getElementById('inspection-meta');
-            meta.innerHTML = `
-                <div class="flex flex-col items-center">
-                    <span class="text-blue-600 font-black text-lg">${valDisplay}</span>
-                    <span class="text-[9px] font-bold text-gray-400 uppercase">${inputs.w}" x ${inputs.h}" (QTY ${inputs.qty})</span>
-                </div>
-            `;
+        const datasets = [];
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
-            const container = document.getElementById('receipt-container');
-            const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
-            
-            container.innerHTML = `
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
-                        <label class="text-[9px] font-black text-blue-600 uppercase block mb-2">Market Engine (Retail)</label>
-                        <div class="flex justify-between text-[10px] font-bold"><span>Unit Price:</span><span>${fmt(res.retail.unitPrice)}</span></div>
-                        <div class="flex justify-between text-[10px] font-bold border-t border-blue-200 mt-1 pt-1"><span>Grand Total:</span><span>${fmt(res.retail.grandTotal)}</span></div>
-                    </div>
-                    <div class="bg-red-50 p-3 rounded-xl border border-red-100">
-                        <label class="text-[9px] font-black text-red-600 uppercase block mb-2">Physics Engine (Cost)</label>
-                        <div class="flex justify-between text-[10px] font-bold text-red-800"><span>Yield BOM:</span><span>${fmt(res.cost.total)}</span></div>
-                        <div class="flex justify-between text-[10px] font-bold text-red-400 mt-1 pt-1 italic"><span>Margin:</span><span>${(((res.retail.grandTotal - res.cost.total)/res.retail.grandTotal)*100).toFixed(1)}%</span></div>
-                    </div>
-                </div>
-            `;
-        }
+        permutations.forEach((perm, index) => {
+            const lineData = [];
+            X_STEPS_QTY.forEach(qty => {
+                let runInputs = { ...perm.inputs, qty: qty };
+                if (typeof activeConfig.dynamicUI === 'function') runInputs = activeConfig.dynamicUI(runInputs);
+                
+                const res = activeConfig.engine(runInputs, simData);
+                const pointKey = `ch-${index}-${qty}`;
+                currentChartDataMap[pointKey] = { res, inputs: runInputs };
 
-        function setView(view) {
-            document.getElementById('view-heatmap').classList.toggle('hidden', view !== 'heatmap');
-            document.getElementById('view-chart').classList.toggle('hidden', view !== 'chart');
-            document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
-            document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
-        }
+                if (!res || !res.retail) { lineData.push(null); return; }
 
-        function resetOverrides() {
-            document.querySelectorAll('#override-container input').forEach(i => i.value = "");
-            generateMatrix();
-        }
-
-        function exportMatrix() {
-            const allOvr = [...activeConfig.retails, ...activeConfig.costs];
-            const payload = [];
-            allOvr.forEach(o => {
-                const val = document.getElementById('ovr_' + o.key).value;
-                if(val !== "") payload.push({ product: activeConfig.tab, cost: o.key, value: val });
+                if (mode === 'retail') lineData.push(res.retail.unitPrice);
+                else if (mode === 'cost') lineData.push(res.cost.total / qty);
+                else lineData.push(res.metrics.margin * 100);
             });
-            if(payload.length === 0) return alert("No overrides detected.");
-            navigator.clipboard.writeText(JSON.stringify(payload));
-            alert("Payload Copied to Clipboard.");
-        }
-    </script>
+
+            datasets.push({
+                type: 'line',
+                label: perm.label,
+                data: lineData,
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length],
+                borderWidth: 3,
+                tension: 0.1,
+                pointRadius: 4,
+                _permIndex: index
+            });
+        });
+
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById('physicsChart').getContext('2d');
+        
+        let yLabel = mode === 'margin' ? 'Margin (%)' : 'Unit Price ($)';
+
+        chartInstance = new Chart(ctx, {
+            data: { labels: X_STEPS_QTY, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: 'Quantity Ordered', font: { weight: 'bold' } } },
+                    y: { title: { display: true, text: yLabel, font: { weight: 'bold' } }, beginAtZero: true }
+                },
+                onClick: (e) => {
+                    const elements = chartInstance.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+                    if (elements.length > 0) {
+                        const dataIndex = elements.index;
+                        const datasetIndex = elements.datasetIndex;
+                        const qty = X_STEPS_QTY[dataIndex];
+                        const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
+                        const pointKey = `ch-${permIndex}-${qty}`;
+                        
+                        let valDisplay = chartInstance.data.datasets[datasetIndex].data[dataIndex];
+                        valDisplay = mode === 'margin' ? valDisplay.toFixed(1) + '%' : '$' + valDisplay.toFixed(2);
+                        
+                        renderInspection(pointKey, valDisplay);
+                    }
+                }
+            }
+        });
+    }
+
+    // --- RECEIPT RENDERER ---
+
+    function renderInspection(pointKey, valDisplay) {
+        const payload = currentChartDataMap[pointKey];
+        if (!payload) return;
+        
+        const res = payload.res;
+        const inputs = payload.inputs;
+        
+        document.getElementById('inspection-meta').innerHTML = `
+            <div class="flex flex-col items-center">
+                <span class="text-blue-600 font-black text-xl">${valDisplay}</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase mt-1">Size: ${inputs.w}" x ${inputs.h}" | Qty: ${inputs.qty}</span>
+            </div>
+        `;
+
+        const container = document.getElementById('receipt-container');
+        const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
+        
+        let retailLines = `<div class="flex justify-between text-[10px] font-bold"><span>Base Print:</span><span>${fmt(res.retail.printTotal)}</span></div>`;
+        if(res.retail.routerFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>CNC Routing:</span><span>${fmt(res.retail.routerFee)}</span></div>`;
+        if(res.retail.stakeTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-blue-600"><span>Hardware/Stakes:</span><span>${fmt(res.retail.stakeTotal)}</span></div>`;
+        if(res.retail.setupFee) retailLines += `<div class="flex justify-between text-[10px] font-bold"><span>Setup Fee:</span><span>${fmt(res.retail.setupFee)}</span></div>`;
+        if(res.retail.designFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-purple-600"><span>Design Fee:</span><span>${fmt(res.retail.designFee)}</span></div>`;
+        
+        let costLines = "";
+        const b = res.cost.breakdown || {};
+        const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0) + (b.stakeCost || 0);
+        const labor = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0) + (b.costSetup || 0) + (b.costFinish || 0);
+        
+        costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Materials & Ink:</span><span>${fmt(mats)}</span></div>`;
+        costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Labor & Machine:</span><span>${fmt(labor)}</span></div>`;
+        if(b.wasteCost) costLines += `<div class="flex justify-between text-[10px] font-bold text-red-400"><span>Waste Buffer:</span><span>${fmt(b.wasteCost)}</span></div>`;
+
+        container.innerHTML = `
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm">
+                    <label class="text-[9px] font-black text-blue-600 uppercase block mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</label>
+                    <div class="space-y-1">${retailLines}</div>
+                    <div class="flex justify-between text-[11px] font-black border-t border-blue-200 mt-2 pt-1 text-blue-900"><span>Total Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>
+                </div>
+                <div class="bg-red-50 p-3 rounded-xl border border-red-100 shadow-sm">
+                    <label class="text-[9px] font-black text-red-600 uppercase block mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</label>
+                    <div class="space-y-1">${costLines}</div>
+                    <div class="flex justify-between text-[11px] font-black border-t border-red-200 mt-2 pt-1 text-red-900"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>
+                    <div class="flex justify-between text-[10px] font-bold text-red-500 mt-1 pt-1 italic"><span>Net Margin:</span><span>${(res.metrics.margin*100).toFixed(1)}%</span></div>
+                </div>
+            </div>
+        `;
+    }
+
+    function resetOverrides() {
+        document.querySelectorAll('#override-container input').forEach(i => i.value = "");
+        generateMatrix();
+    }
+
+    function exportMatrix() {
+        const allOvr = [...activeConfig.retails, ...activeConfig.costs];
+        const payload = [];
+        allOvr.forEach(o => {
+            const val = document.getElementById('ovr_' + o.key).value;
+            if(val !== "") payload.push({ product: activeConfig.tab, cost: o.key, value: val });
+        });
+
+        if(payload.length === 0) return alert("No overrides detected.");
+        navigator.clipboard.writeText(JSON.stringify(payload));
+        alert("Payload Copied to Clipboard. Ready to commit to SYS_Cost_Matrix.");
+    }
+</script>
+
 </body>
 </html>
