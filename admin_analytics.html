@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>God Mode: Pricing Analyzer v5.1</title>
+    <title>Pricing Analytics v5.2</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -45,7 +45,7 @@
 </head>
 <body class="p-0 sm:p-4">
 
-    <!-- Island Mode Container (Now expands vertically if needed) -->
+    <!-- Island Mode Container -->
     <div id="signos-island" class="bg-white rounded-2xl flex flex-col border border-gray-200">
         
         <!-- Header Hook -->
@@ -63,7 +63,7 @@
                 <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white shrink-0 hidden lg:block">
                     <div class="flex items-center space-x-2 mb-1">
                         <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                        <span class="text-[10px] font-black uppercase tracking-widest">God Mode Active</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Sandbox Active</span>
                     </div>
                     <p class="text-[9px] text-slate-400 leading-tight">All calculations executing in local memory sandboxes.</p>
                 </div>
@@ -93,7 +93,11 @@
                     <div id="chart-controls" class="flex items-center space-x-3">
                         <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
                             <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Simulate Qty:</label>
-                            <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-16 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
+                            <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
+                        </div>
+                        <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner" id="max-sqft-wrap">
+                            <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Max SqFt:</label>
+                            <input type="number" id="chart-max-sqft" value="32" min="1" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
                         </div>
                     </div>
                 </div>
@@ -187,7 +191,7 @@
     );
     
     const MODULES = ALL_MODULES.filter(m => m.config);
-    const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 600, 750, 1000);
+    const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000);
     
     let activeConfig = null;
     let backendData = {};
@@ -196,7 +200,7 @@
     let currentChartDataMap = {}; 
 
     window.onload = () => {
-        injectHeader("God Mode: Pricing Analyzer v5.1", true);
+        injectHeader("Pricing Analytics v5.2", true);
         renderProductMenu();
         if(MODULES.length > 0) loadProduct(MODULES.id);
     };
@@ -224,14 +228,17 @@
         document.getElementById('inspection-meta').innerHTML = '<span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point to inspect.</span>';
 
         // Auto-configure UI tools
+        const bounds = getProductBounds(id);
+        
         if (id === 'yard') {
-            document.getElementById('chart-controls').classList.add('hidden');
+            document.getElementById('max-sqft-wrap').classList.add('hidden');
             document.getElementById('btn-view-heatmap').classList.add('hidden');
             setView('chart');
         } else {
-            document.getElementById('chart-controls').classList.remove('hidden');
+            document.getElementById('max-sqft-wrap').classList.remove('hidden');
             document.getElementById('btn-view-heatmap').classList.remove('hidden');
-            document.getElementById('chart-qty').value = 1; // Reset Qty default
+            document.getElementById('chart-qty').value = 1; 
+            document.getElementById('chart-max-sqft').value = bounds.sqft; // Auto-set max sqft based on sheet size
             setView('chart');
         }
 
@@ -240,10 +247,28 @@
         try {
             const req = await fetch(SCRIPT_URL + '?req=view_module&tab=' + activeConfig.tab);
             backendData = await req.json();
+            
+            // FIX: Restore the "ONLINE" badge so it doesn't say Connecting forever
+            const statusText = document.getElementById("status-text");
+            const statusDot = document.getElementById("status-dot");
+            if(statusText) {
+                statusText.innerText = "ONLINE";
+                statusText.className = "font-bold text-green-500";
+            }
+            if(statusDot) {
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                statusDot.classList.remove("animate-pulse");
+            }
+            
             renderOverrides();
             generateMatrix();
         } catch (e) { 
             console.error("Sync Error", e); 
+            const statusText = document.getElementById("status-text");
+            if(statusText) {
+                statusText.innerText = "OFFLINE (API FAILED)";
+                statusText.className = "font-bold text-red-500";
+            }
         } finally {
             document.getElementById('loader').classList.add('hidden');
         }
@@ -318,8 +343,7 @@
         
         generateMatrix();
     }
-
-    // --- LOGIC ENGINE ---
+        // --- LOGIC ENGINE ---
 
     function generateMatrix() {
         if(!activeConfig) return;
@@ -342,11 +366,12 @@
         else drawHeatmap(simData);
     }
 
-    // Standardize Bounds Math
+    // Standardize Bounds Math Based on Max Parent Sheet / Roll Sizes
     function getProductBounds(id) {
-        if (id === 'coro' || id === 'acm' || id === 'pvc' || id === 'foam' || id === 'acrylic') return { w: 10, h: 5, sqft: 50 };
-        if (id === 'banner') return { w: 12, h: 6, sqft: 60 };
-        return { w: 54, h: 10, sqft: 50 }; // Vinyl, Wrap, Wall, Decal
+        if (id === 'foam') return { w: 8, h: 4, sqft: 32 };
+        if (id === 'coro' || id === 'acm' || id === 'pvc' || id === 'acrylic') return { w: 10, h: 5, sqft: 50 };
+        if (id === 'banner') return { w: 12, h: 5, sqft: 60 }; // 60" roll max (5ft x 12ft)
+        return { w: 10, h: 5, sqft: 50 }; // Vinyl, Wrap, Wall, Decal (54" roll limits)
     }
 
     function drawLineChart(simData) {
@@ -355,9 +380,11 @@
         const isYard = id === 'yard';
         const bounds = getProductBounds(id);
         
+        // Use Yard Sign specific increments or dynamic SqFt limits
         const steps = isYard ? X_STEPS_YARD : new Array();
         if (!isYard) {
-            for(let i=1; i<=bounds.sqft; i++) steps.push(i);
+            const maxSqFt = parseInt(document.getElementById('chart-max-sqft').value) || bounds.sqft;
+            for(let i=1; i<=maxSqFt; i++) steps.push(i);
         }
 
         // Harvest Shared Base Inputs
@@ -537,7 +564,6 @@
                     y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: true }
                 },
                 onClick: (e) => {
-                    // FIX: Nearest intersection targets the exact line/bar the user clicked
                     const elements = chartInstance.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
                     if (elements.length > 0) {
                         const element = elements;
@@ -708,5 +734,3 @@
 
 </body>
 </html>
-
-
