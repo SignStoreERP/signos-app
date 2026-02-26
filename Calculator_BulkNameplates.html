@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk ADA Nameplates v2.1</title>
+    <title>Bulk ADA Nameplates v2.2</title>
     <!-- Load Benchmark ADA Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lora:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,8 +14,6 @@
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        
-        /* Container Query setup based on inline-size to fix the invisible text issue */
         .aspect-box { container-type: inline-size; transition: all 0.3s ease-in-out; }
         
         .font-sans-serif { font-family: 'Roboto', sans-serif; font-weight: 500; }
@@ -24,12 +22,12 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
-    <div id="main-card" class="max-w-6xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
+    <div id="main-card" class="max-w-[1400px] mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
-        <div class="grid grid-cols-1 lg:grid-cols-2">
+        <div class="grid grid-cols-1 lg:grid-cols-12">
             
-            <!-- LEFT COLUMN: INPUTS & PRICING -->
-            <div class="p-6 border-r border-gray-200 bg-gray-50/50 flex flex-col h-full">
+            <!-- LEFT COLUMN: INPUTS, TICKET & PRICING -->
+            <div class="lg:col-span-5 p-6 border-r border-gray-200 bg-gray-50/50 flex flex-col h-full relative">
                 
                 <div class="flex-1 space-y-4">
                     <div class="flex items-center justify-between mb-1 border-b border-gray-200 pb-2">
@@ -78,13 +76,32 @@
                         </div>
                     </div>
 
-                    <!-- BULK TEXT AREA -->
+                    <!-- BULK TEXT AREA & CASE TOGGLES -->
                     <div class="pt-2">
-                        <label class="flex justify-between items-end text-[10px] font-bold text-gray-500 uppercase mb-1">
-                            <span>1. Paste Source Text</span>
-                            <span id="bulk-warn" class="hidden text-red-500 animate-pulse">Max 50 Signs Reached!</span>
-                        </label>
-                        <textarea id="bulk-list" oninput="processBulkList()" rows="6" placeholder="JOHN DOE\nCONFERENCE ROOM\n..." class="w-full border border-gray-300 p-3 rounded bg-white text-sm font-mono outline-none focus:border-blue-500 shadow-inner"></textarea>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-2">
+                                1. Paste Source Text
+                            </label>
+                            <div class="flex bg-gray-200 p-0.5 rounded shadow-inner">
+                                <button onclick="setCase('upper')" id="btn-case-upper" class="px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" title="UPPERCASE">AA</button>
+                                <button onclick="setCase('title')" id="btn-case-title" class="px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent" title="Title Case">Aa</button>
+                                <button onclick="setCase('lower')" id="btn-case-lower" class="px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent" title="lowercase">aa</button>
+                            </div>
+                        </div>
+                        <span id="bulk-warn" class="hidden text-[10px] font-bold text-red-500 animate-pulse uppercase mb-1 block tracking-widest">Max 50 Signs Reached!</span>
+                        <textarea id="bulk-list" oninput="processBulkList()" rows="6" placeholder="John Doe\nConference Room\n..." class="w-full border border-gray-300 p-3 rounded bg-white text-sm font-mono outline-none focus:border-blue-500 shadow-inner leading-relaxed"></textarea>
+                    </div>
+
+                    <!-- TYPOGRAPHY CAP-HEIGHT OVERRIDE -->
+                    <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex items-center justify-between shadow-inner">
+                        <div>
+                            <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-widest mb-0.5">Calculated Cap-Height</label>
+                            <span class="text-[9px] text-indigo-600 font-medium leading-tight block">Target size based on 1/8" increments.</span>
+                        </div>
+                        <div class="flex items-center gap-2 relative">
+                            <input type="number" id="font-override" step="0.125" onchange="runCalc()" placeholder="0.000" class="w-20 border border-indigo-200 p-1.5 rounded font-black text-indigo-900 text-sm text-center bg-white outline-none focus:border-indigo-500 shadow-sm">
+                            <span class="text-indigo-800 font-black text-sm absolute right-3 opacity-50 pointer-events-none">"</span>
+                        </div>
                     </div>
 
                     <!-- ENGRAVE STYLE -->
@@ -125,10 +142,22 @@
                             <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-1.5 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
                         </div>
                     </div>
+
+                    <!-- TICKET & CLIPBOARD -->
+                    <div class="bg-gray-50 p-4 border border-gray-200 rounded-xl shrink-0 mt-4">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">3. Production Ticket Details</label>
+                        <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug custom-scroll shadow-inner" readonly></textarea>
+                        
+                        <button onclick="copyTicket(this)" class="w-full mt-3 bg-white hover:bg-gray-100 text-gray-700 font-bold py-2.5 px-4 border border-gray-300 rounded shadow-sm text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                            Copy Ticket & Roster
+                        </button>
+                    </div>
+
                 </div>
 
-                <!-- RESULTS MODULE (Moved to Bottom Left) -->
-                <div class="bg-blue-50 p-6 rounded-xl shadow-inner border border-blue-200 mt-6 shrink-0">
+                <!-- RESULTS MODULE (Sticky at Bottom) -->
+                <div class="bg-blue-50 p-5 rounded-xl shadow-md border-t-4 border-t-blue-400 border border-blue-200 mt-6 sticky bottom-4 z-20">
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price (Avg)</span>
                         <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
@@ -136,7 +165,14 @@
                     
                     <div class="border-t border-blue-200/50 my-2"></div>
                     
-                    <div class="flex justify-between items-end my-2">
+                    <!-- Line Items Summary -->
+                    <div id="ui-line-items" class="space-y-1 text-xs text-blue-900/80 pt-1 pb-2">
+                        <!-- Injected via JS -->
+                    </div>
+
+                    <div class="border-t border-blue-200/50 mb-2"></div>
+
+                    <div class="flex justify-between items-end">
                         <div>
                             <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
                             <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Min: $35</span>
@@ -148,11 +184,11 @@
 
             </div>
 
-            <!-- RIGHT COLUMN: BULK PREVIEW, VERIFY & RECEIPT -->
-            <div class="flex flex-col h-full bg-white relative z-0 p-6 space-y-5">
+            <!-- RIGHT COLUMN: BULK PREVIEW & ROSTER EDITOR -->
+            <div class="lg:col-span-7 flex flex-col h-full bg-white relative z-0 p-6 space-y-5">
                 
                 <!-- THE BULK VISUALIZER GRID -->
-                <div class="bg-gray-800 rounded-xl shadow-inner relative overflow-hidden flex flex-col min-h-[300px] border border-gray-900">
+                <div class="bg-gray-800 rounded-xl shadow-inner relative overflow-hidden flex flex-col min-h-[350px] border border-gray-900">
                     
                     <div id="canvas-loading-overlay" class="absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
                         <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
@@ -166,7 +202,6 @@
                     <!-- Scrollable Grid of Miniature Canvases -->
                     <div class="flex-1 p-4 overflow-y-auto custom-scroll relative">
                         <div id="bulk-preview-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 content-start">
-                            <!-- Populated via JS -->
                             <div class="col-span-full h-24 bg-gray-700/50 rounded border border-gray-600 border-dashed flex items-center justify-center">
                                 <span class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Awaiting Roster Input</span>
                             </div>
@@ -179,30 +214,34 @@
                         <span id="prod-warn-text" class="text-[9px] text-red-800 leading-tight">Calculated font height falls below minimum. Characters will not engrave cleanly.</span>
                     </div>
 
+                    <!-- OVERFLOW WARNING -->
+                    <div id="overflow-warn-box" class="hidden m-3 mt-0 shrink-0 bg-orange-100 border border-orange-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
+                        <span class="text-[10px] text-orange-900 font-bold leading-tight uppercase tracking-wide">⚠️ Layout Overflow</span>
+                        <span class="text-[9px] text-orange-800 leading-tight">Manual font override pushes text into the 0.25" physical margins or off the sign.</span>
+                    </div>
+
                     <div id="bright-warn-box" class="hidden m-3 mt-0 shrink-0 bg-amber-100 border border-amber-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
                         <span class="text-[10px] text-amber-900 font-bold leading-tight uppercase tracking-wide">⚠️ Contrast Warning</span>
                         <span class="text-[9px] text-amber-800 leading-tight">"Bright" face selected. Verify contrast ratio compliance with client.</span>
                     </div>
                 </div>
 
-                <!-- LINE ITEM EDITOR (Moved under Preview) -->
-                <div class="flex-1 flex flex-col min-h-[200px]">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">2. Verify & Set Quantities</label>
+                <!-- LINE ITEM EDITOR -->
+                <div class="flex-1 flex flex-col min-h-[300px]">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">2. Verify & Set Quantities</label>
+                        
+                        <!-- Change All Quantities -->
+                        <div class="flex items-center gap-1 bg-blue-50 border border-blue-200 p-1 rounded">
+                            <span class="text-[9px] font-black text-blue-600 uppercase tracking-widest pl-1">Apply to All:</span>
+                            <input type="number" id="bulk-qty-input" value="1" min="1" class="w-10 text-center text-xs font-bold border border-blue-200 rounded outline-none py-0.5">
+                            <button onclick="applyBulkQty()" class="bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-black px-2 py-1 rounded transition uppercase">Set</button>
+                        </div>
+                    </div>
+                    
                     <div id="roster-editor" class="flex-1 border border-gray-200 bg-white rounded shadow-inner overflow-y-auto custom-scroll p-2 space-y-2">
                         <div class="text-center text-xs text-gray-400 italic py-8">Awaiting text import...</div>
                     </div>
-                </div>
-
-                <!-- TICKET & CLIPBOARD -->
-                <div class="bg-gray-50 p-4 border border-gray-200 rounded-xl shrink-0">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">3. Production Ticket Details</label>
-                    <!-- Job Desc Text Area Restored -->
-                    <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug custom-scroll shadow-inner" readonly></textarea>
-                    
-                    <button onclick="copyTicket(this)" class="w-full mt-3 bg-white hover:bg-gray-100 text-gray-700 font-bold py-2.5 px-4 border border-gray-300 rounded shadow-sm text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                        Copy Ticket & Roster
-                    </button>
                 </div>
 
             </div>
@@ -223,6 +262,7 @@
         let currentMode = 'front';
         let parsedRoster = [];
         let totalSystemQty = 0;
+        let activeTextCase = 'upper';
 
         // --- PARENT SHEET LIMITS (24x48) ---
         function enforceSheetLimits() {
@@ -248,14 +288,35 @@
             }
         }
 
+        // --- TEXT FORMATTING ---
+        function setCase(mode) {
+            activeTextCase = mode;
+            document.getElementById('btn-case-upper').className = mode === 'upper' ? "px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" : "px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent";
+            document.getElementById('btn-case-title').className = mode === 'title' ? "px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" : "px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent";
+            document.getElementById('btn-case-lower').className = mode === 'lower' ? "px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" : "px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent";
+            
+            processBulkList(); // Re-parse to apply case
+        }
 
-        // --- BULK ROSTER LOGIC & SEQUENTIAL PARSER ---
+        function formatCase(str) {
+            if (!str) return str;
+            if (activeTextCase === 'upper') return str.toUpperCase();
+            if (activeTextCase === 'lower') return str.toLowerCase();
+            if (activeTextCase === 'title') {
+                return str.replace(/\w\S*/g, function(txt) {
+                    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+                });
+            }
+            return str;
+        }
+
+        // --- BULK ROSTER LOGIC ---
         function processBulkList() {
             const rawText = document.getElementById('bulk-list').value;
             const linesPerSign = parseInt(document.getElementById('lines-per-sign').value) || 1;
             
-            // Extract pure text lines
-            const lines = rawText.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+            // Extract pure text lines and format immediately so measuring tool reads correct physical width
+            const lines = rawText.split(/\r?\n/).map(s => formatCase(s.trim())).filter(s => s.length > 0);
             
             const newParsed = [];
             let signIndex = 0;
@@ -263,9 +324,9 @@
             for(let i = 0; i < lines.length; i += linesPerSign) {
                 const chunk = lines.slice(i, i + linesPerSign);
                 
-                // Attempt to preserve quantity if the exact sign text already existed
                 let existingQty = 1;
-                if (parsedRoster[signIndex] && parsedRoster[signIndex].texts.join('|') === chunk.join('|')) {
+                // Safely retain quantities if the array index matches roughly
+                if (parsedRoster[signIndex]) {
                     existingQty = parsedRoster[signIndex].qty;
                 }
 
@@ -299,7 +360,7 @@
                 html += `
                 <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded p-1.5 gap-2">
                     <div class="text-xs font-bold text-gray-700 truncate flex-1 pl-1" title="${sign.texts.join(' / ')}">${i+1}. ${textPreview}</div>
-                    <div class="flex items-center shrink-0 border border-gray-300 rounded bg-white overflow-hidden">
+                    <div class="flex items-center shrink-0 border border-gray-300 rounded bg-white overflow-hidden shadow-sm">
                         <button onclick="updateSignQty(${sign.id}, -1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">-</button>
                         <input type="number" min="1" value="${sign.qty}" onchange="setSignQty(${sign.id}, this.value)" class="w-10 text-center text-xs font-bold text-blue-700 outline-none">
                         <button onclick="updateSignQty(${sign.id}, 1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">+</button>
@@ -331,18 +392,27 @@
             }
         }
 
-        // --- TYPOGRAPHY PHYSICS ENGINE ---
+        function applyBulkQty() {
+            const bulkVal = parseInt(document.getElementById('bulk-qty-input').value) || 1;
+            const validVal = Math.max(1, bulkVal);
+            parsedRoster.forEach(sign => sign.qty = validVal);
+            renderRosterEditor();
+            runCalc();
+        }
+
+        // --- TYPOGRAPHY PHYSICS ENGINE (1/8" INCREMENTS) ---
         function calculateTypographyScale(inputs) {
-            if (parsedRoster.length === 0) return { finalFontHeight: 0, isTooSmall: false, uniformScaleStr: "10cqw" };
+            if (parsedRoster.length === 0) return { finalFontHeight: 0, isTooSmall: false, isOverflow: false, uniformScaleStr: "10cqw" };
 
             const fontStyle = document.getElementById('font-style').value;
             const fontName = fontStyle === 'serif' ? 'Lora' : 'Roboto';
             const minRequiredHeight = fontStyle === 'serif' ? 0.75 : 0.50;
             
+            // Standard cap-height ratio for blocky sans/serif letters at 100px
+            const capRatio = 0.72; 
+            
             const canvas = document.getElementById('math-canvas');
             const ctx = canvas.getContext('2d');
-            
-            // Set context to exactly 100px (1 inch for our math)
             ctx.font = `500 100px ${fontName}, sans-serif`;
 
             // 1. Find Longest Physical Line in entire roster
@@ -354,35 +424,58 @@
                 });
             });
 
-            // If empty
-            if (maxTextWidthPx === 0) return { finalFontHeight: 1, isTooSmall: false, uniformScaleStr: "10cqw" };
+            if (maxTextWidthPx === 0) return { finalFontHeight: 1, isTooSmall: false, isOverflow: false, uniformScaleStr: "10cqw" };
 
-            // 2. Establish Available Canvas Constraints
-            // 0.25" physical margin all the way around (0.5" total removed)
+            // 2. Establish Constraints (0.25" margins all around = 0.5" deduction)
             const availableW = inputs.w - 0.5; 
             const availableH = inputs.h - 0.5; 
-            
             const linesPerSign = parseInt(document.getElementById('lines-per-sign').value) || 1;
 
-            // 3. Calculate Boundaries
-            // Assuming 120% line-height spacing
-            const maxFontHeightVertical = availableH / (linesPerSign * 1.2);
-            
-            // Width of longest string if it was exactly 1 inch tall
-            const widthAt1InchTall = maxTextWidthPx / 100;
-            const maxFontHeightHorizontal = availableW / widthAt1InchTall;
+            // 3. Calculate Maximum Allowed Cap Heights
+            // Based on width
+            const widthAt100px = maxTextWidthPx; 
+            const scaleToFitWidth = availableW / (widthAt100px / 100); 
+            const maxCapHeightFromWidth = scaleToFitWidth * capRatio;
 
-            // 4. Result
-            const finalFontHeight = Math.min(maxFontHeightVertical, maxFontHeightHorizontal);
-            const isTooSmall = finalFontHeight < minRequiredHeight;
+            // Based on height (1.2 line height)
+            const maxFontSizeFromHeight = availableH / (linesPerSign * 1.2); 
+            const maxCapHeightFromHeight = maxFontSizeFromHeight * capRatio;
 
-            // 5. Translation to CSS Container Queries (cqw)
-            // Fix applied: Width-based percentage prevents the 0-height padding bug.
-            const cqwPercent = (finalFontHeight / inputs.w) * 100;
+            const maxAllowedCapHeight = Math.min(maxCapHeightFromWidth, maxCapHeightFromHeight);
+
+            // 4. Snap down to nearest 1/8" increment (0.125)
+            let calculatedCapHeight = Math.floor(maxAllowedCapHeight / 0.125) * 0.125;
+            if (calculatedCapHeight < 0.125) calculatedCapHeight = 0.125; 
+
+            // 5. Handle Manual User Override
+            const overrideInput = document.getElementById('font-override').value;
+            let finalCapHeight = calculatedCapHeight;
+            let isOverflow = false;
+            let isOverridden = false;
+
+            if (overrideInput && !isNaN(parseFloat(overrideInput))) {
+                finalCapHeight = parseFloat(overrideInput);
+                isOverridden = true;
+                if (finalCapHeight > maxAllowedCapHeight) {
+                    isOverflow = true;
+                }
+            }
+
+            // Update UI Helper text
+            if(!isOverridden) {
+                document.getElementById('font-override').placeholder = calculatedCapHeight.toFixed(3);
+            }
+
+            const isTooSmall = finalCapHeight < minRequiredHeight;
+
+            // 6. Translation to CSS Container Queries (cqw)
+            const finalFontSizeInches = finalCapHeight / capRatio;
+            const cqwPercent = (finalFontSizeInches / inputs.w) * 100;
 
             return { 
-                finalFontHeight: finalFontHeight, 
-                isTooSmall: isTooSmall, 
+                finalFontHeight: finalCapHeight, 
+                isTooSmall: isTooSmall,
+                isOverflow: isOverflow, 
                 minRequiredHeight: minRequiredHeight,
                 uniformScaleStr: `${cqwPercent}cqw`,
                 fontClass: fontStyle === 'serif' ? 'font-serif-style' : 'font-sans-serif'
@@ -417,7 +510,7 @@
                 sign.texts.forEach(text => {
                     const textSpan = document.createElement('span');
                     textSpan.className = `leading-tight whitespace-nowrap ${fontMath.fontClass}`;
-                    textSpan.innerText = text;
+                    textSpan.innerText = text; // Text is already formatted for case during chunking
                     textSpan.style.color = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
                     textSpan.style.fontSize = fontMath.uniformScaleStr;
                     innerWrap.appendChild(textSpan);
@@ -425,7 +518,6 @@
 
                 box.appendChild(innerWrap);
 
-                // Add quantity badge if > 1
                 if (sign.qty > 1) {
                     const badge = document.createElement('div');
                     badge.className = "absolute top-1 right-1 bg-blue-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm shadow-md z-10 border border-blue-600";
@@ -503,7 +595,7 @@
 
             filtered.forEach((c, index) => {
                 const btn = document.createElement('button');
-                btn.className = "w-8 h-8 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden shrink-0";
+                btn.className = "w-6 h-6 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden shrink-0";
                 
                 let capHex = c.Cap_Hex || '#000000';
                 let coreHex = c.Core_Hex || '#FFFFFF';
@@ -565,8 +657,8 @@
             const listToUse = activePaintSystem === 'PMS' ? pmsData : swData;
             
             const customBtn = document.createElement('button');
-            customBtn.className = "w-full py-1.5 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
-            customBtn.innerText = "+ Custom / Unlisted Color...";
+            customBtn.className = "w-full py-1 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
+            customBtn.innerText = "+ Custom Match...";
             customBtn.onclick = () => {
                 Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent'));
                 customBtn.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
@@ -581,7 +673,7 @@
             const fragment = document.createDocumentFragment();
             listToUse.forEach((p, index) => {
                 const btn = document.createElement('button');
-                btn.className = "paint-btn w-8 h-8 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
+                btn.className = "paint-btn w-6 h-6 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
                 btn.style.backgroundColor = p.Hex_Code;
                 btn.title = `${p.Name} (${p.Code})`;
                 
@@ -685,12 +777,19 @@
                 // Warning Triggers
                 const warnProd = document.getElementById('prod-warn-box');
                 const warnProdTxt = document.getElementById('prod-warn-text');
+                const warnOverflow = document.getElementById('overflow-warn-box');
                 
                 if (fontMath.isTooSmall) {
                     warnProd.classList.remove('hidden');
-                    warnProdTxt.innerText = `Calculated font height (${fontMath.finalFontHeight.toFixed(2)}") falls below the required ${fontMath.minRequiredHeight}" minimum. Characters will not engrave cleanly.`;
+                    warnProdTxt.innerText = `Calculated font height (${fontMath.finalFontHeight.toFixed(3)}") falls below the required ${fontMath.minRequiredHeight}" minimum. Characters will not engrave cleanly.`;
                 } else {
                     warnProd.classList.add('hidden');
+                }
+
+                if (fontMath.isOverflow) {
+                    warnOverflow.classList.remove('hidden');
+                } else {
+                    warnOverflow.classList.add('hidden');
                 }
 
                 const warnBright = document.getElementById('bright-warn-box');
@@ -701,6 +800,7 @@
                 if (totalSystemQty === 0) {
                     document.getElementById('ui-unit').innerText = "$0.00";
                     document.getElementById('ui-total').innerText = "$0.00";
+                    document.getElementById('ui-line-items').innerHTML = '';
                     document.getElementById('min-badge').classList.add('hidden');
                     document.getElementById('job-desc').value = "Awaiting Roster Input.";
                     return;
@@ -715,13 +815,20 @@
                 document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
                 document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
 
+                // Summary Line Items
+                const setupFee = parseFloat(backendData.Retail_Fee_Setup || 15);
+                document.getElementById('ui-line-items').innerHTML = `
+                    <div class="flex justify-between"><span>${inputs.qty}x Nameplates (${inputs.w}" x ${inputs.h}"):</span><span class="font-bold">${fmt(ret.printTotal)}</span></div>
+                    <div class="flex justify-between"><span>Setup/Prep Fee:</span><span class="font-bold">${fmt(setupFee)}</span></div>
+                `;
+
                 const minOrder = parseFloat(backendData.Retail_Min_Order || 35);
                 document.getElementById('ui-min-text').innerText = `Shop Min: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
                 // --- TICKET GENERATION ---
                 let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
-                const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : 'Straight Cut Edge. ';
+                const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : '';
                 let explicitNotes = `${bevelTxt}No backers. No hardware. No installation. No raised copy. No braille.`;
                 let finalDesc = "";
 
@@ -806,7 +913,6 @@
                 }
                 console.error("API Load Failed:", e);
             } finally {
-                // Ensure loading overlay is always removed if connection attempt finishes
                 if (loadingOverlay && loadingOverlay.innerText !== '⚠️ CONNECTION FAILED') {
                     loadingOverlay.classList.add('hidden');
                 }
