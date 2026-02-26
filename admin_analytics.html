@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profit Heatmap v4.2</title>
+    <title>God Mode: Pricing Analyzer</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
 
     <!-- LOAD ALL PHYSICS ENGINES -->
@@ -18,45 +20,105 @@
     <script src="cost_cut.js"></script>
     <script src="cost_decal.js"></script>
     <script src="cost_wrap.js"></script>
+
+    <style>
+        body { overflow: hidden; } /* Desktop App feel */
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
+<body class="bg-gray-100 h-screen font-sans flex flex-col">
 
-<div class="w-full max-w-5xl mx-auto px-4 py-6">
-    <div class="mb-6 flex flex-col md:flex-row justify-between items-end gap-4">
-        <div>
-            <h1 class="text-2xl font-black text-gray-800 tracking-tight">Profit <span class="text-orange-500">Heatmap</span></h1>
-            <p class="text-gray-400 text-xs font-bold uppercase tracking-wide mt-1">Recursive Recursive Engine Tester</p>
-        </div>
-        <div class="w-full md:w-64">
-            <select id="module-selector" onchange="runHeatmap()" class="w-full border-2 border-orange-200 p-2 rounded-lg bg-white font-bold text-orange-800 shadow-sm focus:outline-none focus:border-orange-500 cursor-pointer">
-                <option value="">Select a Module to Analyze...</option>
-            </select>
-        </div>
-    </div>
+    <!-- INJECTED HEADER WILL APPEAR HERE via signos-core.js -->
+    <div id="header-container"></div>
 
-    <!-- MAIN DASHBOARD -->
-    <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-        <div class="bg-gray-900 text-white p-3 border-b border-gray-800 flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest">Pricing Matrix (70% Target Margin)</h3>
-            <div class="flex gap-4 text-[10px] font-bold">
-                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-100 border border-green-300 rounded inline-block"></span> Healthy</span>
-                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-100 border border-red-300 rounded inline-block"></span> Loss Alert</span>
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- LEFT COLUMN: PRODUCT MENU -->
+        <div class="w-64 bg-gray-900 text-white flex flex-col border-r border-gray-800 shrink-0 z-10">
+            <div class="p-4 border-b border-gray-800 bg-gray-950">
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400">Select Product</h3>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1" id="product-menu">
+                <!-- Buttons injected here -->
             </div>
         </div>
-        
-        <div class="p-6 overflow-x-auto" id="heatmap-container">
-            <div class="text-center py-20 text-gray-300 font-bold uppercase tracking-widest text-xs">
-                Select a module to run millions of recursive combinations.
+
+        <!-- CENTER WORKSPACE: GRAPH & TABLE -->
+        <div class="flex-1 flex flex-col bg-white overflow-hidden relative">
+            
+            <!-- Workspace Toolbar -->
+            <div class="bg-gray-50 border-b border-gray-200 p-3 flex justify-between items-center shrink-0">
+                <div class="flex gap-2">
+                    <button id="btn-view-retail" onclick="setViewMode('retail')" class="bg-blue-600 text-white px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm transition">Retail & Profit View</button>
+                    <button id="btn-view-cost" onclick="setViewMode('cost')" class="bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition">Hard Cost View</button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">X-Axis Mode:</span>
+                    <select id="axis-mode" onchange="runGraphEngine()" class="border border-gray-300 rounded text-xs font-bold p-1 outline-none bg-white text-gray-700">
+                        <option value="qty">By Quantity (1 - 1000)</option>
+                        <option value="sqft">By Square Footage (1' - 100')</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chart Area -->
+            <div class="flex-1 p-6 relative">
+                <div id="loader" class="absolute inset-0 bg-white/80 z-20 hidden flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+                <canvas id="mainChart"></canvas>
+            </div>
+
+            <!-- Horizontal Detail Table (Click to Load) -->
+            <div class="h-48 border-t-4 border-gray-200 bg-gray-50 shrink-0 flex flex-col">
+                <div class="bg-gray-200 text-gray-600 px-4 py-1 text-[10px] font-black uppercase tracking-widest flex justify-between">
+                    <span>Point Inspection Receipt</span>
+                    <span id="inspect-title" class="text-blue-600">Click a point on the graph</span>
+                </div>
+                <div class="flex-1 overflow-x-auto p-4 custom-scrollbar">
+                    <table class="w-full text-left border-collapse" id="inspect-table">
+                        <thead class="text-[10px] uppercase text-gray-400 border-b border-gray-300">
+                            <tr>
+                                <th class="pb-2 pr-4 font-black">Category</th>
+                                <th class="pb-2 pr-4 font-black">Line Item</th>
+                                <th class="pb-2 pr-4 font-black text-right">Unit Value</th>
+                                <th class="pb-2 font-black text-right">Extended Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inspect-body" class="text-xs text-gray-700">
+                            <tr><td colspan="4" class="text-center py-4 text-gray-400 italic">No point selected</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        
-        <div class="bg-gray-50 border-t border-gray-200 p-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
-            Top Number = Margin % | Bottom Number = Unit Retail Price
+
+        <!-- RIGHT COLUMN: OVERRIDES -->
+        <div class="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)]">
+            <div class="flex border-b border-gray-200 text-[10px] font-black uppercase tracking-widest text-center cursor-pointer">
+                <div id="tab-ovr-retail" onclick="switchOvrTab('retail')" class="flex-1 p-3 bg-blue-50 text-blue-700 border-b-2 border-blue-600">Market (Blue)</div>
+                <div id="tab-ovr-cost" onclick="switchOvrTab('cost')" class="flex-1 p-3 bg-gray-50 text-gray-400 hover:text-gray-600">Physics (Red)</div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2 bg-gray-50" id="override-container">
+                <!-- Inputs injected here -->
+                <div class="text-center text-gray-400 text-xs mt-10 uppercase tracking-widest">Select a product</div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-gray-200">
+                <button onclick="exportOverrides()" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-2.5 rounded text-xs tracking-widest transition shadow-md">
+                    EXPORT MATRIX PAYLOAD
+                </button>
+                <p class="text-[9px] text-gray-400 text-center mt-2 leading-tight">Copy this output to update backend prices.</p>
+            </div>
         </div>
     </div>
-</div>
 
 <script>
+    // System Config
     const ALL_MODULES = [
         { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
         { id: 'coro', name: 'Custom Coroplast', config: window.CORO_CONFIG },
@@ -71,84 +133,385 @@
     ];
     
     const MODULES = ALL_MODULES.filter(m => m.config);
-    
-    // Matrix Axes
-    const SIZES = [
-        { w:12, h:18, l:"12 x 18" },
-        { w:18, h:24, l:"18 x 24" },
-        { w:24, h:24, l:"24 x 24" },
-        { w:24, h:36, l:"24 x 36" },
-        { w:48, h:48, l:"48 x 48" },
-        { w:48, h:96, l:"48 x 96" }
-    ];
-    const QTYS = [1-8];
+    const X_STEPS_QTY = [1-18];
+    const X_STEPS_SQFT = [1-7, 10, 11, 19-21]; // SqFt markers
+
+    let activeConfig = null;
+    let backendData = {};
+    let chartInstance = null;
+    let viewMode = 'retail'; // 'retail' or 'cost'
+    let currentChartDataMap = {}; // Stores raw results for the receipt click
 
     window.onload = () => {
-        injectHeader("Profit Heatmap");
-        const sel = document.getElementById('module-selector');
-        MODULES.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.id; opt.innerText = m.name;
-            sel.appendChild(opt);
-        });
+        injectHeader("God Mode Analyzer", false);
+        buildMenu();
     };
 
-    function runHeatmap() {
-        const val = document.getElementById('module-selector').value;
-        if(!val) return;
-        
-        const activeConfig = MODULES.find(m => m.id === val).config;
-        
-        // Pass empty data so the physics engine triggers its hardcoded 
-        // internal fallback defaults (`||`) for a rapid baseline test
-        const mockBackend = {}; 
-
-        let html = '<table class="w-full border-collapse border border-gray-200"><thead class="bg-gray-100"><tr><th class="p-3 border border-gray-200 text-[10px] font-black text-gray-500 uppercase tracking-widest text-left">Size \\ Qty</th>';
-        QTYS.forEach(q => html += `<th class="p-3 border border-gray-200 text-xs font-black text-gray-800 text-center">${q}</th>`);
-        html += '</tr></thead><tbody>';
-
-        SIZES.forEach(size => {
-            html += `<tr><td class="p-3 border border-gray-200 text-[10px] font-black text-gray-700 bg-gray-50 whitespace-nowrap uppercase tracking-widest">${size.l}</td>`;
-            
-            QTYS.forEach(q => {
-                let inputs = { w: size.w, h: size.h, qty: q };
-                
-                // Pre-fill required inputs with standard Config defaults
-                if (activeConfig.controls) {
-                    activeConfig.controls.forEach(c => {
-                        if (inputs[c.id] === undefined && c.def !== undefined) {
-                            inputs[c.id] = c.def;
-                        }
-                    });
-                }
-                
-                if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
-
-                // Run the math!
-                const res = activeConfig.engine(inputs, mockBackend);
-                
-                if (!res || !res.retail) {
-                    html += `<td class="p-2 border border-gray-200 text-center bg-gray-100 text-gray-400 text-[8px] font-bold">N/A</td>`;
-                    return;
-                }
-
-                const margin = res.metrics ? res.metrics.margin : 0;
-                const mPct = (margin * 100).toFixed(1) + '%';
-                const unit = res.retail ? res.retail.unitPrice.toFixed(2) : 0;
-                
-                const isFail = margin < 0.70; // 70% Target Margin limit
-                const bgClass = isFail ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100';
-
-                html += `<td class="p-2 border border-gray-200 text-center cursor-crosshair transition ${bgClass}" title="Total Cost: $${(res.cost.total/q).toFixed(2)} ea">
-                    <div class="text-[11px] font-black">${mPct}</div>
-                    <div class="text-[9px] text-gray-500 font-mono opacity-80">$${unit}</div>
-                </td>`;
-            });
-            html += '</tr>';
+    function buildMenu() {
+        const menu = document.getElementById('product-menu');
+        MODULES.forEach(m => {
+            const btn = document.createElement('button');
+            btn.className = "w-full text-left px-3 py-2 text-xs font-bold text-gray-300 rounded hover:bg-gray-800 hover:text-white transition group flex items-center justify-between";
+            btn.innerHTML = `<span>${m.name}</span><span class="opacity-0 group-hover:opacity-100 text-[9px] text-blue-400">LOAD ➔</span>`;
+            btn.onclick = () => {
+                document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-gray-800', 'text-white'));
+                btn.classList.add('bg-gray-800', 'text-white');
+                loadModule(m.id);
+            };
+            menu.appendChild(btn);
         });
+    }
+
+    async function loadModule(id) {
+        activeConfig = MODULES.find(m => m.id === id).config;
+        document.getElementById('loader').classList.remove('hidden');
+        document.getElementById('inspect-body').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-400 italic">No point selected</td></tr>';
+        document.getElementById('inspect-title').innerText = "Click a point on the graph";
+
+        try {
+            const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
+            backendData = await req.json();
+            buildOverrides();
+            runGraphEngine();
+        } catch(e) {
+            alert("Failed to load backend data.");
+        } finally {
+            document.getElementById('loader').classList.add('hidden');
+        }
+    }
+
+    // --- OVERRIDE PANEL LOGIC ---
+
+    function buildOverrides() {
+        const container = document.getElementById('override-container');
+        let html = '<div id="ovr-retail-wrap">';
+        activeConfig.retails.forEach(item => {
+            if(item.heading) html += `<h5 class="text-[9px] font-black text-gray-400 mt-4 mb-1 uppercase tracking-widest border-b border-gray-200 pb-1">${item.heading}</h5>`;
+            let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
+            html += `<div class="flex justify-between items-center text-xs mb-1 bg-white p-1.5 rounded border border-gray-200 shadow-sm hover:border-blue-300 transition">
+                <label class="text-gray-600 font-bold truncate pr-2">${item.label}</label>
+                <input type="text" id="ovr_${item.key}" value="${val}" onchange="runGraphEngine()" class="w-16 border border-gray-300 rounded p-1 text-right text-[10px] font-mono outline-none focus:border-blue-500 bg-gray-50">
+            </div>`;
+        });
+        html += '</div><div id="ovr-cost-wrap" class="hidden">';
+        activeConfig.costs.forEach(item => {
+            if(item.heading) html += `<h5 class="text-[9px] font-black text-gray-400 mt-4 mb-1 uppercase tracking-widest border-b border-gray-200 pb-1">${item.heading}</h5>`;
+            let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
+            html += `<div class="flex justify-between items-center text-xs mb-1 bg-white p-1.5 rounded border border-gray-200 shadow-sm hover:border-red-300 transition">
+                <label class="text-gray-600 font-bold truncate pr-2">${item.label}</label>
+                <input type="text" id="ovr_${item.key}" value="${val}" onchange="runGraphEngine()" class="w-16 border border-gray-300 rounded p-1 text-right text-[10px] font-mono outline-none focus:border-red-500 bg-gray-50">
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function switchOvrTab(tab) {
+        document.getElementById('ovr-retail-wrap').classList.add('hidden');
+        document.getElementById('ovr-cost-wrap').classList.add('hidden');
+        document.getElementById('tab-ovr-retail').className = "flex-1 p-3 bg-gray-50 text-gray-400 hover:text-gray-600";
+        document.getElementById('tab-ovr-cost').className = "flex-1 p-3 bg-gray-50 text-gray-400 hover:text-gray-600";
         
-        html += '</tbody></table>';
-        document.getElementById('heatmap-container').innerHTML = html;
+        if (tab === 'retail') {
+            document.getElementById('ovr-retail-wrap').classList.remove('hidden');
+            document.getElementById('tab-ovr-retail').className = "flex-1 p-3 bg-blue-50 text-blue-700 border-b-2 border-blue-600";
+        } else {
+            document.getElementById('ovr-cost-wrap').classList.remove('hidden');
+            document.getElementById('tab-ovr-cost').className = "flex-1 p-3 bg-red-50 text-red-700 border-b-2 border-red-600";
+        }
+    }
+
+    function exportOverrides() {
+        if(!activeConfig) return;
+        let diffs = [];
+        [...activeConfig.retails, ...activeConfig.costs].forEach(item => {
+            let el = document.getElementById('ovr_' + item.key);
+            if(el && String(el.value) !== String(backendData[item.key])) {
+                diffs.push({ product: activeConfig.tab, cost: item.key, value: el.value });
+            }
+        });
+        if(diffs.length === 0) { alert("No overrides detected."); return; }
+        
+        const payload = JSON.stringify(diffs, null, 2);
+        navigator.clipboard.writeText(payload);
+        alert(`Exported ${diffs.length} overrides to Clipboard. Ready to paste into Matrix.`);
+        console.log("PAYLOAD:", payload);
+    }
+
+    // --- GRAPH ENGINE ---
+
+    function setViewMode(mode) {
+        viewMode = mode;
+        document.getElementById('btn-view-retail').className = "bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition";
+        document.getElementById('btn-view-cost').className = "bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition";
+        
+        if (mode === 'retail') {
+            document.getElementById('btn-view-retail').className = "bg-blue-600 text-white px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm transition";
+        } else {
+            document.getElementById('btn-view-cost').className = "bg-red-600 text-white px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm transition";
+        }
+        runGraphEngine();
+    }
+
+    function runGraphEngine() {
+        if(!activeConfig) return;
+
+        // 1. Harvest Current Simulation Data
+        let simData = { ...backendData };
+        [...activeConfig.retails, ...activeConfig.costs].forEach(item => {
+            let val = document.getElementById('ovr_' + item.key).value;
+            if(val === 'TRUE' || val === 'true') simData[item.key] = true;
+            else if(val === 'FALSE' || val === 'false') simData[item.key] = false;
+            else if(val !== "") simData[item.key] = parseFloat(val);
+            else delete simData[item.key];
+        });
+
+        // 2. Define Chart Permutations
+        const axisMode = document.getElementById('axis-mode').value;
+        const steps = axisMode === 'qty' ? X_STEPS_QTY : X_STEPS_SQFT;
+        
+        let permutations = [];
+        const isYard = activeConfig.id === 'yard';
+        
+        // Define base specs based on the calculator type to get logical graphing lines
+        if (isYard) {
+            permutations = [
+                { label: "1-Sided, No Stakes", inputs: { w:24, h:18, sides:1, hasStakes:false, files:1, incDesign:false } },
+                { label: "1-Sided, W/ Stakes", inputs: { w:24, h:18, sides:1, hasStakes:true, files:1, incDesign:false } },
+                { label: "2-Sided, No Stakes", inputs: { w:24, h:18, sides:2, hasStakes:false, files:1, incDesign:false } },
+                { label: "2-Sided, W/ Stakes", inputs: { w:24, h:18, sides:2, hasStakes:true, files:1, incDesign:false } }
+            ];
+        } else {
+            // Generic SqFt Permutations (Assuming WxH is the driving factor)
+            const mats = activeConfig.controls.find(c => c.id === 'thickness' || c.id === 'material')?.opts || [{v:'Std', t:'Standard'}];
+            
+            // Limit to max 4 lines so chart isn't unreadable (First 2 mats, SS and DS)
+            mats.slice(0, 2).forEach(mat => {
+                permutations.push({ label: `${mat.t} (1-Sided)`, inputs: { thickness: mat.v, material: mat.v, sides: 1, w:24, h:24, files:1, lam:true, shape:'Rectangle', incDesign:false } });
+                permutations.push({ label: `${mat.t} (2-Sided)`, inputs: { thickness: mat.v, material: mat.v, sides: 2, w:24, h:24, files:1, lam:true, shape:'Rectangle', incDesign:false } });
+            });
+        }
+
+        // 3. Build Datasets
+        const datasets = [];
+        const colors = [
+            { line: '#2563EB', bar: 'rgba(37, 99, 235, 0.2)' }, // Blue
+            { line: '#059669', bar: 'rgba(5, 150, 105, 0.2)' }, // Green
+            { line: '#D97706', bar: 'rgba(217, 119, 6, 0.2)' }, // Orange
+            { line: '#7C3AED', bar: 'rgba(124, 58, 237, 0.2)' } // Purple
+        ];
+
+        currentChartDataMap = {}; // Reset global map for table clicks
+
+        permutations.forEach((perm, index) => {
+            const color = colors[index % colors.length];
+            const lineData = [];
+            const barData1 = []; // Profit (Retail View) or Materials (Cost View)
+            const barData2 = []; // Blank (Retail View) or Labor (Cost View)
+
+            steps.forEach(stepVal => {
+                // Adjust inputs based on axis mode
+                let runInputs = { ...perm.inputs };
+                if (axisMode === 'qty') {
+                    runInputs.qty = stepVal;
+                } else {
+                    runInputs.qty = 1;
+                    runInputs.w = 12;
+                    runInputs.h = stepVal * 12; // Force SqFt
+                }
+
+                if (typeof activeConfig.dynamicUI === 'function') runInputs = activeConfig.dynamicUI(runInputs);
+                
+                const res = activeConfig.engine(runInputs, simData);
+                const pointKey = `${index}-${stepVal}`;
+                currentChartDataMap[pointKey] = res; // Store for receipt generation
+
+                if (!res || !res.retail) {
+                    lineData.push(null); barData1.push(null); barData2.push(null); return;
+                }
+
+                if (viewMode === 'retail') {
+                    lineData.push(res.retail.grandTotal);
+                    const profit = res.retail.grandTotal - res.cost.total;
+                    barData1.push(profit > 0 ? profit : 0);
+                } else {
+                    lineData.push(res.cost.total);
+                    const b = res.cost.breakdown || {};
+                    const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0);
+                    const labor = (b.costOp || b.costPrintLabor || b.costPrint || 0) + (b.costCut || b.costCutLabor || 0) + (b.costFinish || 0);
+                    barData1.push(mats);
+                    barData2.push(labor);
+                }
+            });
+
+            // Push Line (Total)
+            datasets.push({
+                type: 'line',
+                label: perm.label + (viewMode === 'retail' ? ' (Retail)' : ' (Total Cost)'),
+                data: lineData,
+                borderColor: color.line,
+                backgroundColor: color.line,
+                borderWidth: 3,
+                tension: 0.1,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                _permIndex: index // Custom ref for clicks
+            });
+
+            // Push Bars
+            if (viewMode === 'retail') {
+                datasets.push({
+                    type: 'bar',
+                    label: perm.label + ' (Profit)',
+                    data: barData1,
+                    backgroundColor: color.bar,
+                    borderWidth: 1,
+                    borderColor: color.line,
+                    _permIndex: index
+                });
+            } else {
+                datasets.push({
+                    type: 'bar',
+                    label: perm.label + ' (Materials)',
+                    data: barData1,
+                    backgroundColor: 'rgba(239, 68, 68, 0.4)', // Red tint for Mats
+                    borderWidth: 1,
+                    borderColor: '#EF4444',
+                    _permIndex: index
+                });
+                datasets.push({
+                    type: 'bar',
+                    label: perm.label + ' (Labor/Mach)',
+                    data: barData2,
+                    backgroundColor: 'rgba(245, 158, 11, 0.4)', // Orange tint for Labor
+                    borderWidth: 1,
+                    borderColor: '#F59E0B',
+                    _permIndex: index
+                });
+            }
+        });
+
+        drawChart(steps, datasets, axisMode);
+    }
+
+    function drawChart(labels, datasets, axisMode) {
+        if (chartInstance) chartInstance.destroy();
+        
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        const xTitle = axisMode === 'qty' ? 'Quantity Ordered' : 'Total Square Footage';
+
+        chartInstance = new Chart(ctx, {
+            data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    // Add unit breakdown
+                                    const qtyOrSqft = context.label;
+                                    label += ` ($${(context.parsed.y / qtyOrSqft).toFixed(2)}/unit)`;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: xTitle, font: { weight: 'bold' } } },
+                    y: { 
+                        title: { display: true, text: 'Money ($)', font: { weight: 'bold' } },
+                        beginAtZero: true,
+                        ticks: { callback: function(value) { return '$' + value; } }
+                    }
+                },
+                onClick: (e) => {
+                    const canvasPosition = Chart.helpers.getRelativePosition(e, chartInstance);
+                    const dataX = chartInstance.scales.x.getValueForPixel(canvasPosition.x);
+                    const elements = chartInstance.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+                    
+                    if (elements.length > 0) {
+                        const dataIndex = elements.index;
+                        const datasetIndex = elements.datasetIndex;
+                        const stepVal = labels[dataIndex];
+                        const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
+                        
+                        renderReceiptTable(permIndex, stepVal, axisMode);
+                    }
+                }
+            }
+        });
+    }
+
+    // --- HORIZONTAL RECEIPT TABLE ---
+
+    function renderReceiptTable(permIndex, stepVal, axisMode) {
+        const pointKey = `${permIndex}-${stepVal}`;
+        const res = currentChartDataMap[pointKey];
+        const tbody = document.getElementById('inspect-body');
+        const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
+
+        if (!res) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">Data error for point.</td></tr>';
+            return;
+        }
+
+        document.getElementById('inspect-title').innerHTML = `Inspection: <b class="text-gray-800">${axisMode === 'qty' ? 'Qty' : 'SqFt'} ${stepVal}</b>`;
+
+        let html = '';
+
+        // Retail Lines
+        html += `
+            <tr class="bg-blue-50/50 border-b border-gray-100">
+                <td class="py-1.5 font-bold text-blue-700">RETAIL</td>
+                <td class="py-1.5">Base Print Price</td>
+                <td class="py-1.5 text-right font-mono">${fmt(res.retail.printTotal / (axisMode === 'qty' ? stepVal : 1))}</td>
+                <td class="py-1.5 text-right font-bold">${fmt(res.retail.printTotal)}</td>
+            </tr>
+        `;
+        if (res.retail.routerFee) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">CNC Routing Fee</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold text-orange-600">${fmt(res.retail.routerFee)}</td></tr>`;
+        if (res.retail.stakeTotal) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">Hardware / Stakes</td><td class="py-1.5 text-right font-mono">${fmt(res.retail.stakeTotal / stepVal)}</td><td class="py-1.5 text-right font-bold">${fmt(res.retail.stakeTotal)}</td></tr>`;
+        if (res.retail.setupFee) html += `<tr class="border-b border-gray-100"><td class="py-1.5">RETAIL</td><td class="py-1.5">Setup Fee</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold">${fmt(res.retail.setupFee)}</td></tr>`;
+        html += `<tr class="bg-blue-100 border-b-2 border-blue-200"><td colspan="3" class="py-1.5 font-black text-blue-900 text-right">TOTAL RETAIL:</td><td class="py-1.5 text-right font-black text-blue-900">${fmt(res.retail.grandTotal)}</td></tr>`;
+
+        // Cost Lines
+        const b = res.cost.breakdown || {};
+        const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0);
+        const ink = (b.totalInk || b.rawInk || 0);
+        const labMach = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0);
+        const setup = (b.costSetup || 0);
+        
+        html += `
+            <tr class="bg-red-50/50 border-b border-gray-100">
+                <td class="py-1.5 font-bold text-red-700 mt-2">COST</td>
+                <td class="py-1.5">Raw Materials & Media</td>
+                <td class="py-1.5 text-right font-mono">${fmt(mats / (axisMode === 'qty' ? stepVal : 1))}</td>
+                <td class="py-1.5 text-right font-bold">${fmt(mats)}</td>
+            </tr>
+            <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Ink Usage</td><td class="py-1.5 text-right font-mono">${fmt(ink / (axisMode === 'qty' ? stepVal : 1))}</td><td class="py-1.5 text-right font-bold">${fmt(ink)}</td></tr>
+            <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Setup Labor</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold">${fmt(setup)}</td></tr>
+            <tr class="border-b border-gray-100"><td class="py-1.5">COST</td><td class="py-1.5">Labor & Machine Run</td><td class="py-1.5 text-right font-mono">${fmt(labMach / (axisMode === 'qty' ? stepVal : 1))}</td><td class="py-1.5 text-right font-bold text-orange-600">${fmt(labMach)}</td></tr>
+            <tr class="bg-red-100 border-b-2 border-red-200"><td colspan="3" class="py-1.5 font-black text-red-900 text-right">TOTAL HARD COST:</td><td class="py-1.5 text-right font-black text-red-900">${fmt(res.cost.total)}</td></tr>
+        `;
+
+        // Analytics
+        const margin = res.metrics.margin;
+        const mPct = (margin * 100).toFixed(1) + "%";
+        const mClass = margin < 0.70 ? 'text-red-600' : 'text-green-600';
+        html += `
+            <tr>
+                <td colspan="3" class="py-2 font-black text-gray-500 text-right">NET PROFIT & MARGIN:</td>
+                <td class="py-2 text-right font-black ${mClass}">${fmt(res.retail.grandTotal - res.cost.total)} (${mPct})</td>
+            </tr>
+        `;
+
+        tbody.innerHTML = html;
     }
 </script>
 </body>
