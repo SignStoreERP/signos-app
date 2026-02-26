@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Etch Nameplates v1.1</title>
+    <title>ADA Etch Nameplates v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_nameplate.js"></script>
@@ -23,7 +23,7 @@
         
         <div class="p-6 space-y-4">
             
-            <!-- DIMENSIONS & QTY (Moved to top) -->
+            <!-- DIMENSIONS & QTY -->
             <div class="grid grid-cols-3 gap-3">
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="10" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="runCalc()"></div>
@@ -41,7 +41,7 @@
                     <div class="bg-gray-800 p-4 shadow-inner flex items-center justify-center min-h-[160px] relative rounded-lg">
                         <span class="absolute top-2 right-3 text-[8px] font-black text-gray-500 uppercase tracking-widest">Ratio Preview</span>
                         
-                        <!-- The Canvas (Dynamically Sized) -->
+                        <!-- The Canvas -->
                         <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex items-center justify-center relative overflow-hidden border border-black/20" style="background-color: #000;">
                             <span id="preview-text" class="font-black text-center pointer-events-none px-2 leading-tight truncate w-full" style="color: #fff;">SAMPLE</span>
                         </div>
@@ -66,13 +66,13 @@
                 </div>
             </div>
 
-            <!-- REVERSE SUB-TABS (Hidden in Front mode) -->
+            <!-- REVERSE SUB-TABS -->
             <div id="reverse-tabs" class="hidden flex bg-gray-200 p-1 rounded-lg mb-2">
                 <button id="btn-tab-mat" onclick="setReverseTab('mat')" class="flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest">Step 1: Material Color</button>
                 <button id="btn-tab-paint" onclick="setReverseTab('paint')" class="flex-1 py-2 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest">Step 2: Paint Color</button>
             </div>
 
-            <!-- STEP 1: MATERIAL SWATCHES CONTAINER -->
+            <!-- STEP 1: MATERIAL SWATCHES -->
             <div id="mat-container" class="space-y-4">
                 <div>
                     <div class="flex justify-between items-end mb-1">
@@ -86,7 +86,7 @@
                 </div>
             </div>
 
-            <!-- STEP 2: PAINT FILL CONTAINER (Hidden by default or in Front Mode) -->
+            <!-- STEP 2: PAINT FILL -->
             <div id="paint-container" class="hidden space-y-4 relative z-20">
                 <div>
                     <!-- PROMINENT BOOK TOGGLE -->
@@ -108,7 +108,7 @@
                         <!-- Paint Hex Blocks Injected Here -->
                     </div>
 
-                    <!-- CUSTOM MANUAL PMS (Hidden until triggered) -->
+                    <!-- CUSTOM MANUAL PMS -->
                     <div id="custom-pms-wrap" class="hidden mt-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Enter Custom Color Name / Code</label>
                         <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-blue-500 shadow-inner">
@@ -141,10 +141,15 @@
             </div>
         </div>
 
-        <!-- DESCRIPTION GENERATOR -->
+        <!-- DESCRIPTION GENERATOR & CLIPBOARD -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Production Ticket Details</label>
             <textarea id="job-desc" class="w-full text-[11px] p-3 border border-gray-300 rounded bg-white h-28 text-gray-700 font-mono outline-none leading-snug" readonly></textarea>
+            
+            <button onclick="copyTicket(this)" class="w-full mt-3 bg-blue-100 hover:bg-blue-200 text-blue-800 font-black py-2.5 px-4 rounded text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                Copy Ticket to Clipboard
+            </button>
         </div>
     </div>
 
@@ -161,7 +166,6 @@
         function togglePreview() {
             const wrap = document.getElementById('preview-wrapper');
             const isChecked = document.getElementById('toggle-preview').checked;
-            
             document.getElementById('preview-toggle-text').innerText = isChecked ? "Hide visual size preview" : "Show visual size preview";
             
             if (isChecked) {
@@ -212,7 +216,7 @@
                 btnF.className = "flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent";
                 revTabs.classList.remove('hidden');
                 capLab.innerText = "Face Color";
-                setReverseTab('mat'); // Auto-default to material selection
+                setReverseTab('mat'); 
             }
             
             updateSwatches();
@@ -224,7 +228,7 @@
             document.getElementById('btn-sw').className = sys === 'SW' ? "flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200" : "flex-1 py-2 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest";
             
             document.getElementById('paint-search').placeholder = sys === 'PMS' ? "Search PMS Colors..." : "Search SW Colors...";
-            document.getElementById('paint-search').value = ""; // Clear active search
+            document.getElementById('paint-search').value = ""; 
             
             buildPaintSwatches();
         }
@@ -233,7 +237,6 @@
             const grid = document.getElementById('rowmark-grid');
             grid.innerHTML = '';
             
-            // Filter Rowmark table based on style
             const filtered = rowmarkData.filter(c => {
                 const isReverseMat = c.Series.includes('Reverse');
                 if (currentMode === 'reverse') return isReverseMat;
@@ -247,7 +250,6 @@
                 let capHex = c.Cap_Hex || '#000000';
                 let coreHex = c.Core_Hex || '#FFFFFF';
 
-                // Display pure solid color if Reverse Engraved, else show split
                 if (currentMode === 'reverse') {
                     btn.style.background = capHex;
                 } else {
@@ -261,26 +263,53 @@
                     btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent');
                     
                     selectedMat = c;
+
+                    // SMART DEFAULT PAINT LOGIC
+                    if (currentMode === 'reverse') {
+                        const isBlack = c.Cap_Color.toLowerCase().includes('black');
+                        const isWhite = c.Cap_Color.toLowerCase().includes('white');
+
+                        if (isBlack || isWhite) {
+                            const targetCode = isBlack ? 'STD-WHT' : 'STD-BLK';
+                            const listToUse = activePaintSystem === 'PMS' ? pmsData : swData;
+                            const defaultPaint = listToUse.find(p => p.Code === targetCode);
+                            
+                            if (defaultPaint) {
+                                selectedPaint = defaultPaint;
+                                document.getElementById('custom-pms-wrap').classList.add('hidden');
+                                document.getElementById('pms-code').value = '';
+                                document.getElementById('selected-paint-label').innerText = `[${selectedPaint.Code}] ${selectedPaint.Name}`;
+                                
+                                // Visually highlight it if the grid is rendered
+                                Array.from(document.getElementById('paint-grid').children).forEach(b => {
+                                    b.classList.remove('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
+                                    if (b.dataset && b.dataset.code === targetCode.toLowerCase()) {
+                                        b.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
+                                    }
+                                });
+                            }
+                        }
+                    }
+
                     updateMaterialLabel();
                     runCalc();
                 };
 
                 grid.appendChild(btn);
                 
-                // Auto-select first item
+                // Front Default
                 if (currentMode === 'front' && c.Item_Code === '222-402') setTimeout(() => btn.click(), 10);
-                if (currentMode === 'reverse' && index === 0) setTimeout(() => btn.click(), 10);
+                // Reverse Default (Updated to 322-401 Black Face)
+                if (currentMode === 'reverse' && c.Item_Code === '322-401') setTimeout(() => btn.click(), 10);
             });
         }
 
-        // HIGH PERFORMANCE RENDERING: Build all buttons once, just toggle 'display' for search
         function buildPaintSwatches() {
             const grid = document.getElementById('paint-grid');
             grid.innerHTML = '';
             
             const listToUse = activePaintSystem === 'PMS' ? pmsData : swData;
             
-            // 1. Add Custom Input Button First
             const customBtn = document.createElement('button');
             customBtn.className = "w-full py-1.5 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
             customBtn.innerText = "+ Custom / Unlisted Color...";
@@ -297,7 +326,6 @@
             };
             grid.appendChild(customBtn);
             
-            // 2. Build massive array using Document Fragment for speed
             const fragment = document.createDocumentFragment();
             listToUse.forEach((p, index) => {
                 const btn = document.createElement('button');
@@ -305,9 +333,13 @@
                 btn.style.backgroundColor = p.Hex_Code;
                 btn.title = `${p.Name} (${p.Code})`;
                 
-                // Store data tags for CSS-free filtering
                 btn.dataset.name = p.Name.toLowerCase();
                 btn.dataset.code = p.Code.toLowerCase();
+
+                // Highlight if this is the currently selected paint (when toggling books)
+                if (selectedPaint && selectedPaint.Code === p.Code) {
+                    btn.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
+                }
                 
                 btn.onclick = () => {
                     Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent'));
@@ -323,15 +355,12 @@
                 };
                 fragment.appendChild(btn);
 
-                // Auto-select first paint when switching books
-                if(index === 0) setTimeout(() => btn.click(), 10);
             });
             
             grid.appendChild(fragment);
-            filterPaint(); // Ensure any current search carries over
+            filterPaint(); 
         }
 
-        // Extremely fast display toggle
         function filterPaint() {
             const query = document.getElementById('paint-search').value.toLowerCase();
             const btns = document.querySelectorAll('.paint-btn');
@@ -367,6 +396,24 @@
             }
         }
 
+        function copyTicket(btn) {
+            const desc = document.getElementById('job-desc');
+            desc.select();
+            desc.setSelectionRange(0, 99999); // Mobile compatibility
+            navigator.clipboard.writeText(desc.value);
+            
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = "✅ COPIED TO CLIPBOARD!";
+            btn.classList.add('bg-green-500', 'text-white');
+            btn.classList.remove('bg-blue-100', 'text-blue-800');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('bg-green-500', 'text-white');
+                btn.classList.add('bg-blue-100', 'text-blue-800');
+            }, 2000);
+        }
+
         function runCalc() {
             if(!backendData.Retail_Min_Order || !selectedMat) return;
 
@@ -380,7 +427,7 @@
                 if (isReverse) {
                     if (selectedPaint && selectedPaint.Code === 'CUSTOM') {
                         finalPaintName = pmsCode ? `CUSTOM: ${pmsCode}` : "Custom Match TBD";
-                        activePaintHex = "#e2e8f0"; // Generic light grey for custom text in preview
+                        activePaintHex = "#e2e8f0";
                     } else if (selectedPaint) {
                         finalPaintName = `[${selectedPaint.Code}] ${selectedPaint.Name}`;
                         activePaintHex = selectedPaint.Hex_Code;
@@ -412,7 +459,7 @@
                 document.getElementById('ui-print').innerText = fmt(ret.printTotal);
 
                 const minOrder = parseFloat(backendData.Retail_Min_Order || 35);
-                document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
+                document.getElementById('ui-min-text').innerText = `Shop Min: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
                 // --- TOP PREVIEW CANVAS MATH ---
@@ -438,7 +485,7 @@
                     
                     let fSize = targetH * 0.4;
                     if (fSize > 40) fSize = 40;
-                    if (fSize < 12) fSize = 12; // sanity min
+                    if (fSize < 12) fSize = 12; 
                     text.style.fontSize = `${fSize}px`;
 
                     if (currentMode === 'front') {
@@ -476,7 +523,6 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
-                // QUADRUPLE FETCH
                 const [reqConfig, reqRowmark, reqSW, reqPMS] = await Promise.all([
                     fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Nameplates`),
                     fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Rowmark`),
@@ -487,22 +533,28 @@
                 backendData = await reqConfig.json();
                 rowmarkData = await reqRowmark.json();
                 
-                // Format SW Array with hashtag fix
+                // Inject Standard Universal Colors
+                const stdColors = [
+                    { Code: 'STD-WHT', Name: 'Standard White', Hex_Code: '#FFFFFF' },
+                    { Code: 'STD-BLK', Name: 'Standard Black', Hex_Code: '#000000' }
+                ];
+
                 const rawSW = await reqSW.json();
-                swData = rawSW.map(p => {
+                let formattedSW = rawSW.map(p => {
                     let hex = p.Hex_Code || p.HEX_Code || p['Hex_Code '] || '#FFFFFF';
                     hex = hex.trim();
                     if (!hex.startsWith('#') && hex !== 'Transparent') hex = '#' + hex;
                     return { Code: p.Code || 'Unknown', Name: p.Name || 'Unknown', Hex_Code: hex };
                 });
+                swData = [...stdColors, ...formattedSW];
 
-                // Format PMS Array
                 const rawPMS = await reqPMS.json();
-                pmsData = rawPMS.map(p => ({
+                let formattedPMS = rawPMS.map(p => ({
                     Code: p['PMS Name / Code'] || 'Unknown', 
                     Name: p['PMS Name / Code'] || 'Unknown', 
                     Hex_Code: p['HEX Code'] || '#FFFFFF'
                 }));
+                pmsData = [...stdColors, ...formattedPMS];
 
                 if(statusText) {
                     statusText.innerText = "ONLINE";
@@ -513,8 +565,8 @@
                     }
                 }
                 
-                setPaintSystem('PMS'); // Generates the default paint search grid
-                setMode('front');      // Kicks off swatch build and first default selection
+                setPaintSystem('PMS'); 
+                setMode('front');      
                 
             } catch(e) {
                 if(statusText) {
