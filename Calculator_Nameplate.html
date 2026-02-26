@@ -457,9 +457,15 @@
                 
                 // Format SW Array
                 const rawSW = await reqSW.json();
-                swData = rawSW.map(p => ({
-                    Code: p.Code, Name: p.Name, Hex_Code: p.Hex_Code
-                }));
+                swData = rawSW.map(p => {
+                    // Fallback to find the hex code regardless of minor typos
+                    const hex = p.Hex_Code || p.HEX_Code || p['Hex_Code '] || '#FFFFFF';
+                    return {
+                        Code: p.Code || 'Unknown', 
+                        Name: p.Name || 'Unknown', 
+                        Hex_Code: hex 
+                    };
+                });
 
                 // Format PMS Array
                 const rawPMS = await reqPMS.json();
