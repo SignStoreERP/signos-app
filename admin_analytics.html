@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>God Mode: Pricing Analyzer v5.0</title>
+    <title>God Mode: Pricing Analyzer v5.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -23,8 +23,10 @@
     <script src="cost_wall.js"></script>
 
     <style>
-        body { background-color: #f1f5f9; overflow: hidden; font-family: 'Inter', sans-serif; }
-        #signos-island { height: calc(100vh - 40px); margin: 20px auto; max-width: 1800px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        /* Unlocked body scrolling */
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; overflow-y: auto; }
+        
+        #signos-island { min-height: calc(100vh - 40px); margin: 20px auto; max-width: 1800px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); }
         
         @keyframes pulse-danger { 0% { background-color: #fee2e2; } 50% { background-color: #fecaca; } 100% { background-color: #fee2e2; } }
@@ -43,19 +45,22 @@
 </head>
 <body class="p-0 sm:p-4">
 
-    <div id="signos-island" class="bg-white rounded-2xl overflow-hidden flex flex-col border border-gray-200">
+    <!-- Island Mode Container (Now expands vertically if needed) -->
+    <div id="signos-island" class="bg-white rounded-2xl flex flex-col border border-gray-200">
         
+        <!-- Header Hook -->
         <div id="main-card" class="w-full shrink-0 border-b border-gray-800"></div>
 
-        <div class="flex flex-1 overflow-hidden">
+        <!-- Main Layout Grid -->
+        <div class="flex flex-1 flex-col lg:flex-row">
             
             <!-- LEFT COLUMN: PRODUCT MENU -->
-            <div class="w-64 glass-panel flex flex-col border-r border-gray-200 p-4 space-y-6 shrink-0 z-10 shadow-sm">
+            <div class="w-full lg:w-64 glass-panel flex flex-col border-r border-gray-200 p-4 space-y-6 shrink-0 z-10 shadow-sm">
                 <div>
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Engine Selection</label>
-                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[70vh]"></div>
+                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[40vh] lg:max-h-[70vh]"></div>
                 </div>
-                <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white shrink-0">
+                <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white shrink-0 hidden lg:block">
                     <div class="flex items-center space-x-2 mb-1">
                         <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
                         <span class="text-[10px] font-black uppercase tracking-widest">God Mode Active</span>
@@ -65,21 +70,21 @@
             </div>
 
             <!-- CENTER WORKSPACE: CHART & SETTINGS -->
-            <div class="flex-1 flex flex-col bg-slate-50 relative overflow-hidden">
+            <div class="flex-1 flex flex-col bg-slate-50 relative min-w-0">
                 
                 <!-- Center Toolbar -->
-                <div class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10 shrink-0">
+                <div class="h-auto lg:h-14 bg-white border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between p-4 lg:px-6 z-10 shrink-0 gap-3">
                     <div class="flex items-center space-x-4">
                         <div class="flex bg-gray-100 p-1 rounded-xl" id="view-toggles">
                             <button onclick="setView('chart')" id="btn-view-chart" class="px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition">Line Chart</button>
                             <button onclick="setView('heatmap')" id="btn-view-heatmap" class="px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition">Heatmap</button>
                         </div>
                         
-                        <div id="heatmap-mode-toggles" class="hidden flex items-center space-x-2 border-l border-gray-200 pl-4 ml-2">
-                            <label class="text-[10px] font-black text-gray-400 uppercase">View:</label>
-                            <select id="hm-analysis-mode" onchange="generateMatrix()" class="text-[10px] font-bold bg-transparent border-none text-blue-600 uppercase outline-none">
-                                <option value="retail">Retail Price</option>
-                                <option value="cost">Hard Cost</option>
+                        <div class="flex items-center space-x-2 border-l border-gray-200 pl-4 ml-2">
+                            <label class="text-[10px] font-black text-gray-400 uppercase">Data Stream:</label>
+                            <select id="hm-analysis-mode" onchange="generateMatrix()" class="text-[10px] font-bold bg-transparent border-none text-blue-600 uppercase outline-none cursor-pointer">
+                                <option value="retail">Market (Retail + Profit)</option>
+                                <option value="cost">Physics (Hard Cost)</option>
                                 <option value="margin">Net Margin (%)</option>
                             </select>
                         </div>
@@ -88,18 +93,14 @@
                     <div id="chart-controls" class="flex items-center space-x-3">
                         <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
                             <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Simulate Qty:</label>
-                            <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
-                        </div>
-                        <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
-                            <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Max SqFt:</label>
-                            <input type="number" id="chart-max-sqft" value="20" min="5" max="100" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
+                            <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-16 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
                         </div>
                     </div>
                 </div>
 
                 <!-- Canvas Area (Dark Overlay Loading State) -->
-                <div id="canvas-area" class="flex-1 relative flex flex-col p-4 overflow-hidden">
-                    <div id="loader" class="absolute inset-0 bg-gray-900/60 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all">
+                <div id="canvas-area" class="flex-1 relative flex flex-col p-4 overflow-hidden min-h-[400px]">
+                    <div id="loader" class="absolute inset-0 bg-gray-900/60 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all rounded-xl">
                         <div class="animate-spin rounded-full h-14 w-14 border-4 border-white border-t-blue-500 mb-4"></div>
                         <span class="text-xs font-black text-white tracking-widest uppercase">Computing Matrix...</span>
                     </div>
@@ -121,23 +122,23 @@
                 <!-- Product Specifications -->
                 <div class="bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_rgba(0,0,0,0.02)] z-20">
                     <div class="px-6 py-2 bg-gray-100 border-b border-gray-200">
-                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Base Specifications (Affects Chart/Heatmap Base Logic)</label>
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Base Specifications (Affects Chart & Heatmap)</label>
                     </div>
-                    <div id="product-specific-controls" class="p-4 flex flex-wrap gap-4 overflow-y-auto max-h-32 custom-scrollbar">
+                    <div id="product-specific-controls" class="p-4 flex flex-wrap gap-4 overflow-y-auto max-h-48 custom-scrollbar">
                         <!-- Dynamic Controls Injected Here -->
                     </div>
                 </div>
 
                 <!-- Overrides Section -->
-                <div class="h-48 border-t-4 border-gray-300 bg-gray-50 flex flex-col shrink-0 z-10 relative">
-                    <div class="flex items-center justify-between border-b border-gray-200 bg-gray-200 pr-4">
-                        <div class="flex text-[10px] font-black uppercase tracking-widest text-center cursor-pointer">
-                            <div id="tab-ovr-retail" onclick="switchOvrTab('retail')" class="px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition">Market Vars (Blue)</div>
-                            <div id="tab-ovr-cost" onclick="switchOvrTab('cost')" class="px-6 py-2 text-gray-500 hover:text-gray-700 transition">Physics Vars (Red)</div>
+                <div class="h-64 border-t-4 border-gray-300 bg-gray-50 flex flex-col shrink-0 z-10 relative">
+                    <div class="flex flex-col md:flex-row items-center justify-between border-b border-gray-200 bg-gray-200 pr-4">
+                        <div class="flex text-[10px] font-black uppercase tracking-widest text-center cursor-pointer w-full md:w-auto">
+                            <div id="tab-ovr-retail" onclick="switchOvrTab('retail')" class="flex-1 md:flex-none px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition">Market Vars (Blue)</div>
+                            <div id="tab-ovr-cost" onclick="switchOvrTab('cost')" class="flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent">Physics Vars (Red)</div>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 py-2 md:py-0 w-full md:w-auto justify-center md:justify-end">
                             <button onclick="resetOverrides()" class="text-[9px] font-bold text-gray-500 hover:text-blue-600 transition uppercase">Reset To Default</button>
-                            <button onclick="exportMatrix()" class="text-[9px] font-black bg-gray-800 text-white px-3 py-1 rounded shadow hover:bg-black transition">EXPORT PAYLOAD</button>
+                            <button onclick="exportMatrix()" class="text-[9px] font-black bg-gray-900 text-white px-3 py-1.5 rounded shadow hover:bg-black transition">EXPORT PAYLOAD</button>
                         </div>
                     </div>
                     
@@ -152,13 +153,13 @@
             </div>
 
             <!-- RIGHT COLUMN: POINT INSPECTION -->
-            <div class="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)]">
+            <div class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)] min-h-[400px] lg:min-h-0">
                 <div class="p-4 bg-gray-900 border-b border-gray-800">
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-center">Point Inspection</label>
                 </div>
                 
                 <div id="inspection-meta" class="p-6 bg-slate-50 border-b border-gray-200 text-center flex flex-col items-center justify-center min-h-[120px]">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a data point on the chart to inspect.</span>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point on the chart to inspect.</span>
                 </div>
 
                 <div id="receipt-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50">
@@ -195,7 +196,7 @@
     let currentChartDataMap = {}; 
 
     window.onload = () => {
-        injectHeader("God Mode: Pricing Analyzer v5.0", true);
+        injectHeader("God Mode: Pricing Analyzer v5.1", true);
         renderProductMenu();
         if(MODULES.length > 0) loadProduct(MODULES.id);
     };
@@ -222,7 +223,7 @@
         document.getElementById('receipt-container').innerHTML = '';
         document.getElementById('inspection-meta').innerHTML = '<span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point to inspect.</span>';
 
-        // Auto-configure UI tools based on product type
+        // Auto-configure UI tools
         if (id === 'yard') {
             document.getElementById('chart-controls').classList.add('hidden');
             document.getElementById('btn-view-heatmap').classList.add('hidden');
@@ -230,7 +231,8 @@
         } else {
             document.getElementById('chart-controls').classList.remove('hidden');
             document.getElementById('btn-view-heatmap').classList.remove('hidden');
-            setView('chart'); // Always default to chart per request
+            document.getElementById('chart-qty').value = 1; // Reset Qty default
+            setView('chart');
         }
 
         buildDynamicControls();
@@ -261,7 +263,7 @@
                 c.opts.forEach(o => html += '<option value="' + o.v + '">' + o.t + '</option>');
                 html += '</select></div>';
             } else if(c.type === 'toggle') {
-                html += '<label class="flex items-center gap-2 mt-2 cursor-pointer bg-white border border-gray-200 px-3 py-1 rounded shadow-sm hover:bg-gray-50"><input type="checkbox" id="ctrl_' + c.id + '" onchange="generateMatrix()" ' + (c.def?'checked':'') + ' class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-black text-gray-600 uppercase">Enable</span></label></div>';
+                html += '<label class="flex items-center gap-2 mt-2 cursor-pointer bg-white border border-gray-200 px-3 py-1 rounded shadow-sm hover:bg-gray-50 transition"><input type="checkbox" id="ctrl_' + c.id + '" onchange="generateMatrix()" ' + (c.def?'checked':'') + ' class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-black text-gray-600 uppercase">Enable</span></label></div>';
             } else {
                 html += '<input type="number" id="ctrl_' + c.id + '" value="' + c.def + '" class="w-full border border-gray-200 bg-white rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onchange="generateMatrix()"></div>';
             }
@@ -276,12 +278,12 @@
         const wCst = document.getElementById('ovr-cost-wrap');
         
         if(tab === 'retail') {
-            tRet.className = "px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition";
-            tCst.className = "px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
+            tRet.className = "flex-1 md:flex-none px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition";
+            tCst.className = "flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
             wRet.classList.remove('hidden'); wCst.classList.add('hidden');
         } else {
-            tCst.className = "px-6 py-2 bg-red-100 text-red-700 border-b-2 border-red-600 transition";
-            tRet.className = "px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
+            tCst.className = "flex-1 md:flex-none px-6 py-2 bg-red-100 text-red-700 border-b-2 border-red-600 transition";
+            tRet.className = "flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
             wCst.classList.remove('hidden'); wRet.classList.add('hidden');
         }
     }
@@ -310,7 +312,6 @@
         currentView = view;
         document.getElementById('view-heatmap').classList.toggle('hidden', view !== 'heatmap');
         document.getElementById('view-chart').classList.toggle('hidden', view !== 'chart');
-        document.getElementById('heatmap-mode-toggles').classList.toggle('hidden', view !== 'heatmap');
         
         document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
         document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
@@ -341,69 +342,108 @@
         else drawHeatmap(simData);
     }
 
+    // Standardize Bounds Math
+    function getProductBounds(id) {
+        if (id === 'coro' || id === 'acm' || id === 'pvc' || id === 'foam' || id === 'acrylic') return { w: 10, h: 5, sqft: 50 };
+        if (id === 'banner') return { w: 12, h: 6, sqft: 60 };
+        return { w: 54, h: 10, sqft: 50 }; // Vinyl, Wrap, Wall, Decal
+    }
+
     function drawLineChart(simData) {
-        const isYard = activeConfig.id === 'yard';
-        const steps = isYard ? X_STEPS_YARD : new Array();
+        const id = activeConfig.id;
+        const mode = document.getElementById('hm-analysis-mode').value;
+        const isYard = id === 'yard';
+        const bounds = getProductBounds(id);
         
+        const steps = isYard ? X_STEPS_YARD : new Array();
         if (!isYard) {
-            const maxSqFt = parseInt(document.getElementById('chart-max-sqft').value) || 20;
-            for(let i=1; i<=maxSqFt; i++) steps.push(i);
+            for(let i=1; i<=bounds.sqft; i++) steps.push(i);
         }
 
+        // Harvest Shared Base Inputs
+        let baseInputs = { files:1, incDesign:false };
+        activeConfig.controls.forEach(c => {
+            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
+            const el = document.getElementById('ctrl_' + c.id);
+            if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
+        });
+
+        // Hardcode Standard 4 Permutations per Product
         let permutations = new Array();
         
-        if (isYard) {
-            permutations.push({ label: "1-Sided, No Stakes", inputs: { w:24, h:18, sides:1, hasStakes:false, files:1, incDesign:false } });
-            permutations.push({ label: "1-Sided, W/ Stakes", inputs: { w:24, h:18, sides:1, hasStakes:true, files:1, incDesign:false } });
-            permutations.push({ label: "2-Sided, No Stakes", inputs: { w:24, h:18, sides:2, hasStakes:false, files:1, incDesign:false } });
-            permutations.push({ label: "2-Sided, W/ Stakes", inputs: { w:24, h:18, sides:2, hasStakes:true, files:1, incDesign:false } });
-        } else {
-            // Dynamically combine up to 4 permutations based on product options
-            let baseInputs = { files:1, incDesign:false };
-            activeConfig.controls.forEach(c => {
-                if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return;
-                const el = document.getElementById('ctrl_' + c.id);
-                if(el) baseInputs[c.id] = c.type === 'toggle' ? el.checked : (c.type === 'number' ? parseFloat(el.value) : el.value);
-            });
-
-            // Find key variants to show lines for (e.g. Thickness + Sides)
-            const pCtl = activeConfig.controls.find(c => c.id === 'thickness' || c.id === 'material');
-            const sCtl = activeConfig.controls.find(c => c.id === 'sides');
-
-            let opt1 = pCtl && pCtl.opts ? pCtl.opts.slice(0, 2) : new Array({v:baseInputs[pCtl?.id]||'Std', t:'Standard'});
-            let opt2 = sCtl && sCtl.opts ? sCtl.opts.slice(0, 2) : new Array({v:baseInputs[sCtl?.id]||1, t:''});
-
-            opt1.forEach(o1 => {
-                opt2.forEach(o2 => {
-                    let pIn = { ...baseInputs };
-                    if (pCtl) pIn[pCtl.id] = o1.v;
-                    if (sCtl) pIn[sCtl.id] = o2.v;
-                    let l = o1.t + (o2.t ? ` (${o2.t})` : '');
-                    permutations.push({ label: l, inputs: pIn });
-                });
-            });
+        if (id === 'yard') {
+            permutations.push({ label: "1-Sided, No Stakes", inputs: { ...baseInputs, w:24, h:18, sides:1, hasStakes:false } });
+            permutations.push({ label: "1-Sided, W/ Stakes", inputs: { ...baseInputs, w:24, h:18, sides:1, hasStakes:true } });
+            permutations.push({ label: "2-Sided, No Stakes", inputs: { ...baseInputs, w:24, h:18, sides:2, hasStakes:false } });
+            permutations.push({ label: "2-Sided, W/ Stakes", inputs: { ...baseInputs, w:24, h:18, sides:2, hasStakes:true } });
+        } else if (id === 'coro') {
+            permutations.push({ label: "4mm Single-Sided", inputs: { ...baseInputs, thickness: '4mm', sides: 1 } });
+            permutations.push({ label: "4mm Double-Sided", inputs: { ...baseInputs, thickness: '4mm', sides: 2 } });
+            permutations.push({ label: "10mm Single-Sided", inputs: { ...baseInputs, thickness: '10mm', sides: 1 } });
+            permutations.push({ label: "10mm Double-Sided", inputs: { ...baseInputs, thickness: '10mm', sides: 2 } });
+        } else if (id === 'acm') {
+            permutations.push({ label: "3mm Single-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 1 } });
+            permutations.push({ label: "3mm Double-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 2 } });
+            permutations.push({ label: "6mm Single-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 1 } });
+            permutations.push({ label: "6mm Double-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 2 } });
+        } else if (id === 'pvc') {
+            permutations.push({ label: "3mm Single-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 1 } });
+            permutations.push({ label: "3mm Double-Sided", inputs: { ...baseInputs, thickness: '3mm', sides: 2 } });
+            permutations.push({ label: "6mm Single-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 1 } });
+            permutations.push({ label: "6mm Double-Sided", inputs: { ...baseInputs, thickness: '6mm', sides: 2 } });
+        } else if (id === 'foam') {
+            permutations.push({ label: "3/16\" Single-Sided", inputs: { ...baseInputs, thickness: '3/16', sides: 1 } });
+            permutations.push({ label: "3/16\" Double-Sided", inputs: { ...baseInputs, thickness: '3/16', sides: 2 } });
+        } else if (id === 'acrylic') {
+            permutations.push({ label: "1/4\" Thick", inputs: { ...baseInputs, thickness: '0.25' } });
+            permutations.push({ label: "1/2\" Thick", inputs: { ...baseInputs, thickness: '0.5' } });
+            permutations.push({ label: "3/4\" Thick", inputs: { ...baseInputs, thickness: '0.75' } });
+            permutations.push({ label: "1\" Thick", inputs: { ...baseInputs, thickness: '1' } });
+        } else if (id === 'banner') {
+            permutations.push({ label: "13oz Standard", inputs: { ...baseInputs, material: '13oz' } });
+            permutations.push({ label: "15oz Blockout", inputs: { ...baseInputs, material: '15oz' } });
+            permutations.push({ label: "18oz Heavy", inputs: { ...baseInputs, material: '18oz' } });
+            permutations.push({ label: "8oz Mesh", inputs: { ...baseInputs, material: 'Mesh' } });
+        } else if (id === 'decal') {
+            permutations.push({ label: "Standard (Cal)", inputs: { ...baseInputs, material: 'Standard' } });
+            permutations.push({ label: "Premium (Cast)", inputs: { ...baseInputs, material: 'Cast' } });
+            permutations.push({ label: "Clear (Oracal 3640)", inputs: { ...baseInputs, material: 'Clear' } });
+            permutations.push({ label: "Reflective", inputs: { ...baseInputs, material: 'Reflective' } });
+        } else if (id === 'cut') {
+            permutations.push({ label: "Flat (751)", inputs: { ...baseInputs, material: 'Flat' } });
+            permutations.push({ label: "Vehicle (951)", inputs: { ...baseInputs, material: 'Vehicle' } });
+            permutations.push({ label: "Backlit Std (8500)", inputs: { ...baseInputs, material: 'Backlit_8500' } });
+            permutations.push({ label: "Backlit Prem (8800)", inputs: { ...baseInputs, material: 'Backlit_8800' } });
+        } else if (id === 'wrap' || id === 'wall') {
+            if(id === 'wrap') {
+                permutations.push({ label: "Cast Wrap", inputs: { ...baseInputs, material: 'wrap' } });
+                permutations.push({ label: "Window Perf 60/40", inputs: { ...baseInputs, material: 'perf6040' } });
+                permutations.push({ label: "Spot Decal", inputs: { ...baseInputs, material: 'decal' } });
+            } else {
+                permutations.push({ label: "Smooth (GF226)", inputs: { ...baseInputs, material: 'smooth' } });
+                permutations.push({ label: "Textured (IJ8624)", inputs: { ...baseInputs, material: 'textured' } });
+                permutations.push({ label: "Window Perf", inputs: { ...baseInputs, material: 'perf6040' } });
+            }
         }
 
         const datasets = new Array();
         const lineColors = new Array('#3b82f6', '#10b981', '#8b5cf6', '#f97316'); // Blue, Green, Purple, Orange
-        const profitColor = 'rgba(234, 179, 8, 0.4)'; // Translucent Yellow
-        const costColor = '#ef4444'; // Red
+        const profitColor = 'rgba(234, 179, 8, 0.3)'; // Translucent Yellow
 
         permutations.forEach((perm, index) => {
-            const dataRetail = new Array();
-            const dataProfit = new Array();
-            const dataCost = new Array();
+            const dataTarget = new Array(); // Primary plotted metric
+            const dataProfit = new Array(); // Secondary bar
 
             steps.forEach(stepVal => {
                 let runInputs = { ...perm.inputs };
                 
                 if (isYard) {
-                    runInputs.qty = stepVal; // X-Axis is QTY
+                    runInputs.qty = stepVal;
                 } else {
                     runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
-                    runInputs.w = 12; // Lock width to 1ft
-                    runInputs.h = stepVal * 12; // X-Axis is SqFt
-                    if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
+                    runInputs.w = 12; // Lock width to 1ft to model linear length
+                    runInputs.h = stepVal * 12; 
+                    if (id === 'wrap' || id === 'wall') {
                         runInputs.panels = [{ label: "Panel", qty: 1, w: runInputs.w, h: runInputs.h, material: runInputs.material, included: false }];
                     }
                 }
@@ -415,59 +455,61 @@
                     const pointKey = 'ch-' + index + '-' + stepVal;
                     currentChartDataMap[pointKey] = { res, inputs: runInputs };
 
-                    if (!res || !res.retail) { dataRetail.push(null); dataProfit.push(null); dataCost.push(null); return; }
+                    if (!res || !res.retail) { dataTarget.push(null); dataProfit.push(null); return; }
 
-                    // We plot PER UNIT metrics
                     const unitRet = res.retail.unitPrice;
                     const unitCst = res.cost.total / runInputs.qty;
-                    
-                    dataRetail.push(unitRet);
-                    dataCost.push(unitCst);
-                    dataProfit.push(Math.max(unitRet - unitCst, 0));
+                    const margin = res.metrics.margin;
+
+                    // Plot based on Mode Dropdown
+                    if (mode === 'retail') {
+                        dataTarget.push(unitRet);
+                        dataProfit.push(Math.max(unitRet - unitCst, 0));
+                    } else if (mode === 'cost') {
+                        dataTarget.push(unitCst);
+                    } else {
+                        dataTarget.push(margin * 100);
+                    }
 
                 } catch(e) {
-                    dataRetail.push(null); dataProfit.push(null); dataCost.push(null);
+                    dataTarget.push(null); dataProfit.push(null);
                 }
             });
 
-            // Dataset 1: Retail Line (Visible)
+            // Push primary line
+            let dLabel = perm.label;
+            if(mode === 'retail') dLabel += " (Retail)";
+            else if(mode === 'cost') dLabel += " (Cost)";
+            else dLabel += " (Margin %)";
+
             datasets.push({
                 type: 'line',
-                label: perm.label + " (Retail/Ea)",
-                data: dataRetail,
+                label: dLabel,
+                data: dataTarget,
                 borderColor: lineColors[index % lineColors.length],
                 backgroundColor: lineColors[index % lineColors.length],
                 borderWidth: 3, tension: 0.1, pointRadius: 3,
                 _permIndex: index
             });
 
-            // Dataset 2: Profit Bar (Visible)
-            datasets.push({
-                type: 'bar',
-                label: perm.label + " (Profit/Ea)",
-                data: dataProfit,
-                backgroundColor: profitColor,
-                borderWidth: 1, borderColor: '#ca8a04',
-                _permIndex: index
-            });
-
-            // Dataset 3: Cost Line (Hidden by Default)
-            datasets.push({
-                type: 'line',
-                label: perm.label + " (Cost/Ea)",
-                data: dataCost,
-                borderColor: costColor,
-                backgroundColor: costColor,
-                borderWidth: 2, borderDash: [1], tension: 0.1, pointRadius: 0,
-                hidden: true,
-                _permIndex: index
-            });
+            // Push profit bar ONLY in retail mode
+            if (mode === 'retail') {
+                datasets.push({
+                    type: 'bar',
+                    label: perm.label + " (Profit)",
+                    data: dataProfit,
+                    backgroundColor: profitColor,
+                    borderWidth: 1, borderColor: '#ca8a04',
+                    _permIndex: index
+                });
+            }
         });
 
         if (chartInstance) chartInstance.destroy();
         const ctx = document.getElementById('physicsChart').getContext('2d');
         
-        const xTitle = isYard ? 'Quantity Ordered' : 'Total Square Footage (Size)';
+        let xTitle = isYard ? 'Quantity Ordered' : 'Total Square Footage (Size)';
+        let yTitle = mode === 'margin' ? 'Net Margin (%)' : 'Money / Unit ($)';
 
         chartInstance = new Chart(ctx, {
             data: { labels: steps, datasets: datasets },
@@ -482,7 +524,8 @@
                                 let label = context.dataset.label || '';
                                 if (label) label += ': ';
                                 if (context.parsed.y !== null) {
-                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    if(mode === 'margin') label += context.parsed.y.toFixed(1) + '%';
+                                    else label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
                                 }
                                 return label;
                             }
@@ -491,19 +534,24 @@
                 },
                 scales: {
                     x: { title: { display: true, text: xTitle, font: { weight: 'bold' } } },
-                    y: { title: { display: true, text: 'Money / Unit ($)', font: { weight: 'bold' } }, beginAtZero: true }
+                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: true }
                 },
                 onClick: (e) => {
-                    const elements = chartInstance.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+                    // FIX: Nearest intersection targets the exact line/bar the user clicked
+                    const elements = chartInstance.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
                     if (elements.length > 0) {
-                        const dataIndex = elements.index;
-                        const datasetIndex = elements.datasetIndex;
+                        const element = elements;
+                        const datasetIndex = element.datasetIndex;
+                        const dataIndex = element.index;
                         const stepVal = steps[dataIndex];
+                        
                         const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
                         const pointKey = 'ch-' + permIndex + '-' + stepVal;
                         
                         let valDisplay = chartInstance.data.datasets[datasetIndex].data[dataIndex];
-                        renderInspection(pointKey, '$' + valDisplay.toFixed(2));
+                        let displayStr = mode === 'margin' ? valDisplay.toFixed(1) + '%' : '$' + valDisplay.toFixed(2);
+                        
+                        renderInspection(pointKey, displayStr);
                     }
                 }
             }
@@ -514,16 +562,11 @@
         const mode = document.getElementById('hm-analysis-mode').value;
         const id = activeConfig.id;
         
-        // Define hardcoded max limits based on product reality, no user scrubbers
-        let maxW = 10, maxH = 5; // Default 5x10 rigid
         if (id === 'yard') return; // Yard has no heatmap
-        if (id === 'coro' || id === 'pvc' || id === 'acm' || id === 'foam' || id === 'acrylic') {
-            maxW = 10; maxH = 5; // Up to 5x10 boards
-        } else if (id === 'banner') {
-            maxW = 12; maxH = 6; // User requested 6x12 cap for banners
-        } else {
-            maxW = 54; maxH = 10; // Vinyl/Decal/Wrap panelization limit (54ft x 10ft)
-        }
+
+        const bounds = getProductBounds(id);
+        const maxW = bounds.w;
+        const maxH = bounds.h;
 
         const header = document.getElementById('heatmap-head');
         const body = document.getElementById('heatmap-body');
@@ -619,7 +662,6 @@
         let costLines = "";
         const b = res.cost.breakdown || {};
         
-        // Summing specific categories depending on which engine ran
         const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || 0) + (b.totalInk || b.rawInk || 0) + (b.stakeCost || 0) + (b.rawLam || 0) + (b.rawTape || 0) + (b.materials || 0);
         const labor = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0) + (b.costSetup || 0) + (b.costFinish || 0) + (b.costWeed || 0) + (b.installLabor || 0) + (b.printLabor || 0) + (b.machine || 0);
         
@@ -666,3 +708,5 @@
 
 </body>
 </html>
+
+
