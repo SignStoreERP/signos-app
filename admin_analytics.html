@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>God Mode: Pricing Analyzer v4.2</title>
+    <title>God Mode: Pricing Analyzer v4.3</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,21 +21,20 @@
     <script src="cost_wrap.js"></script>
 
     <style>
-        body { background-color: #f8fafc; overflow: hidden; font-family: 'Inter', sans-serif; }
+        body { background-color: #f1f5f9; overflow: hidden; font-family: 'Inter', sans-serif; }
         
-        /* Island Mode & Layout */
+        /* SignOS Island Mode */
         #signos-island {
-            height: calc(100vh - 80px);
+            height: calc(100vh - 40px);
             margin: 20px auto;
-            max-width: 1600px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            max-width: 1700px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
-        /* Glassmorphism Sidebar */
+        /* Side Panels */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border-right: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
         }
 
         /* Profit Guard Pulse */
@@ -44,45 +43,84 @@
             50% { background-color: #fecaca; }
             100% { background-color: #fee2e2; }
         }
-        .loss-alert { animation: pulse-danger 2s infinite; color: #991b1b; font-weight: 800; }
+        .loss-alert { animation: pulse-danger 2s infinite; color: #991b1b; font-weight: 800; border: 1px solid #fca5a5 !important; }
 
         /* Sticky Heatmap Axes */
-        .sticky-col { position: sticky; left: 0; background: #f1f5f9; z-index: 20; font-weight: bold; border-right: 2px solid #cbd5e1; }
-        .sticky-row { position: sticky; top: 0; background: #f1f5f9; z-index: 30; font-weight: bold; border-bottom: 2px solid #cbd5e1; }
+        .sticky-col { position: sticky; left: 0; background: #f8fafc; z-index: 20; font-weight: bold; border-right: 2px solid #e2e8f0; }
+        .sticky-row { position: sticky; top: 0; background: #f8fafc; z-index: 30; font-weight: bold; border-bottom: 2px solid #e2e8f0; }
 
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        .heatmap-cell { min-width: 75px; height: 45px; transition: transform 0.1s; cursor: crosshair; }
-        .heatmap-cell:hover { transform: scale(1.1); z-index: 50; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.15s; cursor: crosshair; border: 1px solid #f1f5f9; }
+        .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: #3b82f6; }
         
         /* Slider Styling */
-        input[type=range] { height: 4px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: #3b82f6; cursor: pointer; }
+        input[type=range] { height: 4px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        /* Override Input Grouping */
+        .override-group-retail { border-left: 3px solid #3b82f6; padding-left: 8px; margin-bottom: 12px; }
+        .override-group-cost { border-left: 3px solid #ef4444; padding-left: 8px; margin-bottom: 12px; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-0 sm:p-4">
 
-    <div id="signos-island" class="bg-white rounded-xl overflow-hidden flex flex-col border border-gray-200">
+    <div id="signos-island" class="bg-white rounded-2xl overflow-hidden flex flex-col border border-gray-200">
         
         <div id="header-container"></div>
 
         <div class="flex flex-1 overflow-hidden">
             
-            <div class="w-64 glass-panel flex flex-col border-r border-gray-100">
-                <div class="p-4 border-b border-gray-100">
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Product Engine</label>
-                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-height-[40vh]">
+            <div class="w-72 glass-panel flex flex-col border-r border-gray-100 p-4 space-y-6">
+                
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Engine Selection</label>
+                    <div id="product-menu" class="space-y-1 custom-scrollbar overflow-y-auto max-h-[35vh]">
                         </div>
                 </div>
 
-                <div class="p-4 flex-1 overflow-y-auto custom-scrollbar">
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Environmental Overrides</label>
-                    <div id="override-list" class="space-y-3">
-                        <div class="text-center py-10 text-gray-400 text-xs italic">Select a product to enable Sandbox controls</div>
+                <div class="h-px bg-gray-100"></div>
+
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Physics Scrubber</label>
+                    
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-[10px] font-bold text-gray-500 uppercase">Max Width</label>
+                                <span id="val-max-w" class="text-xs font-mono font-bold text-blue-600">8'</span>
+                            </div>
+                            <input type="range" id="limit-w" min="1" max="50" value="8" step="1" oninput="syncRange('w', this.value)" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-[10px] font-bold text-gray-500 uppercase">Max Height</label>
+                                <span id="val-max-h" class="text-xs font-mono font-bold text-blue-600">4'</span>
+                            </div>
+                            <input type="range" id="limit-h" min="1" max="50" value="4" step="1" oninput="syncRange('h', this.value)" class="w-full">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Unit Qty</label>
+                                <input type="number" id="ctrl_qty" value="1" onchange="generateMatrix()" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div id="product-specific-controls">
+                                </div>
+                        </div>
                     </div>
+                </div>
+
+                <div class="mt-auto bg-slate-900 p-3 rounded-xl text-white">
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Telemetry active</span>
+                    </div>
+                    <p class="text-[9px] text-slate-400 leading-tight">Physics variables are currently being simulated in local memory.</p>
                 </div>
             </div>
 
@@ -90,91 +128,74 @@
                 
                 <div class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10">
                     <div class="flex items-center space-x-6">
-                        <div class="flex bg-gray-100 p-1 rounded-lg">
-                            <button onclick="setView('heatmap')" id="btn-view-heatmap" class="px-3 py-1 text-xs font-bold rounded-md bg-white shadow-sm text-blue-600">HEATMAP</button>
-                            <button onclick="setView('chart')" id="btn-view-chart" class="px-3 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700">CHART</button>
+                        <div class="flex bg-gray-100 p-1 rounded-xl">
+                            <button onclick="setView('heatmap')" id="btn-view-heatmap" class="px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase">Heatmap</button>
+                            <button onclick="setView('chart')" id="btn-view-chart" class="px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase">Analytics</button>
                         </div>
                         <div class="h-6 w-px bg-gray-200"></div>
                         <div class="flex items-center space-x-4">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase">Analysis:</label>
-                            <select id="analysis-mode" onchange="generateMatrix()" class="text-xs font-bold bg-transparent border-none focus:ring-0 cursor-pointer text-blue-600">
-                                <option value="retail">Retail Market Value</option>
-                                <option value="cost">Hard Cost Physics</option>
+                            <label class="text-[10px] font-black text-gray-400 uppercase">Data Stream:</label>
+                            <select id="analysis-mode" onchange="generateMatrix()" class="text-[10px] font-black bg-transparent border-none focus:ring-0 cursor-pointer text-blue-600 uppercase">
+                                <option value="retail">Market Value (Retail)</option>
+                                <option value="cost">Production Physics (Cost)</option>
                                 <option value="margin">Net Profit Margin (%)</option>
                             </select>
                         </div>
                     </div>
                     
-                    <div class="flex items-center space-x-2">
-                        <button onclick="exportMatrix()" class="text-[10px] font-black bg-slate-900 text-white px-3 py-1.5 rounded-lg hover:bg-black transition">EXPORT PAYLOAD</button>
-                    </div>
+                    <button onclick="exportMatrix()" class="text-[10px] font-black bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">COMMIT OVERRIDES</button>
                 </div>
 
                 <div id="canvas-area" class="flex-1 overflow-hidden flex flex-col p-6">
                     
-                    <div id="view-heatmap" class="flex-1 overflow-auto custom-scrollbar bg-white rounded-xl border border-gray-200 shadow-sm relative">
-                        <table class="border-collapse text-[10px] w-full">
+                    <div id="view-heatmap" class="flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative">
+                        <table class="border-collapse text-[11px] w-full table-fixed">
                             <thead id="heatmap-head" class="sticky-row"></thead>
                             <tbody id="heatmap-body"></tbody>
                         </table>
                     </div>
 
-                    <div id="view-chart" class="hidden flex-1 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                    <div id="view-chart" class="hidden flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                         <canvas id="physicsChart"></canvas>
                     </div>
 
                 </div>
 
-                <div class="h-48 bg-white border-t border-gray-200 p-4 flex space-x-4">
-                    <div class="w-1/3 border-r border-gray-100 flex flex-col">
+                <div class="h-44 bg-white border-t border-gray-200 p-4 flex space-x-6">
+                    <div class="w-1/4 border-r border-gray-100 flex flex-col justify-center">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Point Inspection</label>
-                        <div id="inspection-meta" class="flex-1 text-xs text-gray-500 italic flex items-center justify-center border-2 border-dashed border-gray-50 rounded-lg">
-                            Select a point on the canvas to inspect financial telemetry
+                        <div id="inspection-meta" class="text-center p-4 bg-slate-50 rounded-xl border border-dashed border-gray-200 text-[10px] text-gray-400 italic">
+                            Select a data point on the heatmap to inspect financial telemetry
                         </div>
                     </div>
-                    <div id="receipt-container" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                    <div id="receipt-container" class="flex-1 overflow-y-auto custom-scrollbar">
                         </div>
                 </div>
             </div>
 
-            <div class="w-72 bg-white border-l border-gray-200 p-4 flex flex-col space-y-6">
-                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Scrubber Limits</label>
-                
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase">Max Width (ft)</label>
-                            <span id="val-max-w" class="text-xs font-mono font-bold text-blue-600">8'</span>
-                        </div>
-                        <input type="range" id="limit-w" min="1" max="50" value="8" step="1" oninput="syncRange('w', this.value)" class="w-full">
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase">Max Height (ft)</label>
-                            <span id="val-max-h" class="text-xs font-mono font-bold text-blue-600">4'</span>
-                        </div>
-                        <input type="range" id="limit-h" min="1" max="50" value="4" step="1" oninput="syncRange('h', this.value)" class="w-full">
-                    </div>
-
-                    <div class="pt-4 border-t border-gray-100">
-                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Fixed Variables</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[9px] text-gray-400 block">Unit Qty</label>
-                                <input type="number" id="ctrl_qty" value="1" onchange="generateMatrix()" class="w-full border border-gray-200 rounded p-1 text-xs font-bold">
-                            </div>
-                            <div id="product-specific-controls">
-                                </div>
-                        </div>
-                    </div>
+            <div class="w-80 glass-panel border-l border-gray-100 flex flex-col">
+                <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Environment Overrides</label>
+                    <button onclick="resetOverrides()" class="text-[9px] font-bold text-blue-500 hover:underline">RESET</button>
                 </div>
                 
-                <div class="mt-auto bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <h4 class="text-[10px] font-black text-blue-800 uppercase mb-1">Admin Note</h4>
-                    <p class="text-[10px] text-blue-600 leading-relaxed">Overrides are held in local memory. Use **EXPORT** to generate the JSON payload for the Production Backend.</p>
+                <div id="override-container" class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-6">
+                    <div id="group-retail" class="override-group-retail">
+                        <label class="text-[9px] font-black text-blue-600 uppercase mb-3 block tracking-tighter">Market Variables (Retail)</label>
+                        <div id="retail-inputs" class="space-y-2"></div>
+                    </div>
+
+                    <div id="group-cost" class="override-group-cost">
+                        <label class="text-[9px] font-black text-red-600 uppercase mb-3 block tracking-tighter">Physics Variables (Cost)</label>
+                        <div id="cost-inputs" class="space-y-2"></div>
+                    </div>
+
+                    <div id="no-product-msg" class="text-center py-20 text-gray-400 text-xs italic">
+                        Select an engine to begin simulation
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -195,13 +216,10 @@
         const MODULES = ALL_MODULES.filter(m => m.config);
         let activeConfig = null;
         let backendData = {};
-        let currentChartDataMap = []; 
 
-        window.onload = async () => {
+        window.onload = () => {
             if (typeof injectHeader === 'function') injectHeader("God Mode: Pricing Analyzer");
             renderProductMenu();
-            
-            // Auto-load first product
             if(MODULES.length > 0) loadProduct(MODULES[0].id);
         };
 
@@ -210,57 +228,49 @@
             MODULES.forEach(m => {
                 const btn = document.createElement('button');
                 btn.id = `nav-${m.id}`;
-                btn.className = "w-full text-left px-3 py-2 rounded-md text-xs font-bold transition flex items-center justify-between group text-gray-500 hover:bg-gray-50 hover:text-blue-600";
-                btn.innerHTML = `<span>${m.name}</span><span class="opacity-0 group-hover:opacity-100 text-blue-400">→</span>`;
+                btn.className = "w-full text-left px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-between group text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm";
+                btn.innerHTML = `<span>${m.name.toUpperCase()}</span><span class="opacity-0 group-hover:opacity-100 text-blue-400">→</span>`;
                 btn.onclick = () => loadProduct(m.id);
                 container.appendChild(btn);
             });
         }
 
         async function loadProduct(id) {
-            // UI Toggle
-            document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-blue-50', 'text-blue-600', 'ring-1', 'ring-blue-100'));
+            document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100'));
             const activeBtn = document.getElementById(`nav-${id}`);
-            activeBtn.classList.add('bg-blue-50', 'text-blue-600', 'ring-1', 'ring-blue-100');
+            activeBtn.classList.add('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100');
 
             activeConfig = MODULES.find(m => m.id === id).config;
+            document.getElementById('no-product-msg').classList.add('hidden');
             
-            // Fetch Fresh Data
-            document.getElementById('receipt-container').innerHTML = '<div class="text-xs text-gray-400 animate-pulse">Synchronizing Backend...</div>';
             try {
                 const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
                 backendData = await req.json();
                 renderOverrides();
                 generateMatrix();
-            } catch (e) {
-                console.error("Sync Error", e);
-            }
+            } catch (e) { console.error("Sync Error", e); }
         }
 
         function renderOverrides() {
-            const container = document.getElementById('override-list');
-            container.innerHTML = "";
-            
-            const all = [...activeConfig.retails, {heading: 'Physics Factors'}, ...activeConfig.costs];
-            
-            all.forEach(item => {
-                if(item.heading) {
-                    const h = document.createElement('div');
-                    h.className = "text-[9px] font-black text-gray-300 uppercase mt-4 border-b border-gray-50 pb-1";
-                    h.innerText = item.heading;
-                    container.appendChild(h);
-                    return;
-                }
+            const retailBox = document.getElementById('retail-inputs');
+            const costBox = document.getElementById('cost-inputs');
+            retailBox.innerHTML = "";
+            costBox.innerHTML = "";
+
+            const createRow = (item, colorClass) => {
                 const row = document.createElement('div');
-                row.className = "flex items-center justify-between";
+                row.className = "flex items-center justify-between space-x-2";
                 row.innerHTML = `
-                    <label class="text-[10px] text-gray-500 font-medium truncate pr-2" title="${item.key}">${item.label}</label>
-                    <input type="text" id="ovr_${item.key}" placeholder="${backendData[item.key] || '---'}" 
+                    <label class="text-[9px] font-bold text-gray-500 truncate w-2/3 uppercase tracking-tighter" title="${item.key}">${item.label}</label>
+                    <input type="text" id="ovr_${item.key}" placeholder="${backendData[item.key] || '0.00'}" 
                            onchange="generateMatrix()" 
-                           class="w-16 bg-gray-50 border border-gray-100 rounded px-1 py-0.5 text-[10px] font-mono focus:bg-white focus:border-blue-400 outline-none text-right">
+                           class="w-16 bg-white border border-gray-100 rounded px-1.5 py-1 text-[10px] font-black text-right focus:border-${colorClass}-400 outline-none shadow-sm text-${colorClass}-600">
                 `;
-                container.appendChild(row);
-            });
+                return row;
+            };
+
+            activeConfig.retails.forEach(item => retailBox.appendChild(createRow(item, 'blue')));
+            activeConfig.costs.forEach(item => costBox.appendChild(createRow(item, 'red')));
         }
 
         function syncRange(axis, val) {
@@ -275,53 +285,34 @@
             const maxW = parseInt(document.getElementById('limit-w').value) * 12;
             const maxH = parseInt(document.getElementById('limit-h').value) * 12;
             
-            // Define increments (smart stepping)
-            const steps = [12, 18, 24, 36, 48, 60, 72, 84, 96, 108, 120].filter(s => s <= Math.max(maxW, maxH));
-            // Add custom steps if limit is large
-            if(Math.max(maxW, maxH) > 120) {
-                for(let i=144; i<=Math.max(maxW, maxH); i+=24) steps.push(i);
-            }
+            const steps = [12, 18, 24, 36, 48, 60, 72, 84, 96, 120].filter(s => s <= Math.max(maxW, maxH));
 
             const header = document.getElementById('heatmap-head');
             const body = document.getElementById('heatmap-body');
             header.innerHTML = ""; body.innerHTML = "";
-            currentChartDataMap = [];
 
-            // Build Head
-            let headHtml = `<tr class="bg-slate-100 text-slate-500 font-black"><th class="p-2 border border-slate-200 sticky-col sticky-row">H \\ W</th>`;
-            steps.forEach(w => headHtml += `<th class="p-2 border border-slate-200">${w}"</th>`);
+            let headHtml = `<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>`;
+            steps.forEach(w => headHtml += `<th class="p-3 border border-slate-200">${w}"</th>`);
             header.innerHTML = headHtml + `</tr>`;
 
-            // Simulation Inputs
-            const baseInputs = { qty: parseInt(document.getElementById('ctrl_qty').value) || 1 };
-            activeConfig.controls.forEach(c => {
-                if(c.type === 'number') baseInputs[c.id] = c.default || 0;
-                else if(c.type === 'toggle') baseInputs[c.id] = c.default || false;
-                else baseInputs[c.id] = c.default || "";
-            });
-
-            // Harvest Overrides
             const simData = { ...backendData };
-            const allOvr = [...activeConfig.retails, ...activeConfig.costs];
-            allOvr.forEach(o => {
+            [...activeConfig.retails, ...activeConfig.costs].forEach(o => {
                 const el = document.getElementById('ovr_' + o.key);
                 if(el && el.value !== "") simData[o.key] = isNaN(el.value) ? el.value : parseFloat(el.value);
             });
 
-            // Logic Core
             steps.forEach(h => {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td class="p-2 border border-slate-200 sticky-col text-center font-bold">${h}"</td>`;
+                row.innerHTML = `<td class="p-3 border border-slate-200 sticky-col text-center text-slate-400 font-black">${h}"</td>`;
                 
                 steps.forEach(w => {
-                    const inputs = { ...baseInputs, w, h };
+                    const inputs = { qty: parseInt(document.getElementById('ctrl_qty').value)||1, w, h };
                     const res = activeConfig.engine(inputs, simData);
                     const cell = document.createElement('td');
-                    cell.className = "heatmap-cell border border-gray-100 text-center relative group";
+                    cell.className = "heatmap-cell text-center relative group text-slate-700 font-black";
                     
                     let val = 0;
                     let display = "";
-                    let color = "#ffffff";
                     
                     if(mode === 'retail') {
                         val = res.retail.unitPrice;
@@ -329,19 +320,12 @@
                     } else if(mode === 'cost') {
                         val = res.cost.total / inputs.qty;
                         display = "$" + val.toFixed(2);
-                        color = "#fff5f5";
+                        cell.style.backgroundColor = "#fff5f5";
                     } else {
                         const margin = ((res.retail.grandTotal - res.cost.total) / res.retail.grandTotal) * 100;
-                        val = margin;
                         display = margin.toFixed(1) + "%";
-                        
-                        if(margin < 0) {
-                            cell.classList.add('loss-alert');
-                        } else if(margin < 30) {
-                            cell.style.backgroundColor = `rgba(234, 88, 12, ${(40-margin)/40})`; // Warning Orange
-                        } else {
-                            cell.style.backgroundColor = `rgba(34, 197, 94, ${margin/100})`; // Profit Green
-                        }
+                        if(margin < 0) cell.classList.add('loss-alert');
+                        else cell.style.backgroundColor = `rgba(34, 197, 94, ${Math.min(margin/70, 0.8)})`;
                     }
 
                     cell.innerText = display;
@@ -355,39 +339,41 @@
         function renderInspection(res, inputs, valDisplay) {
             const meta = document.getElementById('inspection-meta');
             meta.innerHTML = `
-                <div class="w-full h-full p-3 flex flex-col justify-center items-center text-center">
-                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">${inputs.w}" x ${inputs.h}" | QTY ${inputs.qty}</div>
-                    <div class="text-2xl font-black text-slate-800">${valDisplay}</div>
-                    <div class="text-[9px] font-bold text-blue-500 uppercase mt-1">Physics Engine: ACTIVE</div>
+                <div class="flex flex-col items-center">
+                    <span class="text-blue-600 font-black text-lg">${valDisplay}</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase">${inputs.w}" x ${inputs.h}" (QTY ${inputs.qty})</span>
                 </div>
             `;
 
             const container = document.getElementById('receipt-container');
             const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
             
-            let html = `<table class="w-full text-[10px]">
-                <thead><tr class="text-gray-400 border-b border-gray-100"><th class="text-left py-1">Type</th><th class="text-left py-1">Description</th><th class="text-right py-1">Unit</th><th class="text-right py-1">Total</th></tr></thead>
-                <tbody class="divide-y divide-gray-50">`;
-
-            // Retail Section
-            html += `<tr class="bg-blue-50/50"><td class="py-1.5 font-bold text-blue-600">RETAIL</td><td class="py-1.5">Market Area Value</td><td class="py-1.5 text-right font-mono">${fmt(res.retail.unitPrice)}</td><td class="py-1.5 text-right font-black">${fmt(res.retail.printTotal)}</td></tr>`;
-            if(res.retail.routerFee) html += `<tr><td class="py-1.5 text-blue-400">RETAIL</td><td class="py-1.5">CNC Routing Service</td><td class="py-1.5 text-right font-mono">--</td><td class="py-1.5 text-right font-bold">${fmt(res.retail.routerFee)}</td></tr>`;
-            
-            // Hard Cost Section
-            const b = res.cost.breakdown || {};
-            html += `<tr class="bg-red-50/50 mt-2"><td class="py-1.5 font-bold text-red-600">COST</td><td class="py-1.5">Materials (Substrate/Ink)</td><td class="py-1.5 text-right font-mono">${fmt((b.rawBlanks||0)/inputs.qty)}</td><td class="py-1.5 text-right font-black">${fmt(b.rawBlanks||0)}</td></tr>`;
-            html += `<tr><td class="py-1.5 text-red-400">COST</td><td class="py-1.5">Labor & Machine Burn</td><td class="py-1.5 text-right font-mono">${fmt((b.costOp||0)/inputs.qty)}</td><td class="py-1.5 text-right font-bold">${fmt(b.costOp||0)}</td></tr>`;
-            
-            html += `</tbody></table>`;
-            container.innerHTML = html;
+            container.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                        <label class="text-[9px] font-black text-blue-600 uppercase block mb-2">Market Engine (Retail)</label>
+                        <div class="flex justify-between text-[10px] font-bold"><span>Unit Price:</span><span>${fmt(res.retail.unitPrice)}</span></div>
+                        <div class="flex justify-between text-[10px] font-bold border-t border-blue-200 mt-1 pt-1"><span>Grand Total:</span><span>${fmt(res.retail.grandTotal)}</span></div>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-xl border border-red-100">
+                        <label class="text-[9px] font-black text-red-600 uppercase block mb-2">Physics Engine (Cost)</label>
+                        <div class="flex justify-between text-[10px] font-bold text-red-800"><span>Yield BOM:</span><span>${fmt(res.cost.total)}</span></div>
+                        <div class="flex justify-between text-[10px] font-bold text-red-400 mt-1 pt-1 italic"><span>Margin:</span><span>${(((res.retail.grandTotal - res.cost.total)/res.retail.grandTotal)*100).toFixed(1)}%</span></div>
+                    </div>
+                </div>
+            `;
         }
 
         function setView(view) {
             document.getElementById('view-heatmap').classList.toggle('hidden', view !== 'heatmap');
             document.getElementById('view-chart').classList.toggle('hidden', view !== 'chart');
-            
-            document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-3 py-1 text-xs font-bold rounded-md bg-white shadow-sm text-blue-600' : 'px-3 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700';
-            document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-3 py-1 text-xs font-bold rounded-md bg-white shadow-sm text-blue-600' : 'px-3 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700';
+            document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
+            document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase';
+        }
+
+        function resetOverrides() {
+            document.querySelectorAll('#override-container input').forEach(i => i.value = "");
+            generateMatrix();
         }
 
         function exportMatrix() {
@@ -397,11 +383,9 @@
                 const val = document.getElementById('ovr_' + o.key).value;
                 if(val !== "") payload.push({ product: activeConfig.tab, cost: o.key, value: val });
             });
-
-            if(payload.length === 0) { alert("No overrides detected in the Sandbox."); return; }
-            
+            if(payload.length === 0) return alert("No overrides detected.");
             navigator.clipboard.writeText(JSON.stringify(payload));
-            alert(`Payload Copied! (${payload.length} Overrides). Paste this into the Backend Commit Tool.`);
+            alert("Payload Copied to Clipboard.");
         }
     </script>
 </body>
