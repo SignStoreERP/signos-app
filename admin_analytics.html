@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Analytics v5.2</title>
+    <title>Pricing Analytics v5.3</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -90,7 +90,7 @@
                         </div>
                     </div>
 
-                    <div id="chart-controls" class="flex items-center space-x-3">
+                    <div id="chart-controls" class="flex items-center space-x-3 hidden">
                         <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
                             <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Simulate Qty:</label>
                             <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
@@ -104,6 +104,14 @@
 
                 <!-- Canvas Area (Dark Overlay Loading State) -->
                 <div id="canvas-area" class="flex-1 relative flex flex-col p-4 overflow-hidden min-h-[400px]">
+                    
+                    <!-- INITIAL STATE OVERLAY -->
+                    <div id="initial-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-40 transition-all duration-300">
+                        <span class="text-5xl mb-4 text-blue-500">📊</span>
+                        <h2 class="text-xl font-black text-gray-800 uppercase tracking-widest">Pricing Analytics</h2>
+                        <p class="text-sm text-gray-500 font-bold mt-2 uppercase">Select a product from the left menu to load data matrix.</p>
+                    </div>
+
                     <div id="loader" class="absolute inset-0 bg-gray-900/60 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all rounded-xl">
                         <div class="animate-spin rounded-full h-14 w-14 border-4 border-white border-t-blue-500 mb-4"></div>
                         <span class="text-xs font-black text-white tracking-widest uppercase">Computing Matrix...</span>
@@ -191,7 +199,7 @@
     );
     
     const MODULES = ALL_MODULES.filter(m => m.config);
-    const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000);
+    const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000);
     
     let activeConfig = null;
     let backendData = {};
@@ -200,9 +208,9 @@
     let currentChartDataMap = {}; 
 
     window.onload = () => {
-        injectHeader("Pricing Analytics v5.2", true);
+        injectHeader("Pricing Analytics v5.3", true);
         renderProductMenu();
-        if(MODULES.length > 0) loadProduct(MODULES.id);
+        // Intentional: Do not auto-load product on start. Let user read the instructions.
     };
 
     function renderProductMenu() {
@@ -218,6 +226,10 @@
     }
 
     async function loadProduct(id) {
+        // Hide initial state banner
+        const initialState = document.getElementById('initial-state');
+        if (initialState) initialState.classList.add('hidden');
+
         document.getElementById('loader').classList.remove('hidden');
         
         document.querySelectorAll('#product-menu button').forEach(b => b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'ring-1', 'ring-gray-100'));
@@ -231,11 +243,11 @@
         const bounds = getProductBounds(id);
         
         if (id === 'yard') {
-            document.getElementById('max-sqft-wrap').classList.add('hidden');
+            document.getElementById('chart-controls').classList.add('hidden');
             document.getElementById('btn-view-heatmap').classList.add('hidden');
             setView('chart');
         } else {
-            document.getElementById('max-sqft-wrap').classList.remove('hidden');
+            document.getElementById('chart-controls').classList.remove('hidden');
             document.getElementById('btn-view-heatmap').classList.remove('hidden');
             document.getElementById('chart-qty').value = 1; 
             document.getElementById('chart-max-sqft').value = bounds.sqft; // Auto-set max sqft based on sheet size
@@ -248,7 +260,6 @@
             const req = await fetch(SCRIPT_URL + '?req=view_module&tab=' + activeConfig.tab);
             backendData = await req.json();
             
-            // FIX: Restore the "ONLINE" badge so it doesn't say Connecting forever
             const statusText = document.getElementById("status-text");
             const statusDot = document.getElementById("status-dot");
             if(statusText) {
@@ -280,7 +291,7 @@
         const ctrlBox = document.getElementById('product-specific-controls');
         ctrlBox.innerHTML = '';
         activeConfig.controls.forEach(c => {
-            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; // Handled dynamically in views
+            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; 
             
             let html = '<div class="min-w-[120px]"><label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">' + c.label + '</label>';
             if(c.type === 'select') {
@@ -343,7 +354,7 @@
         
         generateMatrix();
     }
-        // --- LOGIC ENGINE ---
+  // --- LOGIC ENGINE ---
 
     function generateMatrix() {
         if(!activeConfig) return;
@@ -368,10 +379,10 @@
 
     // Standardize Bounds Math Based on Max Parent Sheet / Roll Sizes
     function getProductBounds(id) {
-        if (id === 'foam') return { w: 8, h: 4, sqft: 32 };
-        if (id === 'coro' || id === 'acm' || id === 'pvc' || id === 'acrylic') return { w: 10, h: 5, sqft: 50 };
+        if (id === 'acm') return { w: 10, h: 5, sqft: 50 }; // Blue Sheet allows 5x10
         if (id === 'banner') return { w: 12, h: 5, sqft: 60 }; // 60" roll max (5ft x 12ft)
-        return { w: 10, h: 5, sqft: 50 }; // Vinyl, Wrap, Wall, Decal (54" roll limits)
+        if (id === 'wrap' || id === 'wall' || id === 'decal' || id === 'cut') return { w: 10, h: 5, sqft: 50 };
+        return { w: 8, h: 4, sqft: 32 }; // Coro, PVC, Foam, Acrylic default to 4x8
     }
 
     function drawLineChart(simData) {
@@ -380,8 +391,9 @@
         const isYard = id === 'yard';
         const bounds = getProductBounds(id);
         
-        // Use Yard Sign specific increments or dynamic SqFt limits
-        const steps = isYard ? X_STEPS_YARD : new Array();
+        // Exact Yard Sign array requested, or dynamic SqFt loop
+        const steps = isYard ? [1-21] : [];
+        
         if (!isYard) {
             const maxSqFt = parseInt(document.getElementById('chart-max-sqft').value) || bounds.sqft;
             for(let i=1; i<=maxSqFt; i++) steps.push(i);
@@ -499,6 +511,7 @@
                     }
 
                 } catch(e) {
+                    console.error("Chart point failed:", e);
                     dataTarget.push(null); dataProfit.push(null);
                 }
             });
@@ -561,7 +574,8 @@
                 },
                 scales: {
                     x: { title: { display: true, text: xTitle, font: { weight: 'bold' } } },
-                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: true }
+                    // Set beginAtZero to false so the Y-axis wraps the data variation fluidly
+                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: false }
                 },
                 onClick: (e) => {
                     const elements = chartInstance.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
@@ -590,6 +604,7 @@
         
         if (id === 'yard') return; // Yard has no heatmap
 
+        // Auto-scale to product bounds
         const bounds = getProductBounds(id);
         const maxW = bounds.w;
         const maxH = bounds.h;
