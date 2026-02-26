@@ -62,52 +62,49 @@
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Engrave Direction</label>
                 <div class="flex bg-gray-100 p-1 rounded-lg">
                     <button id="btn-front" onclick="setMode('front')" class="flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700">FRONT ENGRAVE</button>
-                    <button id="btn-reverse" onclick="setMode('reverse')" class="flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent">REVERSE (ADA)</button>
+                    <button id="btn-reverse" onclick="setMode('reverse')" class="flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent">REVERSE ENGRAVED</button>
                 </div>
             </div>
 
             <div class="space-y-4">
                 
-                <!-- MATERIAL SWATCHES (Retained Visual Grid) -->
+                <!-- STEP 1: MATERIAL SWATCHES -->
                 <div>
                     <div class="flex justify-between items-end mb-1">
-                        <label id="cap-label" class="block text-[10px] font-bold text-gray-500 uppercase">Surface Material / Cap Color</label>
+                        <label id="cap-label" class="block text-[10px] font-bold text-gray-500 uppercase">Step 1: Surface Material / Cap Color</label>
                     </div>
                     <div id="selected-color-label" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 mb-2 truncate">Loading...</div>
+                    
                     <div id="rowmark-grid" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
                         <div class="text-xs text-gray-400 font-bold italic w-full text-center py-4 animate-pulse">Fetching Rowmark Array...</div>
                     </div>
                 </div>
 
-                <!-- REVERSE SPECIFIC: PAINT FILL (Searchable Dropdown) -->
-                <div id="reverse-options" class="hidden space-y-3 pt-3 border-t border-gray-200 relative z-20">
+                <!-- STEP 2: REVERSE SPECIFIC PAINT FILL -->
+                <div id="reverse-options" class="hidden space-y-3 pt-4 border-t border-gray-200 relative z-20">
                     <div>
-                        <div class="flex justify-between items-end mb-2">
-                            <label class="block text-[10px] font-bold text-orange-700 uppercase">Engraved Text Color (Paint Fill)</label>
-                            
-                            <!-- THE NEW BOOK TOGGLE -->
-                            <div class="flex bg-orange-200/50 p-0.5 rounded">
-                                <button id="btn-pms" onclick="setPaintSystem('PMS')" class="px-2 py-0.5 text-[9px] font-bold rounded bg-white text-orange-700 shadow-sm transition">PMS</button>
-                                <button id="btn-sw" onclick="setPaintSystem('SW')" class="px-2 py-0.5 text-[9px] font-bold rounded text-orange-600 hover:text-orange-800 transition">S-W</button>
-                            </div>
+                        <label class="block text-[10px] font-bold text-orange-700 uppercase mb-2">Step 2: Text Color (Paint Fill)</label>
+                        
+                        <!-- PROMINENT BOOK TOGGLE -->
+                        <div class="flex bg-gray-200 p-1 rounded-lg mb-3">
+                            <button id="btn-pms" onclick="setPaintSystem('PMS')" class="flex-1 py-2 text-xs font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest">PMS</button>
+                            <button id="btn-sw" onclick="setPaintSystem('SW')" class="flex-1 py-2 text-xs font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest">SW</button>
                         </div>
                         
                         <!-- SEARCH BAR -->
                         <div class="relative mb-2">
-                            <input type="text" id="paint-search" placeholder="Search PMS Colors..." oninput="filterPaint()" onclick="document.getElementById('paint-list').classList.remove('hidden')" class="w-full bg-white border border-orange-300 rounded-lg p-2 text-sm font-bold text-orange-900 outline-none focus:border-orange-500 shadow-sm transition">
-                            <div id="paint-list" class="absolute z-30 w-full bg-white border border-orange-200 rounded-b-lg shadow-2xl max-h-56 overflow-y-auto color-scroll text-xs hidden mt-1"></div>
+                            <input type="text" id="paint-search" placeholder="Search by color name or code..." oninput="filterPaint()" class="w-full bg-white border border-gray-300 rounded p-2 text-sm font-bold text-gray-800 outline-none focus:border-blue-500 shadow-sm transition">
                         </div>
 
-                        <!-- Selected Color Visual Indicator -->
-                        <div id="selected-paint-wrap" class="hidden bg-orange-50 border border-orange-100 p-2 rounded-lg flex items-center justify-between shadow-inner">
-                            <div class="flex items-center gap-3">
-                                <div id="selected-paint-box" class="w-8 h-8 rounded-full border border-black/20 shadow-sm" style="background-color: #ffffff;"></div>
-                                <span id="selected-paint-label" class="text-xs font-black text-orange-800">None Selected</span>
-                            </div>
-                            <button onclick="clearPaintSelection()" class="text-[9px] font-bold text-orange-500 hover:text-orange-700 uppercase">Clear / Change</button>
+                        <!-- SELECTED COLOR LABEL -->
+                        <div id="selected-paint-label" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 mb-2 truncate">None Selected</div>
+                        
+                        <!-- HYBRID VISUAL PAINT GRID -->
+                        <div id="paint-grid" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2 color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
+                            <!-- Paint Hex Blocks Injected Here -->
                         </div>
 
-                        <!-- Custom Manual Color Input (Hidden until Custom is selected) -->
+                        <!-- CUSTOM MANUAL PMS (Hidden until triggered) -->
                         <div id="custom-pms-wrap" class="hidden mt-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Enter Custom Color Name / Code</label>
                             <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-blue-500 shadow-inner">
@@ -182,12 +179,12 @@
                 btnF.className = "flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700";
                 btnR.className = "flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent";
                 revOpts.classList.add('hidden');
-                capLab.innerText = "Surface Material / Cap Color";
+                capLab.innerText = "Step 1: Surface Material / Cap Color";
             } else {
                 btnR.className = "flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700";
                 btnF.className = "flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent";
                 revOpts.classList.remove('hidden');
-                capLab.innerText = "Substrate Color (Faces Outward)";
+                capLab.innerText = "Step 1: Face Color";
             }
             
             updateSwatches();
@@ -195,11 +192,13 @@
 
         function setPaintSystem(sys) {
             activePaintSystem = sys;
-            document.getElementById('btn-pms').className = sys === 'PMS' ? "px-2 py-0.5 text-[9px] font-bold rounded bg-white text-orange-700 shadow-sm transition" : "px-2 py-0.5 text-[9px] font-bold rounded text-orange-600 hover:text-orange-800 transition";
-            document.getElementById('btn-sw').className = sys === 'SW' ? "px-2 py-0.5 text-[9px] font-bold rounded bg-white text-orange-700 shadow-sm transition" : "px-2 py-0.5 text-[9px] font-bold rounded text-orange-600 hover:text-orange-800 transition";
+            document.getElementById('btn-pms').className = sys === 'PMS' ? "flex-1 py-2 text-xs font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest" : "flex-1 py-2 text-xs font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest";
+            document.getElementById('btn-sw').className = sys === 'SW' ? "flex-1 py-2 text-xs font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest" : "flex-1 py-2 text-xs font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest";
             
-            clearPaintSelection();
-            filterPaint(); // Re-render the dropdown list for the new system
+            document.getElementById('paint-search').placeholder = sys === 'PMS' ? "Search PMS Colors..." : "Search SW Colors...";
+            document.getElementById('paint-search').value = ""; // Clear active search
+            
+            buildPaintSwatches();
         }
 
         function updateSwatches() {
@@ -220,9 +219,13 @@
                 let capHex = c.Cap_Hex || '#000000';
                 let coreHex = c.Core_Hex || '#FFFFFF';
 
-                if (currentMode === 'reverse') coreHex = '#e2e8f0'; // Represents etched clear back before paint
-
-                btn.style.background = `linear-gradient(135deg, ${capHex} 50%, ${coreHex} 50%)`;
+                // Display pure solid color if Reverse Engraved, else show split
+                if (currentMode === 'reverse') {
+                    btn.style.background = capHex;
+                } else {
+                    btn.style.background = `linear-gradient(135deg, ${capHex} 50%, ${coreHex} 50%)`;
+                }
+                
                 btn.title = `${c.Item_Code} - ${c.Cap_Color}`;
 
                 btn.onclick = () => {
@@ -242,87 +245,81 @@
             });
         }
 
-        function filterPaint() {
-            const query = document.getElementById('paint-search').value.toLowerCase();
-            const list = document.getElementById('paint-list');
-            list.innerHTML = '';
+        // HIGH PERFORMANCE RENDERING: Build all 1500 buttons once, just toggle 'display' for search
+        function buildPaintSwatches() {
+            const grid = document.getElementById('paint-grid');
+            grid.innerHTML = '';
             
             const listToUse = activePaintSystem === 'PMS' ? pmsData : swData;
-            const matches = listToUse.filter(p => p.Name.toLowerCase().includes(query) || p.Code.toLowerCase().includes(query));
             
-            // Add Custom/TBD Option Fixed at the Top
-            const customDiv = document.createElement('div');
-            customDiv.className = "p-3 hover:bg-gray-100 cursor-pointer flex items-center border-b border-gray-200 font-bold text-gray-500 bg-gray-50 transition";
-            customDiv.innerHTML = `<span class="text-lg mr-3 text-gray-400">+</span> Custom / Unlisted Color...`;
-            customDiv.onclick = () => {
-                selectedPaint = { Code: 'CUSTOM', Name: 'Custom Manual Color', Hex_Code: '#e2e8f0' };
-                document.getElementById('paint-search').value = "";
-                document.getElementById('paint-search').placeholder = "Custom Color Mode Active";
-                list.classList.add('hidden');
+            // 1. Add Custom Input Button First
+            const customBtn = document.createElement('button');
+            customBtn.className = "w-full py-1.5 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-blue-500 transition focus:outline-none uppercase shrink-0";
+            customBtn.innerText = "+ Custom / Unlisted Color...";
+            customBtn.onclick = () => {
+                Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent'));
+                customBtn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent');
                 
+                selectedPaint = { Code: 'CUSTOM', Name: 'Custom Manual Color', Hex_Code: '#e2e8f0' };
                 document.getElementById('custom-pms-wrap').classList.remove('hidden');
-                document.getElementById('selected-paint-wrap').classList.add('hidden');
+                document.getElementById('selected-paint-label').innerText = "Custom Color Mode Active";
                 
                 updateMaterialLabel();
                 runCalc();
             };
-            list.appendChild(customDiv);
-
-            if(matches.length === 0) {
-                const emptyDiv = document.createElement('div');
-                emptyDiv.className = "p-4 text-center text-gray-400 italic text-xs";
-                emptyDiv.innerText = "No matching colors found.";
-                list.appendChild(emptyDiv);
-                return;
-            }
-
-            matches.forEach(p => {
-                const div = document.createElement('div');
-                div.className = "p-3 hover:bg-orange-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0 transition";
-                div.onclick = () => {
-                    selectedPaint = p;
-                    document.getElementById('paint-search').value = `${p.Name} (${p.Code})`;
-                    document.getElementById('paint-search').placeholder = activePaintSystem === 'PMS' ? "Search PMS Colors..." : "Search Sherwin Williams...";
-                    list.classList.add('hidden');
-                    document.getElementById('custom-pms-wrap').classList.add('hidden');
+            grid.appendChild(customBtn);
+            
+            // 2. Build massive array using Document Fragment for speed
+            const fragment = document.createDocumentFragment();
+            listToUse.forEach((p, index) => {
+                const btn = document.createElement('button');
+                btn.className = "paint-btn w-8 h-8 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
+                btn.style.backgroundColor = p.Hex_Code;
+                btn.title = `${p.Name} (${p.Code})`;
+                
+                // Store data tags for CSS-free filtering
+                btn.dataset.name = p.Name.toLowerCase();
+                btn.dataset.code = p.Code.toLowerCase();
+                
+                btn.onclick = () => {
+                    Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent'));
+                    btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent');
                     
-                    // Show Visual Box
-                    const wrap = document.getElementById('selected-paint-wrap');
-                    wrap.classList.remove('hidden');
+                    selectedPaint = p;
+                    document.getElementById('custom-pms-wrap').classList.add('hidden');
+                    document.getElementById('pms-code').value = '';
                     document.getElementById('selected-paint-label').innerText = `[${p.Code}] ${p.Name}`;
-                    document.getElementById('selected-paint-box').style.backgroundColor = p.Hex_Code;
                     
                     updateMaterialLabel();
                     runCalc();
                 };
-                div.innerHTML = `
-                    <span class="font-bold text-gray-700">${p.Name} <span class="text-[9px] text-gray-400 ml-1">${p.Code}</span></span>
-                    <div class="w-5 h-5 rounded-full border border-black/20 shadow-inner" style="background:${p.Hex_Code}"></div>
-                `;
-                list.appendChild(div);
+                fragment.appendChild(btn);
+
+                // Auto-select first paint when switching books
+                if(index === 0) setTimeout(() => btn.click(), 10);
+            });
+            
+            grid.appendChild(fragment);
+            filterPaint(); // Ensure any current search carries over
+        }
+
+        // Extremely fast display toggle
+        function filterPaint() {
+            const query = document.getElementById('paint-search').value.toLowerCase();
+            const btns = document.querySelectorAll('.paint-btn');
+            
+            btns.forEach(btn => {
+                if (btn.dataset.name.includes(query) || btn.dataset.code.includes(query)) {
+                    btn.style.display = 'block';
+                } else {
+                    btn.style.display = 'none';
+                }
             });
         }
 
-        function clearPaintSelection() {
-            selectedPaint = null;
-            document.getElementById('paint-search').value = "";
-            document.getElementById('paint-search').placeholder = activePaintSystem === 'PMS' ? "Search PMS Colors..." : "Search Sherwin Williams...";
-            document.getElementById('selected-paint-wrap').classList.add('hidden');
-            document.getElementById('custom-pms-wrap').classList.add('hidden');
-            document.getElementById('pms-code').value = '';
-            updateMaterialLabel();
-            runCalc();
-        }
-
-        // Close dropdown if clicked outside
-        document.addEventListener('click', (e) => {
-            if(!e.target.closest('#paint-search') && !e.target.closest('#paint-list')) {
-                const list = document.getElementById('paint-list');
-                if(list) list.classList.add('hidden');
-            }
-        });
-
         function updateCustomPMS() {
+            const val = document.getElementById('pms-code').value.trim();
+            document.getElementById('selected-paint-label').innerText = val ? `Custom: ${val}` : "Custom Manual Color";
             updateMaterialLabel();
             runCalc();
         }
@@ -338,7 +335,7 @@
                 if (selectedPaint && selectedPaint.Code !== 'CUSTOM') paintName = selectedPaint.Name;
                 else if (document.getElementById('pms-code').value) paintName = document.getElementById('pms-code').value;
                 
-                document.getElementById('selected-color-label').innerText = `[${selectedMat.Item_Code}] ${selectedMat.Cap_Color} Back / ${paintName} Text ${thickTxt}`;
+                document.getElementById('selected-color-label').innerText = `[${selectedMat.Item_Code}] ${selectedMat.Cap_Color} Face / ${paintName} Text ${thickTxt}`;
             }
         }
 
@@ -396,15 +393,13 @@
                     const text = document.getElementById('preview-text');
                     const warn = document.getElementById('bright-warn-box');
 
-                    // Strict Height Limitation Math
                     const maxW = 300;
-                    const maxH = 140; // Hard limit to prevent blowouts
+                    const maxH = 140; 
                     const ratio = inputs.h / inputs.w;
                     
                     let targetW = maxW;
                     let targetH = targetW * ratio;
                     
-                    // If height exceeds limits, scale both down proportionally
                     if (targetH > maxH) {
                         targetH = maxH;
                         targetW = targetH / ratio;
@@ -432,7 +427,7 @@
 
                 // --- DESCRIPTION GENERATION ---
                 let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
-                let pntTxt = inputs.isReverse ? `\nBackground Color: ${inputs.mat.Cap_Color}\nPaint Fill (Text): ${inputs.paint}` : `\nCap Color (Face): ${inputs.mat.Cap_Color}\nCore Color (Text): ${inputs.mat.Core_Color}`;
+                let pntTxt = inputs.isReverse ? `\nFace Color: ${inputs.mat.Cap_Color}\nPaint Fill (Text): ${inputs.paint}` : `\nFace Color: ${inputs.mat.Cap_Color}\nCore Color (Text): ${inputs.mat.Core_Color}`;
                 let engTxt = inputs.isReverse ? "Reverse Engraved (Painted Back)" : "Front Engraved";
                 
                 let explicitNotes = "No backers. No hardware. No installation. No raised copy. No braille.";
@@ -483,7 +478,7 @@
                     }
                 }
                 
-                setPaintSystem('PMS'); // Generates the default paint search list
+                setPaintSystem('PMS'); // Generates the default paint search grid
                 setMode('front');      // Kicks off swatch build and first default selection
                 
             } catch(e) {
