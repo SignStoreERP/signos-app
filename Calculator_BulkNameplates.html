@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk ADA Nameplates v2.3</title>
+    <title>Bulk ADA Nameplates v2.4</title>
     <!-- Load Benchmark ADA Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lora:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -154,7 +154,7 @@
                     </button>
                 </div>
 
-                <!-- 6. RESULTS MODULE (Moved up, no sticky) -->
+                <!-- 6. RESULTS MODULE -->
                 <div class="bg-blue-50 p-5 rounded-xl shadow-sm border border-blue-200 mt-4">
                     <div class="flex justify-between items-end mb-2">
                         <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price (Avg)</span>
@@ -164,7 +164,7 @@
                     <div class="border-t border-blue-200/50 my-2"></div>
                     
                     <div id="ui-line-items" class="space-y-1 text-xs text-blue-900/80 pt-1 pb-2">
-                        <!-- Injected via JS. Note: Setup Fee logic removed visually -->
+                        <!-- Injected via JS -->
                     </div>
 
                     <div class="border-t border-blue-200/50 mb-2"></div>
@@ -243,6 +243,7 @@
         </div>
     </div>
 
+    <!-- Hidden Canvas for Physics Typography Math -->
     <canvas id="math-canvas" class="hidden"></canvas>
 
     <script>
@@ -451,8 +452,10 @@
                     let minAllowedForThisLine = lineSettings[i].height;
                     parsedRoster.forEach(sign => {
                         let text = sign.texts[i];
-                        let maxH = calcMaxHeightForText(text, lineSettings[i].font, availableW);
-                        if (maxH < minAllowedForThisLine) minAllowedForThisLine = maxH;
+                        if (text) {
+                            let maxH = calcMaxHeightForText(text, lineSettings[i].font, availableW);
+                            if (maxH < minAllowedForThisLine) minAllowedForThisLine = maxH;
+                        }
                     });
                     // Snap down to 1/8"
                     shrinkAllMaxHeights[i] = Math.max(0.125, Math.floor(minAllowedForThisLine / 0.125) * 0.125);
@@ -501,7 +504,6 @@
             return { renderData, hasProdWarn, hasOverflowWarn };
         }
 
-
         function renderBulkPreviews(inputs, activePaintHex, mathData) {
             const grid = document.getElementById('bulk-preview-grid');
             const masterPrev = document.getElementById('master-template-preview');
@@ -540,6 +542,7 @@
 
         function buildSignHTML(sign, inputs, activePaintHex, showBadge) {
             let color = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
+            
             let linesHtml = sign.lines.map(line => {
                 return `<span class="leading-tight whitespace-nowrap ${line.fontClass}" style="color: ${color}; font-size: ${line.cssCqw};">${line.text}</span>`;
             }).join('');
@@ -621,7 +624,7 @@
 
             filtered.forEach((c, index) => {
                 const btn = document.createElement('button');
-                btn.className = "w-8 h-8 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden shrink-0";
+                btn.className = "w-6 h-6 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden shrink-0";
                 
                 let capHex = c.Cap_Hex || '#000000';
                 let coreHex = c.Core_Hex || '#FFFFFF';
@@ -664,6 +667,7 @@
                             }
                         }
                     }
+
                     updateMaterialLabel();
                     runCalc();
                 };
@@ -678,11 +682,12 @@
         function buildPaintSwatches() {
             const grid = document.getElementById('paint-grid');
             grid.innerHTML = '';
+            
             const listToUse = activePaintSystem === 'PMS' ? pmsData : swData;
             
             const customBtn = document.createElement('button');
-            customBtn.className = "w-full py-1.5 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
-            customBtn.innerText = "+ Custom / Unlisted Color...";
+            customBtn.className = "w-full py-1 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
+            customBtn.innerText = "+ Custom Match...";
             customBtn.onclick = () => {
                 Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent'));
                 customBtn.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
@@ -697,9 +702,10 @@
             const fragment = document.createDocumentFragment();
             listToUse.forEach((p, index) => {
                 const btn = document.createElement('button');
-                btn.className = "paint-btn w-8 h-8 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
+                btn.className = "paint-btn w-6 h-6 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
                 btn.style.backgroundColor = p.Hex_Code;
                 btn.title = `${p.Name} (${p.Code})`;
+                
                 btn.dataset.name = p.Name.toLowerCase();
                 btn.dataset.code = p.Code.toLowerCase();
 
@@ -719,6 +725,7 @@
                 };
                 fragment.appendChild(btn);
             });
+            
             grid.appendChild(fragment);
             filterPaint(); 
         }
@@ -745,6 +752,7 @@
         function updateMaterialLabel() {
             if (!selectedMat) return;
             const thickTxt = selectedMat.Thickness ? `(${selectedMat.Thickness})` : "";
+            
             if (currentMode === 'front') {
                 document.getElementById('selected-color-label').innerText = `[${selectedMat.Item_Code}] ${selectedMat.Cap_Color} Face / ${selectedMat.Core_Color} Text ${thickTxt}`;
             } else {
@@ -778,6 +786,7 @@
                     }
                 }
 
+                // Sum all quantities from parsed roster
                 totalSystemQty = parsedRoster.reduce((sum, sign) => sum + sign.qty, 0);
                 document.getElementById('qty').value = totalSystemQty;
 
