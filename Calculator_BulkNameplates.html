@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk ADA Nameplates v2.7</title>
-    <!-- Load Benchmark ADA Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lora:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Bulk Nameplates v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_nameplate.js"></script>
@@ -15,8 +13,6 @@
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .aspect-box { container-type: inline-size; transition: all 0.3s ease-in-out; }
-        .font-sans-serif { font-family: 'Roboto', sans-serif; font-weight: 500; }
-        .font-serif-style { font-family: 'Lora', serif; font-weight: 700; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
@@ -55,7 +51,7 @@
                     </div>
                 </div>
 
-                <!-- 2. MASTER TEMPLATE CONTROLS (Moved preview to right column) -->
+                <!-- 2. MASTER TEMPLATE CONTROLS -->
                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4 shadow-sm relative z-20">
                     <div class="flex justify-between items-end mb-3">
                         <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-widest">Master Template Layout</label>
@@ -90,8 +86,8 @@
                             Paste Source Text
                         </label>
                         <div class="flex bg-gray-200 p-0.5 rounded shadow-inner">
-                            <button onclick="setCase('upper')" id="btn-case-upper" class="px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" title="UPPERCASE">AA</button>
-                            <button onclick="setCase('title')" id="btn-case-title" class="px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent" title="Title Case">Aa</button>
+                            <button onclick="setCase('upper')" id="btn-case-upper" class="px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent" title="UPPERCASE">AA</button>
+                            <button onclick="setCase('title')" id="btn-case-title" class="px-2 py-0.5 text-[10px] font-black rounded bg-white text-blue-600 shadow-sm transition" title="Title Case">Aa</button>
                             <button onclick="setCase('lower')" id="btn-case-lower" class="px-2 py-0.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent" title="lowercase">aa</button>
                         </div>
                     </div>
@@ -185,7 +181,7 @@
                     <!-- Loading State Overlay -->
                     <div id="canvas-loading-overlay" class="absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
                         <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
-                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse">Connecting to Source Data...</span>
+                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse mt-3 text-center leading-relaxed">Connecting to Source Data...<br>Downloading Custom Fonts</span>
                     </div>
 
                     <!-- Header -->
@@ -201,7 +197,6 @@
                             <div class="flex justify-between items-end mb-2">
                                 <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sign #1 (Master Template)</span>
                             </div>
-                            <!-- Added 'relative' to prevent escape -->
                             <div id="master-template-preview" class="w-full relative rounded shadow-xl overflow-hidden flex flex-col items-center justify-center border border-gray-700 aspect-box" style="height: 100px; background-color: #000;">
                                 <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
                             </div>
@@ -216,13 +211,8 @@
 
                     </div>
 
-                    <!-- PHYSICS/PRODUCTION WARNINGS (Footer of Canvas) -->
-                    <div id="prod-warn-box" class="hidden m-3 shrink-0 bg-red-100 border border-red-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
-                        <span class="text-[10px] text-red-900 font-bold leading-tight uppercase tracking-wide">🛑 Production Warning: Text Too Small</span>
-                        <span class="text-[9px] text-red-800 leading-tight">A calculated font height falls below minimum standard. Characters will not engrave cleanly.</span>
-                    </div>
-
-                    <div id="overflow-warn-box" class="hidden m-3 mt-0 shrink-0 bg-orange-100 border border-orange-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
+                    <!-- PRODUCTION WARNINGS (ADA constraints removed) -->
+                    <div id="overflow-warn-box" class="hidden m-3 shrink-0 bg-orange-100 border border-orange-300 p-2 px-3 flex flex-col gap-1 shadow-inner rounded-lg">
                         <span class="text-[10px] text-orange-900 font-bold leading-tight uppercase tracking-wide">⚠️ Layout Overflow</span>
                         <span class="text-[9px] text-orange-800 leading-tight">A sign text overflows its physical bounds. Consider Auto-Shrinking or deleting the outlier name.</span>
                     </div>
@@ -261,19 +251,20 @@
         let rowmarkData = [];
         let pmsData = [];
         let swData = [];
+        let systemFonts = [];
         let activePaintSystem = 'PMS';
         let selectedMat = null;
         let selectedPaint = null;
         let currentMode = 'front';
         let parsedRoster = [];
         let totalSystemQty = 0;
-        let activeTextCase = 'upper';
+        let activeTextCase = 'title';
 
         // Internal memory for the Master Template settings
         let lineSettings = [
-            { font: 'sans', height: 0.625 },
-            { font: 'sans', height: 0.375 },
-            { font: 'sans', height: 0.375 }
+            { font: '', height: 0.625 },
+            { font: '', height: 0.375 },
+            { font: '', height: 0.375 }
         ];
 
         // --- MASTER TEMPLATE CONTROLS ---
@@ -284,12 +275,15 @@
 
             for (let i = 0; i < count; i++) {
                 const ls = lineSettings[i];
+                
+                // Build Font Options dynamically
+                let fontOpts = systemFonts.map(f => `<option value="${f.CSS_Family}" ${ls.font === f.CSS_Family ? 'selected' : ''}>${f.Font_Name}</option>`).join('');
+
                 container.innerHTML += `
                     <div class="flex items-center gap-2 bg-white border border-indigo-200 p-1.5 rounded shadow-sm">
                         <span class="text-[10px] font-black text-indigo-700 w-12 text-center uppercase">Line ${i+1}</span>
                         <select onchange="updateLineSetting(${i}, 'font', this.value)" class="flex-1 border border-gray-200 rounded text-xs font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
-                            <option value="sans" ${ls.font === 'sans' ? 'selected' : ''}>Sans-Serif (Roboto)</option>
-                            <option value="serif" ${ls.font === 'serif' ? 'selected' : ''}>Serif (Lora)</option>
+                            ${fontOpts}
                         </select>
                         <div class="flex items-center gap-1">
                             <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-16 border border-gray-200 p-1 rounded font-black text-indigo-900 text-xs text-center outline-none focus:border-indigo-500">
@@ -434,10 +428,9 @@
         // --- TYPOGRAPHY PHYSICS ENGINE (Per Line) ---
         function calcMaxHeightForText(text, fontStyle, availableW) {
             if(!text) return 999;
-            const fontName = fontStyle === 'serif' ? 'Lora' : 'Roboto';
             const canvas = document.getElementById('math-canvas');
             const ctx = canvas.getContext('2d');
-            ctx.font = `500 100px ${fontName}, sans-serif`;
+            ctx.font = `500 100px "${fontStyle}", sans-serif`;
             const wPx = ctx.measureText(text).width;
             if(wPx === 0) return 999;
             
@@ -452,7 +445,6 @@
             const availableW = inputs.w - 0.5; // 0.25 margin both sides
             const availableH = inputs.h - 0.5;
             
-            let hasProdWarn = false;
             let hasOverflowWarn = false;
 
             // 1. If shrink_all, find absolute max allowed per line index across ALL signs
@@ -480,7 +472,6 @@
                     if (!text) continue;
 
                     let ls = lineSettings[i];
-                    let minReq = ls.font === 'serif' ? 0.75 : 0.50;
                     let targetH = mode === 'shrink_all' ? shrinkAllMaxHeights[i] : ls.height;
 
                     if (mode === 'shrink_outlier') {
@@ -494,11 +485,9 @@
                     let absoluteMax = calcMaxHeightForText(text, ls.font, availableW);
                     if (targetH > absoluteMax) hasOverflowWarn = true;
 
-                    if (targetH < minReq) hasProdWarn = true;
-
                     lines.push({
                         text: text,
-                        fontClass: ls.font === 'serif' ? 'font-serif-style' : 'font-sans-serif',
+                        fontClass: `font-dyn-${ls.font}`,
                         targetH: targetH,
                         cssCqw: `${(targetH / inputs.w) * 100}cqw`
                     });
@@ -511,7 +500,7 @@
                 return { ...sign, lines };
             });
 
-            return { renderData, hasProdWarn, hasOverflowWarn };
+            return { renderData, hasOverflowWarn };
         }
 
         function renderBulkPreviews(inputs, activePaintHex, mathData) {
@@ -524,10 +513,9 @@
             masterPrev.style.paddingBottom = `${ratio * 100}%`;
             masterPrev.style.backgroundColor = selectedMat ? selectedMat.Cap_Hex : '#000';
 
-            // Master Template Inject (FIXED: Added index for correct array access)
+            // Master Template Inject
             if (mathData.renderData.length > 0) {
-                // Change this line:
-                let sign1 = mathData.renderData[0]; 
+                let sign1 = mathData.renderData;
                 masterPrev.innerHTML = buildSignHTML(sign1, inputs, activePaintHex, false);
             } else {
                 masterPrev.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>`;
@@ -822,11 +810,8 @@
                 const mathData = computeTypographyMath(inputs);
                 renderBulkPreviews(inputs, activePaintHex, mathData);
 
-                // Warning Triggers
-                const warnProd = document.getElementById('prod-warn-box');
+                // Warning Triggers (ADA Size Warning Removed)
                 const warnOverflow = document.getElementById('overflow-warn-box');
-                
-                warnProd.classList.toggle('hidden', !mathData.hasProdWarn);
                 warnOverflow.classList.toggle('hidden', !mathData.hasOverflowWarn);
 
                 const warnBright = document.getElementById('bright-warn-box');
@@ -900,7 +885,7 @@
             }, 2500);
         }
 
-        // --- INIT DATA FETCH ---
+        // --- INIT DATA FETCH & DYNAMIC FONT LOADER ---
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("Bulk Nameplates");
             
@@ -909,11 +894,12 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
-                const [reqConfig, reqRowmark, reqSW, reqPMS] = await Promise.all([
+                const [reqConfig, reqRowmark, reqSW, reqPMS, reqFonts] = await Promise.all([
                     fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Nameplates`),
                     fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Rowmark`),
                     fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Paint`),
-                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_PMS`)
+                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_PMS`),
+                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Fonts`)
                 ]);
 
                 backendData = await reqConfig.json();
@@ -940,6 +926,29 @@
                     Hex_Code: p['HEX Code'] || '#FFFFFF'
                 }));
                 pmsData = [...stdColors, ...formattedPMS];
+
+                // 1. Process Custom Font Engine Data
+                const rawFonts = await reqFonts.json();
+                systemFonts = rawFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
+                
+                // 2. Dynamically Inject @font-face CSS Rules for downloaded files
+                if(systemFonts.length > 0) {
+                    let fontStyles = document.createElement('style');
+                    systemFonts.forEach(f => {
+                        fontStyles.innerHTML += `
+                        @font-face {
+                            font-family: '${f.CSS_Family}';
+                            src: url('https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/${f.File_Name}') format('truetype');
+                        }
+                        .font-dyn-${f.CSS_Family} { font-family: '${f.CSS_Family}', sans-serif; }
+                        `;
+                    });
+                    document.head.appendChild(fontStyles);
+                    
+                    // Default line memory to Arimo (or the first font loaded)
+                    let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
+                    lineSettings.forEach(ls => ls.font = defaultFont.CSS_Family);
+                }
                 
                 if(statusText) {
                     statusText.innerText = "ONLINE";
