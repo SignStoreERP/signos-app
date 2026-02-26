@@ -1,5 +1,7 @@
 /**
- * PURE PHYSICS ENGINE: ADA Etch Nameplates (v2.0 - Strict Reference)
+ * PURE PHYSICS ENGINE: ADA Etch Nameplates (v2.1)
+ * - Retail file setup charge excluded per request.
+ * - Setup time/cost maintained in Physics Engine for accurate profit tracking.
  */
 
 function calculateNameplate(inputs, data) {
@@ -9,7 +11,7 @@ function calculateNameplate(inputs, data) {
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
     let baseRateSqIn = 0;
     
-    // Determine base retail rate from the selected material object
+    // Determine base retail rate based on series and thickness
     if (inputs.mat.Series.includes('Mattes')) {
         baseRateSqIn = parseFloat(data.Retail_Price_Mattes_116 || 0.55);
     } else if (inputs.mat.Series.includes('Ultra') && inputs.mat.Thickness === '1/16"') {
@@ -27,28 +29,30 @@ function calculateNameplate(inputs, data) {
         retailPrint *= (1 - parseFloat(data.Tier_1_Disc || 0.05));
     }
 
-    const feeSetup = parseFloat(data.Retail_Fee_Setup || 15);
-    const grandTotalRaw = retailPrint + feeSetup;
+    // VISION TWEAK: Retail Setup Fee is intentionally zeroed out for the UI
+    const feeSetupRetail = 0;
+    
+    const grandTotalRaw = retailPrint + feeSetupRetail;
     const minOrder = parseFloat(data.Retail_Min_Order || 35);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
-    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    // --- 2. COST TRACK (PHYSICS ENGINE) ---
     const wastePct = parseFloat(data.Waste_Factor || 1.20);
     
-    // Exact Substrate Cost pulled from REF_Colors_Rowmark
-    const costSheet = parseFloat(inputs.mat.Cost_Per_Sheet || 65.00);
-    const costSubstrate = (totalSqin / 1152) * costSheet * wastePct; // 24x48 sheet = 1152 sqin
+    // Substrate Yield (Calculated using exact sheet cost from Rowmark array)
+    const costSheet = parseFloat(inputs.mat.Cost_Per_Sheet || 65);
+    const sheetArea = 24 * 48; // 1152 sq in
+    const costSubstrate = (totalSqin / sheetArea) * costSheet * wastePct;
 
     // Labor Rates
+    const rateEngraver = parseFloat(data.Rate_Machine_Engraver || 10);
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
-    const rateEngraver = parseFloat(data.Rate_Machine_Engraver || 10);
 
-    // Engraving Time
+    // Machine Time & Operator Handling
+    const engraveMins = (totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.25));
     const costPrepress = (parseFloat(data.Time_Preflight_Job || 10) / 60) * rateOp;
     const costLoad = ((inputs.qty * parseFloat(data.Time_Engraver_Load_Per_Item || 2)) / 60) * rateOp;
-    
-    const engraveMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.25);
     const costMachRun = (engraveMins / 60) * rateEngraver;
 
     // Paint Physics (Only applies if Reverse Engrave)
@@ -57,6 +61,7 @@ function calculateNameplate(inputs, data) {
 
     if (inputs.isReverse) {
         paintMatCost = totalSqin * parseFloat(data.Cost_Paint_SqIn || 0.01) * wastePct;
+        
         const paintRunMins = parseFloat(data.Time_Paint_Setup || 15) + (totalSqin * parseFloat(data.Time_Paint_SqIn || 0.10));
         costPaintLabor = (paintRunMins / 60) * rateShop;
     }
@@ -69,9 +74,10 @@ function calculateNameplate(inputs, data) {
         retail: {
             unitPrice: grandTotal / inputs.qty,
             printTotal: retailPrint,
-            setupFee: feeSetup,
+            setupFee: feeSetupRetail, // Send the explicit 0 to the UI
             grandTotal: grandTotal,
-            isMinApplied: grandTotalRaw < minOrder
+            isMinApplied: grandTotalRaw < minOrder,
+            baseRate: baseRateSqIn
         },
         cost: {
             total: subTotal + riskBuffer,
@@ -82,9 +88,7 @@ function calculateNameplate(inputs, data) {
                 costHandling: costLoad,
                 costMachine: costMachRun,
                 costPaintLabor: costPaintLabor,
-                runHrs: (engraveMins / 60),
-                wastePct: (wastePct - 1) * 100,
-                riskCost: riskBuffer
+                runHrs: (engraveMins / 60)
             }
         },
         metrics: { margin: (grandTotal - (subTotal + riskBuffer)) / grandTotal }
