@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Etch Nameplates v1.4</title>
+    <title>ADA Etch Nameplates v1.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_nameplate.js"></script>
@@ -12,8 +12,8 @@
         .color-scroll::-webkit-scrollbar { width: 6px; }
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        /* Setup for responsive container queries */
-        .aspect-box { container-type: inline-size; transition: all 0.2s ease-in-out; }
+        /* Using size container to strictly map typography to physical height */
+        .aspect-box { container-type: size; } 
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
@@ -36,57 +36,65 @@
                 </div>
             </div>
 
-            <!-- 2. PREVIEW VISUALIZER (Moved up) -->
-            <div class="bg-gray-800 p-4 shadow-inner flex flex-col items-center justify-center relative rounded-xl border border-gray-900">
+            <!-- 2. TEXT & LAYOUT ACCORDION -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl shadow-sm relative z-20">
+                
+                <!-- Accordion Header -->
+                <div class="flex justify-between items-center p-3 cursor-pointer select-none" onclick="toggleAccordion('text-layout-content', 'text-layout-arrow')">
+                    <label class="text-[10px] font-black text-indigo-800 uppercase tracking-widest cursor-pointer">Sign Text & Layout</label>
+                    <div class="flex items-center gap-3">
+                        <!-- Click catching div to prevent accordion from closing when interacting with buttons -->
+                        <div onclick="event.stopPropagation()" class="flex items-center gap-3">
+                            <div class="flex items-center gap-1">
+                                <label class="text-[9px] font-bold text-indigo-700 uppercase">Lines:</label>
+                                <div class="flex items-center gap-1 bg-indigo-100 p-0.5 rounded shadow-inner">
+                                    <button onclick="setLineCount(1)" id="btn-line-1" class="px-2 py-0.5 text-[10px] font-black rounded bg-white text-indigo-700 shadow-sm transition outline-none">1</button>
+                                    <button onclick="setLineCount(2)" id="btn-line-2" class="px-2 py-0.5 text-[10px] font-black rounded text-indigo-600 hover:text-indigo-800 transition outline-none">2</button>
+                                    <button onclick="setLineCount(3)" id="btn-line-3" class="px-2 py-0.5 text-[10px] font-black rounded text-indigo-600 hover:text-indigo-800 transition outline-none">3</button>
+                                    <input type="hidden" id="lines-per-sign" value="1">
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 border-l border-indigo-200 pl-3">
+                                <label class="text-[9px] font-bold text-indigo-700 uppercase">Gap (in):</label>
+                                <input type="number" id="line-spacing" value="0.125" step="0.125" min="0" onchange="runCalc()" class="w-14 border border-indigo-200 p-0.5 rounded font-black text-indigo-900 text-xs text-center outline-none shadow-inner bg-white">
+                            </div>
+                        </div>
+                        <svg id="text-layout-arrow" class="w-4 h-4 text-indigo-600 transition-transform duration-200 transform rotate-180 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Accordion Body -->
+                <div id="text-layout-content" class="px-3 pb-3">
+                    <div id="line-controls-container" class="space-y-2 mb-2"></div>
+                    
+                    <div class="pt-2 border-t border-indigo-100 flex items-center justify-between">
+                        <label class="text-[9px] font-bold text-indigo-800 uppercase">Overflow Handling:</label>
+                        <select id="overflow-mode" onchange="runCalc()" class="w-48 border border-indigo-200 p-1 rounded bg-white text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 shadow-sm">
+                            <option value="shrink">Auto-Shrink to Fit</option>
+                            <option value="strict">Strict Size (Allow Overflow)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. BOUNDED PREVIEW VISUALIZER -->
+            <div class="bg-gray-800 p-4 shadow-inner flex flex-col items-center justify-center relative rounded-xl border border-gray-900" id="preview-wrapper">
                 <span class="absolute top-2 right-3 text-[8px] font-black text-gray-500 uppercase tracking-widest z-10">Ratio & Alignment Preview</span>
                 
-                <!-- Constrained Container to prevent vertical blowout -->
-                <div class="w-full flex justify-center items-center relative mt-4 mb-2" style="height: 180px;">
-                    <!-- The Canvas (Native Aspect Ratio) -->
-                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex flex-col items-center justify-center overflow-hidden border border-black/20" style="background-color: #000;">
+                <!-- Bounded Container: Stops vertical blowout while keeping center alignment -->
+                <div class="w-full flex justify-center items-center mt-3 relative" style="height: 160px;">
+                    <!-- The Canvas (Dynamically Sized via JS Pixels) -->
+                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex flex-col items-center justify-center overflow-hidden border border-black/20 relative" style="background-color: #000;">
                         <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
                     </div>
                 </div>
 
                 <!-- Warnings -->
-                <div id="overflow-warn-box" class="hidden w-full mt-2 bg-orange-100 border border-orange-300 p-2 rounded shadow-sm text-center">
-                    <span class="text-[10px] text-orange-900 font-bold uppercase tracking-widest">⚠️ Layout Overflow / Text Too Large</span>
+                <div id="overflow-warn-box" class="hidden w-full mt-3 bg-orange-100 border border-orange-300 p-1.5 rounded shadow-sm text-center">
+                    <span class="text-[9px] text-orange-900 font-bold uppercase tracking-widest">⚠️ Layout Overflow / Text Too Large</span>
                 </div>
-                <div id="bright-warn-box" class="hidden w-full mt-2 bg-amber-100 border border-amber-300 p-2 rounded shadow-sm text-center">
-                    <span class="text-[10px] text-amber-900 font-bold uppercase tracking-widest">⚠️ Bright Face Selected - Verify Contrast</span>
-                </div>
-            </div>
-
-            <!-- 3. TEXT & LAYOUT CONTROLS -->
-            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 shadow-sm relative z-20">
-                <div class="flex justify-between items-end mb-3 border-b border-indigo-100 pb-2">
-                    <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-widest">Sign Text & Layout</label>
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-1">
-                            <label class="text-[9px] font-bold text-indigo-700 uppercase">Lines:</label>
-                            <select id="lines-per-sign" onchange="updateLineControls()" class="border border-indigo-200 p-1 rounded bg-white text-xs font-bold text-indigo-800 outline-none shadow-sm">
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1 border-l border-indigo-200 pl-3">
-                            <label class="text-[9px] font-bold text-indigo-700 uppercase">Gap (in):</label>
-                            <input type="number" id="line-spacing" value="0.125" step="0.125" min="0" onchange="runCalc()" class="w-14 border border-indigo-200 p-1 rounded font-black text-indigo-900 text-xs text-center outline-none shadow-inner">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dynamic Line Controls injected here -->
-                <div id="line-controls-container" class="space-y-3 mb-3"></div>
-
-                <!-- Overflow Behavior Toggle -->
-                <div class="pt-3 border-t border-indigo-100">
-                    <label class="block text-[10px] font-bold text-indigo-800 uppercase mb-1">Text Overflow Handling</label>
-                    <select id="overflow-mode" onchange="runCalc()" class="w-full border border-indigo-200 p-1.5 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-indigo-500 shadow-sm">
-                        <option value="shrink">Auto-Shrink to Fit</option>
-                        <option value="strict">Strict Size (Allow Overflow with Warning)</option>
-                    </select>
+                <div id="bright-warn-box" class="hidden w-full mt-3 bg-amber-100 border border-amber-300 p-1.5 rounded shadow-sm text-center">
+                    <span class="text-[9px] text-amber-900 font-bold uppercase tracking-widest">⚠️ Bright Face Selected - Verify Contrast</span>
                 </div>
             </div>
 
@@ -173,7 +181,32 @@
             { text: '', font: '', height: 0.375, caseType: 'title' }
         ];
 
-        // --- LINE CONTROLS ---
+        // --- UI ACCORDION & BUTTONS ---
+        function toggleAccordion(contentId, arrowId) {
+            const content = document.getElementById(contentId);
+            const arrow = document.getElementById(arrowId);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+            }
+        }
+
+        function setLineCount(num) {
+            document.getElementById('lines-per-sign').value = num;
+            for(let i=1; i<=3; i++) {
+                const btn = document.getElementById('btn-line-'+i);
+                if(i === num) {
+                    btn.className = "px-2 py-0.5 text-[10px] font-black rounded bg-white text-indigo-700 shadow-sm transition outline-none";
+                } else {
+                    btn.className = "px-2 py-0.5 text-[10px] font-black rounded text-indigo-600 hover:text-indigo-800 transition outline-none";
+                }
+            }
+            updateLineControls();
+        }
+
         function updateLineControls() {
             const count = parseInt(document.getElementById('lines-per-sign').value) || 1;
             const container = document.getElementById('line-controls-container');
@@ -184,27 +217,26 @@
                 let fontOpts = systemFonts.map(f => `<option value="${f.CSS_Family}" ${ls.font === f.CSS_Family ? 'selected' : ''}>${f.Font_Name}</option>`).join('');
                 if(fontOpts === '') fontOpts = '<option value="sans-serif">System Default</option>';
 
+                // Dense, space-efficient single row format
                 container.innerHTML += `
-                    <div class="flex flex-col gap-1.5 bg-white border border-indigo-200 p-2 rounded shadow-sm">
-                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-50 pb-1.5">
-                            <span class="text-[10px] font-black text-indigo-700 uppercase">Line ${i+1}</span>
-                            <div class="flex items-center gap-1.5 flex-1 justify-end">
-                                <select onchange="updateLineSetting(${i}, 'font', this.value)" class="w-24 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
-                                    ${fontOpts}
-                                </select>
-                                <select onchange="updateLineSetting(${i}, 'caseType', this.value)" class="w-24 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
-                                    <option value="upper" ${ls.caseType === 'upper' ? 'selected' : ''}>UPPERCASE</option>
-                                    <option value="title" ${ls.caseType === 'title' ? 'selected' : ''}>Title Case</option>
-                                    <option value="lower" ${ls.caseType === 'lower' ? 'selected' : ''}>lowercase</option>
-                                    <option value="exact" ${ls.caseType === 'exact' ? 'selected' : ''}>As Typed</option>
-                                </select>
-                                <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 p-0.5 rounded shadow-inner">
-                                    <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-12 bg-transparent font-black text-indigo-900 text-[10px] text-center outline-none">
-                                    <span class="text-indigo-800 font-black text-[9px] pr-1">"</span>
-                                </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-1.5 bg-white border border-indigo-200 p-1.5 rounded shadow-sm">
+                        <span class="text-[9px] font-black text-indigo-700 w-full sm:w-6 text-left sm:text-center uppercase shrink-0">L${i+1}</span>
+                        <input type="text" value="${ls.text}" placeholder="Enter text..." oninput="updateLineSetting(${i}, 'text', this.value)" class="flex-1 w-full sm:w-auto bg-gray-50 border border-gray-200 rounded p-1 text-xs font-bold text-gray-800 outline-none focus:border-indigo-500 shadow-inner">
+                        <div class="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-end">
+                            <select onchange="updateLineSetting(${i}, 'font', this.value)" class="w-20 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
+                                ${fontOpts}
+                            </select>
+                            <select onchange="updateLineSetting(${i}, 'caseType', this.value)" class="w-20 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
+                                <option value="upper" ${ls.caseType === 'upper' ? 'selected' : ''}>UPPER</option>
+                                <option value="title" ${ls.caseType === 'title' ? 'selected' : ''}>Title</option>
+                                <option value="lower" ${ls.caseType === 'lower' ? 'selected' : ''}>lower</option>
+                                <option value="exact" ${ls.caseType === 'exact' ? 'selected' : ''}>As Typed</option>
+                            </select>
+                            <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 p-0.5 rounded shadow-inner">
+                                <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-12 bg-transparent font-black text-indigo-900 text-[10px] text-center outline-none">
+                                <span class="text-indigo-800 font-black text-[9px] pr-1">"</span>
                             </div>
                         </div>
-                        <input type="text" value="${ls.text}" placeholder="Enter text..." oninput="updateLineSetting(${i}, 'text', this.value)" class="w-full bg-gray-50 border border-gray-200 rounded p-1.5 text-xs font-bold text-gray-800 outline-none focus:border-indigo-500 shadow-inner">
                     </div>
                 `;
             }
@@ -300,7 +332,6 @@
             buildPaintSwatches();
         }
 
-        // --- COLOR DATABASES ---
         function updateSwatches() {
             const grid = document.getElementById('rowmark-grid');
             grid.innerHTML = '';
@@ -357,7 +388,6 @@
                 };
 
                 grid.appendChild(btn);
-                
                 if (currentMode === 'front' && c.Item_Code === '222-402') setTimeout(() => btn.click(), 10);
                 if (currentMode === 'reverse' && index === 0) setTimeout(() => btn.click(), 10);
             });
@@ -427,7 +457,6 @@
         function updateMaterialLabel() {
             if (!selectedMat) return;
             const thickTxt = selectedMat.Thickness ? `(${selectedMat.Thickness})` : "";
-            
             if (currentMode === 'front') {
                 document.getElementById('selected-color-label').innerText = `[${selectedMat.Item_Code}] ${selectedMat.Cap_Color} Face / ${selectedMat.Core_Color} Text ${thickTxt}`;
             } else {
@@ -485,7 +514,7 @@
                 document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-                // --- TEXT PREVIEW MATH ---
+                // --- BOUNDED TEXT PREVIEW MATH ---
                 const linesCount = parseInt(document.getElementById('lines-per-sign').value) || 1;
                 const mode = document.getElementById('overflow-mode').value;
                 const canvas = document.getElementById('preview-canvas');
@@ -497,20 +526,19 @@
                 const availableW = inputs.w - 0.5;
                 const availableH = inputs.h - 0.5;
 
-                // 1. Constrained Aspect Ratio (CSS Fix for Vertical Blowout)
-                const signRatio = inputs.w / inputs.h;
-                canvas.style.aspectRatio = `${inputs.w} / ${inputs.h}`;
+                // 1. Calculate the bounded layout size so it never stretches out of the gray box
+                const containerW = document.getElementById('preview-wrapper').clientWidth || 400;
+                const maxAllowedH = 160; 
+                
+                // Find safe uniform scale multiplier
+                let scale = Math.min((containerW * 0.9) / inputs.w, maxAllowedH / inputs.h);
+                let pxW = inputs.w * scale;
+                let pxH = inputs.h * scale;
+
+                canvas.style.width = `${pxW}px`;
+                canvas.style.height = `${pxH}px`;
                 canvas.style.backgroundColor = selectedMat.Cap_Hex;
                 
-                // If sign is taller than container's natural limit, lock height to 100% and scale width. Else, lock width.
-                if (inputs.w >= inputs.h) {
-                    canvas.style.width = "100%";
-                    canvas.style.height = "auto";
-                } else {
-                    canvas.style.height = "100%";
-                    canvas.style.width = "auto";
-                }
-
                 let textColor = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
                 let renderedLines = [];
                 
@@ -532,24 +560,25 @@
                     renderedLines.push({
                         text: formattedText,
                         fontFam: ls.font,
-                        cssCqw: `${(targetH / inputs.w) * 100}cqw` // Font size mapped to container query width
+                        // Convert physical height target to a strict percentage of the canvas height
+                        cssCqh: `${(targetH / inputs.h) * 100}cqh` 
                     });
                 }
 
                 // Vertical Overflow Check
-                let totalTextH = renderedLines.reduce((sum, line) => sum + (parseFloat(line.cssCqw) * inputs.w / 100 / 0.72 * 1.2), 0);
+                let totalTextH = renderedLines.reduce((sum, line) => sum + (parseFloat(line.cssCqh) * inputs.h / 100 / 0.72 * 1.2), 0);
                 let totalGapH = renderedLines.length > 1 ? (renderedLines.length - 1) * gapInches : 0;
                 if ((totalTextH + totalGapH) > availableH && mode === 'strict') hasOverflowWarn = true;
 
-                // Build HTML
+                // Build HTML using line-height: 0.85 to strip default padding
                 let linesHtml = renderedLines.map(line => {
-                    return `<span class="leading-tight whitespace-nowrap" style="color: ${textColor}; font-family: '${line.fontFam}', sans-serif; font-size: ${line.cssCqw};">${line.text}</span>`;
+                    return `<span class="whitespace-nowrap font-bold" style="color: ${textColor}; font-family: '${line.fontFam}', sans-serif; font-size: ${line.cssCqh}; line-height: 0.85; margin: 0; padding: 0; display: block;">${line.text}</span>`;
                 }).join('');
 
-                const gapCqw = `${(gapInches / inputs.w) * 100}cqw`;
+                const gapCqh = `${(gapInches / inputs.h) * 100}cqh`;
                 
                 canvas.innerHTML = `
-                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-[2cqw] pointer-events-none" style="gap: ${gapCqw};">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none" style="gap: ${gapCqh};">
                         ${linesHtml}
                     </div>
                 `;
@@ -590,7 +619,6 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
-                // QUINTUPLE FETCH: Config, Materials, Paint, SW, and Fonts
                 const [reqConfig, reqRowmark, reqSW, reqPMS, reqFonts] = await Promise.all([
                     fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Nameplates`),
                     fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Rowmark`),
@@ -668,3 +696,4 @@
     </script>
 </body>
 </html>
+
