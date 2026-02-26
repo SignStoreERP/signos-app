@@ -1,63 +1,64 @@
 /**
- * PURE PHYSICS ENGINE: ADA Etch Nameplates (v1.0 - Sandbox)
- * Handles Front Engrave (Mattes) vs Reverse Engrave (Ultra-Mattes + Paint)
+ * PURE PHYSICS ENGINE: ADA Etch Nameplates (v2.0 - Strict Reference)
  */
 
 function calculateNameplate(inputs, data) {
-    // Math Basics
     const sqin = inputs.w * inputs.h;
     const totalSqin = sqin * inputs.qty;
 
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
-    const baseRetailRate = parseFloat(data.Retail_Price_SqIn_Base || 0.50);
-    const reverseAdderRate = parseFloat(data.Retail_Adder_Reverse_SqIn || 0.20);
+    let baseRateSqIn = 0;
     
-    let unitPrint = baseRetailRate * sqin;
-    
-    if (inputs.style === 'Reverse') {
-        unitPrint += (reverseAdderRate * sqin);
+    // Determine base retail rate from the selected material object
+    if (inputs.mat.Series.includes('Mattes')) {
+        baseRateSqIn = parseFloat(data.Retail_Price_Mattes_116 || 0.55);
+    } else if (inputs.mat.Series.includes('Ultra') && inputs.mat.Thickness === '1/16"') {
+        baseRateSqIn = parseFloat(data.Retail_Price_Ultra_116 || 0.65);
+    } else {
+        baseRateSqIn = parseFloat(data.Retail_Price_Ultra_18 || 0.85); // 1/8" Ultra
     }
-    
+
+    let unitPrint = baseRateSqIn * sqin;
     let retailPrint = unitPrint * inputs.qty;
 
-    const minOrder = parseFloat(data.Retail_Min_Order || 35.00);
-    const grandTotal = Math.max(retailPrint, minOrder);
+    // Volume Discount
+    const t1Qty = parseFloat(data.Tier_1_Qty || 10);
+    if (inputs.qty >= t1Qty) {
+        retailPrint *= (1 - parseFloat(data.Tier_1_Disc || 0.05));
+    }
+
+    const feeSetup = parseFloat(data.Retail_Fee_Setup || 15);
+    const grandTotalRaw = retailPrint + feeSetup;
+    const minOrder = parseFloat(data.Retail_Min_Order || 35);
+    const grandTotal = Math.max(grandTotalRaw, minOrder);
 
     // --- 2. COST ENGINE (PHYSICS & BOM) ---
     const wastePct = parseFloat(data.Waste_Factor || 1.20);
     
-    // Substrate Cost (24x48 sheet = 1152 sq in)
-    const costSheet = inputs.style === 'Reverse' 
-        ? parseFloat(data.Cost_Sheet_Reverse || 85.00) 
-        : parseFloat(data.Cost_Sheet_Standard || 65.00);
-    
-    const costSubstrate = (totalSqin / 1152) * costSheet * wastePct;
+    // Exact Substrate Cost pulled from REF_Colors_Rowmark
+    const costSheet = parseFloat(inputs.mat.Cost_Per_Sheet || 65.00);
+    const costSubstrate = (totalSqin / 1152) * costSheet * wastePct; // 24x48 sheet = 1152 sqin
 
     // Labor Rates
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
     const rateEngraver = parseFloat(data.Rate_Machine_Engraver || 10);
 
-    // Engraving Time & Labor
-    const prepressMins = parseFloat(data.Time_Preflight_Job || 10);
-    const loadMins = inputs.qty * parseFloat(data.Time_Engraver_Load_Per_Item || 2);
-    const engraveMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.25);
+    // Engraving Time
+    const costPrepress = (parseFloat(data.Time_Preflight_Job || 10) / 60) * rateOp;
+    const costLoad = ((inputs.qty * parseFloat(data.Time_Engraver_Load_Per_Item || 2)) / 60) * rateOp;
     
-    const costPrepress = (prepressMins / 60) * rateOp;
-    const costLoad = (loadMins / 60) * rateOp;
+    const engraveMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.25);
     const costMachRun = (engraveMins / 60) * rateEngraver;
 
     // Paint Physics (Only applies if Reverse Engrave)
     let paintMatCost = 0;
     let costPaintLabor = 0;
 
-    if (inputs.style === 'Reverse') {
+    if (inputs.isReverse) {
         paintMatCost = totalSqin * parseFloat(data.Cost_Paint_SqIn || 0.01) * wastePct;
-        
-        const paintSetupMins = parseFloat(data.Time_Paint_Setup || 15);
-        const paintRunMins = totalSqin * parseFloat(data.Time_Paint_SqIn || 0.10);
-        
-        costPaintLabor = ((paintSetupMins + paintRunMins) / 60) * rateShop;
+        const paintRunMins = parseFloat(data.Time_Paint_Setup || 15) + (totalSqin * parseFloat(data.Time_Paint_SqIn || 0.10));
+        costPaintLabor = (paintRunMins / 60) * rateShop;
     }
 
     const subTotal = costSubstrate + costPrepress + costLoad + costMachRun + paintMatCost + costPaintLabor;
@@ -68,8 +69,9 @@ function calculateNameplate(inputs, data) {
         retail: {
             unitPrice: grandTotal / inputs.qty,
             printTotal: retailPrint,
+            setupFee: feeSetup,
             grandTotal: grandTotal,
-            isMinApplied: retailPrint < minOrder
+            isMinApplied: grandTotalRaw < minOrder
         },
         cost: {
             total: subTotal + riskBuffer,
