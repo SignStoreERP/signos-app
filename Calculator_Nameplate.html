@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Etch Nameplates v1.2</title>
+    <title>ADA Etch Nameplates v1.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="logic_nameplate.js"></script>
@@ -13,61 +13,73 @@
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .aspect-box { container-type: inline-size; transition: all 0.3s ease-in-out; }
-        @keyframes pulse-warn { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .bright-warning { animation: pulse-warn 2s infinite; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
-    <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
+    <div id="main-card" class="max-w-xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
         <div class="p-6 space-y-4">
             
-            <!-- DIMENSIONS & QTY -->
-            <div class="grid grid-cols-3 gap-3">
+            <!-- 1. DIMENSIONS & QTY -->
+            <div class="grid grid-cols-4 gap-3">
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="10" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="2" min="0.5" step="0.5" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white shadow-inner focus:border-blue-500 outline-none" oninput="runCalc()"></div>
-            </div>
-
-            <!-- TEXT & FONT OPTIONS -->
-            <div class="grid grid-cols-5 gap-3 border-t border-gray-100 pt-3">
-                <div class="col-span-3">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Sign Text</label>
-                    <input type="text" id="sign-text" value="SAMPLE" placeholder="Enter text..." class="w-full border p-2 rounded font-bold text-gray-800 text-sm bg-white shadow-inner focus:border-blue-500 outline-none h-[38px]" oninput="runCalc()">
-                </div>
-                <div class="col-span-2">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
-                    <select id="font-select" class="w-full border p-2 rounded bg-white font-bold text-xs text-gray-700 h-[38px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                        <option value="">Loading...</option>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Bevel</label>
+                    <select id="bevel-edges" onchange="runCalc()" class="w-full border p-2 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[46px]">
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
                     </select>
                 </div>
             </div>
 
-            <!-- PREVIEW TOGGLE & CANVAS -->
-            <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm">
-                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase cursor-pointer hover:text-blue-600 transition">
-                    <input type="checkbox" id="toggle-preview" onchange="togglePreview()" checked class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-                    <span id="preview-toggle-text">Hide visual size preview</span>
-                </label>
+            <!-- 2. TEXT & LAYOUT CONTROLS -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 shadow-sm relative z-20">
+                <div class="flex justify-between items-end mb-3">
+                    <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-widest">Sign Text & Layout</label>
+                    <select id="lines-per-sign" onchange="updateLineControls()" class="border border-indigo-200 p-1 rounded bg-white text-xs font-bold text-indigo-800 outline-none shadow-sm">
+                        <option value="1">1 Line</option>
+                        <option value="2">2 Lines</option>
+                        <option value="3">3 Lines</option>
+                    </select>
+                </div>
 
-                <div id="preview-wrapper" class="mt-3 transition-all">
-                    <div class="bg-gray-800 p-4 shadow-inner flex items-center justify-center min-h-[160px] relative rounded-lg">
-                        <span class="absolute top-2 right-3 text-[8px] font-black text-gray-500 uppercase tracking-widest">Dynamic Preview</span>
-                        
-                        <!-- The Canvas (Dynamically Sized) -->
-                        <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex items-center justify-center relative overflow-hidden border border-black/20" style="background-color: #000;">
-                            <span id="preview-text" class="font-bold text-center pointer-events-none px-2 leading-tight whitespace-nowrap" style="color: #fff;">SAMPLE</span>
-                        </div>
-                    </div>
-                    
-                    <div id="bright-warn-box" class="hidden mt-2 bg-yellow-100 border border-yellow-300 p-2 rounded shadow-sm">
-                        <span class="text-[10px] text-yellow-800 font-bold uppercase tracking-widest flex items-center gap-1 bright-warning">⚠️ Bright Face Selected - Verify Contrast</span>
-                    </div>
+                <!-- Dynamic Line Controls injected here -->
+                <div id="line-controls-container" class="space-y-3 mb-3"></div>
+
+                <!-- Overflow Behavior Toggle -->
+                <div class="pt-3 border-t border-indigo-100">
+                    <label class="block text-[10px] font-bold text-indigo-800 uppercase mb-1">Text Overflow Handling</label>
+                    <select id="overflow-mode" onchange="runCalc()" class="w-full border border-indigo-200 p-1.5 rounded bg-white text-xs font-bold text-gray-700 outline-none focus:border-indigo-500 shadow-sm">
+                        <option value="shrink">Auto-Shrink to Fit</option>
+                        <option value="strict">Strict Size (Allow Overflow with Warning)</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- ENGRAVE STYLE -->
+            <!-- 3. PREVIEW VISUALIZER -->
+            <div class="bg-gray-800 p-4 shadow-inner flex flex-col items-center justify-center min-h-[160px] relative rounded-xl border border-gray-900">
+                <span class="absolute top-2 right-3 text-[8px] font-black text-gray-500 uppercase tracking-widest">Ratio & Alignment Preview</span>
+                
+                <div class="w-full max-w-[400px] mt-4 mb-2">
+                    <!-- The Canvas (Dynamically Sized) -->
+                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm flex flex-col items-center justify-center relative overflow-hidden border border-black/20" style="background-color: #000; height: 100px;">
+                        <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
+                    </div>
+                </div>
+
+                <!-- Warnings -->
+                <div id="overflow-warn-box" class="hidden w-full mt-2 bg-orange-100 border border-orange-300 p-2 rounded shadow-sm text-center">
+                    <span class="text-[10px] text-orange-900 font-bold uppercase tracking-widest">⚠️ Layout Overflow / Text Too Large</span>
+                </div>
+                <div id="bright-warn-box" class="hidden w-full mt-2 bg-amber-100 border border-amber-300 p-2 rounded shadow-sm text-center">
+                    <span class="text-[10px] text-amber-900 font-bold uppercase tracking-widest">⚠️ Bright Face Selected - Verify Contrast</span>
+                </div>
+            </div>
+
+            <!-- 4. ENGRAVE STYLE & MATERIALS -->
             <div class="pt-1 border-t border-gray-100 mt-2">
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Engrave Direction</label>
                 <div class="flex bg-gray-100 p-1 rounded-lg">
@@ -76,53 +88,28 @@
                 </div>
             </div>
 
-            <!-- REVERSE SUB-TABS (Hidden in Front mode) -->
             <div id="reverse-tabs" class="hidden flex bg-gray-200 p-1 rounded-lg mb-2">
-                <button id="btn-tab-mat" onclick="setReverseTab('mat')" class="flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest">Step 1: Material Color</button>
-                <button id="btn-tab-paint" onclick="setReverseTab('paint')" class="flex-1 py-2 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest">Step 2: Paint Color</button>
+                <button id="btn-tab-mat" onclick="setReverseTab('mat')" class="flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest">Step 1: Face Color</button>
+                <button id="btn-tab-paint" onclick="setReverseTab('paint')" class="flex-1 py-1.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest">Step 2: Paint Color</button>
             </div>
 
-            <!-- STEP 1: MATERIAL SWATCHES CONTAINER -->
-            <div id="mat-container" class="space-y-4">
-                <div>
-                    <div class="flex justify-between items-end mb-1">
-                        <label id="cap-label" class="block text-[10px] font-bold text-gray-500 uppercase">Surface Material / Cap Color</label>
-                    </div>
-                    <div id="selected-color-label" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 mb-2 truncate">Loading...</div>
-                    
-                    <div id="rowmark-grid" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
-                        <div class="text-xs text-gray-400 font-bold italic w-full text-center py-4 animate-pulse">Fetching Rowmark Array...</div>
-                    </div>
+            <div id="mat-container" class="space-y-2">
+                <div id="selected-color-label" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 truncate">Loading...</div>
+                <div id="rowmark-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
+                    <div class="text-xs text-gray-400 font-bold italic w-full text-center py-4 animate-pulse">Fetching Rowmark Array...</div>
                 </div>
             </div>
 
-            <!-- STEP 2: PAINT FILL CONTAINER (Hidden by default or in Front Mode) -->
-            <div id="paint-container" class="hidden space-y-4 relative z-20">
-                <div>
-                    <!-- PROMINENT BOOK TOGGLE -->
-                    <div class="flex bg-orange-100 p-1 rounded-lg mb-3">
-                        <button id="btn-pms" onclick="setPaintSystem('PMS')" class="flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200">PMS Match</button>
-                        <button id="btn-sw" onclick="setPaintSystem('SW')" class="flex-1 py-2 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest">Sherwin Williams</button>
-                    </div>
-
-                    <!-- SEARCH BAR -->
-                    <div class="relative mb-2">
-                        <input type="text" id="paint-search" placeholder="Search PMS Colors..." oninput="filterPaint()" class="w-full bg-white border border-gray-300 rounded p-2 text-sm font-bold text-gray-800 outline-none focus:border-orange-500 shadow-sm transition">
-                    </div>
-
-                    <!-- SELECTED COLOR LABEL -->
-                    <div id="selected-paint-label" class="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200 mb-2 truncate">None Selected</div>
-                    
-                    <!-- HYBRID VISUAL PAINT GRID -->
-                    <div id="paint-grid" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2 color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner">
-                        <!-- Paint Hex Blocks Injected Here -->
-                    </div>
-
-                    <!-- CUSTOM MANUAL PMS (Hidden until triggered) -->
-                    <div id="custom-pms-wrap" class="hidden mt-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Enter Custom Color Name / Code</label>
-                        <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-blue-500 shadow-inner">
-                    </div>
+            <div id="paint-container" class="hidden space-y-2 relative z-20">
+                <div class="flex bg-orange-100 p-1 rounded-lg">
+                    <button id="btn-pms" onclick="setPaintSystem('PMS')" class="flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200">PMS Match</button>
+                    <button id="btn-sw" onclick="setPaintSystem('SW')" class="flex-1 py-1.5 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest">Sherwin Williams</button>
+                </div>
+                <input type="text" id="paint-search" placeholder="Search colors..." oninput="filterPaint()" class="w-full bg-white border border-gray-300 rounded p-2 text-xs font-bold text-gray-800 outline-none focus:border-orange-500 shadow-sm transition">
+                <div id="selected-paint-label" class="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200 truncate">None Selected</div>
+                <div id="paint-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 color-scroll p-3 border rounded-lg bg-gray-50 shadow-inner"></div>
+                <div id="custom-pms-wrap" class="hidden bg-gray-50 p-2 rounded-lg border border-gray-200">
+                    <input type="text" id="pms-code" placeholder="e.g. Custom Match To Sample" oninput="updateCustomPMS()" class="w-full bg-white border border-gray-300 rounded p-1.5 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
                 </div>
             </div>
         </div>
@@ -133,13 +120,10 @@
                 <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
                 <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
             </div>
-            
             <div class="border-t border-blue-200/50 my-3"></div>
-            
             <div class="space-y-1 text-xs text-blue-900/70 pt-1">
                 <div class="flex justify-between"><span>Engraved Plates (<span id="lbl-sqin">0</span> sq in):</span><span id="ui-print" class="font-bold">$0.00</span></div>
             </div>
-
             <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
                 <div>
                     <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
@@ -153,10 +137,13 @@
         <!-- DESCRIPTION GENERATOR -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Production Ticket Details</label>
-            <textarea id="job-desc" class="w-full text-[11px] p-3 border border-gray-300 rounded bg-white h-28 text-gray-700 font-mono outline-none leading-snug custom-scroll shadow-inner" readonly></textarea>
+            <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug custom-scroll shadow-inner" readonly></textarea>
         </div>
 
     </div>
+
+    <!-- Hidden Canvas for Physics Typography Math -->
+    <canvas id="math-canvas" class="hidden"></canvas>
 
     <script>
         let backendData = {};
@@ -168,20 +155,73 @@
         let selectedMat = null;
         let selectedPaint = null;
         let currentMode = 'front';
+        
+        let lineSettings = [
+            { text: 'SAMPLE', font: '', height: 0.625 },
+            { text: '', font: '', height: 0.375 },
+            { text: '', font: '', height: 0.375 }
+        ];
 
-        function togglePreview() {
-            const wrap = document.getElementById('preview-wrapper');
-            const isChecked = document.getElementById('toggle-preview').checked;
-            document.getElementById('preview-toggle-text').innerText = isChecked ? "Hide visual size preview" : "Show visual size preview";
-            
-            if (isChecked) {
-                wrap.classList.remove('hidden');
-                runCalc();
-            } else {
-                wrap.classList.add('hidden');
+        // --- LINE CONTROLS ---
+        function updateLineControls() {
+            const count = parseInt(document.getElementById('lines-per-sign').value) || 1;
+            const container = document.getElementById('line-controls-container');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const ls = lineSettings[i];
+                let fontOpts = systemFonts.map(f => `<option value="${f.CSS_Family}" ${ls.font === f.CSS_Family ? 'selected' : ''}>${f.Font_Name}</option>`).join('');
+                if(fontOpts === '') fontOpts = '<option value="sans-serif">System Default</option>';
+
+                container.innerHTML += `
+                    <div class="flex flex-col gap-1 bg-white border border-indigo-200 p-2 rounded shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-black text-indigo-700 uppercase">Line ${i+1}</span>
+                            <div class="flex items-center gap-2">
+                                <select onchange="updateLineSetting(${i}, 'font', this.value)" class="w-32 border border-gray-200 rounded text-[10px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1">
+                                    ${fontOpts}
+                                </select>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-14 border border-gray-200 p-1 rounded font-black text-indigo-900 text-[10px] text-center outline-none focus:border-indigo-500 shadow-inner">
+                                    <span class="text-indigo-800 font-black text-[10px] opacity-50">"</span>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="text" value="${ls.text}" placeholder="Enter text..." oninput="updateLineSetting(${i}, 'text', this.value)" class="w-full bg-gray-50 border border-gray-200 rounded p-1.5 text-xs font-bold text-gray-800 outline-none focus:border-indigo-500 shadow-inner">
+                    </div>
+                `;
             }
+            runCalc();
         }
 
+        function updateLineSetting(index, field, val) {
+            if (field === 'height') {
+                let h = parseFloat(val);
+                if (isNaN(h) || h < 0.125) h = 0.125;
+                lineSettings[index].height = h;
+            } else if (field === 'text') {
+                lineSettings[index].text = val;
+            } else {
+                lineSettings[index].font = val;
+            }
+            runCalc();
+        }
+
+        // --- TYPOGRAPHY PHYSICS ---
+        function calcMaxHeightForText(text, fontStyle, availableW) {
+            if(!text) return 999;
+            const canvas = document.getElementById('math-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.font = `500 100px "${fontStyle}", sans-serif`;
+            const wPx = ctx.measureText(text).width;
+            if(wPx === 0) return 999;
+            
+            const capRatio = 0.72; 
+            const scaleToFitWidth = availableW / (wPx / 100); 
+            return scaleToFitWidth * capRatio;
+        }
+
+        // --- UI TOGGLES ---
         function setReverseTab(tab) {
             const btnMat = document.getElementById('btn-tab-mat');
             const btnPaint = document.getElementById('btn-tab-paint');
@@ -189,13 +229,13 @@
             const conPaint = document.getElementById('paint-container');
 
             if (tab === 'mat') {
-                btnMat.className = "flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest";
-                btnPaint.className = "flex-1 py-2 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest";
+                btnMat.className = "flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest";
+                btnPaint.className = "flex-1 py-1.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest";
                 conMat.classList.remove('hidden');
                 conPaint.classList.add('hidden');
             } else {
-                btnPaint.className = "flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest";
-                btnMat.className = "flex-1 py-2 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest";
+                btnPaint.className = "flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-blue-700 transition uppercase tracking-widest";
+                btnMat.className = "flex-1 py-1.5 text-[10px] font-black rounded text-gray-500 hover:text-gray-800 transition border border-transparent uppercase tracking-widest";
                 conPaint.classList.remove('hidden');
                 conMat.classList.add('hidden');
             }
@@ -206,7 +246,6 @@
             const btnF = document.getElementById('btn-front');
             const btnR = document.getElementById('btn-reverse');
             const revTabs = document.getElementById('reverse-tabs');
-            const capLab = document.getElementById('cap-label');
             const conMat = document.getElementById('mat-container');
             const conPaint = document.getElementById('paint-container');
 
@@ -216,31 +255,29 @@
                 revTabs.classList.add('hidden');
                 conMat.classList.remove('hidden');
                 conPaint.classList.add('hidden');
-                capLab.innerText = "Surface Material / Cap Color";
             } else {
                 btnR.className = "flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 transition-all text-blue-700";
                 btnF.className = "flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 transition-all border border-transparent";
                 revTabs.classList.remove('hidden');
-                capLab.innerText = "Face Color";
-                setReverseTab('mat'); // Auto-default to material selection
+                setReverseTab('mat'); 
             }
             updateSwatches();
         }
 
         function setPaintSystem(sys) {
             activePaintSystem = sys;
-            document.getElementById('btn-pms').className = sys === 'PMS' ? "flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200" : "flex-1 py-2 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest";
-            document.getElementById('btn-sw').className = sys === 'SW' ? "flex-1 py-2 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200" : "flex-1 py-2 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest";
+            document.getElementById('btn-pms').className = sys === 'PMS' ? "flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200" : "flex-1 py-1.5 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest";
+            document.getElementById('btn-sw').className = sys === 'SW' ? "flex-1 py-1.5 text-[10px] font-black rounded bg-white shadow-sm text-orange-700 transition uppercase tracking-widest border border-orange-200" : "flex-1 py-1.5 text-[10px] font-black rounded text-orange-600 hover:text-orange-800 transition border border-transparent uppercase tracking-widest";
             document.getElementById('paint-search').placeholder = sys === 'PMS' ? "Search PMS Colors..." : "Search SW Colors...";
-            document.getElementById('paint-search').value = ""; // Clear active search
+            document.getElementById('paint-search').value = ""; 
             buildPaintSwatches();
         }
 
+        // --- COLOR DATABASES ---
         function updateSwatches() {
             const grid = document.getElementById('rowmark-grid');
             grid.innerHTML = '';
             
-            // Filter Rowmark table based on style
             const filtered = rowmarkData.filter(c => {
                 const isReverseMat = c.Series.includes('Reverse');
                 if (currentMode === 'reverse') return isReverseMat;
@@ -249,17 +286,13 @@
 
             filtered.forEach((c, index) => {
                 const btn = document.createElement('button');
-                btn.className = "w-8 h-8 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden";
+                btn.className = "w-8 h-8 rounded border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none relative group overflow-hidden shrink-0";
                 
                 let capHex = c.Cap_Hex || '#000000';
                 let coreHex = c.Core_Hex || '#FFFFFF';
 
-                // Display pure solid color if Reverse Engraved, else show split
-                if (currentMode === 'reverse') {
-                    btn.style.background = capHex;
-                } else {
-                    btn.style.background = `linear-gradient(135deg, ${capHex} 50%, ${coreHex} 50%)`;
-                }
+                if (currentMode === 'reverse') btn.style.background = capHex;
+                else btn.style.background = `linear-gradient(135deg, ${capHex} 50%, ${coreHex} 50%)`;
                 
                 btn.title = `${c.Item_Code} - ${c.Cap_Color}`;
 
@@ -268,7 +301,6 @@
                     btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent');
                     selectedMat = c;
 
-                    // Smart default to matching paint color if reverse black or white
                     if (currentMode === 'reverse') {
                         const isBlack = c.Cap_Color.toLowerCase().includes('black');
                         const isWhite = c.Cap_Color.toLowerCase().includes('white');
@@ -293,30 +325,26 @@
                             }
                         }
                     }
-
                     updateMaterialLabel();
                     runCalc();
                 };
 
                 grid.appendChild(btn);
                 
-                // Auto-select first item
                 if (currentMode === 'front' && c.Item_Code === '222-402') setTimeout(() => btn.click(), 10);
                 if (currentMode === 'reverse' && index === 0) setTimeout(() => btn.click(), 10);
             });
         }
 
-        // HIGH PERFORMANCE RENDERING: Build all buttons once, just toggle 'display' for search
         function buildPaintSwatches() {
             const grid = document.getElementById('paint-grid');
             grid.innerHTML = '';
             
             const listToUse = activePaintSystem === 'PMS' ? pmsData : swData;
             
-            // 1. Add Custom Input Button First
             const customBtn = document.createElement('button');
             customBtn.className = "w-full py-1.5 mb-1 rounded border border-gray-300 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:border-orange-500 transition focus:outline-none uppercase shrink-0";
-            customBtn.innerText = "+ Custom / Unlisted Color...";
+            customBtn.innerText = "+ Custom Match...";
             customBtn.onclick = () => {
                 Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent'));
                 customBtn.classList.add('ring-2', 'ring-offset-1', 'ring-orange-500', 'border-transparent');
@@ -328,15 +356,12 @@
             };
             grid.appendChild(customBtn);
             
-            // 2. Build massive array using Document Fragment for speed
             const fragment = document.createDocumentFragment();
             listToUse.forEach((p, index) => {
                 const btn = document.createElement('button');
                 btn.className = "paint-btn w-8 h-8 rounded-full border border-gray-300 shadow-sm hover:scale-110 transition focus:outline-none shrink-0";
                 btn.style.backgroundColor = p.Hex_Code;
                 btn.title = `${p.Name} (${p.Code})`;
-                
-                // Store data tags for CSS-free filtering
                 btn.dataset.name = p.Name.toLowerCase();
                 btn.dataset.code = p.Code.toLowerCase();
 
@@ -351,25 +376,17 @@
                     runCalc();
                 };
                 fragment.appendChild(btn);
-                
-                // Auto-select first paint when switching books
-                if(index === 0) setTimeout(() => btn.click(), 10);
             });
-            
             grid.appendChild(fragment);
-            filterPaint(); // Ensure any current search carries over
+            filterPaint(); 
         }
 
-        // Extremely fast display toggle
         function filterPaint() {
             const query = document.getElementById('paint-search').value.toLowerCase();
             const btns = document.querySelectorAll('.paint-btn');
             btns.forEach(btn => {
-                if (btn.dataset.name.includes(query) || btn.dataset.code.includes(query)) {
-                    btn.style.display = 'block';
-                } else {
-                    btn.style.display = 'none';
-                }
+                if (btn.dataset.name.includes(query) || btn.dataset.code.includes(query)) btn.style.display = 'block';
+                else btn.style.display = 'none';
             });
         }
 
@@ -407,7 +424,7 @@
                 if (isReverse) {
                     if (selectedPaint && selectedPaint.Code === 'CUSTOM') {
                         finalPaintName = pmsCode ? `CUSTOM: ${pmsCode}` : "Custom Match TBD";
-                        activePaintHex = "#e2e8f0"; // Generic light grey for custom text in preview
+                        activePaintHex = "#e2e8f0";
                     } else if (selectedPaint) {
                         finalPaintName = `[${selectedPaint.Code}] ${selectedPaint.Name}`;
                         activePaintHex = selectedPaint.Hex_Code;
@@ -432,7 +449,6 @@
                 const fmt = (n) => "$" + (n || 0).toFixed(2);
                 
                 const totalSqin = (inputs.w * inputs.h) * inputs.qty;
-
                 document.getElementById('lbl-sqin').innerText = totalSqin.toFixed(1);
                 document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
                 document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
@@ -442,49 +458,78 @@
                 document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-                // --- TEXT PREVIEW CANVAS MATH ---
-                let userText = document.getElementById('sign-text').value.trim();
-                let fontSelectObj = document.getElementById('font-select');
-                let userFont = fontSelectObj.value;
-                let fontNameDisplay = fontSelectObj.options[fontSelectObj.selectedIndex] ? fontSelectObj.options[fontSelectObj.selectedIndex].text : "System Default";
+                // --- TEXT PREVIEW MATH ---
+                const linesCount = parseInt(document.getElementById('lines-per-sign').value) || 1;
+                const mode = document.getElementById('overflow-mode').value;
+                const canvas = document.getElementById('preview-canvas');
+                const warn = document.getElementById('overflow-warn-box');
+                const warnBright = document.getElementById('bright-warn-box');
+                
+                let hasOverflowWarn = false;
+                const availableW = inputs.w - 0.5;
+                const availableH = inputs.h - 0.5;
 
-                if (document.getElementById('toggle-preview').checked) {
-                    const canvas = document.getElementById('preview-canvas');
-                    const text = document.getElementById('preview-text');
-                    const warn = document.getElementById('bright-warn-box');
-                    
-                    const ratio = inputs.h / inputs.w;
-                    canvas.style.width = '100%';
-                    canvas.style.paddingBottom = `${ratio * 100}%`; 
+                // Configure Canvas container exactly like bulk tool
+                const ratio = inputs.h / inputs.w;
+                canvas.style.height = 'auto';
+                canvas.style.paddingBottom = `${ratio * 100}%`; 
+                canvas.style.backgroundColor = selectedMat.Cap_Hex;
+                let textColor = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
 
-                    text.innerText = userText || 'SAMPLE';
-                    text.style.fontFamily = `'${userFont}', sans-serif`;
+                let renderedLines = [];
+                for(let i=0; i<linesCount; i++){
+                    let ls = lineSettings[i];
+                    if(!ls.text) continue;
+                    let targetH = ls.height;
 
-                    // Smart visual scaling based on height ratio (Container Query replacement)
-                    let baseSize = (inputs.h / inputs.w) * 60; 
-                    text.style.fontSize = `min(${baseSize}cqw, 75cqh)`; 
-
-                    if (currentMode === 'front') {
-                        canvas.style.backgroundColor = selectedMat.Cap_Hex;
-                        text.style.color = selectedMat.Core_Hex;
-                    } else {
-                        canvas.style.backgroundColor = selectedMat.Cap_Hex;
-                        text.style.color = activePaintHex;
+                    if(mode === 'shrink') {
+                        let maxH = calcMaxHeightForText(ls.text, ls.font, availableW);
+                        if (targetH > maxH) targetH = Math.max(0.125, Math.floor(maxH / 0.125) * 0.125);
                     }
 
-                    const isBright = selectedMat.Cap_Color.includes('Bright');
-                    warn.classList.toggle('hidden', !isBright);
+                    let absoluteMax = calcMaxHeightForText(ls.text, ls.font, availableW);
+                    if (targetH > absoluteMax) hasOverflowWarn = true;
+
+                    renderedLines.push({
+                        text: ls.text,
+                        fontFam: ls.font,
+                        cssCqw: `${(targetH / inputs.w) * 100}cqw`
+                    });
                 }
 
-                // --- SINGLE LINE DESCRIPTION GENERATION ---
-                let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
-                let explicitNotes = "No backers. No hardware. No installation. No raised copy. No braille.";
-                let finalDesc = "";
+                // Vertical Overflow Check
+                let totalH = renderedLines.reduce((sum, line) => sum + (parseFloat(line.cssCqw) * inputs.w / 100 / 0.72 * 1.2), 0);
+                if (totalH > availableH && mode === 'strict') hasOverflowWarn = true;
 
+                // Build HTML
+                let linesHtml = renderedLines.map(line => {
+                    return `<span class="leading-tight whitespace-nowrap" style="color: ${textColor}; font-family: '${line.fontFam}', sans-serif; font-size: ${line.cssCqw};">${line.text}</span>`;
+                }).join('');
+
+                canvas.innerHTML = `
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-[2cqw] pointer-events-none">
+                        ${linesHtml}
+                    </div>
+                `;
+
+                warn.classList.toggle('hidden', !hasOverflowWarn);
+                const isBright = selectedMat.Cap_Color.includes('Bright');
+                warnBright.classList.toggle('hidden', !isBright);
+
+                // --- TICKET GENERATION ---
+                let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
+                const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : 'Straight Cut Edge. ';
+                let explicitNotes = `${bevelTxt}No backers. No hardware. No installation. No raised copy. No braille.`;
+                
+                let textCopy = [];
+                for(let i=0; i<linesCount; i++) { if(lineSettings[i].text) textCopy.push(lineSettings[i].text); }
+                let combinedText = textCopy.join(' / ');
+
+                let finalDesc = "";
                 if (inputs.isReverse) {
-                    finalDesc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - ${brandTxt} Reverse Engraved [${inputs.mat.Item_Code}] ${inputs.mat.Cap_Color} face with ${inputs.paint} painted text.\nFont: ${fontNameDisplay}\nCopy: ${userText}\n\n${explicitNotes}`;
+                    finalDesc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - ${brandTxt} Reverse Engraved [${inputs.mat.Item_Code}] ${inputs.mat.Cap_Color} face with ${inputs.paint} painted text.\nCopy: ${combinedText}\n\n${explicitNotes}`;
                 } else {
-                    finalDesc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - ${brandTxt} Front Engraved [${inputs.mat.Item_Code}] ${inputs.mat.Cap_Color} face with ${inputs.mat.Core_Color} text.\nFont: ${fontNameDisplay}\nCopy: ${userText}\n\n${explicitNotes}`;
+                    finalDesc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - ${brandTxt} Front Engraved [${inputs.mat.Item_Code}] ${inputs.mat.Cap_Color} face with ${inputs.mat.Core_Color} text.\nCopy: ${combinedText}\n\n${explicitNotes}`;
                 }
 
                 document.getElementById('job-desc').value = finalDesc;
@@ -511,7 +556,6 @@
                 backendData = await reqConfig.json();
                 rowmarkData = await reqRowmark.json();
                 
-                // Format Standard Colors & SW
                 const stdColors = [
                     { Code: 'STD-WHT', Name: 'Standard White', Hex_Code: '#FFFFFF' },
                     { Code: 'STD-BLK', Name: 'Standard Black', Hex_Code: '#000000' }
@@ -526,7 +570,6 @@
                 });
                 swData = [...stdColors, ...formattedSW];
 
-                // Format PMS Array
                 const rawPMS = await reqPMS.json();
                 let formattedPMS = rawPMS.map(p => ({
                     Code: p['PMS Name / Code'] || 'Unknown', 
@@ -539,9 +582,7 @@
                 const rawFonts = await reqFonts.json();
                 systemFonts = rawFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
                 
-                let fontSelect = document.getElementById('font-select');
                 if(systemFonts.length > 0) {
-                    fontSelect.innerHTML = '';
                     let fontStyles = document.createElement('style');
                     systemFonts.forEach(f => {
                         fontStyles.innerHTML += `
@@ -550,14 +591,11 @@
                             src: url('https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/${f.File_Name}') format('truetype');
                         }
                         `;
-                        fontSelect.innerHTML += `<option value="${f.CSS_Family}">${f.Font_Name}</option>`;
                     });
                     document.head.appendChild(fontStyles);
                     
                     let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
-                    fontSelect.value = defaultFont.CSS_Family;
-                } else {
-                    fontSelect.innerHTML = '<option value="sans-serif">Default System Font</option>';
+                    lineSettings.forEach(ls => ls.font = defaultFont.CSS_Family);
                 }
 
                 if(statusText) {
@@ -569,8 +607,9 @@
                     }
                 }
 
-                setPaintSystem('PMS'); // Generates the default paint search grid
-                setMode('front');      // Kicks off swatch build and first default selection
+                updateLineControls();
+                setPaintSystem('PMS'); 
+                setMode('front');      
                 
             } catch(e) {
                 if(statusText) {
