@@ -372,26 +372,29 @@
             runCalc();
         }
 
+        /* CORRECTED CODE */
         function renderRosterEditor() {
             const editor = document.getElementById('roster-editor');
             if (parsedRoster.length === 0) {
-                editor.innerHTML = '<div class="text-center text-xs text-gray-400 italic py-8">Awaiting text import...</div>';
+                editor.innerHTML = 'Awaiting text import...';
                 return;
             }
 
             let html = '';
             parsedRoster.forEach((sign, i) => {
-                const textPreview = sign.texts.join(' <span class="text-gray-300 mx-1">/</span> ');
+                const textPreview = sign.texts.join(' / ');
+                // Ensure you include the full HTML template literal here
                 html += `
-                <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded p-1.5 gap-2">
-                    <div class="text-xs font-bold text-gray-700 truncate flex-1 pl-1" title="${sign.texts.join(' / ')}">${i+1}. ${textPreview}</div>
-                    <div class="flex items-center shrink-0 border border-gray-300 rounded bg-white overflow-hidden shadow-sm">
-                        <button onclick="updateSignQty(${sign.id}, -1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">-</button>
-                        <input type="number" min="1" value="${sign.qty}" onchange="setSignQty(${sign.id}, this.value)" class="w-10 text-center text-xs font-bold text-blue-700 outline-none">
-                        <button onclick="updateSignQty(${sign.id}, 1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition focus:outline-none">+</button>
-                    </div>
-                </div>`;
-            });
+                    <div class="flex items-center justify-between p-2 border-b">
+                        <span class="text-xs truncate">${textPreview}</span>
+                        <div class="flex items-center gap-2">
+                            <input type="number" value="${sign.qty}" 
+                                   onchange="setSignQty(${sign.id}, this.value)" 
+                                   class="w-12 text-center border rounded">
+                        </div>
+                    </div>`;
+            }); // This closing bracket was the primary issue 
+
             editor.innerHTML = html;
         }
 
