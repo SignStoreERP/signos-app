@@ -516,9 +516,9 @@
             masterPrev.style.paddingBottom = `${ratio * 100}%`;
             masterPrev.style.backgroundColor = selectedMat ? selectedMat.Cap_Hex : '#000';
 
-            // Master Template Inject
             if (mathData.renderData.length > 0) {
-                let sign'1' = mathData.renderData;
+                // Access the first sign object in the array
+                let sign1 = mathData.renderData[0]; 
                 masterPrev.innerHTML = buildSignHTML(sign1, inputs, activePaintHex, false);
             } else {
                 masterPrev.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>`;
@@ -551,8 +551,14 @@
         }
 
         function buildSignHTML(sign, inputs, activePaintHex, showBadge) {
+                // Ensure selectedMat exists before accessing properties
+            if (!selectedMat) return '';
+
             let color = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
-            
+    
+            // Check if sign.lines exists to prevent crashes
+            if (!sign.lines) return '';
+
             let linesHtml = sign.lines.map(line => {
                 return `<span class="leading-tight whitespace-nowrap ${line.fontClass}" style="color: ${color}; font-size: ${line.cssCqw};">${line.text}</span>`;
             }).join('');
@@ -948,10 +954,11 @@
                     });
                     document.head.appendChild(fontStyles);
                     
-                    // Default line memory to Arimo (or the first font loaded)
-                    let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
-                    lineSettings.forEach(ls => ls.font = defaultFont.CSS_Family);
-                }
+                        // Fallback to the first font in the array if Arimo is missing
+                        let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts[0];
+                        if (defaultFont) {
+                            lineSettings.forEach(ls => ls.font = defaultFont.CSS_Family);
+                        }
                 
                 if(statusText) {
                     statusText.innerText = "ONLINE";
