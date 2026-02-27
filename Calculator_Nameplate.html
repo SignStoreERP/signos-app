@@ -285,7 +285,6 @@
         // --- GLOBAL UI BUILDERS (Phase 4) ---
         function updateSwatches() {
             const filtered = rowmarkData.filter(c => currentMode === 'reverse' ? c.Series.includes('Reverse') : !c.Series.includes('Reverse'));
-            
             SignOS_UI.buildColorGrid({
                 containerId: 'rowmark-grid',
                 data: filtered,
@@ -299,8 +298,11 @@
                 }
             });
 
-            // Auto-select first item
-            setTimeout(() => { const firstBtn = document.querySelector('#rowmark-grid button'); if(firstBtn) firstBtn.click(); }, 50);
+            // Force default selection to [1-181] Black Face / White Text
+            setTimeout(() => { 
+                const targetBtn = document.querySelector('#rowmark-grid button[data-code="222-402"]') || document.querySelector('#rowmark-grid button'); 
+                if(targetBtn) targetBtn.click(); 
+            }, 50);
         }
 
         function buildPaintSwatches() {
