@@ -180,9 +180,9 @@ let backendData = {}, rowmarkData = [], pmsData = [], swData = [], systemFonts =
 let activePaintSystem = 'PMS', selectedMat = null, selectedPaint = null, currentMode = 'front';
 
 let lineSettings = [
-    { text: 'SAMPLE', font: '', height: 0.625, caseType: 'upper' },
-    { text: '', font: '', height: 0.375, caseType: 'title' },
-    { text: '', font: '', height: 0.375, caseType: 'title' }
+    { text: 'SAMPLE', family: '', style: '', height: 0.625, caseType: 'upper' },
+    { text: '', family: '', style: '', height: 0.375, caseType: 'title' },
+    { text: '', family: '', style: '', height: 0.375, caseType: 'title' }
 ];
 
 // --- UI ACCORDION & BUTTONS ---
@@ -207,22 +207,50 @@ function updateLineControls() {
     const container = document.getElementById('line-controls-container');
     container.innerHTML = '';
 
+    // Extract unique families from the systemFonts array (e.g., "Arimo", "OpenSans_Condensed")
+    const uniqueFamilies = [...new Set(systemFonts.map(f => f.File_Name.split('-')))];
+
     for (let i = 0; i < count; i++) {
         const ls = lineSettings[i];
-        let fontOpts = systemFonts.map(f => `<option value="${f.CSS_Family}" ${ls.font === f.CSS_Family ? 'selected' : ''}>${f.Font_Name}</option>`).join('');
-        if(fontOpts === '') fontOpts = '<option value="sans-serif">System Default</option>';
+
+        // Ensure current family is valid
+        if (!uniqueFamilies.includes(ls.family)) ls.family = uniqueFamilies.includes('Arimo') ? 'Arimo' : (uniqueFamilies || '');
+
+        let familyOpts = uniqueFamilies.map(fam => 
+            `<option value="${fam}" ${ls.family === fam ? 'selected' : ''}>${fam.replace(/_/g, ' ')}</option>`
+        ).join('');
+
+        // Extract available styles ONLY for the selected family
+        const availableStyles = systemFonts
+            .filter(f => f.File_Name.startsWith(ls.family + '-'))
+            .map(f => f.File_Name.split('-')[1].replace('.ttf', ''));
+
+        // Smart Defaulting: If the family changes, default to Bold (for ADA compliance) or the first available
+        if (!availableStyles.includes(ls.style)) {
+            ls.style = availableStyles.includes('Bold') ? 'Bold' : (availableStyles || '');
+        }
+
+        // Add spaces to camel case for pretty display (e.g. "BoldItalic" -> "Bold Italic")
+        let styleOpts = availableStyles.map(st => 
+            `<option value="${st}" ${ls.style === st ? 'selected' : ''}>${st.replace(/([A-Z])/g, ' $1').trim()}</option>`
+        ).join('');
 
         container.innerHTML += `
-        <div class="flex flex-col sm:flex-row items-center gap-1.5 bg-white border border-indigo-200 p-1.5 rounded shadow-sm">
+        <div class="flex flex-col sm:flex-row items-center gap-1.5 bg-white border border-indigo-200 p-1.5 rounded shadow-sm mb-1">
             <span class="text-[9px] font-black text-indigo-700 w-full sm:w-6 text-left sm:text-center uppercase shrink-0">L${i+1}</span>
             <input type="text" value="${ls.text}" placeholder="Enter text..." oninput="updateLineSetting(${i}, 'text', this.value)" class="flex-1 w-full sm:w-auto bg-gray-50 border border-gray-200 rounded p-1 text-xs font-bold text-gray-800 outline-none focus:border-indigo-500 shadow-inner">
             <div class="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-end">
-                <select onchange="updateLineSetting(${i}, 'font', this.value)" class="w-20 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">${fontOpts}</select>
-                <select onchange="updateLineSetting(${i}, 'caseType', this.value)" class="w-20 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
+                <select onchange="updateLineSetting(${i}, 'family', this.value)" class="w-24 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
+                    ${familyOpts}
+                </select>
+                <select onchange="updateLineSetting(${i}, 'style', this.value)" class="w-20 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
+                    ${styleOpts}
+                </select>
+                <select onchange="updateLineSetting(${i}, 'caseType', this.value)" class="w-16 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
                     <option value="upper" ${ls.caseType === 'upper' ? 'selected' : ''}>UPPER</option>
                     <option value="title" ${ls.caseType === 'title' ? 'selected' : ''}>Title</option>
                     <option value="lower" ${ls.caseType === 'lower' ? 'selected' : ''}>lower</option>
-                    <option value="exact" ${ls.caseType === 'exact' ? 'selected' : ''}>As Typed</option>
+                    <option value="exact" ${ls.caseType === 'exact' ? 'selected' : ''}>Typed</option>
                 </select>
                 <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 p-0.5 rounded shadow-inner">
                     <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-12 bg-transparent font-black text-indigo-900 text-[10px] text-center outline-none">
@@ -422,13 +450,17 @@ async function runCalc() {
         inputs.gap = parseFloat(document.getElementById('line-spacing').value) || 0;
         inputs.paintHex = activePaintHex;
 
-        // Apply formatting directly to text string prior to building manifest
+        // Apply formatting and dynamically construct the filename from the new dropdowns
         let formattedLines = lineSettings.slice(0, linesCount).map(ls => {
-            return { ...ls, text: formatLineCase(ls.text, ls.caseType) };
+            return { 
+                text: formatLineCase(ls.text, ls.caseType),
+                fileName: `${ls.family}-${ls.style}.ttf`,
+                height: ls.height 
+            };
         });
 
-        // Create the virtual manifest (The "Architect")
-        const manifest = await SignOS_Builder.buildManifest(inputs, formattedLines, systemFonts, githubBase);
+        // Create the virtual manifest (Notice we removed 'systemFonts' from the arguments here!)
+        const manifest = await SignOS_Builder.buildManifest(inputs, formattedLines, githubBase);
 
         // Render to Screen (The "Monitor")
         renderPhysicsToScreen(manifest, 'preview-canvas');
@@ -437,9 +469,9 @@ async function runCalc() {
         const availableH = inputs.h - 0.5;
         document.getElementById('overflow-warn-box').classList.toggle('hidden', 
             (manifest.totalHeight > availableH && document.getElementById('overflow-mode').value === 'strict'));
-            
-        document.getElementById('bright-warn-box').classList.toggle('hidden', !selectedMat.Cap_Color.includes('Bright'));
 
+        document.getElementById('bright-warn-box').classList.toggle('hidden', !selectedMat.Cap_Color.includes('Bright'));
+        
         // --- TICKET GENERATION ---
         let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
         const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : 'Straight Cut Edge. ';
