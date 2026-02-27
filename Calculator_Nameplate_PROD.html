@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Nameplate - PROD TEST v1.0</title>
+    <title>ADA Etch Nameplates - PROD v1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
@@ -11,15 +11,17 @@
     <script src="signos-ui.js"></script>
     <script src="signos-canvas.js"></script>
     <script src="logic_nameplate.js"></script>
-    <!-- Our New Modular Script -->
     <script src="signos-export-svg.js"></script>
     
     <style>
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .color-scroll::-webkit-scrollbar { width: 6px; }
+        .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
+        .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .aspect-box { container-type: size; } 
     </style>
 </head>
-<body class="bg-slate-900 min-h-screen font-sans flex flex-col pb-10">
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
     <div id="main-card" class="max-w-xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
@@ -39,53 +41,155 @@
                 </div>
             </div>
 
-            <!-- Text Preview Section (Existing) -->
-            <div id="preview-wrapper" class="relative group">
-                <div class="flex justify-between items-end mb-2">
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Physics Render (WYSIWYG)</label>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase mb-1 block">Quantity</label>
+                    <input type="number" id="qty" value="1" min="1" oninput="runCalc()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-bold text-gray-700 outline-none">
                 </div>
-                <div class="aspect-box w-full bg-slate-100 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-                    <canvas id="preview-canvas" class="max-w-full max-h-full shadow-sm"></canvas>
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase mb-1 block">Bevel</label>
+                    <select id="bevel" onchange="runCalc()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-bold text-gray-700 outline-none">
+                        <option value="Square">None (Square Edge)</option>
+                        <option value="Bevel" selected>Standard Bevel</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Production Export Section (New) -->
-            <div class="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+            <!-- Sign Text & Layout Section -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-wider">Sign Text & Layout</h3>
+                    <div class="flex gap-1">
+                        <button id="btn-line-1" onclick="setLineCount(1)" class="px-2 py-0.5 text-[10px] font-black rounded bg-white text-indigo-700 border border-gray-200 shadow-sm">1</button>
+                        <button id="btn-line-2" onclick="setLineCount(2)" class="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-400">2</button>
+                        <button id="btn-line-3" onclick="setLineCount(3)" class="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-400">3</button>
+                        <input type="hidden" id="lines-per-sign" value="1">
+                    </div>
+                </div>
+
+                <div id="line-controls" class="space-y-3">
+                    <!-- Lines injected here by updateLineControls() -->
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-200">
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Gap (in):</label>
+                        <input type="number" id="line-gap" value="0.125" step="0.0625" oninput="runCalc()" class="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-600 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Overflow Handling:</label>
+                        <select id="overflow" onchange="runCalc()" class="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-600 outline-none">
+                            <option value="shrink">Auto-Shrink</option>
+                            <option value="wrap">Wrap Text</option>
+                            <option value="none">None (Visible Overflow)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ratio & Alignment Preview -->
+            <div id="preview-wrapper" class="relative group">
+                <div class="flex justify-between items-end mb-2">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ratio & Alignment Preview</label>
+                </div>
+                <div class="aspect-box w-full bg-slate-200 rounded-xl border border-slate-300 flex items-center justify-center overflow-hidden">
+                    <canvas id="preview-canvas" class="max-w-full max-h-full shadow-lg"></canvas>
+                </div>
+                
+                <!-- Warnings -->
+                <div id="warn-overflow" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg animate-pulse">
+                    ⚠️ Layout Overflow
+                </div>
+            </div>
+
+            <!-- Direction & Color Section -->
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase mb-2 block">Engrave Direction</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="mode-front" onclick="setMode('front')" class="py-2 text-[10px] font-black rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm transition-all uppercase tracking-widest">Front Engrave</button>
+                        <button id="mode-reverse" onclick="setMode('reverse')" class="py-2 text-[10px] font-black rounded-lg border border-gray-200 bg-white text-gray-400 shadow-sm transition-all uppercase tracking-widest">Reverse Engraved</button>
+                        <input type="hidden" id="is-reverse" value="false">
+                    </div>
+                </div>
+
+                <div id="face-color-section">
+                    <label class="text-[10px] font-black text-gray-400 uppercase mb-2 block">Step 1: Face Color</label>
+                    <div id="face-grid" class="flex overflow-x-auto gap-2 p-1 color-scroll pb-2"></div>
+                </div>
+
+                <div id="paint-color-section" class="hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase block">Step 2: Paint Color</label>
+                        <div class="flex gap-1">
+                            <button id="ps-pms" onclick="setPaintSystem('PMS')" class="px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white">PMS</button>
+                            <button id="ps-sw" onclick="setPaintSystem('SW')" class="px-2 py-0.5 text-[9px] font-bold rounded bg-gray-100 text-gray-400">SW</button>
+                        </div>
+                    </div>
+                    <div id="paint-grid" class="flex overflow-x-auto gap-2 p-1 color-scroll pb-2"></div>
+                </div>
+            </div>
+
+            <!-- PRODUCTION EXPORT (NEW) -->
+            <div class="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
                 <div class="flex items-center gap-2 mb-3">
-                    <div class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                    <h3 class="text-[11px] font-black text-indigo-900 uppercase tracking-wider">Production Output</h3>
+                    <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
+                    <h3 class="text-[11px] font-black text-indigo-900 uppercase tracking-wider">Production Output Tool</h3>
                 </div>
                 <p class="text-[10px] text-indigo-700 mb-4 leading-relaxed">
-                    Convert this design into a production-ready vector file. Text will be automatically converted to <strong>outlined paths</strong> (no fonts required for CNC).
+                    Ready for fabrication? Export this design as an <strong>outlined SVG</strong>. This converts all text into geometric paths that can be read directly by the laser or CNC router without needing to install fonts.
                 </p>
-                <button onclick="handleSVGExport()" id="btn-export" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2 group">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <button onclick="handleSVGExport()" id="btn-export" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl text-xs uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-3 group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 group-hover:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Download Production SVG
                 </button>
             </div>
-            
-            <!-- Standard Inputs (Truncated for brevity in test file) -->
-            <div class="space-y-4">
-               <div>
-                    <label class="text-[10px] font-black text-gray-500 uppercase mb-1 block">Line 1 Text</label>
-                    <input type="text" id="line-1-text" value="JOHN SMITH" oninput="updateLines()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-bold text-gray-700 outline-none">
-               </div>
+
+            <!-- Totals & Quote -->
+            <div class="pt-6 border-t border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block">Unit Price</label>
+                        <div id="ui-unit" class="text-2xl font-black text-gray-900 leading-none">$0.00</div>
+                    </div>
+                    <div class="text-right">
+                        <label class="text-[10px] font-black text-gray-400 uppercase block">Total Quote</label>
+                        <div id="ui-total" class="text-3xl font-black text-blue-600 leading-none">$0.00</div>
+                        <div id="min-badge" class="hidden text-[9px] font-black text-orange-500 uppercase mt-1">Shop Min Applied</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // --- GLOBAL STATE ---
         let backendData = {};
         let systemFonts = [];
-        let lineSettings = [{ text: "JOHN SMITH", font: "Arimo", fontSize: 0.625, y: 1.1 }];
+        let rowmarkData = [];
+        let pmsData = [];
+        let swData = [];
+        let selectedFace = null;
+        let selectedPaint = null;
+        
+        let lineSettings = [
+            { text: "ROOM NAME", font: "Arimo", fontSize: 0.625, y: 0, autoShrink: true }
+        ];
 
+        // --- PRODUCTION EXPORT LOGIC ---
         async function handleSVGExport() {
             const btn = document.getElementById('btn-export');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerText = "GENERATING PATHS...";
+            btn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing Paths...
+            `;
 
             try {
                 const w = parseFloat(document.getElementById('w').value);
@@ -97,45 +201,207 @@
                     lines: lineSettings,
                     fileName: `SignOS_Production_${w}x${h}.svg`
                 });
+            } catch (err) {
+                console.error("SVG Export Failed:", err);
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
 
-        function updateLines() {
-            lineSettings[0].text = document.getElementById('line-1-text').value;
+        // --- UI & ENGINE LOGIC ---
+        function setLineCount(num) {
+            document.getElementById('lines-per-sign').value = num;
+            
+            // Re-build settings array
+            while(lineSettings.length < num) {
+                lineSettings.push({ 
+                    text: `LINE ${lineSettings.length+1}`, 
+                    font: lineSettings[0].font, 
+                    fontSize: 0.375, 
+                    y: 0, 
+                    autoShrink: true 
+                });
+            }
+            lineSettings = lineSettings.slice(0, num);
+            
+            // Update buttons
+            for(let i=1; i<=3; i++) {
+                const btn = document.getElementById('btn-line-'+i);
+                btn.className = i === num 
+                    ? "px-2 py-0.5 text-[10px] font-black rounded bg-white text-indigo-700 border border-gray-200 shadow-sm"
+                    : "px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-400";
+            }
+            
+            updateLineControls();
             runCalc();
         }
 
-        function runCalc() {
-            const canvas = document.getElementById('preview-canvas');
-            const w = parseFloat(document.getElementById('w').value);
-            const h = parseFloat(document.getElementById('h').value);
+        function updateLineControls() {
+            const container = document.getElementById('line-controls');
+            container.innerHTML = "";
             
-            // Standard render logic (simplified for test)
-            const ctx = canvas.getContext('2d');
-            canvas.width = w * 100;
-            canvas.height = h * 100;
-            ctx.fillStyle = "#eee";
-            ctx.fillRect(0,0, canvas.width, canvas.height);
-            ctx.fillStyle = "black";
-            ctx.font = `bold ${lineSettings[0].fontSize * 100}px ${lineSettings[0].font}`;
-            ctx.textAlign = "center";
-            ctx.fillText(lineSettings[0].text, canvas.width/2, lineSettings[0].y * 100);
+            lineSettings.forEach((ls, i) => {
+                const row = document.createElement('div');
+                row.className = "flex gap-2 items-end";
+                row.innerHTML = `
+                    <div class="flex-1">
+                        <input type="text" value="${ls.text}" oninput="updateLineData(${i}, 'text', this.value)" 
+                            class="w-full bg-white border border-gray-200 rounded px-2 py-1.5 font-bold text-gray-700 text-xs outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="w-16">
+                        <input type="number" step="0.0625" value="${ls.fontSize}" oninput="updateLineData(${i}, 'fontSize', this.value)"
+                            class="w-full bg-white border border-gray-200 rounded px-2 py-1.5 font-bold text-gray-700 text-[10px] outline-none">
+                    </div>
+                    <div class="w-24">
+                        <select onchange="updateLineData(${i}, 'font', this.value)" class="w-full bg-white border border-gray-200 rounded px-1 py-1.5 font-bold text-gray-700 text-[10px] outline-none">
+                            ${systemFonts.map(f => `<option value="${f.CSS_Family}" ${f.CSS_Family === ls.font ? 'selected' : ''}>${f.Display_Name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
         }
 
+        function updateLineData(idx, key, val) {
+            lineSettings[idx][key] = (key === 'fontSize') ? parseFloat(val) : val;
+            runCalc();
+        }
+
+        function setMode(mode) {
+            const isReverse = mode === 'reverse';
+            document.getElementById('is-reverse').value = isReverse;
+            document.getElementById('paint-color-section').classList.toggle('hidden', !isReverse);
+            
+            // UI Toggle
+            const fBtn = document.getElementById('mode-front');
+            const rBtn = document.getElementById('mode-reverse');
+            
+            if(isReverse) {
+                rBtn.className = "py-2 text-[10px] font-black rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm uppercase tracking-widest";
+                fBtn.className = "py-2 text-[10px] font-black rounded-lg border border-gray-200 bg-white text-gray-400 shadow-sm uppercase tracking-widest";
+            } else {
+                fBtn.className = "py-2 text-[10px] font-black rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm uppercase tracking-widest";
+                rBtn.className = "py-2 text-[10px] font-black rounded-lg border border-gray-200 bg-white text-gray-400 shadow-sm uppercase tracking-widest";
+            }
+            
+            refreshSwatches();
+            runCalc();
+        }
+
+        function setPaintSystem(sys) {
+            const pmsBtn = document.getElementById('ps-pms');
+            const swBtn = document.getElementById('ps-sw');
+            
+            if(sys === 'PMS') {
+                pmsBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white";
+                swBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-gray-100 text-gray-400";
+            } else {
+                swBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white";
+                pmsBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-gray-100 text-gray-400";
+            }
+            
+            refreshSwatches();
+        }
+
+        function refreshSwatches() {
+            const isReverse = document.getElementById('is-reverse').value === 'true';
+            
+            // 1. Build Face Grid (Always Rowmark)
+            const filteredFace = isReverse 
+                ? rowmarkData.filter(r => r.Series.includes("Ultra"))
+                : rowmarkData.filter(r => r.Series.includes("Mattes"));
+            
+            SignOS_UI.buildColorGrid({
+                containerId: 'face-grid',
+                data: filteredFace.map(r => ({ Code: r.Item_Code, Name: r.Cap_Color, Hex_Code: r.Cap_HEX })),
+                onSelect: (item) => { 
+                    selectedFace = item; 
+                    runCalc(); 
+                }
+            });
+
+            // 2. Build Paint Grid (Only if reverse)
+            if(isReverse) {
+                const sys = document.getElementById('ps-pms').classList.contains('bg-indigo-600') ? 'PMS' : 'SW';
+                SignOS_UI.buildColorGrid({
+                    containerId: 'paint-grid',
+                    data: (sys === 'PMS') ? pmsData : swData,
+                    onSelect: (item) => { 
+                        selectedPaint = item; 
+                        runCalc(); 
+                    }
+                });
+            }
+        }
+
+        function runCalc() {
+            if(!backendData.Retail_Min_Order) return;
+
+            const inputs = {
+                w: parseFloat(document.getElementById('w').value) || 10,
+                h: parseFloat(document.getElementById('h').value) || 2,
+                qty: parseFloat(document.getElementById('qty').value) || 1,
+                isReverse: document.getElementById('is-reverse').value === 'true',
+                mat: selectedFace ? rowmarkData.find(r => r.Item_Code === selectedFace.Code) : rowmarkData[0]
+            };
+
+            const result = calculateNameplate(inputs, backendData);
+            
+            // Update Totals
+            const fmt = (n) => "$" + (n || 0).toFixed(2);
+            document.getElementById('ui-unit').innerText = fmt(result.retail.unitPrice);
+            document.getElementById('ui-total').innerText = fmt(result.retail.grandTotal);
+            document.getElementById('min-badge').classList.toggle('hidden', !result.retail.isMinApplied);
+
+            // Render Preview
+            const canvas = document.getElementById('preview-canvas');
+            const gap = parseFloat(document.getElementById('line-gap').value) || 0.125;
+            const overflowMode = document.getElementById('overflow').value;
+
+            SignOS_Canvas.renderSignPhysics({
+                canvas: canvas,
+                width: inputs.w,
+                height: inputs.h,
+                lines: lineSettings,
+                gap: gap,
+                overflowMode: overflowMode,
+                faceHex: selectedFace ? selectedFace.Hex_Code : "#EEE",
+                textHex: (inputs.isReverse && selectedPaint) ? selectedPaint.Hex_Code : (inputs.mat?.Core_HEX || "#000"),
+                isReverse: inputs.isReverse
+            });
+        }
+
+        // --- INIT ---
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("Production SVG Test");
             
+            SignOS_UI.showLoader('preview-wrapper', "Booting Physics Engine...");
+
             try {
-                // Fetch fonts from backend
-                const req = await fetch(`${SCRIPT_URL}?req=table&tab=REF_Fonts`);
-                const fonts = await req.json();
-                window.systemFonts = fonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
-                SignOS_Canvas.loadFonts(window.systemFonts);
-                runCalc();
-            } catch(e) { console.error(e); }
+                // Fetch All Data
+                const payload = await SignOS.fetchProductData("PROD_Nameplates", ['REF_Colors_Rowmark', 'REF_Colors_Paint', 'REF_Colors_PMS', 'REF_Fonts']);
+                backendData = payload.config;
+                rowmarkData = payload.tables['REF_Colors_Rowmark'] || [];
+                pmsData = payload.tables['REF_Colors_PMS'] || [];
+                swData = payload.tables['REF_Colors_Paint'] || [];
+                systemFonts = (payload.tables['REF_Fonts'] || []).filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
+
+                // Load Fonts to Canvas
+                SignOS_Canvas.loadFonts(systemFonts);
+                
+                // Set Defaults
+                const defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts[0];
+                lineSettings.forEach(ls => ls.font = defaultFont.CSS_Family);
+
+                updateLineControls();
+                setMode('front');
+                SignOS_UI.hideLoader('preview-wrapper');
+                
+            } catch(e) {
+                console.error("API Load Failed:", e);
+                SignOS_UI.hideLoader('preview-wrapper', true);
+            }
         });
     </script>
 </body>
