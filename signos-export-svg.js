@@ -1,21 +1,22 @@
 /**
- * SignOS SVG Outlining Engine (v1.1 - Debug Version)
+ * SignOS SVG Outlining Engine (v1.2 - Array-Driven Fix)
  */
 
 async function triggerSvgExport() {
     console.log("🛠️ Starting SignOS Vector Export...");
     
+    // 1. Setup Constants
     const DPI = 72; 
     const w = parseFloat(document.getElementById('w').value) || 0;
     const h = parseFloat(document.getElementById('h').value) || 0;
-    // Ensure this matches your ACTUAL repo path
     const githubBase = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
 
     if (w <= 0 || h <= 0) {
-        alert("Please enter valid dimensions.");
+        alert("Please enter valid dimensions first.");
         return;
     }
 
+    // 2. Identify Colors from the UI
     const substrateHex = document.getElementById('preview-box')?.style.backgroundColor || "#DDDDDD";
     const textHex = document.getElementById('preview-text-1')?.style.color || "#000000";
 
@@ -24,27 +25,31 @@ async function triggerSvgExport() {
     let svgPaths = "";
 
     try {
-        // We use a promise-based loop to ensure the SVG doesn't "finish" early
+        // 3. Loop through the actual data array (lineSettings)
         for (let i = 0; i < lineSettings.length; i++) {
             const line = lineSettings[i];
-            const textInput = document.getElementById(`text-${i + 1}`);
-            const textValue = textInput ? textInput.value : "";
             
-            if (!textValue || textValue.trim() === "") continue;
-
-            const fontObj = systemFonts.find(f => f.CSS_Family === line.font);
-            if (!fontObj) {
-                console.warn(`⚠️ Skipping Line ${i+1}: Font ${line.font} not in systemFonts.`);
+            // Fix: Access text directly from the array synced by updateLineText()
+            const textValue = line.text; 
+            
+            if (!textValue || textValue.trim() === "") {
+                console.log(`Line ${i+1}: No text found, skipping.`);
                 continue;
             }
 
-            // CRITICAL FIX: Encode the filename to handle spaces/commas
+            // Find Font File Name from your systemFonts lookup
+            const fontObj = systemFonts.find(f => f.CSS_Family === line.font);
+            if (!fontObj) {
+                console.error(`Line ${i+1}: Font "${line.font}" not found in systemFonts.`);
+                continue;
+            }
+
             const encodedFile = encodeURIComponent(fontObj.File_Name);
             const fontUrl = githubBase + encodedFile;
             
-            console.log(`📡 Fetching font: ${fontUrl}`);
+            console.log(`📡 Fetching font for Line ${i+1}: ${fontUrl}`);
 
-            // Wrap opentype.load in a Promise
+            // Load Font via opentype.js
             const font = await new Promise((resolve, reject) => {
                 opentype.load(fontUrl, (err, font) => {
                     if (err) reject(err);
@@ -52,39 +57,38 @@ async function triggerSvgExport() {
                 });
             });
 
-            // Conversion Math
+            // 4. Position & Scaling Math
             const fontSize = line.height * DPI;
-            const x = (w * DPI) / 2;
+            const xCenter = (w * DPI) / 2;
             
-            // Adjust Y: opentype renders from the baseline. 
-            // This math attempts to center the text block vertically.
+            // Vertical distribution based on total lines
             const verticalSpacing = (h * DPI) / (lineSettings.length + 1);
-            const y = (verticalSpacing * (i + 1)) + (fontSize / 3);
+            const yPos = (verticalSpacing * (i + 1)) + (fontSize / 3);
 
-            // Generate Path Data
+            // Generate the outlined path
             const path = font.getPath(textValue, 0, 0, fontSize);
             const pathData = path.toPathData();
 
-            // Center the text horizontally
+            // Center horizontally
             const bbox = path.getBoundingBox();
             const textWidth = bbox.x2 - bbox.x1;
-            const centeredX = x - (textWidth / 2);
+            const centeredX = xCenter - (textWidth / 2);
 
-            svgPaths += `  <path d="${pathData}" fill="${textHex}" transform="translate(${centeredX}, ${y})" />\n`;
-            console.log(`✅ Path generated for: "${textValue}"`);
+            svgPaths += `  <path d="${pathData}" fill="${textHex}" transform="translate(${centeredX}, ${yPos})" />\n`;
+            console.log(`✅ Path generated for Line ${i+1}: "${textValue}"`);
+        }
+
+        if (svgPaths === "") {
+            alert("No text paths were generated. Make sure you have typed text into the lines.");
+            return;
         }
 
         const fullSvg = `${svgHeader}\n${svgBackground}\n${svgPaths}\n</svg>`;
-        
-        if (svgPaths === "") {
-            alert("SVG generated, but no text paths were created. Check console.");
-        }
-
-        downloadBlob(fullSvg, `Production_${w}x${h}.svg`, 'image/svg+xml');
+        downloadBlob(fullSvg, `SignOS_Production_${w}x${h}.svg`, 'image/svg+xml');
 
     } catch (err) {
         console.error("❌ SVG Generation Failed:", err);
-        alert("Error loading fonts from GitHub. See Console (F12) for CORS or 404 errors.");
+        alert("Error loading fonts. Check console for 404 or CORS errors.");
     }
 }
 
@@ -92,6 +96,8 @@ function downloadBlob(content, filename, contentType) {
     const blob = new Blob([content], { type: contentType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
+    a.href = url;
+    a.download = filename;
+    a.click();
     URL.revokeObjectURL(url);
 }
