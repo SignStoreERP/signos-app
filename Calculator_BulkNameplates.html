@@ -401,13 +401,18 @@ Manager</textarea>
             const grid = document.getElementById('bulk-preview-grid');
             const masterPrev = document.getElementById('master-template-preview');
             const divider = document.getElementById('grid-divider');
-            const ratio = inputs.h / inputs.w;
             
-            masterPrev.style.height = 'auto';
-            masterPrev.style.paddingBottom = `${ratio * 100}%`; 
+            // STRICT BOUNDING MATH FOR MASTER TEMPLATE
+            const containerW = document.getElementById('preview-wrapper').clientWidth || 600;
+            const maxAllowedH = 160; 
+            let scale = Math.min((containerW * 0.8) / inputs.w, maxAllowedH / inputs.h);
+            
+            // Apply explicit pixel dimensions
+            masterPrev.style.paddingBottom = '0'; // Clear the old hack
+            masterPrev.style.width = `${inputs.w * scale}px`;
+            masterPrev.style.height = `${inputs.h * scale}px`;
             masterPrev.style.backgroundColor = selectedMat ? selectedMat.Cap_Hex : '#000';
 
-            // CRITICAL FIX: Explicitly target the first sign object in the array
             if (mathData.renderData.length > 0) {
                 let firstSign = mathData.renderData.at(0);
                 masterPrev.innerHTML = buildSignHTML(firstSign, inputs, activePaintHex, false);
@@ -420,13 +425,24 @@ Manager</textarea>
             
             if (parsedRoster.length <= 1) return;
 
+            // GRID ITEMS BOUNDING MATH
+            const gridCellW = (containerW / 3) - 30;
+            const maxGridH = 80;
+            let gridScale = Math.min(gridCellW / inputs.w, maxGridH / inputs.h);
+
             for (let i = 1; i < mathData.renderData.length; i++) {
+                const boxWrapper = document.createElement('div');
+                boxWrapper.className = "flex items-center justify-center w-full"; 
+                
                 const box = document.createElement('div');
-                box.className = "w-full relative rounded-sm border border-black/30 shadow-md overflow-hidden bg-black flex flex-col items-center justify-center aspect-box";
-                box.style.paddingBottom = `${ratio * 100}%`;
+                box.className = "relative rounded-sm border border-black/30 shadow-md overflow-hidden bg-black flex flex-col items-center justify-center aspect-box";
+                box.style.width = `${inputs.w * gridScale}px`;
+                box.style.height = `${inputs.h * gridScale}px`;
                 box.style.backgroundColor = selectedMat.Cap_Hex;
                 box.innerHTML = buildSignHTML(mathData.renderData[i], inputs, activePaintHex, true);
-                grid.appendChild(box);
+                
+                boxWrapper.appendChild(box);
+                grid.appendChild(boxWrapper);
             }
         }
 
@@ -697,10 +713,18 @@ Manager</textarea>
                 // Tell the system to process the sample text immediately
                 setTimeout(() => { processBulkList(); }, 200);
                 
+                // Dismiss the loading overlay
+                const loadingOverlay = document.getElementById('canvas-loading-overlay');
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                
             } catch(e) {
+                const loadingOverlay = document.getElementById('canvas-loading-overlay');
                 if(statusText) {
                     statusText.innerText = "OFFLINE (API FAILED)";
                     statusText.className = "font-bold text-red-500";
+                }
+                if (loadingOverlay) {
+                    loadingOverlay.innerHTML = '<span class="text-[10px] font-black text-red-500 uppercase tracking-widest">⚠️ Connection Failed</span>';
                 }
                 console.error("API Load Failed:", e);
             }
