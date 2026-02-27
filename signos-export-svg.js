@@ -1,92 +1,89 @@
 /**
- * SignOS SVG Export Engine (v1.0)
- * Translates Canvas Physics state to Vector Path SVG (Outlined Text)
- * Dependency: opentype.js (https://opentype.js.org/)
+ * SignOS SVG Outlining Engine (Test v1.0)
+ * Uses opentype.js to fetch TTF files from GitHub and render as vector paths.
  */
 
-window.SignOS_Export = {
-    // Cache for loaded opentype font objects to prevent redundant fetches
-    fontCache: {},
+async function triggerSvgExport() {
+    console.log("Starting SVG Export...");
+    
+    // 1. Setup Constants
+    const DPI = 72; // Standard scale: 1 inch = 72 points/pixels
+    const w = parseFloat(document.getElementById('w').value) || 0;
+    const h = parseFloat(document.getElementById('h').value) || 0;
+    const githubBase = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
 
-    /**
-     * Main Export Function
-     * @param {Object} config - { width, height, lines, signData, fileName }
-     */
-    exportProductionSVG: async function(config) {
-        const { width, height, lines, fileName } = config;
-        
-        // 1. Create the SVG Header (using inches as units)
-        let svgContent = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n`;
-        svgContent += `<svg width="${width}in" height="${height}in" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">\n`;
-        
-        // 2. Background/Plate Boundary (Red stroke typically used for Cut lines in laser software)
-        svgContent += `  <!-- Cut Path (Sign Perimeter) -->\n`;
-        svgContent += `  <rect x="0" y="0" width="${width}" height="${height}" fill="none" stroke="#FF0000" stroke-width="0.01" />\n\n`;
+    if (w <= 0 || h <= 0) {
+        alert("Please enter valid dimensions first.");
+        return;
+    }
 
-        svgContent += `  <!-- Engrave Paths (Outlined Text) -->\n`;
+    // 2. Identify Colors
+    // Pulling current UI selection for substrate and text
+    const substrateHex = document.getElementById('preview-box')?.style.backgroundColor || "#DDDDDD";
+    const textHex = document.getElementById('preview-text-1')?.style.color || "#000000";
 
-        // 3. Process Lines
-        for (const line of lines) {
-            if (!line.text || line.text.trim() === "") continue;
+    // 3. Initialize SVG String
+    let svgContent = `<svg width="${w * DPI}" height="${h * DPI}" viewBox="0 0 ${w * DPI} ${h * DPI}" xmlns="http://www.w3.org/2000/svg">`;
+    
+    // Add Substrate Background
+    svgContent += `<rect width="100%" height="100%" fill="${substrateHex}" />`;
 
-            try {
-                const pathData = await this._generateTextPath(line, width);
-                if (pathData) {
-                    svgContent += `  <path d="${pathData}" fill="black" />\n`;
-                }
-            } catch (err) {
-                console.error("Error outlining line:", line.text, err);
+    // 4. Process Lines
+    try {
+        for (let i = 0; i < lineSettings.length; i++) {
+            const line = lineSettings[i];
+            const text = document.getElementById(`text-${i + 1}`)?.value;
+            
+            if (!text || text.trim() === "") continue;
+
+            // Find Font File Name from systemFonts lookup
+            const fontObj = systemFonts.find(f => f.CSS_Family === line.font);
+            if (!fontObj) {
+                console.error(`Font file not found for: ${line.font}`);
+                continue;
             }
+
+            const fontUrl = githubBase + fontObj.File_Name;
+            
+            // Load Font via opentype.js
+            const font = await opentype.load(fontUrl);
+            
+            // Calculate Position & Size
+            // Note: Simplistic centering for the test version
+            const fontSize = line.height * DPI;
+            const x = (w * DPI) / 2;
+            const y = ((h * DPI) / (lineSettings.length + 1)) * (i + 1) + (fontSize / 3);
+
+            // Generate Path (The "Outlining" Magic)
+            const path = font.getPath(text, 0, 0, fontSize);
+            const pathData = path.toPathData();
+
+            // Measure text for centering
+            const bbox = path.getBoundingBox();
+            const textWidth = bbox.x2 - bbox.x1;
+            const centeredX = x - (textWidth / 2);
+
+            // Append Path to SVG
+            svgContent += `<path d="${pathData}" fill="${textHex}" transform="translate(${centeredX}, ${y})" />`;
         }
 
         svgContent += `</svg>`;
 
-        // 4. Trigger Download
-        this._downloadFile(svgContent, fileName || `Production_${Date.now()}.svg`);
-    },
+        // 5. Trigger Download
+        downloadBlob(svgContent, `SignOS_Production_${w}x${h}.svg`, 'image/svg+xml');
 
-    /**
-     * Converts a single line of text into a SVG Path 'd' attribute
-     */
-    _generateTextPath: async function(line, availableWidth) {
-        // Find font metadata from global systemFonts (loaded in main app)
-        const fontMeta = window.systemFonts.find(f => f.CSS_Family === line.font);
-        if (!fontMeta) throw new Error("Font metadata not found for " + line.font);
-
-        const fontUrl = `https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/${fontMeta.File_Name}`;
-        
-        // Load font using opentype.js
-        if (!this.fontCache[line.font]) {
-            this.fontCache[line.font] = await opentype.load(fontUrl);
-        }
-        const font = this.fontCache[line.font];
-
-        // Canvas units are usually px, but we are working in inches.
-        // Opentype uses "Units Per Em". We need to map Font Size (Inches) to path scale.
-        // fontSize in lineSettings is the target physical height in inches.
-        const fontSizeInPoints = line.fontSize * 72; 
-        
-        // Align text (Center is default in your canvas)
-        const textWidth = font.getAdvanceWidth(line.text, fontSizeInPoints) / 72;
-        const xPos = (availableWidth / 2) - (textWidth / 2);
-        
-        // Y Position: Opentype draws from the baseline. 
-        // We need to offset the center-aligned Y by roughly half the cap-height.
-        const yPos = line.y; 
-
-        const path = font.getPath(line.text, xPos, yPos, fontSizeInPoints);
-        return path.toPathData(4); // 4 decimal places for precision
-    },
-
-    _downloadFile: function(content, fileName) {
-        const blob = new Blob([content], { type: 'image/svg+xml' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+    } catch (err) {
+        console.error("SVG Generation Failed:", err);
+        alert("Error generating vector file. Check console for details.");
     }
-};
+}
+
+function downloadBlob(content, filename, contentType) {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
