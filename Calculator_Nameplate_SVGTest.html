@@ -207,30 +207,32 @@ function updateLineControls() {
     const container = document.getElementById('line-controls-container');
     container.innerHTML = '';
 
-    // Extract unique families from the systemFonts array (e.g., "Arimo", "OpenSans_Condensed")
-    const uniqueFamilies = [...new Set(systemFonts.map(f => f.File_Name.split('-')))];
+    // FIX 1: Safely grab the first part of the string (Family) and filter out blank rows
+    const uniqueFamilies = [...new Set(systemFonts.map(f => {
+        if (!f.File_Name) return '';
+        return f.File_Name.split('-');
+    }).filter(Boolean))];
 
     for (let i = 0; i < count; i++) {
         const ls = lineSettings[i];
 
-        // Ensure current family is valid
-        if (!uniqueFamilies.includes(ls.family)) ls.family = uniqueFamilies.includes('Arimo') ? 'Arimo' : (uniqueFamilies || '');
+        if (!uniqueFamilies.includes(ls.family)) {
+            ls.family = uniqueFamilies.includes('Arimo') ? 'Arimo' : (uniqueFamilies || '');
+        }
 
         let familyOpts = uniqueFamilies.map(fam => 
             `<option value="${fam}" ${ls.family === fam ? 'selected' : ''}>${fam.replace(/_/g, ' ')}</option>`
         ).join('');
 
-        // Extract available styles ONLY for the selected family
+        // FIX 2: Safely grab the second part of the string (Style) and remove .ttf
         const availableStyles = systemFonts
-            .filter(f => f.File_Name.startsWith(ls.family + '-'))
+            .filter(f => f.File_Name && f.File_Name.startsWith(ls.family + '-'))
             .map(f => f.File_Name.split('-')[1].replace('.ttf', ''));
 
-        // Smart Defaulting: If the family changes, default to Bold (for ADA compliance) or the first available
         if (!availableStyles.includes(ls.style)) {
             ls.style = availableStyles.includes('Bold') ? 'Bold' : (availableStyles || '');
         }
 
-        // Add spaces to camel case for pretty display (e.g. "BoldItalic" -> "Bold Italic")
         let styleOpts = availableStyles.map(st => 
             `<option value="${st}" ${ls.style === st ? 'selected' : ''}>${st.replace(/([A-Z])/g, ' $1').trim()}</option>`
         ).join('');
@@ -537,8 +539,6 @@ window.addEventListener('load', async () => {
         SignOS_Canvas.loadFonts(systemFonts);
 
         // Fallback to ensure it pulls a valid font object instead of returning an Array
-        let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
-        lineSettings.forEach(ls => ls.font = defaultFont ? defaultFont.CSS_Family : 'sans-serif');
 
         if(statusText) {
             statusText.innerText = "ONLINE";
