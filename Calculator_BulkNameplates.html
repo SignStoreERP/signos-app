@@ -84,7 +84,10 @@
                         </div>
                     </div>
                     <span id="bulk-warn" class="hidden text-[10px] font-bold text-red-500 animate-pulse uppercase mb-1 block tracking-widest">Max 50 Signs Reached!</span>
-                    <textarea id="bulk-list" oninput="processBulkList()" rows="5" placeholder="John Doe\nConference Room\n..." class="w-full border border-gray-300 p-3 rounded bg-white text-sm font-mono outline-none focus:border-blue-500 shadow-inner leading-relaxed custom-scroll"></textarea>
+                    <textarea id="bulk-list" oninput="processBulkList()" rows="5" class="w-full border border-gray-300 p-3 rounded bg-white text-sm font-mono outline-none focus:border-blue-500 shadow-inner leading-relaxed custom-scroll">John Doe
+                        Conference Room
+                        Jane Smith
+                        Manager</textarea>
                 </div>
 
                 <!-- 4. ENGRAVE STYLE & MATERIALS -->
@@ -395,9 +398,10 @@
             masterPrev.style.paddingBottom = `${ratio * 100}%`; 
             masterPrev.style.backgroundColor = selectedMat ? selectedMat.Cap_Hex : '#000';
 
-            // FIXED: Added missing  index reference so it doesn't crash the UI generator
+            // CRITICAL FIX: Explicitly target the first sign object in the array
             if (mathData.renderData.length > 0) {
-                masterPrev.innerHTML = buildSignHTML(mathData.renderData, inputs, activePaintHex, false);
+                let firstSign = mathData.renderData;
+                masterPrev.innerHTML = buildSignHTML(firstSign, inputs, activePaintHex, false);
             } else {
                 masterPrev.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>`;
             }
@@ -496,9 +500,12 @@
                     runCalc();
                 }
             });
-            setTimeout(() => { const firstBtn = document.querySelector('#rowmark-grid button'); if(firstBtn) firstBtn.click(); }, 50);
+            // Force default selection to [1-181] Black Face / White Text
+            setTimeout(() => { 
+                const targetBtn = document.querySelector('#rowmark-grid button[data-code="222-402"]') || document.querySelector('#rowmark-grid button'); 
+                if(targetBtn) targetBtn.click(); 
+            }, 50);
         }
-
         function buildPaintSwatches() {
             SignOS_UI.buildColorGrid({
                 containerId: 'paint-grid',
@@ -677,6 +684,9 @@
                 updateLineControls();
                 setPaintSystem('PMS'); 
                 setMode('front');      
+                
+                // Tell the system to process the sample text immediately
+                setTimeout(() => { processBulkList(); }, 200);
                 
             } catch(e) {
                 if(statusText) {
