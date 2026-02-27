@@ -1,5 +1,5 @@
 /**
- * SignOS UI Component Builder (v1.0)
+ * SignOS UI Component Builder (v1.2)
  * Agnostic generators for Swatches, Grids, and Shared Frontend Components
  */
 
@@ -77,17 +77,46 @@ window.SignOS_UI = {
         Array.from(grid.children).forEach(b => b.classList.remove('ring-2', 'ring-offset-1', ringClass, 'border-transparent'));
     },
 
-    // Global Search Filter for generated grids
+   // Global Search Filter for generated grids
     filterGrid: function(containerId, searchInputId) {
-        const grid = document.getElementById(containerId);
-        const input = document.getElementById(searchInputId);
-        if(!grid || !input) return;
-        
-        const q = input.value.toLowerCase();
-        Array.from(grid.children).forEach(btn => {
-            if(!btn.dataset.search) return; // Skips the 'Custom' button
-            if(btn.dataset.search.includes(q)) btn.style.display = 'block';
-            else btn.style.display = 'none';
-        });
+        // ... existing filterGrid code ...
+    }, // <-- Make sure there is a comma here!
+
+    // --- GLOBAL LOADER OVERLAYS ---
+    showLoader: function(containerId, message = "Connecting to Source Data...") {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // Force container to relative so the absolute overlay stays inside it
+        if (window.getComputedStyle(container).position === 'static') container.style.position = 'relative';
+
+        let overlay = document.getElementById(containerId + '-loader');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = containerId + '-loader';
+            overlay.className = "absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300 rounded-xl";
+            container.appendChild(overlay);
+        }
+
+        overlay.innerHTML = `
+            <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
+            <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse mt-3 text-center leading-relaxed">${message}</span>
+        `;
+        overlay.classList.remove('hidden');
+    },
+
+    hideLoader: function(containerId, isError = false, errorMsg = "⚠️ Connection Failed") {
+        const overlay = document.getElementById(containerId + '-loader');
+        if (!overlay) return;
+
+        if (isError) {
+            overlay.innerHTML = `<span class="text-[10px] font-black text-red-500 uppercase tracking-widest">${errorMsg}</span>`;
+            overlay.classList.remove('hidden');
+        } else {
+            overlay.classList.add('hidden');
+        }
     }
 };
+
+
+
