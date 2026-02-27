@@ -1,15 +1,22 @@
+/**
+ * SignOS SVG Viewport (v2.1)
+ * Restored: targetId support to prevent overwriting UI containers.
+ */
 function renderPhysicsToScreen(manifest, targetId) {
-    const container = document.getElementById(targetId);
+    // Target the specific box, not the whole wrapper
+    const container = document.getElementById(targetId || 'preview-canvas');
     if (!container) return;
 
-    const DPI = 72;
+    const DPI = 72; 
     const containerW = document.getElementById('preview-wrapper').clientWidth || 400;
     const maxAllowedH = 160; 
     const scale = Math.min((containerW * 0.9) / manifest.width, maxAllowedH / manifest.height);
 
+    // Size the container physically
     container.style.width = `${manifest.width * scale}px`;
     container.style.height = `${manifest.height * scale}px`;
 
+    // Inject the SVG geometry
     container.innerHTML = `
         <svg id="live-production-preview" 
              width="100%" 
