@@ -9,6 +9,8 @@
     <script src="signos-ui.js"></script>
     <script src="signos-canvas.js"></script>
     <script src="logic_nameplate.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+    <script src="signos-export-svg.js"></script>
     <style>
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .color-scroll::-webkit-scrollbar { width: 6px; }
@@ -154,6 +156,15 @@
             <button onclick="copyTicket(this)" class="w-full mt-3 bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-4 border border-gray-300 rounded shadow-sm text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                 Copy Ticket Details
+            </button>
+        </div>
+        <div class="mt-4 flex gap-2">
+            <button onclick="copyTicketDetails()" class="flex-1 bg-gray-800 text-white text-[10px] font-black py-2 rounded uppercase tracking-widest hover:bg-gray-700 transition">
+                Copy Ticket Details
+            </button>
+    
+        <button onclick="triggerSvgExport()" class="flex-1 bg-indigo-600 text-white text-[10px] font-black py-2 rounded uppercase tracking-widest hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                <span>Export Production SVG</span>
             </button>
         </div>
     </div>
