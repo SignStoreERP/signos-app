@@ -86,7 +86,7 @@
             <div class="bg-gray-800 p-4 shadow-inner flex flex-col items-center justify-center relative rounded-xl border border-gray-900" id="preview-wrapper">
                 <span class="absolute top-2 right-3 text-[8px] font-black text-gray-500 uppercase tracking-widest z-10">Ratio & Alignment Preview</span>
                 <div class="w-full flex justify-center items-center mt-3 relative" style="height: 160px;">
-                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm overflow-hidden border border-black/20 relative">
+                    <div id="preview-canvas" class="aspect-box shadow-2xl rounded-sm overflow-hidden border border-black/20 relative"></div>
                 </div>
                 </div>
                 <div id="overflow-warn-box" class="hidden w-full mt-3 bg-orange-100 border border-orange-300 p-1.5 rounded shadow-sm text-center">
@@ -363,89 +363,77 @@
         }
 
 // --- UPDATED CALCULATION & VIRTUAL BUILD ENGINE ---
-        async function runCalc() {
-            if(!backendData.Retail_Min_Order || !selectedMat) return;
+async function runCalc() {
+    if(!backendData.Retail_Min_Order || !selectedMat) return;
 
-            // 1. Enforce physical limits
-            SignOS_Canvas.enforceSheetLimits('w', 'h', 'sheet-warn', 24, 48);
+    SignOS_Canvas.enforceSheetLimits('w', 'h', 'sheet-warn', 24, 48);
 
-            try {
-                const pmsCode = document.getElementById('pms-code').value.trim();
-                const isReverse = currentMode === 'reverse';
+    try {
+        const pmsCode = document.getElementById('pms-code').value.trim();
+        const isReverse = currentMode === 'reverse';
 
-                let finalPaintName = "";
-                let activePaintHex = "#FFFFFF"; 
+        let finalPaintName = "";
+        let activePaintHex = "#FFFFFF"; 
 
-                if (isReverse) {
-                    if (selectedPaint && selectedPaint.Code === 'CUSTOM') {
-                        finalPaintName = pmsCode ? `CUSTOM: ${pmsCode}` : "Custom Match TBD";
-                        activePaintHex = "#e2e8f0";
-                    } else if (selectedPaint) {
-                        finalPaintName = `[${selectedPaint.Code}] ${selectedPaint.Name}`;
-                        activePaintHex = selectedPaint.Hex_Code;
-                    } else {
-                        finalPaintName = "TBD / None Selected";
-                    }
-                }
-
-                const inputs = {
-                    qty: parseFloat(document.getElementById('qty').value) || 1,
-                    w: parseFloat(document.getElementById('w').value) || 10,
-                    h: parseFloat(document.getElementById('h').value) || 2,
-                    isReverse: isReverse,
-                    mat: selectedMat,
-                    paint: finalPaintName
-                };
-
-                // 2. Run Pricing Engine
-                const result = calculateNameplate(inputs, backendData);
-                if (!result || !result.retail) return;
-
-                const ret = result.retail;
-                const fmt = (n) => "$" + (n || 0).toFixed(2);
-                
-                // 3. Update Pricing UI
-                const totalSqin = (inputs.w * inputs.h) * inputs.qty;
-                document.getElementById('lbl-sqin').innerText = totalSqin.toFixed(1);
-                document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
-                document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-                document.getElementById('ui-print').innerText = fmt(ret.printTotal);
-
-                const minOrder = parseFloat(backendData.Retail_Min_Order || 35);
-                document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
-                document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
-
-                // --- 4. THE PHYSICS-FIRST PIPELINE (One Designer) ---
-                const githubBase = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
-                
-                // Create the virtual manifest (The "Design")
-                const manifest = await SignOS_Builder.buildManifest(inputs, lineSettings, systemFonts, githubBase);
-                
-                // Render that manifest to the screen (The "Monitor")
-                renderPhysicsToScreen(manifest, 'preview-canvas');
-
-                // --- 5. WARNINGS & OVERFLOWS ---
-                const warn = document.getElementById('overflow-warn-box');
-                const warnBright = document.getElementById('bright-warn-box');
-                const availableH = inputs.h - 0.5;
-                const hasOverflow = (manifest.totalHeight > availableH && document.getElementById('overflow-mode').value === 'strict');
-
-                warn.classList.toggle('hidden', !hasOverflow);
-                warnBright.classList.toggle('hidden', !selectedMat.Cap_Color.includes('Bright'));
-
-                // --- 6. TICKET GENERATION ---
-                const linesCount = parseInt(document.getElementById('lines-per-sign').value) || 1;
-                let brandTxt = `Rowmark ${inputs.mat.Series} (${inputs.mat.Thickness})`;
-                const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : 'Straight Cut Edge. ';
-                let explicitNotes = `${bevelTxt}No backers. No hardware. No installation. No raised copy. No braille.`;
-                let combinedText = lineSettings.slice(0, linesCount).map(ls => formatLineCase(ls.text, ls.caseType)).filter(Boolean).join(' / ');
-
-                document.getElementById('job-desc').value = inputs.isReverse 
-                    ? `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - ${brandTxt} Reverse Engraved [${inputs.mat.Item_Code}] ${inputs.mat.Cap_Color} face with ${inputs.paint} painted text.\nCopy: ${combinedText}\n\n${explicitNotes}`
-                    : `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - ${brandTxt} Front Engraved [${inputs.mat.Item_Code}] ${inputs.mat.Cap_Color} face with ${inputs.mat.Core_Color} text.\nCopy: ${combinedText}\n\n${explicitNotes}`;
-
-            } catch(e) { console.error("SignOS Build Error:", e); }
+        if (isReverse) {
+            if (selectedPaint && selectedPaint.Code === 'CUSTOM') {
+                finalPaintName = pmsCode ? `CUSTOM: ${pmsCode}` : "Custom Match TBD";
+                activePaintHex = "#e2e8f0";
+            } else if (selectedPaint) {
+                finalPaintName = `[${selectedPaint.Code}] ${selectedPaint.Name}`;
+                activePaintHex = selectedPaint.Hex_Code;
+            } else {
+                finalPaintName = "TBD / None Selected";
+            }
         }
+
+        const inputs = {
+            qty: parseFloat(document.getElementById('qty').value) || 1,
+            w: parseFloat(document.getElementById('w').value) || 10,
+            h: parseFloat(document.getElementById('h').value) || 2,
+            isReverse: isReverse,
+            mat: selectedMat,
+            paint: finalPaintName
+        };
+
+        const result = calculateNameplate(inputs, backendData);
+        if (!result || !result.retail) return;
+
+        // Update Pricing UI
+        const ret = result.retail;
+        const fmt = (n) => "$" + (n || 0).toFixed(2);
+        document.getElementById('lbl-sqin').innerText = ((inputs.w * inputs.h) * inputs.qty).toFixed(1);
+        document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+        document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
+        document.getElementById('ui-print').innerText = fmt(ret.printTotal);
+        document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(backendData.Retail_Min_Order || 35)}`;
+        document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+
+        // --- THE PHYSICS-FIRST BRIDGE ---
+        const githubBase = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
+        
+        // 1. Build the Manifest (The Architect)
+        const manifest = await SignOS_Builder.buildManifest(inputs, lineSettings, systemFonts, githubBase);
+        
+        // 2. Render to Screen (The Monitor)
+        renderPhysicsToScreen(manifest, 'preview-canvas');
+
+        // 3. Handle Warnings
+        const warn = document.getElementById('overflow-warn-box');
+        const availableH = inputs.h - 0.5;
+        // Check if the total mathematical block height exceeds the sign height
+        warn.classList.toggle('hidden', !(manifest.totalHeight > availableH && document.getElementById('overflow-mode').value === 'strict'));
+        document.getElementById('bright-warn-box').classList.toggle('hidden', !selectedMat.Cap_Color.includes('Bright'));
+
+        // Ticket Generation
+        let combinedText = lineSettings.slice(0, parseInt(document.getElementById('lines-per-sign').value)).map(ls => formatLineCase(ls.text, ls.caseType)).filter(Boolean).join(' / ');
+        const bevelTxt = document.getElementById('bevel-edges').value === 'Yes' ? 'Bevel Edges. ' : 'Straight Cut Edge. ';
+        document.getElementById('job-desc').value = inputs.isReverse 
+            ? `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - Rowmark ${selectedMat.Series} Reverse [${selectedMat.Item_Code}] with ${inputs.paint} text.\nCopy: ${combinedText}\n\n${bevelTxt}No hardware.`
+            : `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Nameplates - Rowmark ${selectedMat.Series} Front [${selectedMat.Item_Code}] with ${selectedMat.Core_Color} text.\nCopy: ${combinedText}\n\n${bevelTxt}No hardware.`;
+
+    } catch(e) { console.error("SignOS Render Error:", e); }
+}
 
         function copyTicket(btn) {
             const desc = document.getElementById('job-desc');
