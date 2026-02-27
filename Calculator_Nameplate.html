@@ -674,23 +674,23 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
-                const [reqConfig, reqRowmark, reqSW, reqPMS, reqFonts] = await Promise.all([
-                    fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Nameplates`),
-                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Rowmark`),
-                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_Paint`),
-                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Colors_PMS`),
-                    fetch(`${SCRIPT_URL}?req=table&tab=REF_Fonts`)
+                // THE NEW PHASE 3 LOADER
+                const payload = await SignOS.fetchProductData('PROD_Nameplates', [
+                    'REF_Colors_Rowmark',
+                    'REF_Colors_Paint',
+                    'REF_Colors_PMS',
+                    'REF_Fonts'
                 ]);
 
-                backendData = await reqConfig.json();
-                rowmarkData = await reqRowmark.json();
+                backendData = payload.config;
+                rowmarkData = payload.tables['REF_Colors_Rowmark'] || [];
                 
                 const stdColors = [
                     { Code: 'STD-WHT', Name: 'Standard White', Hex_Code: '#FFFFFF' },
                     { Code: 'STD-BLK', Name: 'Standard Black', Hex_Code: '#000000' }
                 ];
 
-                const rawSW = await reqSW.json();
+                const rawSW = payload.tables['REF_Colors_Paint'] || [];
                 let formattedSW = rawSW.map(p => {
                     let hex = p.Hex_Code || p.HEX_Code || p['Hex_Code '] || '#FFFFFF';
                     hex = hex.trim();
@@ -699,7 +699,7 @@
                 });
                 swData = [...stdColors, ...formattedSW];
 
-                const rawPMS = await reqPMS.json();
+                const rawPMS = payload.tables['REF_Colors_PMS'] || [];
                 let formattedPMS = rawPMS.map(p => ({
                     Code: p['PMS Name / Code'] || 'Unknown', 
                     Name: p['PMS Name / Code'] || 'Unknown', 
@@ -708,7 +708,7 @@
                 pmsData = [...stdColors, ...formattedPMS];
 
                 // Process Custom Font Engine Data
-                const rawFonts = await reqFonts.json();
+                const rawFonts = payload.tables['REF_Fonts'] || [];
                 systemFonts = rawFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
                 
                 if(systemFonts.length > 0) {
