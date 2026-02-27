@@ -207,10 +207,10 @@ function updateLineControls() {
     const container = document.getElementById('line-controls-container');
     container.innerHTML = '';
 
-    // FIX 1: Safely grab the first part of the string (Family) and filter out blank rows
+    // FIX 1: Safely grab the first part of the string (Family) using 
     const uniqueFamilies = [...new Set(systemFonts.map(f => {
         if (!f.File_Name) return '';
-        return f.File_Name.split('-');
+        return f.File_Name.split('-'); 
     }).filter(Boolean))];
 
     for (let i = 0; i < count; i++) {
@@ -224,10 +224,13 @@ function updateLineControls() {
             `<option value="${fam}" ${ls.family === fam ? 'selected' : ''}>${fam.replace(/_/g, ' ')}</option>`
         ).join('');
 
-        // FIX 2: Safely grab the second part of the string (Style) and remove .ttf
+        // FIX 2: Safely grab the second part of the string (Style) using [1] and a safety check
         const availableStyles = systemFonts
             .filter(f => f.File_Name && f.File_Name.startsWith(ls.family + '-'))
-            .map(f => f.File_Name.split('-')[1].replace('.ttf', ''));
+            .map(f => {
+                const parts = f.File_Name.split('-');
+                return parts[1] ? parts[1].replace('.ttf', '') : '';
+            }).filter(Boolean);
 
         if (!availableStyles.includes(ls.style)) {
             ls.style = availableStyles.includes('Bold') ? 'Bold' : (availableStyles || '');
