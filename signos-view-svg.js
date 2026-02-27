@@ -1,16 +1,22 @@
-/**
- * SignOS SVG Viewport
- * Renders the Build Manifest to the screen.
- */
-function renderPhysicsToScreen(manifest) {
-    const previewWrapper = document.getElementById('preview-wrapper');
-    const DPI = 72; // Standard scale for browser SVG rendering
+function renderPhysicsToScreen(manifest, targetId) {
+    const container = document.getElementById(targetId);
+    if (!container) return;
 
-    // We replace the current HTML preview with a raw SVG element
-    previewWrapper.innerHTML = `
+    const DPI = 72;
+    const containerW = document.getElementById('preview-wrapper').clientWidth || 400;
+    const maxAllowedH = 160; 
+    const scale = Math.min((containerW * 0.9) / manifest.width, maxAllowedH / manifest.height);
+
+    container.style.width = `${manifest.width * scale}px`;
+    container.style.height = `${manifest.height * scale}px`;
+
+    container.innerHTML = `
         <svg id="live-production-preview" 
+             width="100%" 
+             height="100%"
              viewBox="0 0 ${manifest.width * DPI} ${manifest.height * DPI}" 
-             style="width: 100%; height: auto; background: ${manifest.substrateColor};">
+             xmlns="http://www.w3.org/2000/svg"
+             style="background: ${manifest.substrateColor}; display: block;">
             <g id="preview-art">
                 ${manifest.objects.map(obj => `
                     <path d="${obj.d}" fill="${manifest.textColor}" transform="translate(${obj.x * DPI}, ${obj.y * DPI})" />
