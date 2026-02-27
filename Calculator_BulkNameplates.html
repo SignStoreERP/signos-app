@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Nameplates v4.1</title>
+    <title>Bulk Nameplates v4.1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
@@ -400,7 +400,7 @@ Manager</textarea>
 
             // CRITICAL FIX: Explicitly target the first sign object in the array
             if (mathData.renderData.length > 0) {
-                let firstSign = mathData.renderData;
+                let firstSign = mathData.renderData.at(0);
                 masterPrev.innerHTML = buildSignHTML(firstSign, inputs, activePaintHex, false);
             } else {
                 masterPrev.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>`;
@@ -668,8 +668,8 @@ Manager</textarea>
                 systemFonts = (payload.tables['REF_Fonts'] || []).filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
                 SignOS_Canvas.loadFonts(systemFonts);
                 
-                // FIXED: Adding  fallback to ensure it pulls a valid font object instead of returning an Array
-                let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
+                // FIXED: Adding fallback to ensure it pulls a valid font object instead of returning an Array
+                let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts.at(0);
                 lineSettings.forEach(ls => ls.font = defaultFont ? defaultFont.CSS_Family : 'sans-serif');
 
                 if(statusText) {
