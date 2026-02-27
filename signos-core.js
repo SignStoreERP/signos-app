@@ -1,4 +1,4 @@
-// SignOS Core System v1.8.1
+// SignOS Core System v1.8.2
 // Features: Twin-Engine Env, Auto-Routing API, IP Telemetry, "Island" Header Injection
 
 const IS_DEV_ENV = window.location.href.includes('signos-app') || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
@@ -150,3 +150,22 @@ async function submitFeedback() {
     } catch(e) { alert("Error: " + e.message); } 
     finally { btn.innerText = "SUBMIT TICKET"; btn.disabled = false; }
 }
+
+// --- CENTRALIZED API LOADER (Phase 3) ---
+window.SignOS = window.SignOS || {};
+
+SignOS.fetchProductData = async function(tabName, refTables = []) {
+    const refs = refTables.join(',');
+    // Build the request URL
+    let url = `${SCRIPT_URL}?req=bundle&tab=${tabName}`;
+    if (refs) url += `&refs=${refs}`;
+    
+    const response = await fetch(url);
+    const json = await response.json();
+    
+    if (json.status !== "success") {
+        throw new Error(json.message || "Failed to fetch bundle");
+    }
+    
+    return json.data;
+};
