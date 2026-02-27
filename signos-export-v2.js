@@ -28,7 +28,6 @@ function downloadProductionSVG() {
 }
 
 function downloadBulkProductionSVG() {
-    // currentManifests is populated by the Bulk Calculator
     if (!currentManifests || currentManifests.length === 0) return alert("Build a batch first!");
 
     const DPI = 72; 
@@ -73,8 +72,9 @@ function downloadBulkProductionSVG() {
         }
     });
 
-    // Alert the user if the layout spills off the bottom of the 24" sheet
-    if (currentY + currentManifests.manifest.height > sheetH - margin) {
+    // FIX: Using .at(0) instead of square brackets to safely check the height!
+    const firstManifest = currentManifests.at(0).manifest;
+    if (currentY + firstManifest.height > sheetH - margin) {
         alert("Note: This batch requires more than one 48x24 sheet. The overflowing signs will be located below the artboard boundary in CorelDraw.");
     }
 
