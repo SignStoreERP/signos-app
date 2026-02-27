@@ -115,17 +115,33 @@ function fetchProductWithMatrix(tabName) {
   const ss = SpreadsheetApp.openById(DATA_SS_ID);
   let config = {};
 
+  // 1. Fetch Standard Product Data (With Override Fallback)
   try {
     const prodSheet = ss.getSheetByName(tabName);
     if (prodSheet) {
+      // data is a 2D array: [row][column]
       const data = prodSheet.getDataRange().getValues();
+      
+      // Start at i=1 to skip the header row
       for (let i = 1; i < data.length; i++) {
-        const key = data[i][0]; 
-        const val = data[i][1]; 
-        if (key) config[key] = val;
+        const keyName = data[i][0];       // Column A: Index 0
+        const defaultVal = data[i][1];    // Column B: Index 1
+        const overrideVal = data[i][2];   // Column C: Index 2
+        
+        // Ensure the key exists before assigning to config
+        if (keyName) {
+          // FALLBACK LOGIC: If override is not empty, use it. Otherwise, use default.
+          if (overrideVal !== "" && overrideVal !== null) {
+            config[keyName] = overrideVal;
+          } else {
+            config[keyName] = defaultVal;
+          }
+        }
       }
     }
-  } catch(e) { console.warn("Legacy fetch failed: " + e); }
+  } catch(e) { 
+    console.warn("Fetch failed for " + tabName + ": " + e); 
+  }
 
   try {
     const matrixSheet = ss.getSheetByName("SYS_Cost_Matrix");
@@ -381,54 +397,79 @@ function commitMatrixBatch(p) {
 // ==========================================
 
 function generateNotebookLMBridge() {
-  const ss = SpreadsheetApp.openById(DATA_SS_ID);
-  const sheet = ss.getSheetByName("SYS_Modules");
-  const data = sheet.getDataRange().getValues();
-  
-  const repoOwner = "SignStoreERP";
-  const repoName = "signos-app";
-  const MAX_CHARS = 300000; 
-  
-  let chunks = [];
-  let currentContent = `# SIGNOS MASTER CODEBASE (PART 1)\n**Sync:** ${new Date().toString()}\n---\n\n`;
-  let count = 0;
-  let fetchedJS = new Set();
+    const ss = SpreadsheetApp.openById(DATA_SS_ID);
+    const sheet = ss.getSheetByName("SYS_Modules");
+    const data = sheet.getDataRange().getValues();
 
-  for (let i = 1; i < data.length; i++) {
-    const name = data[i][1];      // Display Name (Col B)
-    const fileName = data[i][2];  // File Link (Col C)
+    const repoOwner = "SignStoreERP";
+    const repoName = "signos-app"; // NOTE: Change to 'signos-live' for the LIVE script
 
-    if (fileName && (fileName.toString().endsWith(".html") || fileName.toString().endsWith(".js"))) {
-      try {
-        const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${fileName}`;
-        const content = UrlFetchApp.fetch(url).getContentText();
-        const lang = fileName.endsWith('.js') ? 'javascript' : 'html';
+    const MAX_CHARS = 300000;
+    let chunks = [];
+    let currentContent = `# SIGNOS MASTER CODEBASE (PART 1)\n**Sync:** ${new Date().toString()}\n---\n\n`;
+    let count = 0;
+    let fetchedJS = new Set();
 
-        let block = `## ${name} (${fileName})\n\`\`\`${lang}\n${content}\n\`\`\`\n\n---\n\n`;
+    for (let i = 1; i < data.length; i++) {
+        // FIXED: Column B (Index 1) and Column C (Index 2)
+        const name = data[i][4];      
+        const fileName = data[i][5];  
 
-        if (currentContent.length + block.length > MAX_CHARS) {
-          chunks.push(currentContent);
-          currentContent = `# SIGNOS MASTER CODEBASE (PART ${chunks.length + 1})\n**Sync:** ${new Date().toString()}\n---\n\n`;
+        if (fileName && (fileName.toString().endsWith(".html") || fileName.toString().endsWith(".js"))) {
+            try {
+                const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${fileName}`;
+                const content = UrlFetchApp.fetch(url).getContentText();
+                const lang = fileName.endsWith('.js') ? 'javascript' : 'html';
+
+                let block = `## ${name} (${fileName})\n\`\`\`${lang}\n${content}\n\`\`\`\n\n---\n\n`;
+
+                if (currentContent.length + block.length > MAX_CHARS) {
+                    chunks.push(currentContent);
+                    currentContent = `# SIGNOS MASTER CODEBASE (PART ${chunks.length + 1})\n**Sync:** ${new Date().toString()}\n---\n\n`;
+                }
+                currentContent += block;
+                count++;
+                
+                // DEPENDENCY SCANNER (Fetches matching .js files automatically)
+                if (lang === 'html') {
+                    const scriptRegex = /<script src="([^"]+\.js)"><\/script>/g;
+                    let match;
+                    while ((match = scriptRegex.exec(content)) !== null) {
+                        const jsFileName = match[4]; // FIXED: Extracts the exact filename
+                        if (!jsFileName.startsWith('http') && !fetchedJS.has(jsFileName)) {
+                            fetchedJS.add(jsFileName);
+                            try {
+                                const jsUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${jsFileName}`;
+                                const jsContent = UrlFetchApp.fetch(jsUrl).getContentText();
+                                let jsBlock = `## Dependency (${jsFileName})\n> Parent: ${fileName}\n\n\`\`\`javascript\n${jsContent}\n\`\`\`\n\n---\n\n`;
+
+                                if (currentContent.length + jsBlock.length > MAX_CHARS) {
+                                    chunks.push(currentContent);
+                                    currentContent = `# SIGNOS ERP - MASTER CODEBASE CONTEXT (PART ${chunks.length + 1})\n**Last Sync:** ${new Date().toString()}\n---\n\n`;
+                                }
+                                currentContent += jsBlock;
+                                count++;
+                            } catch(jsErr) {}
+                        }
+                    }
+                }
+            } catch (e) {}
         }
-        currentContent += block;
-        count++;
-      } catch (e) {}
     }
-  }
-  chunks.push(currentContent);
+    chunks.push(currentContent);
 
-  const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID);
-  const oldFiles = folder.getFiles();
-  while(oldFiles.hasNext()) {
-    const f = oldFiles.next();
-    if(f.getName().startsWith("SignOS_DEV_Context_Part_")) f.setTrashed(true);
-  }
+    const folder = DriveApp.getFolderById(CONTEXT_FOLDER_ID);
+    const oldFiles = folder.getFiles();
+    while(oldFiles.hasNext()) {
+        const f = oldFiles.next();
+        if(f.getName().startsWith("SignOS_DEV_Context") || f.getName().startsWith("SignOS_LIVE_Context")) f.setTrashed(true);
+    }
 
-  chunks.forEach((text, idx) => {
-    folder.createFile(`SignOS_DEV_Context_Part_${idx + 1}.txt`, text, MimeType.PLAIN_TEXT);
-  });
+    chunks.forEach((text, idx) => {
+        folder.createFile(`SignOS_DEV_Context_Part_${idx + 1}.txt`, text, MimeType.PLAIN_TEXT);
+    });
 
-  return returnJSON({ status: "success", message: `Synced ${count} files across ${chunks.length} chunks.` });
+    return returnJSON({ status: "success", message: `Synced ${count} files across ${chunks.length} chunks.` });
 }
 
 function generateBackendContext() {
