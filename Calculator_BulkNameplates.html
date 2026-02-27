@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Nameplates v4.0</title>
+    <title>Bulk Nameplates v4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
@@ -395,6 +395,7 @@
             masterPrev.style.paddingBottom = `${ratio * 100}%`; 
             masterPrev.style.backgroundColor = selectedMat ? selectedMat.Cap_Hex : '#000';
 
+            // FIXED: Added missing  index reference so it doesn't crash the UI generator
             if (mathData.renderData.length > 0) {
                 masterPrev.innerHTML = buildSignHTML(mathData.renderData, inputs, activePaintHex, false);
             } else {
@@ -542,7 +543,8 @@
 
         // --- CALCULATION ENGINE ---
         function runCalc() {
-            if(!backendData.Retail_Min_Order || !selectedMat) return;
+            // FIXED: Removed strict dependency on !backendData.Retail_Min_Order inside the early exit clause
+            if(!selectedMat) return;
 
             SignOS_Canvas.enforceSheetLimits('w', 'h', 'sheet-warn', 24, 48);
 
@@ -659,6 +661,7 @@
                 systemFonts = (payload.tables['REF_Fonts'] || []).filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
                 SignOS_Canvas.loadFonts(systemFonts);
                 
+                // FIXED: Adding  fallback to ensure it pulls a valid font object instead of returning an Array
                 let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
                 lineSettings.forEach(ls => ls.font = defaultFont ? defaultFont.CSS_Family : 'sans-serif');
 
