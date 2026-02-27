@@ -1,123 +1,110 @@
 /**
- * SignOS SVG Outlining Engine (v1.8 - CAD Standard)
- * Option 3: Unit-Scale Wireframe Method
+ * SignOS SVG Outlining Engine (v1.9 - Optical Geometry Method)
+ * Focus: Absolute 1:1 Parity between Geometry and Sign Blank.
  */
 
 async function triggerSvgExport() {
-    console.log("🛠️ Initializing Option 3: CAD Wireframe Export...");
+    console.log("🛠️ Starting Optical Geometry Export...");
     
     try {
-        const DPI = 72; // 1 inch = 72 user units
+        const DPI = 72; // Standard SVG points-per-inch
         const w = parseFloat(document.getElementById('w').value) || 0;
         const h = parseFloat(document.getElementById('h').value) || 0;
         const githubBase = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
 
         if (w <= 0 || h <= 0 || !selectedMat) {
-            alert("Dimensions and Material selection required.");
-            return;
+            alert("Dimensions and Material required."); return;
         }
 
-        // 1. COLORS & METADATA
+        // 1. SYNC COLORS & MODES
         const isReverse = currentMode === 'reverse';
         let activePaintHex = "#FFFFFF"; 
         if (isReverse && selectedPaint) {
             activePaintHex = (selectedPaint.Code === 'CUSTOM') ? "#e2e8f0" : selectedPaint.Hex_Code;
         }
-
         const substrateHex = selectedMat.Cap_Hex || "#DDDDDD";
         const textColor = currentMode === 'front' ? selectedMat.Core_Hex : activePaintHex;
-        const toolpathLayer = currentMode === 'front' ? "FRONT_ENGRAVE" : "REVERSE_FILL";
 
-        // 2. PHYSICS PRE-CALCULATION
+        // 2. DATA AGGREGATION
         const linesCount = parseInt(document.getElementById('lines-per-sign').value) || 1;
-        const gapInches = parseFloat(document.getElementById('line-spacing').value) || 0;
-        const availableW = w - 0.5; // SignOS editor standard padding
+        const gapPoints = (parseFloat(document.getElementById('line-spacing').value) || 0) * DPI;
+        const availableW = w - 0.5;
 
-        let renderedLines = [];
-        let totalContentHeightInches = 0;
+        let processedLines = [];
+        let totalInkHeight = 0;
 
         for (let i = 0; i < linesCount; i++) {
             const ls = lineSettings[i];
             const text = typeof formatLineCase === 'function' ? formatLineCase(ls.text, ls.caseType) : ls.text;
             if (!text || text.trim() === "") continue;
 
-            // Load Font Data
             const fontObj = systemFonts.find(f => f.CSS_Family === ls.font);
             const fontUrl = githubBase + encodeURIComponent(fontObj.File_Name);
             const font = await new Promise((resolve, reject) => {
                 opentype.load(fontUrl, (err, f) => err ? reject(err) : resolve(f));
             });
 
-            // Calculate Overflow Height (Mirror Editor logic)
-            let targetH = ls.height;
-            const maxHForWidth = SignOS_Canvas.calcMaxHeightForText(text, ls.font, availableW);
-            if (document.getElementById('overflow-mode').value === 'shrink' && targetH > maxHForWidth) {
-                targetH = Math.max(0.125, Math.floor(maxHForWidth / 0.125) * 0.125);
-            }
+            // Scale math: Mirroring SignOS "Cap Height" logic
+            const targetH = ls.height * DPI;
+            const fontScale = targetH / font.ascender;
 
-            // OPTION 3 MATH: Calculate Scale from Font Units
-            // This ensures targetH = physical distance from Baseline to Top of Cap
-            const fontScaleFactor = (targetH * DPI) / font.ascender;
-
-            renderedLines.push({
+            // Generate temporary path to measure real ink bounds
+            const tempPath = font.getPath(text, 0, 0, font.unitsPerEm * (fontScale / (font.unitsPerEm / font.ascender)));
+            const bbox = tempPath.getBoundingBox();
+            
+            processedLines.push({
                 text: text,
-                font: font,
-                h: targetH,
-                scale: fontScaleFactor,
+                path: tempPath,
+                bbox: bbox,
+                lineH: targetH,
                 id: i + 1
             });
-
-            totalContentHeightInches += targetH;
+            totalInkHeight += targetH;
         }
 
-        if (renderedLines.length === 0) return;
+        if (processedLines.length === 0) return;
+        totalInkHeight += (processedLines.length - 1) * gapPoints;
 
-        // Add gaps to total height
-        totalContentHeightInches += (renderedLines.length - 1) * gapInches;
-        
-        // 3. CONSTRUCT SVG
-        let svgBody = `  <g id="SUBSTRATE" data-name="Material: ${selectedMat.Item_Code}">
+        // 3. GENERATE SVG
+        let svgBody = `  <g id="SUBSTRATE" data-name="Substrate: ${selectedMat.Item_Code}">
     <rect width="${w * DPI}" height="${h * DPI}" fill="${substrateHex}" />
   </g>\n\n`;
 
-        svgBody += `  <g id="PRODUCTION_ART" data-name="${toolpathLayer} (HEX: ${textColor})">\n`;
+        svgBody += `  <g id="PRODUCTION_ART" data-name="Engrave Color: ${textColor}">\n`;
 
-        // Center the entire block vertically
-        let currentYInches = (h - totalContentHeightInches) / 2;
+        // THE PIVOT: We center the entire block vertically based on the Sign height
+        let currentYOffset = ((h * DPI) - totalInkHeight) / 2;
 
-        for (const line of renderedLines) {
-            // Generate Path at Font Units (Standard Size)
-            const path = line.font.getPath(line.text, 0, 0, line.font.unitsPerEm);
-            const bbox = path.getBoundingBox();
+        for (const line of processedLines) {
+            const inkW = line.bbox.x2 - line.bbox.x1;
+            const inkH = line.bbox.y2 - line.bbox.y1;
             
-            // Horizontal Center Math
-            const visualWidthUnits = (bbox.x2 - bbox.x1) * (line.scale / (line.font.unitsPerEm / line.font.ascender));
-            const centeredX = ((w * DPI) / 2) - (visualWidthUnits / 2);
+            // OPTICAL HORIZONTAL CENTER
+            const x = ((w * DPI) / 2) - (inkW / 2) - line.bbox.x1;
+            
+            // OPTICAL VERTICAL ALIGNMENT
+            // We align the top of the ink (y1) to our current offset
+            const y = currentYOffset - line.bbox.y1;
 
-            // Precision Baseline Alignment
-            const baselineY = (currentYInches + line.h) * DPI;
-
-            // EXPORTING AS NAMED GROUP FOR ILLUSTRATOR
             svgBody += `    <g id="LINE_${line.id}" data-name="${line.text}">
-      <path d="${path.toPathData()}" 
+      <path d="${line.path.toPathData()}" 
             fill="${textColor}" 
             stroke="${textColor}" 
             stroke-width="0.01" 
-            transform="translate(${centeredX}, ${baselineY}) scale(${line.scale / (line.font.unitsPerEm / line.font.ascender)})" />
+            transform="translate(${x}, ${y})" />
     </g>\n`;
 
-            currentYInches += (line.h + gapInches);
+            currentYOffset += line.lineH + gapPoints;
         }
         svgBody += `  </g>`;
 
-        // 4. GENERATE HEADER & BLOB
         const header = `<svg width="${w}in" height="${h}in" viewBox="0 0 ${w * DPI} ${h * DPI}" xmlns="http://www.w3.org/2000/svg">`;
         downloadBlob(`${header}\n${svgBody}\n</svg>`, `SignOS_PROD_${w}x${h}.svg`, 'image/svg+xml');
         
-        console.log("🚀 CAD Standard Export Complete.");
+        console.log("🚀 Optical Parity Export Complete.");
 
     } catch (err) {
-        console.error("❌ SVG Option 3 Failed:", err);
+        console.error("❌ Export Failed:", err);
     }
 }
 
