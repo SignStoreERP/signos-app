@@ -1,11 +1,11 @@
-// signos-builder.js (v3.0 Parallel Test)
+// signos-builder.js (v3.2 True Ink Centering)
 const SignOS_Builder = {
     async buildManifest(inputs, lines, systemFonts, githubBase) {
         const manifest = {
             width: inputs.w, 
             height: inputs.h,
             substrateColor: inputs.mat.Cap_Hex || "#DDDDDD",
-            textColor: (inputs.isReverse) ? (inputs.paintHex || "#FFFFFF") : inputs.mat.Core_Hex,
+            textColor: inputs.isReverse ? (inputs.paintHex || "#FFFFFF") : inputs.mat.Core_Hex,
             objects: [], 
             totalHeight: 0
         };
@@ -13,45 +13,64 @@ const SignOS_Builder = {
         const gap = inputs.gap || 0;
         const lineData = [];
 
-        // Fetch font data and calculate scale based on ASCENDER units
+        // 1. Fetch fonts and calculate raw vector paths
         for (let ls of lines) {
             if (!ls.text) continue;
             
-            const fontObj = systemFonts.find(f => f.CSS_Family === ls.font);
+            const fontObj = systemFonts.find(f => f.CSS_Family === ls.font) || systemFonts;
             const fontUrl = githubBase + encodeURIComponent(fontObj.File_Name);
-            
-            // Load the TTF file natively as geometry data
             const font = await new Promise((res) => opentype.load(fontUrl, (err, f) => res(f)));
             
-            lineData.push({ text: ls.text, font: font, h: ls.height });
-            manifest.totalHeight += ls.height;
-        }
-
-        if (lineData.length > 1) manifest.totalHeight += (lineData.length - 1) * gap;
-
-        // Visual Geometry Centering Logic
-        let currentY = (inputs.h - manifest.totalHeight) / 2;
-
-        for (let ld of lineData) {
-            // Scaling: font.ascender is the key to matching physical inch height
-            const scale = ld.h / ld.font.ascender;
-            const path = ld.font.getPath(ld.text, 0, 0, ld.font.unitsPerEm * scale);
-            const bbox = path.getBoundingBox();
-
-            // X-Center based on actual Ink Bounds, not character width
-            const x = (inputs.w / 2) - ((bbox.x2 - bbox.x1) / 2) - bbox.x1;
+            // Convert requested physical inch height to font scaling ratio
+            const scale = ls.height / font.ascender;
+            const path = font.getPath(ls.text, 0, 0, font.unitsPerEm * scale);
             
-            // Y-Center: Mathematical alignment to top of ink
-            const y = currentY - bbox.y1;
-
-            manifest.objects.push({
-                d: path.toPathData(),
-                name: ld.text,
-                x: x, 
-                y: y
-            });
-            currentY += ld.h + gap;
+            lineData.push({ text: ls.text, path: path });
         }
+
+        if (lineData.length === 0) return manifest;
+
+        // 2. Stack paths based on TRUE INK visual bounds (Ignoring typograhic descenders)
+        let currentY = 0;
+        let groupMinY = Infinity;
+        let groupMaxY = -Infinity;
+
+        lineData.forEach(ld => {
+            const bbox = ld.path.getBoundingBox();
+            
+            // Align the absolute top of the ink to currentY
+            const offsetY = currentY - bbox.y1; 
+            
+            // Center X exactly on ink width
+            ld.xOffset = (inputs.w / 2) - ((bbox.x2 - bbox.x1) / 2) - bbox.x1; 
+            ld.yOffset = offsetY;
+            
+            const trueY1 = bbox.y1 + offsetY;
+            const trueY2 = bbox.y2 + offsetY;
+            
+            if (trueY1 < groupMinY) groupMinY = trueY1;
+            if (trueY2 > groupMaxY) groupMaxY = trueY2;
+            
+            // The next line starts below the absolute bottom of this line's ink + the gap
+            currentY = trueY2 + gap; 
+        });
+
+        // 3. Calculate absolute vertical center shift for the whole stacked group
+        manifest.totalHeight = groupMaxY - groupMinY;
+        const targetCenterY = inputs.h / 2;
+        const currentCenterY = groupMinY + (manifest.totalHeight / 2);
+        const finalShiftY = targetCenterY - currentCenterY;
+
+        // 4. Build final manifest objects with translated coordinates
+        lineData.forEach(ld => {
+            manifest.objects.push({
+                d: ld.path.toPathData(),
+                name: ld.text,
+                x: ld.xOffset, 
+                y: ld.yOffset + finalShiftY
+            });
+        });
+
         return manifest;
     }
 };
