@@ -39,8 +39,14 @@ window.SignOS_UI = {
                 let cap = item.Cap_Hex || '#000000';
                 let core = item.Core_Hex || '#FFFFFF';
                 bgStyle = config.isReverse ? cap : `linear-gradient(135deg, ${cap} 50%, ${core} 50%)`;
-                title = `${item.Item_Code} - ${item.Cap_Color}`;
+                
+                // Formats the tooltip to match your exact requested label
+                let thick = item.Thickness || '1/16"';
+                let coreTxt = config.isReverse ? 'Clear' : (item.Core_Color || 'Unknown');
+                title = `[${item.Item_Code}] ${item.Cap_Color} Face / ${coreTxt} Text (${thick})`;
+                
                 searchData = title.toLowerCase();
+                btn.dataset.code = item.Item_Code; // Adds an invisible tag so the system can target specific defaults
             } 
             else if (config.type === 'paint' || config.type === 'vinyl') {
                 bgStyle = item.Hex_Code || '#FFFFFF';
