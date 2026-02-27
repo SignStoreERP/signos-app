@@ -1,7 +1,3 @@
-/**
- * SignOS Virtual Build Engine
- * Calculates physical geometry in inches before rendering.
- */
 const SignOS_Builder = {
     async buildManifest(inputs, lines, systemFonts, githubBase) {
         const manifest = {
@@ -9,42 +5,48 @@ const SignOS_Builder = {
             height: inputs.h,
             substrateColor: inputs.mat.Cap_Hex || "#DDDDDD",
             textColor: (currentMode === 'front') ? inputs.mat.Core_Hex : (selectedPaint?.Hex_Code || "#FFFFFF"),
-            objects: []
+            objects: [],
+            totalHeight: 0 // Tracked for overflow logic
         };
 
+        const linesCount = parseInt(document.getElementById('lines-per-sign').value) || 1;
         const gap = parseFloat(document.getElementById('line-spacing').value) || 0;
-        let totalBlockHeight = 0;
         const lineData = [];
 
-        // Pre-calculate line physics
-        for (let ls of lines) {
-            if (!ls.text) continue;
+        for (let i = 0; i < linesCount; i++) {
+            let ls = lines[i];
+            let text = typeof formatLineCase === 'function' ? formatLineCase(ls.text, ls.caseType) : ls.text;
+            if (!text) continue;
+
             const fontObj = systemFonts.find(f => f.CSS_Family === ls.font);
             const fontUrl = githubBase + encodeURIComponent(fontObj.File_Name);
             const font = await new Promise((res) => opentype.load(fontUrl, (err, f) => res(f)));
             
-            // Mirror your overflow logic here to adjust ls.height if needed
             let h = ls.height; 
-            
-            lineData.push({ text: ls.text, font: font, h: h });
-            totalBlockHeight += h;
-        }
-        totalBlockHeight += (lineData.length - 1) * gap;
+            // Shrink logic
+            const availableW = inputs.w - 0.5;
+            const maxH = SignOS_Canvas.calcMaxHeightForText(text, ls.font, availableW);
+            if (document.getElementById('overflow-mode').value === 'shrink' && h > maxH) {
+                h = Math.max(0.125, Math.floor(maxH / 0.125) * 0.125);
+            }
 
-        // Positioning Logic (Physical Center)
-        let currentY = (inputs.h - totalBlockHeight) / 2;
+            lineData.push({ text: text, font: font, h: h });
+            manifest.totalHeight += h;
+        }
+        
+        if (lineData.length > 1) manifest.totalHeight += (lineData.length - 1) * gap;
+
+        let currentY = (inputs.h - manifest.totalHeight) / 2;
 
         for (let ld of lineData) {
-            // UnitsPerEm scaling to reach exact inch height
             const scale = ld.h / ld.font.ascender;
             const path = ld.font.getPath(ld.text, 0, 0, ld.font.unitsPerEm * scale);
             const bbox = path.getBoundingBox();
             
             const x = (inputs.w / 2) - ((bbox.x2 - bbox.x1) / 2) - bbox.x1;
-            const y = currentY - bbox.y1; // Alignment to the mathematical top of ink
+            const y = currentY - bbox.y1;
 
             manifest.objects.push({
-                type: 'path',
                 d: path.toPathData(),
                 name: ld.text,
                 x: x,
