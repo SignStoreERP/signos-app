@@ -207,11 +207,10 @@ function updateLineControls() {
     const container = document.getElementById('line-controls-container');
     container.innerHTML = '';
 
-    // FIX 1: Safely extract Family using .shift() to avoid brackets entirely
     const uniqueFamilies = [...new Set(systemFonts.map(f => {
         if (!f.File_Name) return '';
         const parts = f.File_Name.split('-');
-        return parts.shift(); // Safely pops off the first item (e.g., "Arimo")
+        return parts.shift(); 
     }).filter(Boolean))];
 
     for (let i = 0; i < count; i++) {
@@ -225,12 +224,11 @@ function updateLineControls() {
             `<option value="${fam}" ${ls.family === fam ? 'selected' : ''}>${fam.replace(/_/g, ' ')}</option>`
         ).join('');
 
-        // FIX 2: Safely extract Style using .pop() to avoid brackets entirely
         const availableStyles = systemFonts
             .filter(f => f.File_Name && f.File_Name.startsWith(ls.family + '-'))
             .map(f => {
                 const parts = f.File_Name.split('-');
-                const styleWithExt = parts.pop(); // Safely pops off the last item (e.g., "Bold.ttf")
+                const styleWithExt = parts.pop(); 
                 return styleWithExt ? styleWithExt.replace('.ttf', '') : '';
             }).filter(Boolean);
 
@@ -242,12 +240,15 @@ function updateLineControls() {
             `<option value="${st}" ${ls.style === st ? 'selected' : ''}>${st.replace(/([A-Z])/g, ' $1').trim()}</option>`
         ).join('');
 
+        // FIX: Two-tier flex layout prevents overflow
         container.innerHTML += `
-        <div class="flex flex-col sm:flex-row items-center gap-1.5 bg-white border border-indigo-200 p-1.5 rounded shadow-sm mb-1">
-            <span class="text-[9px] font-black text-indigo-700 w-full sm:w-6 text-left sm:text-center uppercase shrink-0">L${i+1}</span>
-            <input type="text" value="${ls.text}" placeholder="Enter text..." oninput="updateLineSetting(${i}, 'text', this.value)" class="flex-1 w-full sm:w-auto bg-gray-50 border border-gray-200 rounded p-1 text-xs font-bold text-gray-800 outline-none focus:border-indigo-500 shadow-inner">
-            <div class="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-end">
-                <select onchange="updateLineSetting(${i}, 'family', this.value)" class="w-24 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
+        <div class="flex flex-col gap-1.5 bg-white border border-indigo-200 p-2 rounded shadow-sm mb-2">
+            <div class="flex items-center gap-2 w-full">
+                <span class="text-[10px] font-black text-indigo-700 w-6 text-center uppercase shrink-0">L${i+1}</span>
+                <input type="text" value="${ls.text}" placeholder="Enter text..." oninput="updateLineSetting(${i}, 'text', this.value)" class="flex-1 w-full bg-gray-50 border border-gray-200 rounded p-1 text-xs font-bold text-gray-800 outline-none focus:border-indigo-500 shadow-inner">
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 w-full justify-end pl-8">
+                <select onchange="updateLineSetting(${i}, 'family', this.value)" class="flex-1 min-w-[80px] border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
                     ${familyOpts}
                 </select>
                 <select onchange="updateLineSetting(${i}, 'style', this.value)" class="w-20 border border-gray-200 rounded text-[9px] font-bold text-gray-700 outline-none focus:border-indigo-500 p-1 bg-white">
@@ -259,9 +260,9 @@ function updateLineControls() {
                     <option value="lower" ${ls.caseType === 'lower' ? 'selected' : ''}>lower</option>
                     <option value="exact" ${ls.caseType === 'exact' ? 'selected' : ''}>Typed</option>
                 </select>
-                <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 p-0.5 rounded shadow-inner">
-                    <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-12 bg-transparent font-black text-indigo-900 text-[10px] text-center outline-none">
-                    <span class="text-indigo-800 font-black text-[9px] pr-1">"</span>
+                <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 p-0.5 rounded shadow-inner w-[70px] justify-between">
+                    <input type="number" step="0.125" min="0.125" value="${ls.height}" onchange="updateLineSetting(${i}, 'height', this.value)" class="w-12 bg-transparent font-black text-indigo-900 text-[10px] text-center outline-none pl-1">
+                    <span class="text-indigo-800 font-black text-[9px] pr-1.5">"</span>
                 </div>
             </div>
         </div>`;
