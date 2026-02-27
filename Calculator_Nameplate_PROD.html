@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADA Nameplate - PROD TEST v1.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
+    <script src="signos-core.js"></script>
+    <script src="signos-ui.js"></script>
+    <script src="signos-canvas.js"></script>
+    <script src="logic_nameplate.js"></script>
+    <!-- Our New Modular Script -->
+    <script src="signos-export-svg.js"></script>
+    
+    <style>
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .aspect-box { container-type: size; } 
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen font-sans flex flex-col pb-10">
+
+    <div id="main-card" class="max-w-xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
+        
+        <!-- Header Injection Point -->
+        <div id="header-target"></div>
+
+        <div class="p-6 space-y-6">
+            <!-- Dimensions -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-gray-500 uppercase mb-1 block">Width (in)</label>
+                    <input type="number" id="w" value="10" step="0.125" oninput="runCalc()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-gray-500 uppercase mb-1 block">Height (in)</label>
+                    <input type="number" id="h" value="2" step="0.125" oninput="runCalc()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                </div>
+            </div>
+
+            <!-- Text Preview Section (Existing) -->
+            <div id="preview-wrapper" class="relative group">
+                <div class="flex justify-between items-end mb-2">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Physics Render (WYSIWYG)</label>
+                </div>
+                <div class="aspect-box w-full bg-slate-100 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                    <canvas id="preview-canvas" class="max-w-full max-h-full shadow-sm"></canvas>
+                </div>
+            </div>
+
+            <!-- Production Export Section (New) -->
+            <div class="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                    <h3 class="text-[11px] font-black text-indigo-900 uppercase tracking-wider">Production Output</h3>
+                </div>
+                <p class="text-[10px] text-indigo-700 mb-4 leading-relaxed">
+                    Convert this design into a production-ready vector file. Text will be automatically converted to <strong>outlined paths</strong> (no fonts required for CNC).
+                </p>
+                <button onclick="handleSVGExport()" id="btn-export" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2 group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download Production SVG
+                </button>
+            </div>
+            
+            <!-- Standard Inputs (Truncated for brevity in test file) -->
+            <div class="space-y-4">
+               <div>
+                    <label class="text-[10px] font-black text-gray-500 uppercase mb-1 block">Line 1 Text</label>
+                    <input type="text" id="line-1-text" value="JOHN SMITH" oninput="updateLines()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-bold text-gray-700 outline-none">
+               </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let backendData = {};
+        let systemFonts = [];
+        let lineSettings = [{ text: "JOHN SMITH", font: "Arimo", fontSize: 0.625, y: 1.1 }];
+
+        async function handleSVGExport() {
+            const btn = document.getElementById('btn-export');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerText = "GENERATING PATHS...";
+
+            try {
+                const w = parseFloat(document.getElementById('w').value);
+                const h = parseFloat(document.getElementById('h').value);
+                
+                await SignOS_Export.exportProductionSVG({
+                    width: w,
+                    height: h,
+                    lines: lineSettings,
+                    fileName: `SignOS_Production_${w}x${h}.svg`
+                });
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function updateLines() {
+            lineSettings[0].text = document.getElementById('line-1-text').value;
+            runCalc();
+        }
+
+        function runCalc() {
+            const canvas = document.getElementById('preview-canvas');
+            const w = parseFloat(document.getElementById('w').value);
+            const h = parseFloat(document.getElementById('h').value);
+            
+            // Standard render logic (simplified for test)
+            const ctx = canvas.getContext('2d');
+            canvas.width = w * 100;
+            canvas.height = h * 100;
+            ctx.fillStyle = "#eee";
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            ctx.fillStyle = "black";
+            ctx.font = `bold ${lineSettings[0].fontSize * 100}px ${lineSettings[0].font}`;
+            ctx.textAlign = "center";
+            ctx.fillText(lineSettings[0].text, canvas.width/2, lineSettings[0].y * 100);
+        }
+
+        window.addEventListener('load', async () => {
+            if (typeof injectHeader === 'function') injectHeader("Production SVG Test");
+            
+            try {
+                // Fetch fonts from backend
+                const req = await fetch(`${SCRIPT_URL}?req=table&tab=REF_Fonts`);
+                const fonts = await req.json();
+                window.systemFonts = fonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
+                SignOS_Canvas.loadFonts(window.systemFonts);
+                runCalc();
+            } catch(e) { console.error(e); }
+        });
+    </script>
+</body>
+</html>
