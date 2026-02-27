@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Etch Nameplates v2.0</title>
+    <title>ADA Etch Nameplates v2.2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
@@ -484,38 +484,20 @@
             }, 2500);
         }
 
-        // --- INIT DATA FETCH (Phase 3 API Loader) ---
+       // --- INIT DATA FETCH (Phase 3 API Loader) ---
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("ADA Etch Nameplates");
             
+            // 1. TRIGGER THE NEW CENTRALIZED LOADER
+            SignOS_UI.showLoader('preview-wrapper', 'Connecting to Source Data...<br>Downloading Custom Fonts');
+
             const statusText = document.getElementById("status-text");
             const statusDot = document.getElementById("status-dot");
 
             try {
                 const payload = await SignOS.fetchProductData('PROD_Nameplates', ['REF_Colors_Rowmark', 'REF_Colors_Paint', 'REF_Colors_PMS', 'REF_Fonts']);
-
-                backendData = payload.config;
-                rowmarkData = payload.tables['REF_Colors_Rowmark'] || [];
                 
-                // Format payload arrays into standard {Code, Name, Hex_Code} for UI Builder
-                swData = (payload.tables['REF_Colors_Paint'] || []).map(p => ({
-                    Code: p['Color Code'] || p['Code'] || 'Unknown',
-                    Name: p['Color Name'] || p['Name'] || 'Unknown',
-                    Hex_Code: p['HEX Code'] || p['Hex_Code'] || '#FFFFFF'
-                }));
-                
-                pmsData = (payload.tables['REF_Colors_PMS'] || []).map(p => ({
-                    Code: p['PMS Name / Code'] || 'Unknown',
-                    Name: p['PMS Name / Code'] || 'Unknown',
-                    Hex_Code: p['HEX Code'] || '#FFFFFF'
-                }));
-
-                // Load custom fonts to DOM via Phase 4 Canvas Engine
-                systemFonts = (payload.tables['REF_Fonts'] || []).filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
-                SignOS_Canvas.loadFonts(systemFonts);
-                
-                let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts;
-                lineSettings.forEach(ls => ls.font = defaultFont ? defaultFont.CSS_Family : 'sans-serif');
+                // ... (KEEP ALL YOUR EXISTING DATA PARSING/FONT LOADING HERE) ...
 
                 if(statusText) {
                     statusText.innerText = "ONLINE";
@@ -529,16 +511,23 @@
                 updateLineControls();
                 setPaintSystem('PMS'); 
                 setMode('front');      
+
+                // 2. DISMISS THE LOADER ON SUCCESS
+                SignOS_UI.hideLoader('preview-wrapper');
                 
             } catch(e) {
                 if(statusText) {
                     statusText.innerText = "OFFLINE (API FAILED)";
                     statusText.className = "font-bold text-red-500";
                 }
+                
+                // 3. SHOW ERROR STATE ON LOADER
+                SignOS_UI.hideLoader('preview-wrapper', true);
+                
                 console.error("API Load Failed:", e);
             }
         });
+
     </script>
 </body>
 </html>
-
