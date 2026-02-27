@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Etch Nameplates - PROD TEST</title>
+    <title>ADA Etch Nameplates v2.2.1 - PROD TEST</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Dependencies -->
+    <!-- Vector Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
     <script src="signos-canvas.js"></script>
     <script src="logic_nameplate.js"></script>
+    <!-- Addon Export Logic -->
     <script src="signos-export-svg.js"></script>
     
     <style>
@@ -25,10 +26,18 @@
 
     <div id="main-card" class="max-w-xl mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
+        <!-- Header Injection Point -->
         <div id="header-target"></div>
 
         <div class="p-6 space-y-6">
-            <!-- Dimensions & Quantity -->
+            <!-- Dimensions -->
+            <div id="sheet-warn" class="hidden bg-orange-50 border border-orange-200 p-3 rounded-lg flex items-start gap-3">
+                <div class="text-orange-500 mt-0.5">⚠️</div>
+                <div class="text-[10px] text-orange-700 font-bold leading-tight">
+                    Max Parent Sheet Limit (24" x 48") Reached. Dimensions auto-adjusted.
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="text-[10px] font-black text-gray-500 uppercase mb-1 block">Width (in)</label>
@@ -54,28 +63,35 @@
                 </div>
             </div>
 
-            <!-- Sign Text & Layout -->
+            <!-- Sign Text & Layout Section -->
             <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
                 <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-wider">Sign Text & Layout</h3>
-                    <div class="flex gap-1">
-                        <button id="btn-line-1" onclick="setLineCount(1)" class="px-2 py-0.5 text-[10px] font-black rounded bg-white text-indigo-700 border border-gray-200 shadow-sm">1</button>
-                        <button id="btn-line-2" onclick="setLineCount(2)" class="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-400">2</button>
-                        <button id="btn-line-3" onclick="setLineCount(3)" class="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-400">3</button>
-                        <input type="hidden" id="lines-per-sign" value="1">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-wider">Sign Text & Layout</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase">Lines:</span>
+                        <div class="flex gap-1">
+                            <button id="btn-line-1" onclick="setLineCount(1)" class="px-2 py-0.5 text-[10px] font-black rounded bg-white text-indigo-700 border border-gray-200 shadow-sm transition-all">1</button>
+                            <button id="btn-line-2" onclick="setLineCount(2)" class="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-400 transition-all">2</button>
+                            <button id="btn-line-3" onclick="setLineCount(3)" class="px-2 py-0.5 text-[10px] font-black rounded bg-gray-100 text-gray-400 transition-all">3</button>
+                            <input type="hidden" id="lines-per-sign" value="1">
+                        </div>
                     </div>
                 </div>
 
-                <div id="line-controls" class="space-y-3"></div>
+                <div id="line-controls" class="space-y-3">
+                    <!-- Lines injected here -->
+                </div>
 
                 <div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-200">
                     <div>
                         <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Gap (in):</label>
-                        <input type="number" id="line-gap" value="0.125" step="0.0625" oninput="runCalc()" class="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-600 outline-none">
+                        <input type="number" id="line-gap" value="0.125" step="0.0625" oninput="runCalc()" class="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-600 outline-none focus:border-indigo-500">
                     </div>
                     <div>
                         <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Overflow Handling:</label>
-                        <select id="overflow" onchange="runCalc()" class="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-600 outline-none">
+                        <select id="overflow" onchange="runCalc()" class="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-600 outline-none focus:border-indigo-500">
                             <option value="shrink">Auto-Shrink</option>
                             <option value="wrap">Wrap Text</option>
                             <option value="none">None (Visible Overflow)</option>
@@ -89,14 +105,24 @@
                 <div class="flex justify-between items-end mb-2">
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ratio & Alignment Preview</label>
                 </div>
-                <div class="aspect-box w-full bg-slate-200 rounded-xl border border-slate-300 flex items-center justify-center overflow-hidden">
-                    <canvas id="preview-canvas" class="max-w-full max-h-full shadow-lg"></canvas>
+                <div class="aspect-box w-full bg-slate-200 rounded-xl border border-slate-300 flex items-center justify-center overflow-hidden transition-all duration-500">
+                    <canvas id="preview-canvas" class="max-w-full max-h-full shadow-lg transition-transform duration-300"></canvas>
+                    
+                    <div id="canvas-overlay" class="absolute inset-0 bg-slate-200/80 backdrop-blur-sm flex items-center justify-center pointer-events-none transition-opacity duration-300">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Awaiting Text</span>
+                    </div>
                 </div>
                 
-                <div id="warn-overflow" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg animate-pulse">⚠️ Layout Overflow</div>
+                <!-- Warnings -->
+                <div id="warn-overflow" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg animate-pulse z-10">
+                    ⚠️ Layout Overflow / Text Too Large
+                </div>
+                <div id="warn-contrast" class="hidden absolute bottom-2 left-2 bg-orange-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg z-10">
+                    ⚠️ Bright Face Selected - Verify Contrast
+                </div>
             </div>
 
-            <!-- Direction & Color Selection -->
+            <!-- Direction & Color Section -->
             <div class="space-y-4">
                 <div>
                     <label class="text-[10px] font-black text-gray-400 uppercase mb-2 block">Engrave Direction</label>
@@ -116,22 +142,22 @@
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase block">Step 2: Paint Color</label>
                         <div class="flex gap-1">
-                            <button id="ps-pms" onclick="setPaintSystem('PMS')" class="px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white">PMS</button>
-                            <button id="ps-sw" onclick="setPaintSystem('SW')" class="px-2 py-0.5 text-[9px] font-bold rounded bg-gray-100 text-gray-400">SW</button>
+                            <button id="ps-pms" onclick="setPaintSystem('PMS')" class="px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white transition-all shadow-sm">PMS Match</button>
+                            <button id="ps-sw" onclick="setPaintSystem('SW')" class="px-2 py-0.5 text-[9px] font-bold rounded bg-gray-100 text-gray-400 transition-all">Sherwin Williams</button>
                         </div>
                     </div>
                     <div id="paint-grid" class="flex overflow-x-auto gap-2 p-1 color-scroll pb-2"></div>
                 </div>
             </div>
 
-            <!-- PRODUCTION EXPORT TOOLS -->
+            <!-- PRODUCTION EXPORT ADDON -->
             <div class="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
                 <div class="flex items-center gap-2 mb-3">
-                    <div class="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
                     <h3 class="text-[11px] font-black text-indigo-900 uppercase tracking-wider">Production Output Tool</h3>
                 </div>
                 <p class="text-[10px] text-indigo-700 mb-4 leading-relaxed">
-                    Convert this design to a vector SVG. Text will be <strong>outlined into paths</strong> for direct production on laser or CNC.
+                    Convert this design into an <strong>outlined SVG</strong>. This file imports directly into laser or CNC software without needing font files installed.
                 </p>
                 <button onclick="handleSVGExport()" id="btn-export" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl text-xs uppercase tracking-[0.2em] shadow-lg transition-all flex items-center justify-center gap-3 group">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 group-hover:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -143,7 +169,7 @@
 
             <!-- Totals & Quote -->
             <div class="pt-6 border-t border-gray-100">
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center mb-6">
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase block">Unit Price</label>
                         <div id="ui-unit" class="text-2xl font-black text-gray-900 leading-none">$0.00</div>
@@ -151,7 +177,24 @@
                     <div class="text-right">
                         <label class="text-[10px] font-black text-gray-400 uppercase block">Total Quote</label>
                         <div id="ui-total" class="text-3xl font-black text-blue-600 leading-none">$0.00</div>
-                        <div id="min-badge" class="hidden text-[9px] font-black text-orange-500 uppercase mt-1">Shop Min Applied</div>
+                        <div id="min-badge" class="hidden text-[9px] font-black text-orange-500 uppercase mt-1">Shop Min: $35</div>
+                    </div>
+                </div>
+
+                <!-- Accordion: Production Ticket Details -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <button onclick="toggleAccordion('prod-content', 'prod-arrow')" class="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Production Ticket Details</span>
+                        <svg id="prod-arrow" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="prod-content" class="hidden p-4 bg-white border-t border-gray-100 space-y-4">
+                        <div>
+                            <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Description / Bill of Materials</label>
+                            <textarea id="job-desc" rows="4" readonly class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-[11px] font-bold text-gray-600 focus:outline-none"></textarea>
+                        </div>
+                        <button onclick="SignOS_UI.copyToClipboard('job-desc')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-black py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all">Copy Ticket Details</button>
                     </div>
                 </div>
             </div>
@@ -159,33 +202,32 @@
     </div>
 
     <script>
-        // --- FALLBACK RENDER ENGINE ---
-        // Ensuring SignOS_Canvas has the required rendering logic if the external JS version is outdated
+        // --- FALLBACK PHYSICS ENGINE ---
+        // Ensuring SignOS_Canvas has rendering capabilities if global file fails
         window.SignOS_Canvas = window.SignOS_Canvas || {};
         window.SignOS_Canvas.renderSignPhysics = function(config) {
-            const { canvas, width, height, lines, gap, faceHex, textHex, isReverse } = config;
+            const { canvas, width, height, lines, gap, faceHex, textHex } = config;
             const ctx = canvas.getContext('2d');
-            const scale = 100; // 100px per inch for fidelity
+            const scale = 100;
             
             canvas.width = width * scale;
             canvas.height = height * scale;
 
-            // 1. Plate Base
+            // Plate Background
             ctx.fillStyle = faceHex || "#EEE";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. Bevel Simulation
+            // Simulation of Bevel
             if (document.getElementById('bevel').value === 'Bevel') {
                 ctx.strokeStyle = "rgba(0,0,0,0.15)";
                 ctx.lineWidth = 6;
                 ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
             }
 
-            // 3. Vertical Centering Logic
+            // Calculation for Vertical Alignment
             const totalLinesHeight = lines.reduce((acc, line) => acc + (line.fontSize * scale), 0) + (gap * scale * (lines.length - 1));
             let currentY = (canvas.height / 2) - (totalLinesHeight / 2);
 
-            // 4. Draw Typography
             ctx.fillStyle = textHex || "#000";
             ctx.textAlign = "center";
             ctx.textBaseline = "top";
@@ -193,13 +235,10 @@
             lines.forEach((line) => {
                 const fontSizePx = line.fontSize * scale;
                 ctx.font = `bold ${fontSizePx}px "${line.font}", sans-serif`;
-                
-                // Draw to Canvas
                 ctx.fillText(line.text, canvas.width / 2, currentY);
                 
-                // Save physical baseline for SVG export engine
+                // Baseline mapping for SVG export
                 line.y = (currentY + (fontSizePx / 1.3)) / scale;
-
                 currentY += fontSizePx + (gap * scale);
             });
         };
@@ -212,14 +251,17 @@
         let swData = [];
         let selectedFace = null;
         let selectedPaint = null;
-        let lineSettings = [{ text: "ROOM NAME", font: "Arimo", fontSize: 0.625, y: 0, autoShrink: true }];
+        
+        let lineSettings = [
+            { text: "ROOM NAME", font: "Arimo", fontSize: 0.625, y: 0, autoShrink: true }
+        ];
 
-        // --- PRODUCTION EXPORT HANDLER ---
+        // --- ADDON: PRODUCTION EXPORT HANDLER ---
         async function handleSVGExport() {
             const btn = document.getElementById('btn-export');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<span class="animate-pulse">PROCESSING VECTORS...</span>`;
+            btn.innerHTML = `<span class="animate-pulse">OUTLINING PATHS...</span>`;
 
             try {
                 const w = parseFloat(document.getElementById('w').value) || 10;
@@ -229,7 +271,7 @@
                     width: w,
                     height: h,
                     lines: lineSettings,
-                    fileName: `SignOS_Production_${w}x${h}_${Date.now()}.svg`
+                    fileName: `SignOS_PROD_${w}x${h}_${Date.now()}.svg`
                 });
             } catch (err) {
                 console.error("SVG Export Error:", err);
@@ -239,11 +281,22 @@
             }
         }
 
-        // --- ORIGINAL APP LOGIC ---
+        // --- UI ACCORDION & BUTTONS ---
+        function toggleAccordion(contentId, arrowId) {
+            document.getElementById(contentId).classList.toggle('hidden');
+            document.getElementById(arrowId).classList.toggle('rotate-180');
+        }
+
         function setLineCount(num) {
             document.getElementById('lines-per-sign').value = num;
             while(lineSettings.length < num) {
-                lineSettings.push({ text: `LINE ${lineSettings.length+1}`, font: lineSettings[0].font, fontSize: 0.375, y: 0, autoShrink: true });
+                lineSettings.push({ 
+                    text: `LINE ${lineSettings.length+1}`, 
+                    font: lineSettings[0].font, 
+                    fontSize: 0.375, 
+                    y: 0, 
+                    autoShrink: true 
+                });
             }
             lineSettings = lineSettings.slice(0, num);
             for(let i=1; i<=3; i++) {
@@ -261,18 +314,18 @@
             container.innerHTML = "";
             lineSettings.forEach((ls, i) => {
                 const row = document.createElement('div');
-                row.className = "flex gap-2 items-end";
+                row.className = "flex gap-2 items-end animate-in fade-in slide-in-from-top-2";
                 row.innerHTML = `
                     <div class="flex-1">
-                        <input type="text" value="${ls.text}" oninput="updateLineData(${i}, 'text', this.value)" 
-                            class="w-full bg-white border border-gray-200 rounded px-2 py-1.5 font-bold text-gray-700 text-xs outline-none focus:border-indigo-500">
+                        <input type="text" value="${ls.text}" oninput="updateLineData(${i}, 'text', this.value.toUpperCase())" 
+                            class="w-full bg-white border border-gray-200 rounded px-2 py-1.5 font-bold text-gray-700 text-xs outline-none focus:border-indigo-500 shadow-sm">
                     </div>
                     <div class="w-16">
                         <input type="number" step="0.0625" value="${ls.fontSize}" oninput="updateLineData(${i}, 'fontSize', this.value)"
-                            class="w-full bg-white border border-gray-200 rounded px-2 py-1.5 font-bold text-gray-700 text-[10px] outline-none">
+                            class="w-full bg-white border border-gray-200 rounded px-2 py-1.5 font-bold text-gray-700 text-[10px] outline-none focus:border-indigo-500 shadow-sm">
                     </div>
                     <div class="w-24">
-                        <select onchange="updateLineData(${i}, 'font', this.value)" class="w-full bg-white border border-gray-200 rounded px-1 py-1.5 font-bold text-gray-700 text-[10px] outline-none">
+                        <select onchange="updateLineData(${i}, 'font', this.value)" class="w-full bg-white border border-gray-200 rounded px-1 py-1.5 font-bold text-gray-700 text-[10px] outline-none shadow-sm">
                             ${systemFonts.map(f => `<option value="${f.CSS_Family}" ${f.CSS_Family === ls.font ? 'selected' : ''}>${f.Display_Name}</option>`).join('')}
                         </select>
                     </div>
@@ -293,11 +346,11 @@
             const fBtn = document.getElementById('mode-front');
             const rBtn = document.getElementById('mode-reverse');
             if(isReverse) {
-                rBtn.className = "py-2 text-[10px] font-black rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm uppercase tracking-widest";
-                fBtn.className = "py-2 text-[10px] font-black rounded-lg border border-gray-200 bg-white text-gray-400 shadow-sm uppercase tracking-widest";
+                rBtn.className = "py-2 text-[10px] font-black rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm uppercase tracking-widest transition-all";
+                fBtn.className = "py-2 text-[10px] font-black rounded-lg border border-gray-200 bg-white text-gray-400 shadow-sm uppercase tracking-widest transition-all";
             } else {
-                fBtn.className = "py-2 text-[10px] font-black rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm uppercase tracking-widest";
-                rBtn.className = "py-2 text-[10px] font-black rounded-lg border border-gray-200 bg-white text-gray-400 shadow-sm uppercase tracking-widest";
+                fBtn.className = "py-2 text-[10px] font-black rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm uppercase tracking-widest transition-all";
+                rBtn.className = "py-2 text-[10px] font-black rounded-lg border border-gray-200 bg-white text-gray-400 shadow-sm uppercase tracking-widest transition-all";
             }
             refreshSwatches();
             runCalc();
@@ -307,10 +360,10 @@
             const pmsBtn = document.getElementById('ps-pms');
             const swBtn = document.getElementById('ps-sw');
             if(sys === 'PMS') {
-                pmsBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white";
+                pmsBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white shadow-sm";
                 swBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-gray-100 text-gray-400";
             } else {
-                swBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white";
+                swBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-indigo-600 text-white shadow-sm";
                 pmsBtn.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-gray-100 text-gray-400";
             }
             refreshSwatches();
@@ -321,9 +374,10 @@
             const filteredFace = isReverse 
                 ? rowmarkData.filter(r => r.Series.includes("Ultra"))
                 : rowmarkData.filter(r => r.Series.includes("Mattes"));
+            
             SignOS_UI.buildColorGrid({
                 containerId: 'face-grid',
-                data: filteredFace.map(r => ({ Code: r.Item_Code, Name: r.Cap_Color, Hex_Code: r.Cap_Hex })),
+                data: filteredFace.map(r => ({ Code: r.Item_Code, Name: r.Cap_Color, Hex_Code: r.Cap_Hex || r.Cap_HEX })),
                 onSelect: (item) => { selectedFace = item; runCalc(); }
             });
             if(isReverse) {
@@ -338,6 +392,8 @@
 
         function runCalc() {
             if(!backendData.Retail_Min_Order) return;
+            SignOS_Canvas.enforceSheetLimits('w', 'h', 'sheet-warn', 24, 48);
+            
             const inputs = {
                 w: parseFloat(document.getElementById('w').value) || 10,
                 h: parseFloat(document.getElementById('h').value) || 2,
@@ -345,6 +401,7 @@
                 isReverse: document.getElementById('is-reverse').value === 'true',
                 mat: selectedFace ? rowmarkData.find(r => r.Item_Code === selectedFace.Code) : rowmarkData[0]
             };
+
             const result = calculateNameplate(inputs, backendData);
             const fmt = (n) => "$" + (n || 0).toFixed(2);
             document.getElementById('ui-unit').innerText = fmt(result.retail.unitPrice);
@@ -353,20 +410,27 @@
             
             const canvas = document.getElementById('preview-canvas');
             const gap = parseFloat(document.getElementById('line-gap').value) || 0.125;
+            const hasText = lineSettings.some(ls => ls.text.trim() !== "");
+            document.getElementById('canvas-overlay').classList.toggle('hidden', hasText);
+            
             SignOS_Canvas.renderSignPhysics({
                 canvas: canvas, width: inputs.w, height: inputs.h, lines: lineSettings, gap: gap,
                 faceHex: selectedFace ? selectedFace.Hex_Code : "#EEE",
-                textHex: (inputs.isReverse && selectedPaint) ? selectedPaint.Hex_Code : (inputs.mat?.Core_Hex || "#000"),
-                isReverse: inputs.isReverse
+                textHex: (inputs.isReverse && selectedPaint) ? selectedPaint.Hex_Code : (inputs.mat?.Core_Hex || inputs.mat?.Core_HEX || "#000")
             });
+
+            // Bill of Materials
+            const matTxt = selectedFace ? `${selectedFace.Name} [${selectedFace.Code}]` : "TBD";
+            const paintTxt = inputs.isReverse ? (selectedPaint ? `\nPaint: ${selectedPaint.Name}` : "\nPaint: TBD") : "";
+            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" Nameplate\nFace: ${matTxt}${paintTxt}\nText:\n${lineSettings.map(l => l.text).join('\n')}`;
         }
 
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("ADA Etch Nameplates");
-            SignOS_UI.showLoader('preview-wrapper', "Booting Physics Engine...");
+            SignOS_UI.showLoader('preview-wrapper', "Initializing Engineering Parameters...");
             try {
                 const payload = await SignOS.fetchProductData("PROD_Nameplates", ['REF_Colors_Rowmark', 'REF_Colors_Paint', 'REF_Colors_PMS', 'REF_Fonts']);
-                if (!payload || payload.error) throw new Error(payload?.error || "Empty Response");
+                if (!payload || payload.error) throw new Error(payload?.error || "Invalid API Response");
                 backendData = payload.config;
                 rowmarkData = payload.tables['REF_Colors_Rowmark'] || [];
                 pmsData = payload.tables['REF_Colors_PMS'].map(p => ({ Code: p['PMS Name / Code'], Name: p['PMS Name / Code'], Hex_Code: p['HEX Code'] }));
@@ -381,7 +445,7 @@
                 setMode('front');
                 SignOS_UI.hideLoader('preview-wrapper');
             } catch(e) {
-                console.error("API Load Failed Detail:", e);
+                console.error("Critical Failure:", e);
                 SignOS_UI.hideLoader('preview-wrapper', true, `⚠️ CONNECTION ERROR: ${e.message}`);
             }
         });
