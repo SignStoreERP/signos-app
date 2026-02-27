@@ -1,13 +1,11 @@
 /**
- * PURE PHYSICS ENGINE: Vinyl Banners (v10.4)
- * Uses Math.ceil() for Yield Bounding Boxes.
+ * PURE PHYSICS ENGINE: Vinyl Banners (v10.5)
+ * Uses Math.ceil() for Yield Bounding Boxes and dynamic fabrication constraints.
  */
 function calculateBanner(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
     const totalSqFt = sqft * inputs.qty;
-    const minDim = Math.min(inputs.w, inputs.h);
-    const isOversize = minDim > parseFloat(data.Constraint_Max_Width_Inhouse || 62);
-
+    
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
     // Yield Math: Round up to nearest foot
     const minFt = Math.ceil(Math.min(inputs.w, inputs.h) / 12);
@@ -31,23 +29,26 @@ function calculateBanner(inputs, data) {
         
         retailPrint = appliedBase * inputs.qty;
         baseRate = p1 / sqft; // For display purposes
-        
         tierLog.push(
             { q: 1, base: baseRate, d: 0, unitBase: p1 },
             { q: 10, base: baseRate, d: 0, unitBase: p10 }
         );
     } else {
         // NO MATCH: Oversize / Special Material Fallback
+        const minDim = Math.min(inputs.w, inputs.h);
         if (inputs.material === '13oz') {
             if (minDim <= 12) baseRate = parseFloat(data.BAN13_T1_Rate || 6.50);
             else if (sqft < parseFloat(data.BAN13_T2_Max || 10)) baseRate = parseFloat(data.BAN13_T2_Rate || 6.00);
             else baseRate = parseFloat(data.BAN13_T3_Rate || 5.00);
         } else if (inputs.material === '15oz') {
-            matLabel = "15oz Smooth Blockout"; baseRate = parseFloat(data.Retail_Price_Base_15oz || 6.50);
+            matLabel = "15oz Smooth Blockout"; 
+            baseRate = parseFloat(data.Retail_Price_Base_15oz || 6.50);
         } else if (inputs.material === '18oz') {
-            matLabel = "18oz Heavy Blockout"; baseRate = parseFloat(data.Retail_Price_Base_18oz || 8.00);
+            matLabel = "18oz Heavy Blockout"; 
+            baseRate = parseFloat(data.Retail_Price_Base_18oz || 8.00);
         } else if (inputs.material === 'Mesh') {
-            matLabel = "8oz Mesh"; baseRate = parseFloat(data.Retail_Price_Base_Mesh || 7.00);
+            matLabel = "8oz Mesh"; 
+            baseRate = parseFloat(data.Retail_Price_Base_Mesh || 7.00);
         }
 
         if (inputs.sides === 2) baseRate += parseFloat(data.Retail_Adder_DS_SqFt || 3.00);
@@ -65,29 +66,68 @@ function calculateBanner(inputs, data) {
 
     // Finishing Adders
     let retailPockets = 0;
-    if (inputs.pockets) retailPockets = ((inputs.w / 12) * 2) * inputs.qty * parseFloat(data.Retail_Fin_PolePkt_LF || 3.00);
+    if (inputs.pockets && inputs.pockets !== 'None') {
+        retailPockets = ((inputs.w / 12) * 2) * inputs.qty * parseFloat(data.Retail_Fin_PolePkt_LF || 3.00);
+    }
+    
     let retailSlits = 0;
     if (inputs.windSlits) retailSlits = totalSqFt * parseFloat(data.Retail_Price_WindSlits_SqFt || 1.00);
 
     const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
     const feeSetup = inputs.setupPerFile ? (parseFloat(data.Retail_Fee_Setup || 15) * inputs.files) : parseFloat(data.Retail_Fee_Setup || 15);
-
     const grandTotalRaw = retailPrint + retailPockets + retailSlits + feeDesign + feeSetup;
+    
     const minOrder = data[`${blueKey}_1`] ? 0 : parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
     // Format UI Tiers
     const simTiers = tierLog.map(t => {
         const trPrint = t.unitBase * t.q;
-        const trPocket = inputs.pockets ? ((inputs.w/12)*2 * t.q * parseFloat(data.Retail_Fin_PolePkt_LF || 3)) : 0;
+        const trPocket = (inputs.pockets && inputs.pockets !== 'None') ? ((inputs.w/12)*2 * t.q * parseFloat(data.Retail_Fin_PolePkt_LF || 3)) : 0;
         const trSlits = inputs.windSlits ? ((sqft * t.q) * parseFloat(data.Retail_Price_WindSlits_SqFt || 1)) : 0;
         const total = Math.max(trPrint + trPocket + trSlits + feeSetup + feeDesign, minOrder);
         return { q: t.q, base: baseRate * (1 - (t.d||0)), unit: total / t.q };
     });
 
+    // ==========================================================
+    // DYNAMIC CONSTRAINT & FABRICATION MATH (Phase 4.5)
+    // ==========================================================
+    
+    // Extract physics constants from the backend payload
+    const maxRollWidth = parseFloat(data.Printer_Max_Roll_Width || 64);
+    const hemAllow = parseFloat(data.Allow_Hem_Inch || 1);
+    const pktMult = parseFloat(data.Allow_PolePkt_Mult || 3.14);
+
+    // 1. Calculate the dynamic maximum printable width
+    let dynamicMaxWidth = maxRollWidth;
+    if (inputs.hems) {
+        dynamicMaxWidth -= (hemAllow * 2); // 1" on each side = 2" total media lost
+    }
+    
+    if (inputs.pockets && inputs.pockets !== 'None') {
+        const pocketSize = inputs.pocketSize || 2; 
+        const pocketMediaLost = (pocketSize * pktMult) + (hemAllow * 2);
+        dynamicMaxWidth -= pocketMediaLost; 
+    }
+
+    // Set the flag if the requested size exceeds dynamic limits
+    const isOversize = Math.min(inputs.w, inputs.h) > dynamicMaxWidth;
+
+    // 2. Grommet Fabrication Rules
+    let perimLF = ((inputs.w + inputs.h) * 2) / 12 * inputs.qty;
+    let grommetPerimLF = perimLF;
+    
+    if (inputs.pockets === 'TopBottom') {
+        // Only the left and right vertical sides can receive grommets
+        grommetPerimLF = (inputs.h * 2) / 12 * inputs.qty; 
+    } else if (inputs.pockets === 'Top') {
+        // Exclude the top edge from grommet calculations
+        grommetPerimLF = (((inputs.h * 2) + inputs.w) / 12) * inputs.qty; 
+    }
+
     // --- 2. COST ENGINE (PHYSICS & BOM) ---
-    const prodW = inputs.hems ? inputs.w + 2 : inputs.w;
-    const prodH = inputs.hems ? inputs.h + 2 : inputs.h;
+    const prodW = inputs.hems ? inputs.w + (hemAllow * 2) : inputs.w;
+    const prodH = inputs.hems ? inputs.h + (hemAllow * 2) : inputs.h;
     const prodSqFt = (prodW * prodH) / 144;
     const totalProdSqFt = prodSqFt * inputs.qty;
 
@@ -100,12 +140,12 @@ function calculateBanner(inputs, data) {
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
     const costMedia = totalProdSqFt * costVinylRaw * wastePct;
     const costInk = totalProdSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * inputs.sides;
-    const perimLF = ((inputs.w + inputs.h) * 2) / 12 * inputs.qty;
+    
     const costTape = inputs.hems ? (perimLF * parseFloat(data.Cost_Hem_Tape || 0.08)) * wastePct : 0;
 
     let costGrom = 0, gromCount = 0;
     if (inputs.grommets) {
-        gromCount = Math.max(Math.ceil(perimLF / 2), 4 * inputs.qty);
+        gromCount = Math.max(Math.ceil(grommetPerimLF / 2), 4 * inputs.qty);
         costGrom = gromCount * parseFloat(data.Cost_Grommet || 0.13) * wastePct;
     }
 
@@ -117,7 +157,7 @@ function calculateBanner(inputs, data) {
     const costPrintOp = printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10);
     const costPrintMach = printHrs * parseFloat(data.Rate_Machine_Print || 5);
 
-    const finishHrs = ((inputs.hems ? perimLF * 0.5 : 0) + (inputs.grommets ? gromCount * 1.0 : 0) + (inputs.windSlits ? totalSqFt * 0.1 : 0) + (inputs.pockets ? (inputs.w/12)*2 * inputs.qty * 2 : 0) + (perimLF * 0.25)) / 60;
+    const finishHrs = ((inputs.hems ? perimLF * 0.5 : 0) + (inputs.grommets ? gromCount * 1.0 : 0) + (inputs.windSlits ? totalSqFt * 0.1 : 0) + (inputs.pockets && inputs.pockets !== 'None' ? (inputs.w/12)*2 * inputs.qty * 2 : 0) + (perimLF * 0.25)) / 60;
     const costFinish = finishHrs * rateShop;
 
     const subTotal = costMedia + costInk + costTape + costGrom + costSetup + costPrintOp + costPrintMach + costFinish;
@@ -130,10 +170,14 @@ function calculateBanner(inputs, data) {
             setupFee: feeSetup, designFee: feeDesign, grandTotal: grandTotal, isMinApplied: grandTotalRaw < minOrder,
             isOversize: isOversize, tiers: simTiers, baseRate: baseRate, matLabel: matLabel, yieldLabel: data[`${blueKey}_1`] ? `Yield Box: ${minFt}'x${maxFt}'` : "Area Curve"
         },
-        cost: { total: subTotal * riskFactor, breakdown: { rawMedia: costMedia, unitMedia: costVinylRaw, rawInk: costInk, rawTape: costTape, rawGrom: costGrom, costSetup: costSetup, costPrint: costPrintOp + costPrintMach, costFinish: costFinish, riskCost: subTotal * (riskFactor - 1), wastePct: (wastePct - 1) * 100, riskPct: (riskFactor - 1) * 100 } },
+        cost: { 
+            total: subTotal * riskFactor, 
+            breakdown: { rawMedia: costMedia, unitMedia: costVinylRaw, rawInk: costInk, rawTape: costTape, rawGrom: costGrom, costSetup: costSetup, costPrint: costPrintOp + costPrintMach, costFinish: costFinish, riskCost: subTotal * (riskFactor - 1), wastePct: (wastePct - 1) * 100, riskPct: (riskFactor - 1) * 100 } 
+        },
         metrics: { margin: (grandTotal - (subTotal * riskFactor)) / grandTotal }
     };
 }
+
 // ==========================================
 // SIMULATOR CONFIGURATION SCHEMA
 // ==========================================
@@ -147,7 +191,7 @@ window.BANNER_CONFIG = {
         { id: 'sides', label: 'Print Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
         { id: 'hems', label: 'Tape Hems', type: 'toggle', def: true },
         { id: 'grommets', label: 'Grommets', type: 'toggle', def: true },
-        { id: 'pockets', label: 'Pole Pockets', type: 'toggle', def: false },
+        { id: 'pockets', label: 'Pole Pockets', type: 'select', opts: [{v:'None', t:'None'}, {v:'Top', t:'Top Only'}, {v:'TopBottom', t:'Top & Bottom'}] },
         { id: 'windSlits', label: 'Wind Slits', type: 'toggle', def: false },
         { id: 'files', label: 'Files', type: 'number', def: 1 },
         { id: 'setupPerFile', label: 'Setup / File', type: 'toggle', def: false },
@@ -171,6 +215,9 @@ window.BANNER_CONFIG = {
         { key: 'Cost_Media_15oz', label: '15oz Blockout ($/sf)' },
         { key: 'Cost_Media_18oz', label: '18oz Heavy ($/sf)' },
         { key: 'Cost_Media_Mesh', label: '8oz Mesh ($/sf)' },
+        { heading: 'Fabrication Math', key: 'Printer_Max_Roll_Width', label: 'Max Media Width' },
+        { key: 'Allow_Hem_Inch', label: 'Hem Allowance (in)' },
+        { key: 'Allow_PolePkt_Mult', label: 'Pkt Mult (Pi)' },
         { heading: 'Finishings & Ink', key: 'Cost_Ink_Latex', label: 'Latex Ink ($/SqFt)' },
         { key: 'Cost_Grommet', label: 'Grommet ($/ea)' },
         { key: 'Cost_Hem_Tape', label: 'Hem Tape ($/LF)' },
@@ -189,8 +236,8 @@ window.BANNER_CONFIG = {
         let retailHTML = `<div><h4 class="text-[10px] font-bold text-blue-800 uppercase mb-2 border-b border-blue-200 pb-1">Market Engine (Retail)</h4>
         <div class="space-y-1 text-xs text-gray-700">
         <div class="flex justify-between"><span>Base Print:</span> <span>${fmt(data.retail.printTotal)}</span></div>
-        ${data.retail.pocketsTotal > 0 ? `<div class="flex justify-between text-orange-700"><span>Pole Pockets:</span> <span>${fmt(data.retail.pocketsTotal)}</span></div>` : ''}
-        ${data.retail.slitsTotal > 0 ? `<div class="flex justify-between text-teal-700"><span>Wind Slits:</span> <span>${fmt(data.retail.slitsTotal)}</span></div>` : ''}
+        ${data.retail.pocketTotal > 0 ? `<div class="flex justify-between text-orange-700"><span>Pole Pockets:</span> <span>${fmt(data.retail.pocketTotal)}</span></div>` : ''}
+        ${data.retail.slitTotal > 0 ? `<div class="flex justify-between text-teal-700"><span>Wind Slits:</span> <span>${fmt(data.retail.slitTotal)}</span></div>` : ''}
         <div class="flex justify-between"><span>Setup Fee:</span> <span>${fmt(data.retail.setupFee || 0)}</span></div>
         ${data.retail.designFee > 0 ? `<div class="flex justify-between text-purple-700"><span>Design Fee:</span> <span>${fmt(data.retail.designFee)}</span></div>` : ''}
         <div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(data.retail.grandTotal)}</span></div>
@@ -198,6 +245,7 @@ window.BANNER_CONFIG = {
 
         let costHTML = `<div class="mt-6"><h4 class="text-[10px] font-bold text-red-800 uppercase mb-2 border-b border-red-200 pb-1">Physics Engine (Cost)</h4>
         <div class="space-y-1 text-xs text-gray-700">`;
+
         if (data.cost.breakdown) {
             const b = data.cost.breakdown;
             costHTML += `
@@ -212,6 +260,7 @@ window.BANNER_CONFIG = {
             <div class="flex justify-between text-red-600"><span>Material Waste (${b.wastePct ? b.wastePct.toFixed(0) : 15}%):</span> <span>(Calculated Above)</span></div>
             <div class="flex justify-between text-orange-500 opacity-80"><span>Suggested Risk Buffer (${b.riskPct ? b.riskPct.toFixed(0) : 5}%):</span> <span>(+ ${fmt(b.riskCost)})</span></div>`;
         }
+
         costHTML += `<div class="flex justify-between font-black text-gray-900 border-t border-gray-300 pt-1 mt-1"><span>Total Hard Cost:</span> <span>${fmt(data.cost.total)}</span></div></div></div>`;
         return retailHTML + costHTML;
     }
