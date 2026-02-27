@@ -409,7 +409,10 @@ function renderBulkPhysicsPreviews(manifests) {
     // Render Master Template (Sign #1)
     masterPrev.innerHTML = '';
     masterPrev.id = 'temp-master-render'; 
-    renderPhysicsToScreen(manifests.manifest, 'temp-master-render');
+    
+    // FIX: Use .at(0) to safely grab the first item without using square brackets!
+    renderPhysicsToScreen(manifests.at(0).manifest, 'temp-master-render');
+    
     masterPrev.id = 'master-template-preview'; // Reset ID back for future updates
 
     // Render Grid
@@ -428,12 +431,12 @@ function renderBulkPhysicsPreviews(manifests) {
         boxWrapper.appendChild(box);
         grid.appendChild(boxWrapper);
 
-        // Inject SVG into this specific grid cell
-        renderPhysicsToScreen(manifests[i].manifest, uniqueId);
+        // FIX: Use .at(i) to be completely immune to chat box formatting!
+        renderPhysicsToScreen(manifests.at(i).manifest, uniqueId);
 
         // Overlay QTY Badge
-        if (manifests[i].qty > 1) {
-            boxWrapper.innerHTML += `<div class="absolute top-1 right-1 bg-blue-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm shadow-md z-10 border border-blue-600">x${manifests[i].qty}</div>`;
+        if (manifests.at(i).qty > 1) {
+            boxWrapper.innerHTML += `<div class="absolute top-1 right-1 bg-blue-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm shadow-md z-10 border border-blue-600">x${manifests.at(i).qty}</div>`;
         }
     }
 }
