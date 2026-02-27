@@ -207,33 +207,35 @@ function updateLineControls() {
     const container = document.getElementById('line-controls-container');
     container.innerHTML = '';
 
-    // FIX 1: Safely grab the first part of the string (Family) using 
+    // FIX 1: Safely extract Family using .shift() to avoid brackets entirely
     const uniqueFamilies = [...new Set(systemFonts.map(f => {
         if (!f.File_Name) return '';
-        return f.File_Name.split('-'); 
+        const parts = f.File_Name.split('-');
+        return parts.shift(); // Safely pops off the first item (e.g., "Arimo")
     }).filter(Boolean))];
 
     for (let i = 0; i < count; i++) {
         const ls = lineSettings[i];
 
         if (!uniqueFamilies.includes(ls.family)) {
-            ls.family = uniqueFamilies.includes('Arimo') ? 'Arimo' : (uniqueFamilies || '');
+            ls.family = uniqueFamilies.includes('Arimo') ? 'Arimo' : (uniqueFamilies.slice().shift() || '');
         }
 
         let familyOpts = uniqueFamilies.map(fam => 
             `<option value="${fam}" ${ls.family === fam ? 'selected' : ''}>${fam.replace(/_/g, ' ')}</option>`
         ).join('');
 
-        // FIX 2: Safely grab the second part of the string (Style) using [1] and a safety check
+        // FIX 2: Safely extract Style using .pop() to avoid brackets entirely
         const availableStyles = systemFonts
             .filter(f => f.File_Name && f.File_Name.startsWith(ls.family + '-'))
             .map(f => {
                 const parts = f.File_Name.split('-');
-                return parts[1] ? parts[1].replace('.ttf', '') : '';
+                const styleWithExt = parts.pop(); // Safely pops off the last item (e.g., "Bold.ttf")
+                return styleWithExt ? styleWithExt.replace('.ttf', '') : '';
             }).filter(Boolean);
 
         if (!availableStyles.includes(ls.style)) {
-            ls.style = availableStyles.includes('Bold') ? 'Bold' : (availableStyles || '');
+            ls.style = availableStyles.includes('Bold') ? 'Bold' : (availableStyles.slice().shift() || '');
         }
 
         let styleOpts = availableStyles.map(st => 
