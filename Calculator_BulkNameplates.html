@@ -155,25 +155,34 @@ Manager</textarea>
 
             <!-- RIGHT COLUMN: UNIFIED BATCH VISUALIZER -->
             <div class="lg:col-span-7 flex flex-col h-full bg-white relative z-0 p-6 space-y-5">
-                <div class="bg-gray-800 rounded-xl shadow-inner relative overflow-hidden flex flex-col min-h-[500px] border border-gray-900">
+                <div id="preview-wrapper" class="bg-gray-800 rounded-xl shadow-inner relative overflow-hidden flex flex-col min-h-[500px] border border-gray-900">
+                    
+                    <!-- Loading State Overlay -->
+                    <div id="canvas-loading-overlay" class="absolute inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+                        <div class="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500 mb-3"></div>
+                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse mt-3 text-center leading-relaxed">Connecting to Source Data...<br>Fetching Core Tables</span>
+                    </div>
+
                     <div class="p-3 bg-gray-900 flex justify-between items-center border-b border-black shrink-0">
                         <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dynamic Batch Preview</span>
                     </div>
 
-                    <div class="flex-1 p-5 overflow-y-auto custom-scroll relative flex flex-col gap-5">
+                    <div class="flex-1 p-5 overflow-y-auto custom-scroll relative flex flex-col gap-5 items-center">
                         <!-- Sign #1 (Master Template) -->
-                        <div>
-                            <div class="flex justify-between items-end mb-2">
+                        <div class="w-full flex flex-col items-center">
+                            <div class="flex justify-between items-end mb-2 w-full">
                                 <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sign #1 (Master Template)</span>
                             </div>
-                            <div id="master-template-preview" class="w-full relative rounded shadow-xl overflow-hidden flex flex-col items-center justify-center border border-gray-700 aspect-box" style="height: 100px; background-color: #000;">
-                                <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
+                            <div class="w-full flex justify-center items-center relative min-h-[160px]">
+                                <div id="master-template-preview" class="relative rounded shadow-xl overflow-hidden flex flex-col items-center justify-center border border-gray-700 aspect-box" style="background-color: #000;">
+                                    <span class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-[10px] font-black uppercase tracking-widest text-center pointer-events-none">Awaiting Text</span>
+                                </div>
                             </div>
                         </div>
 
                         <div id="grid-divider" class="border-t border-gray-700 w-full hidden"></div>
                         <!-- Grid for the Rest (Sign #2-50) -->
-                        <div id="bulk-preview-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 content-start"></div>
+                        <div id="bulk-preview-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 w-full content-start"></div>
                     </div>
 
                     <!-- PRODUCTION WARNINGS -->
