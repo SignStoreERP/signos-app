@@ -1,5 +1,5 @@
 // ==========================================
-// SignOS_DEV API v7.2.6 - FULL SYSTEM RECOVERY
+// SignOS_DEV API v7.3.0 - Centralized Loader Update
 // ==========================================
 
 // MASTER 1: The Data Backend (READ/WRITE)
@@ -31,6 +31,7 @@ function doGet(e) {
   if (params.req === "update_matrix") return updateMatrixValue(params);
   if (params.req === "view_module") return fetchProductWithMatrix(params.tab);
   if (params.req === "commit_matrix") return commitMatrixBatch(params);
+  if (params.req === "bundle") return fetchProductBundle(params);
 
   // 3. Roadmap / Ticketing
   if (params.req === "add_roadmap") return addRoadmapItem(params);
@@ -54,6 +55,33 @@ function doGet(e) {
 
   // 7. DEFAULT: Matrix Config Fetch
   return fetchProductWithMatrix(params.tab || "PROD_Yard_Signs");
+}
+
+function fetchProductBundle(p) {
+  try {
+    const payload = {};
+    
+    // 1. Get Base Config (Uses your new Override logic automatically)
+    const configRes = fetchProductWithMatrix(p.tab);
+    payload.config = JSON.parse(configRes.getContent());
+    
+    // 2. Get Dependent Tables
+    payload.tables = {};
+    if (p.refs) {
+      const tables = p.refs.split(',');
+      tables.forEach(tName => {
+        const tableRes = fetchTable(tName.trim());
+        const parsed = JSON.parse(tableRes.getContent());
+        if (!parsed.error) {
+          payload.tables[tName.trim()] = parsed;
+        }
+      });
+    }
+    
+    return returnJSON({ status: "success", data: payload });
+  } catch (e) {
+    return returnJSON({ status: "error", message: e.toString() });
+  }
 }
 
 // ==========================================
