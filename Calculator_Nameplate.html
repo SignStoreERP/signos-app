@@ -484,7 +484,7 @@
             }, 2500);
         }
 
-       // --- INIT DATA FETCH (Phase 3 API Loader) ---
+        // --- INIT DATA FETCH (Phase 3 API Loader) ---
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("ADA Etch Nameplates");
             
@@ -496,8 +496,30 @@
 
             try {
                 const payload = await SignOS.fetchProductData('PROD_Nameplates', ['REF_Colors_Rowmark', 'REF_Colors_Paint', 'REF_Colors_PMS', 'REF_Fonts']);
+
+                backendData = payload.config;
+                rowmarkData = payload.tables['REF_Colors_Rowmark'] || [];
                 
-                // ... (KEEP ALL YOUR EXISTING DATA PARSING/FONT LOADING HERE) ...
+                // Format payload arrays into standard {Code, Name, Hex_Code} for UI Builder
+                swData = (payload.tables['REF_Colors_Paint'] || []).map(p => ({
+                    Code: p['Color Code'] || p['Code'] || 'Unknown',
+                    Name: p['Color Name'] || p['Name'] || 'Unknown',
+                    Hex_Code: p['HEX Code'] || p['Hex_Code'] || '#FFFFFF'
+                }));
+                
+                pmsData = (payload.tables['REF_Colors_PMS'] || []).map(p => ({
+                    Code: p['PMS Name / Code'] || 'Unknown',
+                    Name: p['PMS Name / Code'] || 'Unknown',
+                    Hex_Code: p['HEX Code'] || '#FFFFFF'
+                }));
+
+                // Load custom fonts to DOM via Phase 4 Canvas Engine
+                systemFonts = (payload.tables['REF_Fonts'] || []).filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
+                SignOS_Canvas.loadFonts(systemFonts);
+                
+                // Fallback to ensure it pulls a valid font object instead of returning an Array
+                let defaultFont = systemFonts.find(f => f.CSS_Family === 'Arimo') || systemFonts.at(0);
+                lineSettings.forEach(ls => ls.font = defaultFont ? defaultFont.CSS_Family : 'sans-serif');
 
                 if(statusText) {
                     statusText.innerText = "ONLINE";
@@ -527,7 +549,6 @@
                 console.error("API Load Failed:", e);
             }
         });
-
     </script>
 </body>
 </html>
