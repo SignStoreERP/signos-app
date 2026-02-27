@@ -1,9 +1,9 @@
-// signos-view-svg.js (v3.0 Parallel Test)
+// signos-view-svg.js (v3.1 CorelDraw Pipeline)
 function renderPhysicsToScreen(manifest, targetId) {
     const container = document.getElementById(targetId);
     if (!container) return;
 
-    const DPI = 72; // Standard SVG Coordinate System
+    const DPI = 72; // Standard SVG Coordinate System (Points per Inch)
     const containerW = container.parentElement.clientWidth || 400;
     const maxAllowedH = 160;
 
@@ -13,15 +13,22 @@ function renderPhysicsToScreen(manifest, targetId) {
     container.style.width = `${manifest.width * scale}px`;
     container.style.height = `${manifest.height * scale}px`;
 
+    // Inject physical <rect> for CorelDraw, and scale the text group by 72 DPI
     container.innerHTML = `
         <svg id="live-production-preview" width="100%" height="100%"
             viewBox="0 0 ${manifest.width * DPI} ${manifest.height * DPI}"
             xmlns="http://www.w3.org/2000/svg"
-            style="background: ${manifest.substrateColor}; display: block;">
-            <g id="preview-art">
+            data-width-in="${manifest.width}" data-height-in="${manifest.height}"
+            style="display: block;">
+            
+            <!-- Physical Substrate Backer for CorelDraw -->
+            <rect width="${manifest.width * DPI}" height="${manifest.height * DPI}" fill="${manifest.substrateColor}" />
+            
+            <!-- Scaled Ink Paths -->
+            <g id="preview-art" transform="scale(${DPI})">
                 ${manifest.objects.map(obj => `
                     <path d="${obj.d}" fill="${manifest.textColor}"
-                    transform="translate(${obj.x * DPI}, ${obj.y * DPI})" />
+                    transform="translate(${obj.x}, ${obj.y})" />
                 `).join('')}
             </g>
         </svg>
