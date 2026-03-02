@@ -155,7 +155,6 @@ function runCalc() {
     enforceSheetLimits(60, 120); // PVC supports up to 5x10
 
     try {
-        // ADDED SAFETY: Optional Chaining protects against accidentally deleted dropdowns
         const inputs = {
             qty: parseFloat(document.getElementById('qty')?.value) || 1,
             w: parseFloat(document.getElementById('w')?.value) || 24,
@@ -208,10 +207,11 @@ window.addEventListener('load', async () => {
     const statusDot = document.getElementById("status-dot");
 
     try {
-        const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_PVC_Signs`);
-        backendData = await req.json();
+        // THE FIX: Use the new Phase 3 Centralized API Loader
+        const payload = await SignOS.fetchProductData('PROD_PVC_Signs');
+        backendData = payload.config;
 
-        if(backendData.error) throw new Error(backendData.error);
+        if(!backendData || Object.keys(backendData).length === 0) throw new Error("Empty API Payload");
 
         if(statusText) {
             statusText.innerText = "ONLINE";
@@ -228,7 +228,7 @@ window.addEventListener('load', async () => {
             statusText.innerText = "OFFLINE";
             statusText.className = "font-bold text-red-500";
         }
-        console.error(e);
+        console.error("API Load Failed:", e);
     }
 });
 </script>
