@@ -103,134 +103,117 @@
 </div>
 
 <script>
-let backendData = {};
+    let backendData = {};
 
-function enforceSheetLimits(maxShort, maxLong) {
-    let wEl = document.getElementById('w');
-    let hEl = document.getElementById('h');
-    let warnEl = document.getElementById('sheet-warn');
-    if (!wEl || !hEl) return;
+    function enforceSheetLimits(maxShort, maxLong) {
+        let wEl = document.getElementById('w');
+        let hEl = document.getElementById('h');
+        let warnEl = document.getElementById('sheet-warn');
+        if (!wEl || !hEl) return;
 
-    let w = parseFloat(wEl.value);
-    let h = parseFloat(hEl.value);
-    if (isNaN(w)) w = 0;
-    if (isNaN(h)) h = 0;
+        let w = parseFloat(wEl.value) || 0;
+        let h = parseFloat(hEl.value) || 0;
+        let didClamp = false;
 
-    let didClamp = false;
-
-    // Prevent Negative Logic
-    if (w < 0) { w = 0; didClamp = true; }
-    if (h < 0) { h = 0; didClamp = true; }
-
-    // Bidirectional Limits (Longest side <= 120")
-    let maxDim = Math.max(w, h);
-    if (maxDim > maxLong) {
-        if (w >= h) w = maxLong;
-        else h = maxLong;
-        didClamp = true;
-    }
-
-    // Bidirectional Limits (Shortest side <= 60")
-    let minDim = Math.min(w, h);
-    if (minDim > maxShort) {
-        if (w <= h) w = maxShort;
-        else h = maxShort;
-        didClamp = true;
-    }
-
-    if (didClamp) {
-        wEl.value = w;
-        hEl.value = h;
-        if (warnEl) {
-            warnEl.classList.remove('hidden');
-            clearTimeout(warnEl.timeoutId);
-            warnEl.timeoutId = setTimeout(() => warnEl.classList.add('hidden'), 3000);
+        // Longest side cannot exceed 120"
+        if (Math.max(w, h) > maxLong) {
+            if (w >= h) w = maxLong; else h = maxLong;
+            didClamp = true;
         }
-    }
-}
-
-function runCalc() {
-    if(!backendData || !backendData.Retail_Min_Order) return;
-    enforceSheetLimits(60, 120); // PVC supports up to 5x10
-
-    try {
-        const lamVal = document.getElementById('laminate')?.value || 'None';
-        
-        const inputs = {
-            qty: parseFloat(document.getElementById('qty')?.value) || 1,
-            w: parseFloat(document.getElementById('w')?.value) || 24,
-            h: parseFloat(document.getElementById('h')?.value) || 18,
-            thickness: document.getElementById('thickness')?.value || '3mm',
-            sides: parseInt(document.getElementById('sides')?.value) || 1,
-            laminate: lamVal, // String required by logic_pvc.js
-            shape: document.getElementById('shape')?.value || 'Rectangle'
-        };
-
-        const result = calculatePVC(inputs, backendData);
-        if (!result || !result.retail) return;
-
-        const ret = result.retail;
-        const fmt = (n) => "$" + (n || 0).toFixed(2);
-        const totalSqFt = ((inputs.w * inputs.h) / 144) * inputs.qty;
-
-        document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(1);
-        document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
-        document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-        document.getElementById('ui-print').innerText = fmt(ret.printTotal);
-
-        if (ret.routerFee > 0) {
-            document.getElementById('row-router').classList.remove('hidden');
-            document.getElementById('ui-router').innerText = fmt(ret.routerFee);
-        } else {
-            document.getElementById('row-router').classList.add('hidden');
+        // Shortest side cannot exceed 60"
+        if (Math.min(w, h) > maxShort) {
+            if (w <= h) w = maxShort; else h = maxShort;
+            didClamp = true;
         }
 
-        const minOrder = parseFloat(backendData.Retail_Min_Order || 50);
-        document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
-        document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
-
-        const sideTxt = inputs.sides === 2 ? "Double-Sided" : "Single-Sided";
-        const cutTxt = inputs.shape === 'Rectangle' ? 'Square/Rectangle Cut' : 'Custom CNC Cut';
-        const lamTxt = inputs.laminate === 'None' ? 'No Laminate' : `${inputs.laminate} Laminate`;
-
-        document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs.\n${sideTxt}. ${lamTxt}. ${cutTxt}.`;
-
-    } catch(e) {
-        console.error("Math Engine Error:", e);
-    }
-}
-
-// RESTORED: LEGACY API FETCH (Guarantees data loading!)
-window.addEventListener('load', async () => {
-    if (typeof injectHeader === 'function') injectHeader("PVC Signs");
-
-    const statusText = document.getElementById("status-text");
-    const statusDot = document.getElementById("status-dot");
-
-    try {
-        const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_PVC_Signs`);
-        backendData = await req.json();
-
-        if(backendData.error) throw new Error(backendData.error);
-
-        if(statusText) {
-            statusText.innerText = "ONLINE";
-            statusText.className = "font-bold text-green-500";
-            if(statusDot) {
-                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-                statusDot.classList.remove("animate-pulse");
+        if (didClamp) {
+            wEl.value = w;
+            hEl.value = h;
+            if (warnEl) {
+                warnEl.classList.remove('hidden');
+                clearTimeout(warnEl.timeoutId);
+                warnEl.timeoutId = setTimeout(() => warnEl.classList.add('hidden'), 3000);
             }
         }
-
-        runCalc();
-    } catch(e) {
-        if(statusText) {
-            statusText.innerText = "OFFLINE";
-            statusText.className = "font-bold text-red-500";
-        }
-        console.error(e);
     }
-});
+
+    function runCalc() {
+        // Safety: Abort if API hasn't loaded critical data
+        if(!backendData.Retail_Min_Order) return;
+
+        enforceSheetLimits(60, 120); 
+
+        try {
+            const inputs = {
+                qty: parseFloat(document.getElementById('qty').value) || 1,
+                w: parseFloat(document.getElementById('w').value) || 24,
+                h: parseFloat(document.getElementById('h').value) || 18,
+                thickness: document.getElementById('thickness').value,
+                sides: parseInt(document.getElementById('sides').value) || 1,
+                laminate: document.getElementById('laminate').value,
+                shape: document.getElementById('shape').value,
+                // Ensure math engine gets a boolean for lamination check
+                isLaminated: document.getElementById('laminate').value !== 'None'
+            };
+
+            const result = calculatePVC(inputs, backendData);
+            if (!result || !result.retail) return;
+
+            const ret = result.retail;
+            const fmt = (n) => "$" + (n || 0).toFixed(2);
+
+            // Update UI
+            document.getElementById('unit-price').innerText = fmt(ret.unitPrice);
+            document.getElementById('total-quote').innerText = fmt(ret.grandTotal);
+            
+            // Toggle Minimum Badge
+            document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+
+            // Update Job Description
+            const sideTxt = inputs.sides === 2 ? "Double-Sided" : "Single-Sided";
+            const cutTxt = inputs.shape === 'Rectangle' ? 'Square/Rectangle Cut' : 'Custom CNC Cut';
+            const lamTxt = inputs.laminate === 'None' ? 'No Laminate' : `${inputs.laminate} Laminate`;
+            
+            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs.\n${sideTxt}. ${lamTxt}. ${cutTxt}.`;
+
+        } catch(e) {
+            console.error("Math Engine Error:", e);
+        }
+    }
+
+    // THE STABLE LEGACY API LOADER
+    window.addEventListener('load', async () => {
+        if (typeof injectHeader === 'function') injectHeader("PVC Signs");
+
+        const statusText = document.getElementById("status-text");
+        const statusDot = document.getElementById("status-dot");
+
+        try {
+            // REVERTED: Using standard fetch for flat data structure
+            const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_PVC_Signs`);
+            backendData = await req.json();
+
+            if(!backendData || backendData.error) throw new Error("API Connection Failed");
+
+            if(statusText) {
+                statusText.innerText = "ONLINE";
+                statusText.className = "font-bold text-green-500";
+                if(statusDot) {
+                    statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                    statusDot.classList.remove("animate-pulse");
+                }
+            }
+
+            runCalc();
+
+        } catch(e) {
+            console.error("API Error:", e);
+            if(statusText) {
+                statusText.innerText = "OFFLINE";
+                statusText.className = "font-bold text-red-500";
+            }
+        }
+    });
 </script>
 </body>
 </html>
