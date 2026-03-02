@@ -135,55 +135,58 @@
         }
     }
 
-    function runCalc() {
-        // 1. Safety Guard: Abort if API hasn't loaded critical data
-        if(!backendData || !backendData.Retail_Min_Order) return;
+function runCalc() {
+    if(!backendData || !backendData.Retail_Min_Order) return;
+    enforceSheetLimits(60, 120);
 
-        enforceSheetLimits(60, 120); 
+    try {
+        // FIX: The laminate variable is now properly declared so it won't crash the engine!
+        const lamVal = document.getElementById('laminate')?.value || 'None';
+        
+        const inputs = {
+            qty: parseFloat(document.getElementById('qty')?.value) || 1,
+            w: parseFloat(document.getElementById('w')?.value) || 24,
+            h: parseFloat(document.getElementById('h')?.value) || 18,
+            thickness: document.getElementById('thickness')?.value || '3mm',
+            sides: parseInt(document.getElementById('sides')?.value) || 1,
+            lam: lamVal !== 'None', 
+            laminate: lamVal, 
+            shape: document.getElementById('shape')?.value || 'Rectangle'
+        };
 
-        try {
-            // 2. Define the laminate value before using it (The missing piece)
-            const lamVal = document.getElementById('laminate')?.value || 'None';
+        const result = calculatePVC(inputs, backendData);
+        if (!result || !result.retail) return;
 
-            const inputs = {
-                qty: parseFloat(document.getElementById('qty')?.value) || 1,
-                w: parseFloat(document.getElementById('w')?.value) || 24,
-                h: parseFloat(document.getElementById('h')?.value) || 18,
-                thickness: document.getElementById('thickness')?.value || '3mm',
-                sides: parseInt(document.getElementById('sides')?.value) || 1,
-                laminate: lamVal, 
-                shape: document.getElementById('shape')?.value || 'Rectangle'
-            };
+        const ret = result.retail;
+        const fmt = (n) => "$" + (n || 0).toFixed(2);
+        const totalSqFt = ((inputs.w * inputs.h) / 144) * inputs.qty;
 
-            // 3. Execute Math Engine
-            const result = calculatePVC(inputs, backendData);
-            if (!result || !result.retail) return;
+        document.getElementById('lbl-sqft').innerText = totalSqFt.toFixed(1);
+        document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+        document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
+        document.getElementById('ui-print').innerText = fmt(ret.printTotal);
 
-            const ret = result.retail;
-            const fmt = (n) => "$" + (n || 0).toFixed(2);
-
-            // 4. Update UI
-            document.getElementById('unit-price').innerText = fmt(ret.unitPrice);
-            document.getElementById('total-quote').innerText = fmt(ret.grandTotal);
-            
-            if (document.getElementById('min-badge')) {
-                document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
-            }
-
-            // 5. Update Job Description
-            const sideTxt = inputs.sides === 2 ? "Double-Sided" : "Single-Sided";
-            const cutTxt = inputs.shape === 'Rectangle' ? 'Square/Rectangle Cut' : 'Custom CNC Cut';
-            const lamTxt = lamVal === 'None' ? 'No Laminate' : `${lamVal} Laminate`;
-            
-            const descEl = document.getElementById('job-desc');
-            if (descEl) {
-                descEl.value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs.\n${sideTxt}. ${lamTxt}. ${cutTxt}.`;
-            }
-
-        } catch(e) {
-            console.error("Math Engine Error:", e);
+        if (ret.routerFee > 0) {
+            document.getElementById('row-router').classList.remove('hidden');
+            document.getElementById('ui-router').innerText = fmt(ret.routerFee);
+        } else {
+            document.getElementById('row-router').classList.add('hidden');
         }
+
+        const minOrder = parseFloat(backendData.Retail_Min_Order || 50);
+        document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
+        document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+
+        const sideTxt = inputs.sides === 2 ? "Double-Sided" : "Single-Sided";
+        const cutTxt = inputs.shape === 'Rectangle' ? 'Square/Rectangle Cut' : 'Custom CNC Cut';
+        const lamTxt = inputs.laminate === 'None' ? 'No Laminate' : `${inputs.laminate} Laminate`;
+
+        document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs.\n${sideTxt}. ${lamTxt}. ${cutTxt}.`;
+
+    } catch(e) {
+        console.error("Math Engine Error:", e);
     }
+}
 
     // STABLE API LOADER
     window.addEventListener('load', async () => {
