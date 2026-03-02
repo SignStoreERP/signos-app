@@ -20,8 +20,8 @@
     <div class="p-6 space-y-4">
         <div class="grid grid-cols-3 gap-3">
             <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
-            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="24" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
-            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="18" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width</label><input type="number" id="w" value="24" min="0" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height</label><input type="number" id="h" value="18" min="0" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
         </div>
 
         <div id="sheet-warn" class="hidden bg-yellow-50 text-yellow-700 text-[10px] font-bold px-3 py-1.5 rounded border border-yellow-200 transition-opacity">
@@ -49,12 +49,13 @@
             </div>
         </div>
 
+        <!-- RESTORED: Laminate & Shape missing from your previous code -->
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Laminate</label>
                 <select id="laminate" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
                     <option value="None">None (-10%)</option>
-                    <option value="Gloss">Gloss Lam</option>
+                    <option value="Gloss" selected>Gloss Lam</option>
                     <option value="Matte">Matte Lam</option>
                 </select>
             </div>
@@ -75,7 +76,7 @@
             <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
             <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
         </div>
-        
+
         <div class="border-t border-blue-200/50 my-3"></div>
 
         <!-- LINE ITEMS -->
@@ -110,20 +111,38 @@ function enforceSheetLimits(maxShort, maxLong) {
     let hEl = document.getElementById('h');
     let warnEl = document.getElementById('sheet-warn');
     if (!wEl || !hEl) return;
-    
-    let w = parseFloat(wEl.value) || 0;
-    let h = parseFloat(hEl.value) || 0;
+
+    let w = parseFloat(wEl.value);
+    let h = parseFloat(hEl.value);
+    if (isNaN(w)) w = 0;
+    if (isNaN(h)) h = 0;
+
     let didClamp = false;
 
-    if (w > maxLong) { w = maxLong; wEl.value = w; didClamp = true; }
-    if (h > maxLong) { h = maxLong; hEl.value = h; didClamp = true; }
-    if (w > maxShort && h > maxShort) {
-        if (w > h) { h = maxShort; hEl.value = h; } else { w = maxShort; wEl.value = w; }
+    // 1. Prevent Negative Logic
+    if (w < 0) { w = 0; didClamp = true; }
+    if (h < 0) { h = 0; didClamp = true; }
+
+    // 2. Bidirectional Limits (Longest side <= 120")
+    let maxDim = Math.max(w, h);
+    if (maxDim > maxLong) {
+        if (w >= h) w = maxLong;
+        else h = maxLong;
         didClamp = true;
     }
 
-    if (warnEl) {
-        if (didClamp) {
+    // 3. Bidirectional Limits (Shortest side <= 60")
+    let minDim = Math.min(w, h);
+    if (minDim > maxShort) {
+        if (w <= h) w = maxShort;
+        else h = maxShort;
+        didClamp = true;
+    }
+
+    if (didClamp) {
+        wEl.value = w;
+        hEl.value = h;
+        if (warnEl) {
             warnEl.classList.remove('hidden');
             clearTimeout(warnEl.timeoutId);
             warnEl.timeoutId = setTimeout(() => warnEl.classList.add('hidden'), 3000);
@@ -136,14 +155,15 @@ function runCalc() {
     enforceSheetLimits(60, 120); // PVC supports up to 5x10
 
     try {
+        // ADDED SAFETY: Optional Chaining protects against accidentally deleted dropdowns
         const inputs = {
-            qty: parseFloat(document.getElementById('qty').value) || 1,
-            w: parseFloat(document.getElementById('w').value) || 24,
-            h: parseFloat(document.getElementById('h').value) || 18,
-            thickness: document.getElementById('thickness').value, 
-            sides: parseInt(document.getElementById('sides').value) || 1,
-            laminate: document.getElementById('laminate').value,
-            shape: document.getElementById('shape').value
+            qty: parseFloat(document.getElementById('qty')?.value) || 1,
+            w: parseFloat(document.getElementById('w')?.value) || 24,
+            h: parseFloat(document.getElementById('h')?.value) || 18,
+            thickness: document.getElementById('thickness')?.value || '3mm',
+            sides: parseInt(document.getElementById('sides')?.value) || 1,
+            laminate: document.getElementById('laminate')?.value || 'Gloss',
+            shape: document.getElementById('shape')?.value || 'Rectangle'
         };
 
         const result = calculatePVC(inputs, backendData);
@@ -161,8 +181,8 @@ function runCalc() {
         if (ret.routerFee > 0) {
             document.getElementById('row-router').classList.remove('hidden');
             document.getElementById('ui-router').innerText = fmt(ret.routerFee);
-        } else { 
-            document.getElementById('row-router').classList.add('hidden'); 
+        } else {
+            document.getElementById('row-router').classList.add('hidden');
         }
 
         const minOrder = parseFloat(backendData.Retail_Min_Order || 50);
@@ -172,7 +192,7 @@ function runCalc() {
         const sideTxt = inputs.sides === 2 ? "Double-Sided" : "Single-Sided";
         const cutTxt = inputs.shape === 'Rectangle' ? 'Square/Rectangle Cut' : 'Custom CNC Cut';
         const lamTxt = inputs.laminate === 'None' ? 'No Laminate' : `${inputs.laminate} Laminate`;
-        
+
         document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs.\n${sideTxt}. ${lamTxt}. ${cutTxt}.`;
 
     } catch(e) {
@@ -183,16 +203,16 @@ function runCalc() {
 // API FETCH & NATIVE STATUS BAR UPDATER
 window.addEventListener('load', async () => {
     if (typeof injectHeader === 'function') injectHeader("PVC Signs");
-    
+
     const statusText = document.getElementById("status-text");
     const statusDot = document.getElementById("status-dot");
 
     try {
         const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_PVC_Signs`);
         backendData = await req.json();
-        
+
         if(backendData.error) throw new Error(backendData.error);
-        
+
         if(statusText) {
             statusText.innerText = "ONLINE";
             statusText.className = "font-bold text-green-500";
@@ -201,8 +221,8 @@ window.addEventListener('load', async () => {
                 statusDot.classList.remove("animate-pulse");
             }
         }
-        
-        runCalc(); 
+
+        runCalc();
     } catch(e) {
         if(statusText) {
             statusText.innerText = "OFFLINE";
