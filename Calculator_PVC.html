@@ -162,8 +162,7 @@ function runCalc() {
             h: parseFloat(document.getElementById('h')?.value) || 18,
             thickness: document.getElementById('thickness')?.value || '3mm',
             sides: parseInt(document.getElementById('sides')?.value) || 1,
-            lam: lamVal !== 'None', // FIX: Engine expects boolean for the 10% deduction
-            laminate: lamVal, // Keeping original string for the description generator
+            laminate: lamVal, // String required by logic_pvc.js
             shape: document.getElementById('shape')?.value || 'Rectangle'
         };
 
@@ -201,7 +200,7 @@ function runCalc() {
     }
 }
 
-// THE PHASE 3 CENTRALIZED API LOADER
+// RESTORED: LEGACY API FETCH (Guarantees data loading!)
 window.addEventListener('load', async () => {
     if (typeof injectHeader === 'function') injectHeader("PVC Signs");
 
@@ -209,11 +208,10 @@ window.addEventListener('load', async () => {
     const statusDot = document.getElementById("status-dot");
 
     try {
-        // FIX: Using the correct Phase 3 centralized loader to get the nested .config object
-        const payload = await SignOS.fetchProductData('PROD_PVC_Signs');
-        backendData = payload.config;
+        const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_PVC_Signs`);
+        backendData = await req.json();
 
-        if(!backendData || Object.keys(backendData).length === 0) throw new Error("Empty API Payload");
+        if(backendData.error) throw new Error(backendData.error);
 
         if(statusText) {
             statusText.innerText = "ONLINE";
@@ -230,7 +228,7 @@ window.addEventListener('load', async () => {
             statusText.innerText = "OFFLINE";
             statusText.className = "font-bold text-red-500";
         }
-        console.error("API Load Failed:", e);
+        console.error(e);
     }
 });
 </script>
