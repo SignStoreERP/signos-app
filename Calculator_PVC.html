@@ -145,16 +145,15 @@
 
         try {
             const inputs = {
-                qty: parseFloat(document.getElementById('qty').value) || 1,
-                w: parseFloat(document.getElementById('w').value) || 24,
-                h: parseFloat(document.getElementById('h').value) || 18,
-                thickness: document.getElementById('thickness').value,
-                sides: parseInt(document.getElementById('sides').value) || 1,
-                laminate: document.getElementById('laminate').value,
-                shape: document.getElementById('shape').value,
-                // Ensure math engine gets a boolean for lamination check
-                isLaminated: document.getElementById('laminate').value !== 'None'
-            };
+                qty: parseFloat(document.getElementById('qty')?.value) || 1,
+                w: parseFloat(document.getElementById('w')?.value) || 24,
+                h: parseFloat(document.getElementById('h')?.value) || 18,
+                thickness: document.getElementById('thickness')?.value || '3mm',
+                sides: parseInt(document.getElementById('sides')?.value) || 1,
+                lam: lamVal !== 'None', // RESTORED: The engine needs this boolean for the 10% deduction!
+                laminate: lamVal, // Kept for the Job Description generator
+                shape: document.getElementById('shape')?.value || 'Rectangle'
+            };;
 
             const result = calculatePVC(inputs, backendData);
             if (!result || !result.retail) return;
