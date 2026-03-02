@@ -49,13 +49,12 @@
             </div>
         </div>
 
-        <!-- RESTORED: Laminate & Shape missing from your previous code -->
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Laminate</label>
                 <select id="laminate" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                    <option value="None">None (-10%)</option>
-                    <option value="Gloss" selected>Gloss Lam</option>
+                    <option value="None" selected>None (-10%)</option>
+                    <option value="Gloss">Gloss Lam</option>
                     <option value="Matte">Matte Lam</option>
                 </select>
             </div>
@@ -119,11 +118,11 @@ function enforceSheetLimits(maxShort, maxLong) {
 
     let didClamp = false;
 
-    // 1. Prevent Negative Logic
+    // Prevent Negative Logic
     if (w < 0) { w = 0; didClamp = true; }
     if (h < 0) { h = 0; didClamp = true; }
 
-    // 2. Bidirectional Limits (Longest side <= 120")
+    // Bidirectional Limits (Longest side <= 120")
     let maxDim = Math.max(w, h);
     if (maxDim > maxLong) {
         if (w >= h) w = maxLong;
@@ -131,7 +130,7 @@ function enforceSheetLimits(maxShort, maxLong) {
         didClamp = true;
     }
 
-    // 3. Bidirectional Limits (Shortest side <= 60")
+    // Bidirectional Limits (Shortest side <= 60")
     let minDim = Math.min(w, h);
     if (minDim > maxShort) {
         if (w <= h) w = maxShort;
@@ -151,17 +150,20 @@ function enforceSheetLimits(maxShort, maxLong) {
 }
 
 function runCalc() {
-    if(!backendData.Retail_Min_Order) return;
+    if(!backendData || !backendData.Retail_Min_Order) return;
     enforceSheetLimits(60, 120); // PVC supports up to 5x10
 
     try {
+        const lamVal = document.getElementById('laminate')?.value || 'None';
+        
         const inputs = {
             qty: parseFloat(document.getElementById('qty')?.value) || 1,
             w: parseFloat(document.getElementById('w')?.value) || 24,
             h: parseFloat(document.getElementById('h')?.value) || 18,
             thickness: document.getElementById('thickness')?.value || '3mm',
             sides: parseInt(document.getElementById('sides')?.value) || 1,
-            laminate: document.getElementById('laminate')?.value || 'Gloss',
+            lam: lamVal !== 'None', // FIX: Engine expects boolean for the 10% deduction
+            laminate: lamVal, // Keeping original string for the description generator
             shape: document.getElementById('shape')?.value || 'Rectangle'
         };
 
@@ -195,11 +197,11 @@ function runCalc() {
         document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ${inputs.thickness} PVC Signs.\n${sideTxt}. ${lamTxt}. ${cutTxt}.`;
 
     } catch(e) {
-        console.error(e);
+        console.error("Math Engine Error:", e);
     }
 }
 
-// API FETCH & NATIVE STATUS BAR UPDATER
+// THE PHASE 3 CENTRALIZED API LOADER
 window.addEventListener('load', async () => {
     if (typeof injectHeader === 'function') injectHeader("PVC Signs");
 
@@ -207,7 +209,7 @@ window.addEventListener('load', async () => {
     const statusDot = document.getElementById("status-dot");
 
     try {
-        // THE FIX: Use the new Phase 3 Centralized API Loader
+        // FIX: Using the correct Phase 3 centralized loader to get the nested .config object
         const payload = await SignOS.fetchProductData('PROD_PVC_Signs');
         backendData = payload.config;
 
