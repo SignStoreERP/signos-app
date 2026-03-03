@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v2.1 - 3D Builder</title>
+    <title>ADA Signs v2.2 - Layout & Content Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
     <script src="logic_ada.js"></script>
     <style>
-        /* Load your custom Braille Font */
+        /* Load custom Braille Font */
         @font-face {
             font-family: 'Swell Braille';
             src: url('fonts/Swell-Braille.ttf') format('truetype');
@@ -19,6 +19,13 @@
         .color-scroll::-webkit-scrollbar { width: 6px; }
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
+
+        /* Clear Braille Bead Styling (Frosted Glass Effect) */
+        .braille-bead {
+            fill: rgba(180, 180, 180, 0.35);
+            stroke: rgba(255, 255, 255, 0.7);
+            stroke-width: 0.008;
+        }
 
         /* 3D Exploded View CSS */
         #preview-wrapper { perspective: 1200px; }
@@ -37,11 +44,9 @@
             transform-style: preserve-3d; 
         }
 
-        /* The 3D Trigger Classes */
+        /* The 3D Trigger Classes (Tape Layer Removed!) */
         .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-40deg); }
-        
-        .exploded-view .layer-backer { transform: translateZ(-60px); box-shadow: -20px 20px 30px rgba(0,0,0,0.2); }
-        .exploded-view .layer-tape { transform: translateZ(-30px) scale(0.9); }
+        .exploded-view .layer-backer { transform: translateZ(-30px); box-shadow: -20px 20px 30px rgba(0,0,0,0.2); }
         .exploded-view .layer-core { transform: translateZ(0px); box-shadow: -10px 10px 20px rgba(0,0,0,0.1); }
         .exploded-view .layer-tactile { transform: translateZ(30px); filter: drop-shadow(-5px 5px 5px rgba(0,0,0,0.3)); }
     </style>
@@ -52,7 +57,7 @@
         
         <!-- 1. VISUAL PREVIEW (3D Environment) -->
         <div id="preview-wrapper" class="bg-blue-50 p-6 border-b border-blue-100 relative flex flex-col items-center justify-center min-h-[260px] shadow-inner overflow-hidden">
-            <span class="absolute top-2 left-3 text-[8px] font-black text-blue-400 uppercase tracking-widest">Sign Proportion Preview</span>
+            <span class="absolute top-2 left-3 text-[8px] font-black text-blue-400 uppercase tracking-widest">Dynamic Batch Preview</span>
             
             <button onclick="toggle3D()" class="absolute top-2 right-3 z-20 bg-white/80 hover:bg-white text-blue-600 border border-blue-200 px-2 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">
                 Toggle 3D Layers
@@ -73,17 +78,51 @@
             </div>
         </div>
 
-        <!-- 2. COLORS -->
-        <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 border-b border-gray-200">
-            <div>
-                <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
-                <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
-                    <div class="flex items-center gap-2">
-                        <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                        <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-20">Loading...</span>
-                    </div>
+        <!-- 2. CONTENT & LAYOUT BUILDER -->
+        <div class="p-5 bg-white border-b border-gray-200">
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Sign Content & Layout</label>
+            
+            <!-- Component Toggles -->
+            <div class="flex justify-center gap-4 mb-4 pb-4 border-b border-gray-100">
+                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
+                    <input type="checkbox" id="toggle-picto" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Pictogram
+                </label>
+                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
+                    <input type="checkbox" id="toggle-text" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Text
+                </label>
+                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
+                    <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Braille
+                </label>
+            </div>
+
+            <!-- Pictogram Section -->
+            <div id="wrap-picto" class="mb-4">
+                <div class="flex justify-between items-end mb-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Select Symbol</label>
+                    <span id="selected-icon-label" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Loading...</span>
+                </div>
+                <div id="icon-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+            </div>
+
+            <!-- Text Section -->
+            <div id="wrap-text" class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tactile Copy</label>
+                    <input type="text" id="sign-text" value="RESTROOM" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Alignment</label>
+                    <select id="sign-align" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
+                        <option value="left">Left Aligned</option>
+                        <option value="center" selected>Center Aligned</option>
+                        <option value="right">Right Aligned</option>
+                    </select>
                 </div>
             </div>
+        </div>
+
+        <!-- 3. COLORS -->
+        <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 border-b border-gray-200">
             <div>
                 <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
                 <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
@@ -93,9 +132,18 @@
                     </div>
                 </div>
             </div>
+            <div id="wrap-tactile-color">
+                <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
+                <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
+                    <div class="flex items-center gap-2">
+                        <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
+                        <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-20">Loading...</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- 3. BUILDER INPUTS -->
+        <!-- 4. BUILDER INPUTS -->
         <div class="p-6 space-y-4">
             
             <!-- THICKNESS SLIDER -->
@@ -190,15 +238,29 @@
 
     <script>
         let backendData = {};
-        let coreColors = [], tactileColors = [];
-        let selectedCore = null;
-        let selectedTactile = null;
+        let coreColors = [], tactileColors = [], pictograms = [];
+        let selectedCore = null, selectedTactile = null, selectedIcon = null;
         let activeModal = ''; 
         let is3D = false;
 
         function toggle3D() {
             is3D = !is3D;
             document.getElementById('preview-wrapper').classList.toggle('exploded-view', is3D);
+        }
+
+        // Handle Content Section Toggles
+        function handleContentToggles() {
+            const hasPicto = document.getElementById('toggle-picto').checked;
+            const hasText = document.getElementById('toggle-text').checked;
+
+            document.getElementById('wrap-picto').classList.toggle('hidden', !hasPicto);
+            document.getElementById('wrap-text').classList.toggle('hidden', !hasText);
+            
+            // Hide tactile color box entirely if neither text nor picto is active
+            document.getElementById('wrap-tactile-color').style.opacity = (hasPicto || hasText) ? '1' : '0.3';
+            document.getElementById('wrap-tactile-color').style.pointerEvents = (hasPicto || hasText) ? 'auto' : 'none';
+
+            runCalc();
         }
 
         function setThickness(val) {
@@ -234,10 +296,6 @@
                     el.className = "flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 border border-transparent transition-all truncate";
                 }
             });
-
-            if(document.getElementById('core-thick').value === '1/16') {
-               document.getElementById('btn-back-none').classList.add('opacity-30', 'cursor-not-allowed');
-            }
             runCalc();
         }
 
@@ -247,23 +305,67 @@
             const h = parseFloat(document.getElementById('h').value) || 8;
             const r = parseFloat(document.getElementById('radius').value) || 0;
             const backerType = document.getElementById('backer').value;
+            const align = document.getElementById('sign-align').value;
+            const textVal = document.getElementById('sign-text').value.toUpperCase() || "";
             const container = document.getElementById('svg-preview-container');
 
-            // 1. ADA Math Guardrails
-            let fontSize = Math.max(0.625, Math.min(2, h * 0.08)); 
-            let pictoSize = Math.min(w * 0.6, h * 0.45, 4.5);
-            let reqHeight = 0.375 + pictoSize + 0.625 + 0.375 + 0.25 + 0.375; // 8.00" absolute min for Restroom
-            let isInvalid = h < reqHeight;
+            const hasPicto = document.getElementById('toggle-picto').checked;
+            const hasText = document.getElementById('toggle-text').checked;
+            const hasBraille = document.getElementById('toggle-braille').checked;
 
+            // 1. ADA Math Guardrails (Dynamic based on toggles)
+            let reqHeight = 0.375; // Top margin
+            if (hasPicto) reqHeight += 6.0; // Icon field
+            if (hasPicto && (hasText || hasBraille)) reqHeight += 0.375; // Gap below field
+            let fontSize = 0;
+            if (hasText) {
+                fontSize = Math.max(0.625, Math.min(2, h * 0.08)); 
+                reqHeight += fontSize; // Text height
+            }
+            if (hasText && hasBraille) reqHeight += 0.375; // Gap below text
+            if (hasBraille) reqHeight += 0.25; // Braille height
+            reqHeight += 0.375; // Bottom margin
+
+            // If nothing is active, minimum is 1 inch
+            if(!hasPicto && !hasText && !hasBraille) reqHeight = 1;
+
+            let isInvalid = h < reqHeight;
             document.getElementById('ada-warn-box').classList.toggle('hidden', !isInvalid);
             if(isInvalid) {
-                document.getElementById('ada-warn-text').innerText = `Requires ~${reqHeight.toFixed(2)}" height for 6" pictogram + text + braille.`;
+                document.getElementById('ada-warn-text').innerText = `Selected elements require ~${reqHeight.toFixed(2)}" minimum height.`;
             }
 
             // 2. Physical Layout Calculations
-            let pictoY = Math.max(0.375, (h - (pictoSize + fontSize + 0.375 + 0.25)) / 2);
-            let textY = pictoY + pictoSize + 0.6;
-            let brailleY = textY + 0.375 + 0.15; // Braille Baseline
+            let currentY = 0.375;
+            let pictoY = 0;
+            let pictoSize = hasPicto ? Math.min(w * 0.6, 4.5) : 0; // Icon scale
+            
+            if (hasPicto) {
+                // Center icon vertically within its 6" (or proportional) field
+                let fieldH = (h - reqHeight) > 0 ? 6.0 + ((h - reqHeight)/2) : 6.0; 
+                pictoY = currentY + (fieldH/2) - (pictoSize/2);
+                currentY += fieldH;
+                if (hasText || hasBraille) currentY += 0.375;
+            }
+
+            let textY = currentY + fontSize; // Y is the baseline for text
+            if (hasText) {
+                currentY += fontSize;
+                if (hasBraille) currentY += 0.375;
+            }
+
+            let brailleY = currentY + 0.15; // Y is baseline for braille text element
+
+            // Alignment Logic
+            let textAnchor = "middle";
+            let xPos = w / 2;
+            if (align === 'left') {
+                textAnchor = "start";
+                xPos = 0.375; // Strict ADA min margin
+            } else if (align === 'right') {
+                textAnchor = "end";
+                xPos = w - 0.375;
+            }
 
             // Scale UI div to fit 280x280 area to allow for 3D rotation space
             const scale = Math.min(260 / w, 200 / h);
@@ -282,25 +384,37 @@
 
             let html = '';
 
-            // L1: Backer Plate & L2: Adhesive Tape
+            // L1: Backer Plate (No tape layer)
             if (backerType !== 'None') {
                 html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${pxR}px;"></div>`;
-                // Tape is scaled down slightly to mimic inset application
-                html += `<div class="sign-layer layer-tape border border-black/10" style="background-color: rgba(0,0,0,0.8); opacity: 0.15; border-radius: ${pxR}px;"></div>`;
             }
 
-            // L3: ADA Core Substrate
+            // L2: ADA Core Substrate
             html += `<div class="sign-layer layer-core shadow-sm border border-black/20" style="background-color: ${coreHex}; border-radius: ${pxR}px;"></div>`;
 
-            // L4: Applique & Braille (Rendered in SVG format to sit on top of Core)
+            // L3: Applique & Braille
+            let svgContent = '';
+            
+            if (hasPicto && selectedIcon) {
+                let pX = (w/2) - (pictoSize/2); // Icon always centered for now
+                let viewB = selectedIcon.ViewBox || "0 0 100 100";
+                svgContent += `<svg x="${pX}" y="${pictoY}" width="${pictoSize}" height="${pictoSize}" viewBox="${viewB}" fill="currentColor"><path d="${selectedIcon.SVG_Path}"/></svg>`;
+            }
+
+            if (hasText) {
+                svgContent += `<text x="${xPos}" y="${textY}" font-family="sans-serif" font-size="${fontSize}" font-weight="900" text-anchor="${textAnchor}" letter-spacing="0.05">${textVal}</text>`;
+            }
+
+            if (hasBraille) {
+                // Using a visual placeholder for Liblouis translation for now
+                let brailleStr = "," + textVal.toLowerCase(); 
+                svgContent += `<text x="${xPos}" y="${brailleY}" class="braille-bead" font-family="'Swell Braille', sans-serif" font-size="0.28" text-anchor="${textAnchor}" letter-spacing="0.08">${brailleStr}</text>`;
+            }
+
             html += `
             <div class="sign-layer layer-tactile drop-shadow-sm" style="color: ${tactileHex};">
                 <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor">
-                    <g transform="translate(${w/2 - pictoSize/2}, ${pictoY}) scale(${pictoSize/216})">
-                        <path d="M58.29,43.92c8.57,0,15.54-6.97,15.54-15.54s-6.97-15.53-15.54-15.53-15.53,6.95-15.53,15.53,6.95,15.54,15.53,15.54ZM90.18,61.06c-1.65-4.92-7.98-13.86-18.84-13.86h-26.22c-10.95,0-17.26,8.86-18.7,13.86l-13.29,43.82c-2.77,9.43,9.3,13.04,12.16,4.24l11.98-40.35h5.18l-20.6,71.53h19.19v55.68c0,9.58,14.36,9.58,14.36,0v-56.04h5.82v56.1c0,9.48,14.29,9.52,14.29,0v-55.73h19.15l-20.77-71.53h5.44l11.98,40.2c2.86,9.18,14.85,5.29,12.17-4.12l-13.31-43.79ZM181,33.51c5.06-10.8-7.22-23.57-18.3-20.08-10.69,2.16-15.21,16.92-7.76,24.83,6.78,8.96,22.87,6.11,26.05-4.74ZM197.26,51.83c-7.51-6.34-18.07-4.97-27.19-5.13-10.59.44-21.64-1.47-31.72,2.53-6.34,2.48-9.57,9.41-9.37,15.92-.08,17.14-.14,34.29.03,51.43-.29,2.95,1.89,6.79,5.21,6.49,5.67,1.3,7.86-5.63,7.86-10.05.12-13.52-.15-27.04.09-40.56h3.83c.29,40.78-.14,81.56.21,122.32-.35,8.35,10.22,10.63,15.77,6.06,1.75-4.35,2.16-9.12,2.14-13.74-.11-21.38-.03-42.73-.05-64.09h4c.12,24.48-.21,49.01.13,73.5.82,10.08,17.96,7.86,16.91-1.91.26-40.75-.04-81.53.17-122.29,1.19-.03,3.58-.06,4.78-.08.03,14.2-.06,28.42.02,42.66-.17,4.2,3.04,9.37,7.85,8.2,4.07.15,5.41-4.9,5.27-8.2.14-14.66-.04-29.3.06-43.95-.09-6.68-.31-14.59-6.03-19.1ZM113.42,203.15h6.16V12.85h-6.16v190.3Z" />
-                    </g>
-                    <text x="${w/2}" y="${textY}" font-family="sans-serif" font-size="${fontSize}" font-weight="900" text-anchor="middle" letter-spacing="0.05">RESTROOM</text>
-                    <text x="${w/2}" y="${brailleY}" font-family="'Swell Braille', sans-serif" font-size="0.28" text-anchor="middle" letter-spacing="0.08">,restroom</text>
+                    ${svgContent}
                 </svg>
             </div>
             `;
@@ -360,8 +474,8 @@
                     w: parseFloat(document.getElementById('w').value) || 8,
                     h: parseFloat(document.getElementById('h').value) || 8,
                     structure: document.getElementById('core-thick').value,
-                    hasTactile: true, 
-                    hasBraille: true,
+                    hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
+                    hasBraille: document.getElementById('toggle-braille').checked,
                     backer: document.getElementById('backer').value,
                     mounting: document.getElementById('mounting').value,
                     bevel: document.getElementById('bevel').checked,
@@ -384,7 +498,8 @@
                 let desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Compliant Sign.\n`;
                 desc += `Structure: ${inputs.structure === '1/8' ? '1/8" Core' : '1/16" Core + Backer'}.\n`;
                 desc += `Core: [${selectedCore.Code}] ${selectedCore.Name}.\n`;
-                desc += `Tactile & Braille: 1/32" [${selectedTactile.Code}] ${selectedTactile.Name}.\n`;
+                if(inputs.hasTactile) desc += `Tactile 1/32": [${selectedTactile.Code}] ${selectedTactile.Name}.\n`;
+                if(inputs.hasBraille) desc += `Includes Clear Raster Braille.\n`;
                 if (inputs.backer !== 'None') desc += `Mounted to ${inputs.backer}.\n`;
                 
                 let finishes = [];
@@ -406,9 +521,11 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
-                const payload = await SignOS.fetchProductData('PROD_ADA_Signs', ['REF_Colors_Rowmark']);
+                // Fetch Rowmark Colors & Pictograms from DB
+                const payload = await SignOS.fetchProductData('PROD_ADA_Signs', ['REF_Colors_Rowmark', 'REF_Pictograms']);
                 backendData = payload.config;
                 const rawRowmark = payload.tables['REF_Colors_Rowmark'] || [];
+                pictograms = payload.tables['REF_Pictograms'] || [];
 
                 coreColors = rawRowmark.filter(r => r.Series && (r.Series.includes('Ultra-Mattes') || r.Series.includes('Mattes'))).map(c => {
                     let hex = c.Cap_Hex;
@@ -432,6 +549,20 @@
                 document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Hex_Code;
                 document.getElementById('label-tactile').innerText = selectedTactile.Name;
 
+                // Build Pictogram Grid
+                if (SignOS_UI.buildIconGrid) {
+                    SignOS_UI.buildIconGrid({
+                        containerId: 'icon-grid',
+                        data: pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE'),
+                        activeRingClass: 'ring-blue-500',
+                        onSelect: (item) => {
+                            selectedIcon = item;
+                            document.getElementById('selected-icon-label').innerText = item.Name;
+                            runCalc();
+                        }
+                    });
+                }
+
                 if(statusText) {
                     statusText.innerText = "ONLINE";
                     statusText.className = "font-bold text-green-500";
@@ -445,6 +576,12 @@
                 
                 setThickness('1/16'); 
                 setBacker('Black PVC');
+
+                // Select first icon by default
+                setTimeout(() => {
+                    const firstIcon = document.querySelector('#icon-grid button');
+                    if (firstIcon) firstIcon.click();
+                }, 100);
 
             } catch(e) {
                 console.error("API Error:", e);
