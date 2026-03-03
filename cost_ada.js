@@ -1,5 +1,5 @@
 /**
- * PURE PHYSICS ENGINE: ADA & Multi-Layer Signs (v1.0)
+ * PURE PHYSICS ENGINE: ADA & Multi-Layer Signs (v1.1)
  * Dual-Track Architecture handling Laminations, Braille, Weeding, and CNC Routing.
  */
 
@@ -8,25 +8,32 @@ function calculateADA(inputs, data) {
     const totalSqin = sqin * inputs.qty;
 
     // --- 1. RETAIL ENGINE (MARKET VALUE) ---
-    
-    // Base Plate Retail
-    let baseRate = inputs.baseStyle === 'Reverse' 
-        ? parseFloat(data.Retail_Price_Base_Reverse || 0.80) 
-        : parseFloat(data.Retail_Price_Base_Front || 0.60);
+    let unitPrint = 0;
+
+    // Optional Base Core Retail
+    if (inputs.hasCore) {
+        unitPrint += parseFloat(data.Retail_Price_Base_Front || 0.60) * sqin;
+    }
 
     // Layer Adders
-    let tactileRate = inputs.hasTactile ? parseFloat(data.Retail_Adder_Tactile || 0.60) : 0;
+    if (inputs.hasTactile) {
+        unitPrint += parseFloat(data.Retail_Adder_Tactile || 0.60) * sqin;
+    }
     
-    let backerRate = 0;
-    if (inputs.backer === 'PVC') backerRate = parseFloat(data.Retail_Adder_PVC_Backer || 0.40);
-    if (inputs.backer === 'Acrylic') backerRate = parseFloat(data.Retail_Adder_Acr_Backer || 0.60);
+    if (inputs.backer === 'PVC') {
+        unitPrint += parseFloat(data.Retail_Adder_PVC_Backer || 0.40) * sqin;
+    } else if (inputs.backer === 'Acrylic') {
+        unitPrint += parseFloat(data.Retail_Adder_Acr_Backer || 0.60) * sqin;
+    }
 
-    let unitPrint = (baseRate + tactileRate + backerRate) * sqin;
-    
     // Braille Retail Fallback
-    const brailleLines = parseInt(inputs.brailleLines || 0);
-    const brailleRetail = brailleLines * parseFloat(data.Retail_Adder_Braille_Line || 10.00);
-    unitPrint += brailleRetail;
+    const brailleLines = parseInt(inputs.brailleLines || 1);
+    if (inputs.hasBraille && brailleLines > 0) {
+        unitPrint += brailleLines * parseFloat(data.Retail_Adder_Braille_Line || 10.00);
+    }
+
+    // Note: Mounting is currently calculating Cost-only. 
+    // Retail upcharges for Foam Tape will be linked when we build the universal Accessories array.
 
     let retailTotal = unitPrint * inputs.qty;
 
@@ -44,7 +51,7 @@ function calculateADA(inputs, data) {
     const sheetArea4x8 = 4608; // 48" x 96" standard Backer sheet in sq inches
 
     // Material Costs
-    const costCore = (parseFloat(data.Cost_Sub_ADA_Core || 70.00) / sheetArea2x4) * totalSqin * wastePct;
+    const costCore = inputs.hasCore ? (parseFloat(data.Cost_Sub_ADA_Core || 70.00) / sheetArea2x4) * totalSqin * wastePct : 0;
     const costTactile = inputs.hasTactile ? (parseFloat(data.Cost_Sub_Tactile || 55.00) / sheetArea2x4) * totalSqin * wastePct : 0;
     
     let costBacker = 0;
@@ -52,12 +59,16 @@ function calculateADA(inputs, data) {
     if (inputs.backer === 'Acrylic') costBacker = (parseFloat(data.Cost_Sub_Acrylic || 99.00) / sheetArea4x8) * totalSqin * wastePct;
 
     // Adhesive Physics (Full coverage assumption: 1 linear foot of 1-inch tape per 12 sqin)
-    const tapeLayers = (inputs.hasTactile ? 1 : 0) + (inputs.backer !== 'None' ? 1 : 0);
+    let tapeLayers = 0;
+    if (inputs.hasTactile) tapeLayers++; // Tape tactile to core
+    if (inputs.hasCore && inputs.backer !== 'None') tapeLayers++; // Tape core to backer
+    if (inputs.mounting === 'Foam Tape') tapeLayers++; // Uses tape to mount to wall
+
     const tapeLF = (totalSqin / 12) * tapeLayers;
     const costTape = tapeLF * parseFloat(data.Cost_Hem_Tape || 0.08) * wastePct;
 
     // Braille Cost Fallback
-    const costBraille = brailleLines * inputs.qty * parseFloat(data.Cost_Braille_Line_Fallback || 1.00);
+    const costBraille = inputs.hasBraille ? (brailleLines * inputs.qty * parseFloat(data.Cost_Braille_Line_Fallback || 1.00)) : 0;
 
     const totalMats = costCore + costTactile + costBacker + costTape + costBraille;
 
@@ -69,11 +80,15 @@ function calculateADA(inputs, data) {
     const rateMachCNC = parseFloat(data.Rate_Machine_CNC || 10);
 
     // Etching & Engraving Labor
-    const engraveMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.31);
-    const engraveSetupMins = parseFloat(data.Time_Preflight_Job || 15) + (inputs.qty * parseFloat(data.Time_Engraver_Load_Per_Item || 1));
-    
-    const costEngraveMach = (engraveMins / 60) * rateMachEngrave;
-    const costEngraveOp = ((engraveMins + engraveSetupMins) / 60) * rateOp;
+    let costEngraveMach = 0;
+    let costEngraveOp = 0;
+
+    if (inputs.hasCore || inputs.hasTactile || inputs.hasBraille) {
+        const engraveMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.31);
+        const engraveSetupMins = parseFloat(data.Time_Preflight_Job || 15) + (inputs.qty * parseFloat(data.Time_Engraver_Load_Per_Item || 1));
+        costEngraveMach = (engraveMins / 60) * rateMachEngrave;
+        costEngraveOp = ((engraveMins + engraveSetupMins) / 60) * rateOp;
+    }
 
     // Hand Assembly (Weeding & Taping)
     const weedMins = inputs.hasTactile ? (totalSqin * parseFloat(data.Time_Weed_Tactile_SqIn || 0.10)) : 0;
@@ -131,14 +146,15 @@ window.ADA_CONFIG = {
         { id: 'qty', label: 'Quantity', type: 'number', def: 1 },
         { id: 'w', label: 'Width (in)', type: 'number', def: 8 },
         { id: 'h', label: 'Height (in)', type: 'number', def: 8 },
-        { id: 'baseStyle', label: 'Base Core', type: 'select', opts: [{v:'Front', t:'Front Engrave'}, {v:'Reverse', t:'Reverse Engrave'}] },
+        { id: 'hasCore', label: 'Include ADA Core', type: 'toggle', def: true },
         { id: 'hasTactile', label: '1/32" Tactile Layer', type: 'toggle', def: true },
+        { id: 'hasBraille', label: 'Include Braille', type: 'toggle', def: true },
         { id: 'brailleLines', label: 'Lines of Braille', type: 'number', def: 1 },
-        { id: 'backer', label: 'Rigid Backer', type: 'select', opts: [{v:'None', t:'None (Standard ADA)'}, {v:'PVC', t:'3mm PVC Backer'}, {v:'Acrylic', t:'3/16" Acrylic Backer'}] }
+        { id: 'backer', label: 'Rigid Backer', type: 'select', opts: [{v:'None', t:'None (Standard ADA)'}, {v:'PVC', t:'3mm PVC Backer'}, {v:'Acrylic', t:'3/16" Acrylic Backer'}] },
+        { id: 'mounting', label: 'Mounting', type: 'select', opts: [{v:'Foam Tape', t:'Foam Tape'}, {v:'None', t:'None'}] }
     ],
     retails: [
-        { heading: 'Layer Pricing ($/SqIn)', key: 'Retail_Price_Base_Front', label: 'Front Core ($)' },
-        { key: 'Retail_Price_Base_Reverse', label: 'Reverse Core ($)' },
+        { heading: 'Layer Pricing ($/SqIn)', key: 'Retail_Price_Base_Front', label: 'Base Core ($)' },
         { key: 'Retail_Adder_Tactile', label: 'Tactile Add ($)' },
         { key: 'Retail_Adder_PVC_Backer', label: 'PVC Backer Add ($)' },
         { key: 'Retail_Adder_Acr_Backer', label: 'Acrylic Backer Add ($)' },
