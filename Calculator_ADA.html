@@ -3,74 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA & Multi-Layer Signs v1.1</title>
+    <title>ADA & Multi-Layer Signs v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
-    
-    <!-- DUAL-TRACK LOGIC ENGINE -->
+    <script src="signos-ui.js"></script>
     <script src="cost_ada.js"></script>
-    
     <style>
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .color-scroll::-webkit-scrollbar { width: 6px; }
+        .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
+        .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
-    <!-- Main Card: Island Mode -->
     <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
-        <!-- INPUTS -->
         <div class="p-6 space-y-4">
             
+            <!-- CORE DIMENSIONS -->
             <div class="grid grid-cols-3 gap-3">
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none" oninput="runCalc()"></div>
             </div>
 
-            <!-- LAYER TOGGLES -->
-            <div class="grid grid-cols-2 gap-4 pt-2">
-                <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
-                    <label class="text-[10px] font-bold text-gray-600 uppercase tracking-widest cursor-pointer" for="hasCore">ADA Core Layer</label>
-                    <input type="checkbox" id="hasCore" checked onchange="runCalc()" class="w-5 h-5 text-blue-600 rounded cursor-pointer">
+            <!-- LAYER STRUCTURE -->
+            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100 mt-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Core Thickness</label>
+                    <select id="core-thick" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="handleCoreRules()">
+                        <option value="1/8">1/8" Opaque Core</option>
+                        <option value="1/16 Color">1/16" Opaque Core</option>
+                        <option value="1/16 Clear">1/16" Clear Lens</option>
+                    </select>
                 </div>
-                <div class="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-100">
-                    <label class="text-[10px] font-bold text-blue-800 uppercase tracking-widest cursor-pointer" for="hasTactile">1/32" Tactile</label>
-                    <input type="checkbox" id="hasTactile" checked onchange="runCalc()" class="w-5 h-5 text-blue-600 rounded cursor-pointer">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Rigid Backer</label>
+                    <select id="backer" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:text-gray-400" onchange="runCalc()">
+                        <option value="None">None (Standard)</option>
+                        <option value="PVC">3mm PVC Backer</option>
+                        <option value="Acrylic">3/16" Acrylic Backer</option>
+                    </select>
                 </div>
             </div>
+            
+            <div id="backer-warn" class="hidden text-[9px] font-bold text-orange-600 bg-orange-50 p-1.5 border border-orange-200 rounded text-center">
+                1/16" Core requires a rigid backer.
+            </div>
 
-            <!-- BRAILLE TOGGLES -->
+            <!-- CORE COLOR GRID -->
+            <div id="core-color-wrap" class="space-y-1">
+                <div class="flex justify-between items-end">
+                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest">Ultra-Mattes Core Color</label>
+                    <span id="selected-core-label" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Loading...</span>
+                </div>
+                <input type="text" id="core-search" placeholder="Search Core Colors..." oninput="SignOS_UI.filterGrid('core-grid', 'core-search')" class="w-full bg-white border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-800 outline-none focus:border-blue-800 shadow-sm">
+                <div id="core-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+            </div>
+
+            <!-- TACTILE COLOR GRID -->
+            <div class="space-y-1 border-t border-gray-100 pt-3">
+                <div class="flex justify-between items-end">
+                    <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest">ADA Alternative Tactile</label>
+                    <span id="selected-tactile-label" class="text-[9px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">Loading...</span>
+                </div>
+                <div id="tactile-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+            </div>
+
+            <!-- BRAILLE & MOUNTING -->
             <div class="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 mt-2">
                 <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
                     <label class="text-[10px] font-bold text-gray-600 uppercase tracking-widest cursor-pointer" for="hasBraille">Include Braille</label>
                     <input type="checkbox" id="hasBraille" checked onchange="runCalc()" class="w-5 h-5 text-blue-600 rounded cursor-pointer">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Lines of Braille</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Braille Lines</label>
                     <input type="number" id="brailleLines" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-sm text-center bg-white focus:border-blue-500 outline-none h-[42px]" oninput="runCalc()">
                 </div>
             </div>
 
-            <!-- BACKERS & MOUNTING -->
-            <div class="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 mt-2">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Rigid Backer</label>
-                    <select id="backer" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                        <option value="None">None (Standard)</option>
-                        <option value="PVC">3mm PVC Backer</option>
-                        <option value="Acrylic">3/16" Acrylic Backer</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mounting</label>
-                    <select id="mounting" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
-                        <option value="Foam Tape" selected>Foam Tape</option>
-                        <option value="None">None</option>
-                    </select>
-                </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mounting Type</label>
+                <select id="mounting" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none" onchange="runCalc()">
+                    <option value="Foam Tape" selected>Foam Tape</option>
+                    <option value="None">None</option>
+                </select>
             </div>
-
         </div>
 
         <!-- RESULTS -->
@@ -82,11 +101,7 @@
             
             <div class="border-t border-blue-200/50 my-3"></div>
 
-            <div class="space-y-1 text-xs text-blue-900/70 pt-1">
-                <div class="flex justify-between"><span>Base Sign & Layers:</span><span id="ui-print" class="font-bold">$0.00</span></div>
-            </div>
-
-            <div class="flex justify-between items-end border-t-2 border-blue-800 my-3 pt-2">
+            <div class="flex justify-between items-end pt-2">
                 <div>
                     <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
                     <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $50</span>
@@ -105,17 +120,49 @@
 
     <script>
         let backendData = {};
+        let selectedCore = null;
+        let selectedTactile = null;
+
+        function handleCoreRules() {
+            const thick = document.getElementById('core-thick').value;
+            const backer = document.getElementById('backer');
+            const coreWrap = document.getElementById('core-color-wrap');
+            
+            // 1. Enforce Backers for 1/16
+            if (thick.includes('1/16')) {
+                if (backer.value === 'None') backer.value = 'PVC'; 
+                backer.options.disabled = true;
+                document.getElementById('backer-warn').classList.remove('hidden');
+            } else {
+                backer.options.disabled = false;
+                document.getElementById('backer-warn').classList.add('hidden');
+            }
+
+            // 2. Hide Core Colors if Clear Lens is chosen
+            if (thick === '1/16 Clear') {
+                coreWrap.classList.add('hidden');
+                selectedCore = { Cap_Color: 'Clear' };
+            } else {
+                coreWrap.classList.remove('hidden');
+                // Re-select standard default if switching back from clear
+                if(selectedCore && selectedCore.Cap_Color === 'Clear') {
+                    const firstBtn = document.querySelector('#core-grid button');
+                    if(firstBtn) firstBtn.click();
+                }
+            }
+            
+            runCalc();
+        }
 
         function runCalc() {
-            if(!backendData.Retail_Min_Order_Etch) return;
+            if(!backendData.Retail_Min_Order_Etch || (!selectedCore && document.getElementById('core-thick').value !== '1/16 Clear') || !selectedTactile) return;
 
             try {
                 const inputs = {
                     qty: parseFloat(document.getElementById('qty').value) || 1,
                     w: parseFloat(document.getElementById('w').value) || 8,
                     h: parseFloat(document.getElementById('h').value) || 8,
-                    hasCore: document.getElementById('hasCore').checked,
-                    hasTactile: document.getElementById('hasTactile').checked,
+                    coreThick: document.getElementById('core-thick').value,
                     hasBraille: document.getElementById('hasBraille').checked,
                     brailleLines: parseInt(document.getElementById('brailleLines').value) || 1,
                     backer: document.getElementById('backer').value,
@@ -130,7 +177,6 @@
 
                 document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
                 document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-                document.getElementById('ui-print').innerText = fmt(ret.printTotal);
 
                 // Dynamic Minimum Badge
                 const minOrder = inputs.backer !== 'None' 
@@ -141,12 +187,12 @@
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
                 // Build Description
-                let desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA & Wayfinding Sign.`;
-                if (inputs.hasCore) desc += `\nIncludes ADA Core Background.`;
-                if (inputs.hasTactile) desc += `\nIncludes 1/32" Tactile Layer.`;
-                if (inputs.hasBraille && inputs.brailleLines > 0) desc += `\nIncludes ${inputs.brailleLines} line(s) of Grade 2 Braille.`;
-                if (inputs.backer !== 'None') desc += `\nMounted to ${inputs.backer} Rigid Backer.`;
-                if (inputs.mounting !== 'None') desc += `\nSupplied with ${inputs.mounting} for installation.`;
+                let desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Wayfinding Sign.\n`;
+                desc += `Core: ${inputs.coreThick} [${selectedCore.Cap_Color}].\n`;
+                desc += `Tactile: 1/32" ADA Alternative [${selectedTactile.Cap_Color}].\n`;
+                if (inputs.hasBraille && inputs.brailleLines > 0) desc += `Includes ${inputs.brailleLines} line(s) of Grade 2 Braille.\n`;
+                if (inputs.backer !== 'None') desc += `Mounted to ${inputs.backer} Rigid Backer.\n`;
+                if (inputs.mounting !== 'None') desc += `Supplied with ${inputs.mounting} for installation.`;
                 
                 document.getElementById('job-desc').value = desc;
 
@@ -155,34 +201,54 @@
             }
         }
 
-        // STABLE API LOADER
+        // INIT FETCH
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("ADA & Multi-Layer Signs");
 
-            const statusText = document.getElementById("status-text");
-            const statusDot = document.getElementById("status-dot");
-
             try {
-                const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_ADA_Signs`);
-                backendData = await req.json();
+                const payload = await SignOS.fetchProductData('PROD_ADA_Signs', ['REF_Colors_Rowmark']);
+                backendData = payload.config;
+                const rowmarkData = payload.tables['REF_Colors_Rowmark'] || [];
 
-                if(!backendData || backendData.error) throw new Error("API Connection Failed");
-
-                if(statusText) {
-                    statusText.innerText = "ONLINE";
-                    statusText.className = "font-bold text-green-500";
-                    if(statusDot) {
-                        statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-                        statusDot.classList.remove("animate-pulse");
+                // Filter Core Colors (Ultra-Mattes)
+                const coreColors = rowmarkData.filter(r => r.Series && r.Series.includes('Ultra-Mattes'));
+                SignOS_UI.buildColorGrid({
+                    containerId: 'core-grid',
+                    data: coreColors,
+                    type: 'rowmark',
+                    activeRingClass: 'ring-blue-600',
+                    onSelect: (item) => {
+                        selectedCore = item;
+                        document.getElementById('selected-core-label').innerText = item.Cap_Color;
+                        runCalc();
                     }
-                }
-                runCalc();
+                });
+
+                // Filter Tactile Colors (ADA Alternative)
+                const tactileColors = rowmarkData.filter(r => r.Series && r.Series.includes('ADA Alternative'));
+                SignOS_UI.buildColorGrid({
+                    containerId: 'tactile-grid',
+                    data: tactileColors,
+                    type: 'rowmark',
+                    activeRingClass: 'ring-purple-600',
+                    onSelect: (item) => {
+                        selectedTactile = item;
+                        document.getElementById('selected-tactile-label').innerText = item.Cap_Color;
+                        runCalc();
+                    }
+                });
+
+                // Trigger defaults
+                setTimeout(() => {
+                    const cBtn = document.querySelector('#core-grid button');
+                    const tBtn = document.querySelector('#tactile-grid button[data-code="311-2048"]') || document.querySelector('#tactile-grid button'); // Try to default to Bright White
+                    if (cBtn) cBtn.click();
+                    if (tBtn) tBtn.click();
+                    handleCoreRules(); // Initialize thickness rules
+                }, 100);
+
             } catch(e) {
                 console.error("API Error:", e);
-                if(statusText) {
-                    statusText.innerText = "OFFLINE";
-                    statusText.className = "font-bold text-red-500";
-                }
             }
         });
     </script>
