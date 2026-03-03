@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v1.6 - Core Builder</title>
+    <title>ADA Signs v2.0 - Core Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
@@ -20,50 +20,18 @@
 
     <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
-        <!-- 1. SIGN STRUCTURE TOGGLE (TOP) -->
-        <div class="p-4 bg-white border-b border-gray-200 relative z-10">
-            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 text-center">Sign Structure</label>
-            <div class="flex bg-gray-100 p-1 rounded-lg">
-                <button id="btn-struct-18" onclick="setStructure('1/8')" class="flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all">(A) 1/8" Core (Standard)</button>
-                <button id="btn-struct-116" onclick="setStructure('1/16')" class="flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 border border-transparent transition-all">(B) 1/16" Core + Backer</button>
-            </div>
-            <input type="hidden" id="struct-val" value="1/8">
-        </div>
-
-        <!-- 2. VISUAL PREVIEW (Light Blue Background) -->
-        <div class="bg-blue-50 p-6 border-b border-blue-100 relative flex items-center justify-center min-h-[180px] overflow-hidden shadow-inner">
+        <!-- 1. VISUAL PREVIEW (Light Blue Background) -->
+        <div id="preview-wrapper" class="bg-blue-50 p-6 border-b border-blue-100 relative flex items-center justify-center min-h-[220px] shadow-inner">
             <span class="absolute top-2 left-3 text-[8px] font-black text-blue-400 uppercase tracking-widest">Sign Proportion Preview</span>
             
-            <div id="svg-preview-rect" class="shadow-2xl flex flex-col items-center justify-center transition-all duration-300 relative border border-black/10 overflow-hidden text-white" style="width: 100px; height: 100px; background-color: #575753;">
-                
-                <!-- SVG Pictogram (Inherits Text Color) -->
-                <svg class="w-1/3 h-1/3 mb-1.5 drop-shadow-sm" viewBox="0 0 216 216" fill="currentColor">
-                    <path d="M58.29,43.92c8.57,0,15.54-6.97,15.54-15.54s-6.97-15.53-15.54-15.53-15.53,6.95-15.53,15.53,6.95,15.54,15.53,15.54ZM90.18,61.06c-1.65-4.92-7.98-13.86-18.84-13.86h-26.22c-10.95,0-17.26,8.86-18.7,13.86l-13.29,43.82c-2.77,9.43,9.3,13.04,12.16,4.24l11.98-40.35h5.18l-20.6,71.53h19.19v55.68c0,9.58,14.36,9.58,14.36,0v-56.04h5.82v56.1c0,9.48,14.29,9.52,14.29,0v-55.73h19.15l-20.77-71.53h5.44l11.98,40.2c2.86,9.18,14.85,5.29,12.17-4.12l-13.31-43.79ZM181,33.51c5.06-10.8-7.22-23.57-18.3-20.08-10.69,2.16-15.21,16.92-7.76,24.83,6.78,8.96,22.87,6.11,26.05-4.74ZM197.26,51.83c-7.51-6.34-18.07-4.97-27.19-5.13-10.59.44-21.64-1.47-31.72,2.53-6.34,2.48-9.57,9.41-9.37,15.92-.08,17.14-.14,34.29.03,51.43-.29,2.95,1.89,6.79,5.21,6.49,5.67,1.3,7.86-5.63,7.86-10.05.12-13.52-.15-27.04.09-40.56h3.83c.29,40.78-.14,81.56.21,122.32-.35,8.35,10.22,10.63,15.77,6.06,1.75-4.35,2.16-9.12,2.14-13.74-.11-21.38-.03-42.73-.05-64.09h4c.12,24.48-.21,49.01.13,73.5.82,10.08,17.96,7.86,16.91-1.91.26-40.75-.04-81.53.17-122.29,1.19-.03,3.58-.06,4.78-.08.03,14.2-.06,28.42.02,42.66-.17,4.2,3.04,9.37,7.85,8.2,4.07.15,5.41-4.9,5.27-8.2.14-14.66-.04-29.3.06-43.95-.09-6.68-.31-14.59-6.03-19.1ZM113.42,203.15h6.16V12.85h-6.16v190.3Z" />
-                </svg>
-
-                <span class="text-[9px] font-black tracking-widest leading-none drop-shadow-sm">RESTROOM</span>
-                
-                <div class="flex gap-0.5 mt-1 opacity-70">
-                    <div class="w-1 h-1 rounded-full bg-current"></div><div class="w-1 h-1 rounded-full bg-current"></div>
-                    <div class="w-1 h-1 rounded-full bg-current"></div><div class="w-1 h-1 rounded-full bg-current"></div>
-                    <div class="w-1 h-1 rounded-full bg-current"></div><div class="w-1 h-1 rounded-full bg-current"></div>
-                </div>
-
+            <div id="svg-preview-container" class="shadow-2xl flex flex-col items-center justify-center transition-all duration-300 relative border border-black/10 overflow-hidden text-white" style="width: 100px; height: 100px; background-color: #575753;">
+                <!-- SVG Injected Here Dynamically via updatePreview() -->
             </div>
         </div>
 
-        <!-- 3. COLORS (SIDE-BY-SIDE UNDER PREVIEW) -->
+        <!-- 2. COLORS (SIDE-BY-SIDE UNDER PREVIEW) -->
         <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 border-b border-gray-200">
-            <div>
-                <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
-                <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
-                    <div class="flex items-center gap-2">
-                        <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                        <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-20">Loading...</span>
-                    </div>
-                </div>
-            </div>
-            
+            <!-- TACTILE LEFT -->
             <div>
                 <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
                 <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
@@ -73,42 +41,64 @@
                     </div>
                 </div>
             </div>
+            <!-- CORE RIGHT -->
+            <div>
+                <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
+                <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
+                    <div class="flex items-center gap-2">
+                        <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
+                        <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-20">Loading...</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- 4. INPUTS & DIMENSIONS -->
+        <!-- 3. BUILDER INPUTS -->
         <div class="p-6 space-y-4">
             
-            <div class="grid grid-cols-3 gap-3">
+            <!-- THICKNESS SLIDER -->
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Core Thickness</label>
+                <div class="flex bg-gray-100 p-1 rounded-lg">
+                    <button id="btn-thick-18" onclick="setThickness('1/8')" class="flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 border border-transparent transition-all">1/8" Core</button>
+                    <button id="btn-thick-116" onclick="setThickness('1/16')" class="flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all">1/16" Core</button>
+                </div>
+                <input type="hidden" id="core-thick" value="1/16">
+            </div>
+
+            <!-- BACKER SLIDER -->
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Rigid Backer</label>
+                <div class="flex bg-gray-100 p-1 rounded-lg text-[9px]">
+                    <button id="btn-back-none" onclick="setBacker('None')" class="flex-1 py-2 font-bold rounded text-gray-500 transition-all">None</button>
+                    <button id="btn-back-blk" onclick="setBacker('Black PVC')" class="flex-1 py-2 font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all truncate">3mm Blk PVC</button>
+                    <button id="btn-back-wht" onclick="setBacker('White PVC')" class="flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 transition-all truncate">3mm Wht PVC</button>
+                    <button id="btn-back-clr" onclick="setBacker('Clear Acrylic')" class="flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 transition-all truncate">3/16" Clr Acr</button>
+                </div>
+                <input type="hidden" id="backer" value="Black PVC">
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 border-t border-gray-100 pt-4 mt-2">
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-sm" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-sm" oninput="runCalc()"></div>
                 <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-sm" oninput="runCalc()"></div>
             </div>
 
             <!-- RADIUS & BEVEL (Minor Options) -->
-            <div class="flex items-end gap-4 border-t border-gray-100 pt-4 mt-2">
+            <div class="flex items-end gap-4">
                 <div class="flex-1">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Corner Radius (in)</label>
-                    <input type="number" id="radius" value="0" min="0" step="0.125" oninput="runCalc()" class="w-full border p-2 rounded font-bold text-gray-800 text-sm bg-white focus:border-blue-500 outline-none shadow-sm h-[42px] text-center">
+                    <input type="number" id="radius" value="0.5" min="0" step="0.125" oninput="runCalc()" class="w-full border p-2 rounded font-bold text-gray-800 text-sm bg-white focus:border-blue-500 outline-none shadow-sm h-[42px] text-center">
                 </div>
                 <div class="flex-1">
                     <label class="flex items-center gap-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest cursor-pointer bg-white p-2 rounded border border-gray-200 shadow-sm hover:bg-gray-50 transition h-[42px] px-3">
-                        <input type="checkbox" id="bevel" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
+                        <input type="checkbox" id="bevel" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
                         Beveled Edges
                     </label>
                 </div>
             </div>
 
-            <!-- MOUNTING & BACKERS -->
-            <div class="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 mt-2">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Backer Option</label>
-                    <select id="backer" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none shadow-sm disabled:bg-gray-100 disabled:text-gray-400" onchange="runCalc()">
-                        <option value="None">None</option>
-                        <option value="Clear Acrylic">Clear Acrylic</option>
-                        <option value="White PVC">White PVC</option>
-                        <option value="Black PVC">Black PVC</option>
-                    </select>
-                </div>
+            <div class="grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 mt-2">
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mounting</label>
                     <select id="mounting" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none shadow-sm" onchange="runCalc()">
@@ -146,9 +136,9 @@
         </div>
     </div>
 
-    <!-- COLOR SELECTION MODAL -->
-    <div id="color-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh] overflow-hidden border border-gray-200">
+    <!-- COLOR SELECTION MODAL (Click outside to close) -->
+    <div id="color-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity cursor-pointer" onclick="closeModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh] overflow-hidden border border-gray-200 cursor-auto" onclick="event.stopPropagation()">
             <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0">
                 <h3 class="font-black text-gray-800 uppercase tracking-widest text-xs" id="modal-title">Select Color</h3>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 font-bold transition focus:outline-none">✕</button>
@@ -167,42 +157,89 @@
         let selectedTactile = null;
         let activeModal = ''; // 'core' or 'tactile'
 
-        // Set UI Toggle
-        function setStructure(val) {
-            document.getElementById('struct-val').value = val;
+        // --- SLIDER CONTROLS ---
+        function setThickness(val) {
+            document.getElementById('core-thick').value = val;
             const is18 = val === '1/8';
-            document.getElementById('btn-struct-18').className = `flex-1 py-2 text-xs font-bold rounded transition-all ${is18 ? 'bg-white shadow-sm border border-gray-200 text-blue-700' : 'text-gray-500 hover:text-gray-800 border border-transparent'}`;
-            document.getElementById('btn-struct-116').className = `flex-1 py-2 text-xs font-bold rounded transition-all ${!is18 ? 'bg-white shadow-sm border border-gray-200 text-blue-700' : 'text-gray-500 hover:text-gray-800 border border-transparent'}`;
+            document.getElementById('btn-thick-18').className = `flex-1 py-2 text-xs font-bold rounded transition-all ${is18 ? 'bg-white shadow-sm border border-gray-200 text-blue-700' : 'text-gray-500 hover:text-gray-800 border border-transparent'}`;
+            document.getElementById('btn-thick-116').className = `flex-1 py-2 text-xs font-bold rounded transition-all ${!is18 ? 'bg-white shadow-sm border border-gray-200 text-blue-700' : 'text-gray-500 hover:text-gray-800 border border-transparent'}`;
             
-            const backer = document.getElementById('backer');
-            if (is18) {
-                backer.value = 'None'; 
-                backer.options.disabled = true;
+            const btnNone = document.getElementById('btn-back-none');
+            if (!is18) {
+                btnNone.classList.add('opacity-30', 'cursor-not-allowed');
+                btnNone.disabled = true;
+                if(document.getElementById('backer').value === 'None') setBacker('Black PVC');
             } else {
-                backer.options.disabled = false;
-                if(backer.value === 'None') backer.value = 'Black PVC'; // Smart default for 1/16
+                btnNone.classList.remove('opacity-30', 'cursor-not-allowed');
+                btnNone.disabled = false;
             }
             runCalc();
         }
 
+        function setBacker(val) {
+            if(document.getElementById('core-thick').value === '1/16' && val === 'None') return;
+            document.getElementById('backer').value = val;
+            
+            const btns = ['none', 'blk', 'wht', 'clr'];
+            const vals = ['None', 'Black PVC', 'White PVC', 'Clear Acrylic'];
+            
+            btns.forEach((b, i) => {
+                const el = document.getElementById('btn-back-' + b);
+                if(vals[i] === val) {
+                    el.className = "flex-1 py-2 font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all truncate";
+                } else {
+                    el.className = "flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 border border-transparent transition-all truncate";
+                }
+            });
+
+            if(document.getElementById('core-thick').value === '1/16') {
+               document.getElementById('btn-back-none').classList.add('opacity-30', 'cursor-not-allowed');
+            }
+            runCalc();
+        }
+
+        // --- DYNAMIC ADA PREVIEW ---
         function updatePreview() {
             const w = parseFloat(document.getElementById('w').value) || 8;
             const h = parseFloat(document.getElementById('h').value) || 8;
             const r = parseFloat(document.getElementById('radius').value) || 0;
-            const rect = document.getElementById('svg-preview-rect');
+            const container = document.getElementById('svg-preview-container');
 
-            // Scale to fit max 280x140 area
-            const scale = Math.min(280 / w, 140 / h);
-            rect.style.width = `${w * scale}px`;
-            rect.style.height = `${h * scale}px`;
+            // Scale UI div to fit max 280x160 area
+            const scale = Math.min(280 / w, 160 / h);
+            container.style.width = `${w * scale}px`;
+            container.style.height = `${h * scale}px`;
+            container.style.borderRadius = `${r * scale}px`;
             
-            // Visual Radius (scaled)
-            rect.style.borderRadius = `${r * scale}px`;
+            container.style.backgroundColor = selectedCore ? selectedCore.Hex_Code : '#000';
+            container.style.color = selectedTactile ? selectedTactile.Hex_Code : '#fff';
 
-            if(selectedCore) rect.style.backgroundColor = selectedCore.Cap_Hex;
-            
-            // Setting 'color' allows 'currentColor' to cascade into SVG fill and text
-            if(selectedTactile) rect.style.color = selectedTactile.Cap_Hex; 
+            // Map standard ADA metrics to exact inch-based layout internally
+            let pictoSize = Math.min(w * 0.6, h * 0.45, 4.5); 
+            let marginY = (h - (pictoSize + 1.5)) / 2; 
+            if(marginY < 0.5) marginY = 0.5;
+
+            let pictoY = marginY;
+            let textY = pictoY + pictoSize + 0.8;
+            let brailleY = textY + 0.3;
+            let fontSize = Math.max(0.625, h * 0.08); // Enforce 5/8" minimum text height scaling
+
+            container.innerHTML = `
+                <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" class="drop-shadow-sm" fill="currentColor">
+                    <g transform="translate(${w/2 - pictoSize/2}, ${pictoY}) scale(${pictoSize/216})">
+                        <path d="M58.29,43.92c8.57,0,15.54-6.97,15.54-15.54s-6.97-15.53-15.54-15.53-15.53,6.95-15.53,15.53,6.95,15.54,15.53,15.54ZM90.18,61.06c-1.65-4.92-7.98-13.86-18.84-13.86h-26.22c-10.95,0-17.26,8.86-18.7,13.86l-13.29,43.82c-2.77,9.43,9.3,13.04,12.16,4.24l11.98-40.35h5.18l-20.6,71.53h19.19v55.68c0,9.58,14.36,9.58,14.36,0v-56.04h5.82v56.1c0,9.48,14.29,9.52,14.29,0v-55.73h19.15l-20.77-71.53h5.44l11.98,40.2c2.86,9.18,14.85,5.29,12.17-4.12l-13.31-43.79ZM181,33.51c5.06-10.8-7.22-23.57-18.3-20.08-10.69,2.16-15.21,16.92-7.76,24.83,6.78,8.96,22.87,6.11,26.05-4.74ZM197.26,51.83c-7.51-6.34-18.07-4.97-27.19-5.13-10.59.44-21.64-1.47-31.72,2.53-6.34,2.48-9.57,9.41-9.37,15.92-.08,17.14-.14,34.29.03,51.43-.29,2.95,1.89,6.79,5.21,6.49,5.67,1.3,7.86-5.63,7.86-10.05.12-13.52-.15-27.04.09-40.56h3.83c.29,40.78-.14,81.56.21,122.32-.35,8.35,10.22,10.63,15.77,6.06,1.75-4.35,2.16-9.12,2.14-13.74-.11-21.38-.03-42.73-.05-64.09h4c.12,24.48-.21,49.01.13,73.5.82,10.08,17.96,7.86,16.91-1.91.26-40.75-.04-81.53.17-122.29,1.19-.03,3.58-.06,4.78-.08.03,14.2-.06,28.42.02,42.66-.17,4.2,3.04,9.37,7.85,8.2,4.07.15,5.41-4.9,5.27-8.2.14-14.66-.04-29.3.06-43.95-.09-6.68-.31-14.59-6.03-19.1ZM113.42,203.15h6.16V12.85h-6.16v190.3Z" />
+                    </g>
+                    <text x="${w/2}" y="${textY}" font-family="sans-serif" font-size="${fontSize}" font-weight="900" text-anchor="middle" letter-spacing="0.05">RESTROOM</text>
+                    <g transform="translate(${w/2 - 0.45}, ${brailleY})">
+                        <circle cx="0" cy="0" r="0.04"/><circle cx="0.1" cy="0" r="0.04"/>
+                        <circle cx="0" cy="0.1" r="0.04"/><circle cx="0.1" cy="0.1" r="0.04"/>
+                        <circle cx="0.2" cy="0" r="0.04"/><circle cx="0.3" cy="0.1" r="0.04"/>
+                        <circle cx="0.4" cy="0" r="0.04"/><circle cx="0.5" cy="0.1" r="0.04"/>
+                        <circle cx="0.6" cy="0" r="0.04"/>
+                        <circle cx="0.8" cy="0" r="0.04"/><circle cx="0.9" cy="0.1" r="0.04"/>
+                    </g>
+                </svg>
+            `;
         }
 
         // --- MODAL LOGIC ---
@@ -218,18 +255,18 @@
             SignOS_UI.buildColorGrid({
                 containerId: 'modal-grid',
                 data: data,
-                type: 'rowmark',
-                btnClass: 'w-10 h-10', // Make buttons slightly bigger for the modal
+                type: 'paint', // Forces Solid Render instead of Diagonal Split
+                btnClass: 'w-10 h-10', 
                 activeRingClass: activeClass,
                 onSelect: (item) => {
                     if (activeModal === 'tactile') {
                         selectedTactile = item;
-                        document.getElementById('swatch-tactile').style.backgroundColor = item.Cap_Hex;
-                        document.getElementById('label-tactile').innerText = item.Cap_Color;
+                        document.getElementById('swatch-tactile').style.backgroundColor = item.Hex_Code;
+                        document.getElementById('label-tactile').innerText = item.Name;
                     } else {
                         selectedCore = item;
-                        document.getElementById('swatch-core').style.backgroundColor = item.Cap_Hex;
-                        document.getElementById('label-core').innerText = item.Cap_Color;
+                        document.getElementById('swatch-core').style.backgroundColor = item.Hex_Code;
+                        document.getElementById('label-core').innerText = item.Name;
                     }
                     closeModal();
                     runCalc();
@@ -240,7 +277,7 @@
             const activeItem = type === 'tactile' ? selectedTactile : selectedCore;
             if(activeItem) {
                 setTimeout(() => {
-                    const btn = document.querySelector(`#modal-grid button[data-code="${activeItem.Item_Code}"]`);
+                    const btn = document.querySelector(`#modal-grid button[data-code="${activeItem.Code}"]`);
                     if(btn) btn.classList.add('ring-2', 'ring-offset-1', activeClass);
                 }, 50);
             }
@@ -251,9 +288,7 @@
         }
 
         function runCalc() {
-            // Guardrail to prevent calculating before API load
             if(!backendData.Retail_Min_Order_Etch || !selectedCore || !selectedTactile) return;
-
             updatePreview();
 
             try {
@@ -261,7 +296,7 @@
                     qty: parseFloat(document.getElementById('qty').value) || 1,
                     w: parseFloat(document.getElementById('w').value) || 8,
                     h: parseFloat(document.getElementById('h').value) || 8,
-                    structure: document.getElementById('struct-val').value,
+                    structure: document.getElementById('core-thick').value, // Passes direct to logic_ada.js
                     hasTactile: true, 
                     hasBraille: true,
                     backer: document.getElementById('backer').value,
@@ -270,7 +305,6 @@
                     radius: document.getElementById('radius').value
                 };
 
-                // Routing to the logic_ada.js market engine
                 const result = calculateADA(inputs, backendData);
                 if (!result || !result.retail) return;
 
@@ -287,8 +321,8 @@
                 // Build Description
                 let desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Compliant Sign.\n`;
                 desc += `Structure: ${inputs.structure === '1/8' ? '1/8" Core' : '1/16" Core + Backer'}.\n`;
-                desc += `Core: [${selectedCore.Cap_Color}].\n`;
-                desc += `Tactile & Braille: 1/32" [${selectedTactile.Cap_Color}].\n`;
+                desc += `Core: [${selectedCore.Code}] ${selectedCore.Name}.\n`;
+                desc += `Tactile & Braille: 1/32" [${selectedTactile.Code}] ${selectedTactile.Name}.\n`;
                 if (inputs.backer !== 'None') desc += `Mounted to ${inputs.backer}.\n`;
                 
                 let finishes = [];
@@ -307,8 +341,8 @@
         window.addEventListener('load', async () => {
             if (typeof injectHeader === 'function') injectHeader("ADA Compliant Signs");
             
-            // Utilize Phase 3 Global Loader overlay
-            if (SignOS_UI && SignOS_UI.showLoader) SignOS_UI.showLoader('main-card', 'Connecting to Source Data...');
+            // Only blur the preview area during load!
+            if (SignOS_UI && SignOS_UI.showLoader) SignOS_UI.showLoader('preview-wrapper', 'Connecting to Source Data...');
 
             const statusText = document.getElementById("status-text");
             const statusDot = document.getElementById("status-dot");
@@ -316,25 +350,34 @@
             try {
                 const payload = await SignOS.fetchProductData('PROD_ADA_Signs', ['REF_Colors_Rowmark']);
                 backendData = payload.config;
-                const rowmarkData = payload.tables['REF_Colors_Rowmark'] || [];
+                const rawRowmark = payload.tables['REF_Colors_Rowmark'] || [];
 
-                // Filter Core Colors & Strip Core_Hex to force Solid Swatches
-                coreColors = rowmarkData.filter(r => r.Series && r.Series.includes('Ultra-Mattes')).map(c => ({...c, Core_Hex: null}));
-                // Filter Tactile Colors
-                tactileColors = rowmarkData.filter(r => r.Series && r.Series.includes('ADA Alternative'));
+                // Filter & Format Core Colors for Solid Display
+                coreColors = rawRowmark.filter(r => r.Series && (r.Series.includes('Ultra-Mattes') || r.Series.includes('Mattes'))).map(c => {
+                    let hex = c.Cap_Hex;
+                    if(hex === 'Transparent' || c.Cap_Color.includes('Clear')) hex = '#e5e7eb'; // Visualize clear as light grey
+                    return { Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: hex };
+                });
 
-                // Set defaults invisibly
-                selectedCore = coreColors.find(c => c.Cap_Color.includes('Blue')) || coreColors;
-                selectedTactile = tactileColors.find(c => c.Cap_Color.includes('White')) || tactileColors;
-                
-                if (selectedCore && selectedTactile) {
-                    document.getElementById('swatch-core').style.backgroundColor = selectedCore.Cap_Hex;
-                    document.getElementById('label-core').innerText = selectedCore.Cap_Color;
-                    document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Cap_Hex;
-                    document.getElementById('label-tactile').innerText = selectedTactile.Cap_Color;
+                // Force "Clear" to exist if missing
+                if (!coreColors.find(c => c.Name.includes('Clear'))) {
+                    coreColors.push({ Code: '322-101', Name: 'Clear', Hex_Code: '#e5e7eb' });
                 }
 
-                // Restore Online Status hook!
+                // Filter & Format Tactile Colors
+                tactileColors = rawRowmark.filter(r => r.Series && r.Series.includes('ADA Alternative')).map(c => {
+                    return { Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: c.Cap_Hex };
+                });
+
+                // Set Default Options
+                selectedCore = coreColors.find(c => c.Name.includes('Black')) || coreColors;
+                selectedTactile = tactileColors.find(c => c.Name.includes('White')) || tactileColors;
+                
+                document.getElementById('swatch-core').style.backgroundColor = selectedCore.Hex_Code;
+                document.getElementById('label-core').innerText = selectedCore.Name;
+                document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Hex_Code;
+                document.getElementById('label-tactile').innerText = selectedTactile.Name;
+
                 if(statusText) {
                     statusText.innerText = "ONLINE";
                     statusText.className = "font-bold text-green-500";
@@ -344,13 +387,15 @@
                     }
                 }
 
-                if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('main-card');
+                if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper');
                 
-                setStructure('1/8'); // Inits toggles and fires runCalc
+                // Initialize Sliders to Defaults
+                setThickness('1/16'); 
+                setBacker('Black PVC');
 
             } catch(e) {
                 console.error("API Error:", e);
-                if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('main-card', true, 'Connection Failed');
+                if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper', true, 'Connection Failed');
                 if(statusText) {
                     statusText.innerText = "OFFLINE";
                     statusText.className = "font-bold text-red-500";
@@ -360,4 +405,3 @@
     </script>
 </body>
 </html>
-
