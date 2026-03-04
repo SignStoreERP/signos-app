@@ -419,13 +419,12 @@
                 borderWidth: 3, tension: 0.1, pointRadius: 4, _permIndex: index
             });
 
-            if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
-                datasets.push({
-                    type: 'line', label: perm.label + " (Install Cost)", data: dataLabor,
-                    borderColor: '#f43f5e', borderDash:, borderWidth: 2, tension: 0.1, pointRadius: 0, _permIndex: index
-                });
-            }
-        });
+       if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
+            datasets.push({
+                type: 'line', label: perm.label + " (Install Cost)", data: dataLabor,
+                borderColor: '#f43f5e', borderDash: [1], borderWidth: 2, tension: 0.1, pointRadius: 0, _permIndex: index
+            });
+        }
 
         if (chartInstance) chartInstance.destroy();
         const ctx = document.getElementById('physicsChart').getContext('2d');
@@ -497,15 +496,16 @@
         const bounds = getProductBounds(activeConfig.id);
         const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
         
-        // NEW: Dynamic Axis Steps for Heatmap!
+       // NEW: Dynamic Axis Steps for Heatmap!
         let axisStepsW = [];
         let axisStepsH = [];
-        
-        if (activeConfig.id === 'ada') {
-            // Force specific jumps, skipping odd/1-inch sizes after 12
-            axisStepsW = [1-9];
-            axisStepsH = [1-9];
+
+       if (activeConfig.id === 'ada') {
+            // Force specific jumps for ADA sizing
+            axisStepsW = [3-6, 8, 10-13];
+            axisStepsH = [3-6, 8, 10-13];
         } else {
+
             for(let i=bounds.stepW||1; i<=bounds.w; i+=(bounds.stepW||1)) axisStepsW.push(i);
             for(let i=bounds.stepH||1; i<=bounds.h; i+=(bounds.stepH||1)) axisStepsH.push(i);
         }
