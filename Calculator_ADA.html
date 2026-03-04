@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v3.5 - Production Ready</title>
+    <title>ADA Signs v3.6 - Dev Views & String Logic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
-    
-    <!-- FIX: Restored Dual-Track Logic mapping -->
     <script src="logic_ada.js"></script>
-    
     <script src="signos-builder.js"></script>
 
     <style>
@@ -37,6 +34,19 @@
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
+
+    <!-- DEV TOGGLES (Fixed Left) -->
+    <div id="dev-panel" class="hidden xl:flex fixed left-4 top-32 bg-white p-4 rounded-xl shadow-2xl border border-gray-200 z-50 flex-col gap-3 w-48">
+        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2 mb-1">Developer View</span>
+        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer hover:text-blue-600 transition">
+            <input type="checkbox" checked onchange="toggleDevPreview(this.checked)" class="w-4 h-4 text-blue-600 rounded"> 
+            Show 3D Visualizer
+        </label>
+        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer hover:text-blue-600 transition">
+            <input type="checkbox" checked onchange="toggleDevWarnings(this.checked)" class="w-4 h-4 text-blue-600 rounded"> 
+            Show ADA Warnings
+        </label>
+    </div>
 
     <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
@@ -255,7 +265,12 @@
         let backendData = {}, coreColors = [], tactileColors = [], pictograms = [], systemFonts = [];
         let selectedCore = null, selectedTactile = null, selectedIcon = null, activeModal = ''; 
         let currentManifest = null;
+        let devShowWarnings = true;
         const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
+
+        // --- DEV CONTROLS ---
+        function toggleDevPreview(show) { document.getElementById('preview-wrapper').style.display = show ? 'flex' : 'none'; }
+        function toggleDevWarnings(show) { devShowWarnings = show; runCalc(); }
 
         function toggleAccordion(cId, aId) { document.getElementById(cId).classList.toggle('hidden'); document.getElementById(aId).classList.toggle('rotate-180'); }
         
@@ -344,9 +359,9 @@
             document.getElementById('picto-size').classList.toggle('opacity-50', buildInputs.isAutoScale);
             document.getElementById('text-height').classList.toggle('opacity-50', buildInputs.isAutoScale);
 
-            // Handle Warnings
+            // Handle Warnings linked to Dev Toggle
             const warnBox = document.getElementById('ada-warn-box');
-            if (layout.warnMsgs.length > 0) {
+            if (layout.warnMsgs.length > 0 && devShowWarnings) {
                 warnBox.classList.remove('hidden');
                 document.getElementById('ada-warn-text').innerText = layout.warnMsgs.join(" ");
             } else warnBox.classList.add('hidden');
@@ -459,11 +474,20 @@
                 document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(backendData.Retail_Min_Order || 50)}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
+                // Dynamic Decoupled Narrative Generator
                 let tactArr = [];
                 if(document.getElementById('toggle-picto').checked) tactArr.push("pictogram");
                 if(document.getElementById('toggle-text').checked) tactArr.push("text");
-                if(document.getElementById('toggle-braille').checked) tactArr.push("braille");
-                let tactStr = tactArr.length > 0 ? (inputs.hasTactile ? `with 1/32" [${selectedTactile.Code}] ${selectedTactile.Name} tactile ${tactArr.join(", ").replace(/,([^,]*)$/, ' and$1')}` : `with clear raster braille`) : "";
+                let hasBraille = document.getElementById('toggle-braille').checked;
+                
+                let tactStr = "";
+                if (tactArr.length > 0 && hasBraille) {
+                    tactStr = `with 1/32" [${selectedTactile.Code}] ${selectedTactile.Name} tactile ${tactArr.join(" and ")}, and clear Raster Braille`;
+                } else if (tactArr.length > 0 && !hasBraille) {
+                    tactStr = `with 1/32" [${selectedTactile.Code}] ${selectedTactile.Name} tactile ${tactArr.join(" and ")}`;
+                } else if (hasBraille) {
+                    tactStr = `with clear Raster Braille`;
+                }
 
                 let coreStr = `on ${inputs.coreThick} [${selectedCore.Code}] ${selectedCore.Name} ADA core`;
                 let edgeStr = document.getElementById('bevel').checked ? "with beveled edges" : "with straight cut edges";
@@ -480,6 +504,12 @@
             if (typeof injectHeader === 'function') injectHeader("ADA Compliant Signs");
             if (SignOS_UI && SignOS_UI.showLoader) SignOS_UI.showLoader('preview-wrapper', 'Connecting to Source Data...');
             SignOS_UI.Camera3D.init('zoom-stage');
+
+            // Force Dev Panel visibility only if Admin/Super role is active
+            const role = sessionStorage.getItem('signos_role');
+            if (role === 'ADMIN' || role === 'SUPER') {
+                document.getElementById('dev-panel').classList.remove('hidden');
+            }
 
             const statusText = document.getElementById("status-text");
             const statusDot = document.getElementById("status-dot");
