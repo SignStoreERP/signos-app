@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Custom Coroplast (v4.0)
- * Upgraded to Educational Math Ledger format. Adds Hand Cut and explicit DS setup double-handling.
+ * PURE PHYSICS ENGINE: Custom Coroplast (v5.0)
+ * Dual-Ledger Output (Retail & Cost Arrays). Laminate & Shear Fixes.
  */
 function calculateCoro(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -8,37 +8,54 @@ function calculateCoro(inputs, data) {
     const thk = inputs.thickness;
     const multDS = inputs.sides === 2 ? 2 : 1;
 
-    // --- 1. RETAIL ENGINE ---
-    let baseSqFtRate = 0;
+    // --- 1. RETAIL ENGINE (DUAL LEDGER) ---
+    const ret = [];
+    const R = (label, total, formula) => { if(total > 0) ret.push({label, total, formula}); return total; };
+
+    let baseRate = 0;
     if (thk === '4mm') {
-        if (sqft <= 3.99) baseSqFtRate = parseFloat(data.COR4_T1_Rate) || 8.33;
-        else if (sqft <= 15.99) baseSqFtRate = parseFloat(data.COR4_T2_Rate) || 7.00;
-        else if (sqft <= 31.99) baseSqFtRate = parseFloat(data.COR4_T3_Rate) || 6.00;
-        else baseSqFtRate = parseFloat(data.COR4_T4_Rate) || 5.00;
+        if (sqft <= 3.99) baseRate = parseFloat(data.COR4_T1_Rate) || 8.33;
+        else if (sqft <= 15.99) baseRate = parseFloat(data.COR4_T2_Rate) || 7;
+        else if (sqft <= 31.99) baseRate = parseFloat(data.COR4_T3_Rate) || 6;
+        else baseRate = parseFloat(data.COR4_T4_Rate) || 5;
     } else {
-        if (sqft <= 3.99) baseSqFtRate = parseFloat(data.COR10_T1_Rate) || 25.00;
-        else if (sqft <= 15.99) baseSqFtRate = parseFloat(data.COR10_T2_Rate) || 21.00;
-        else if (sqft <= 31.99) baseSqFtRate = parseFloat(data.COR10_T3_Rate) || 18.00;
-        else baseSqFtRate = parseFloat(data.COR10_T4_Rate) || 15.00;
+        if (sqft <= 3.99) baseRate = parseFloat(data.COR10_T1_Rate) || 25;
+        else if (sqft <= 15.99) baseRate = parseFloat(data.COR10_T2_Rate) || 21;
+        else if (sqft <= 31.99) baseRate = parseFloat(data.COR10_T3_Rate) || 18;
+        else baseRate = parseFloat(data.COR10_T4_Rate) || 15;
     }
 
-    let retailPrint = baseSqFtRate * totalSqFt;
-    if (inputs.sides === 2) retailPrint += (totalSqFt * parseFloat(thk === '10mm' ? data.Retail_Adder_DS_10mm || 5 : data.Retail_Adder_DS_4mm || 2.5));
+    let unitPrint = baseRate * sqft;
+    const minSignPrice = thk === '4mm' ? (parseFloat(data.COR4_T1_Min)||25) : (parseFloat(data.COR10_T1_Min)||75);
+    if (unitPrint < minSignPrice) unitPrint = minSignPrice;
+    
+    R(`Base Print (${thk})`, unitPrint * inputs.qty, `${inputs.qty}x Signs @ $${baseRate}/sf`);
 
-    let routerFee = 0;
-    if (inputs.shape === 'CNC Simple') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30);
-    else if (inputs.shape === 'CNC Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50);
+    if (inputs.sides === 2) {
+        const dsAdder = thk === '4mm' ? (parseFloat(data.Retail_Adder_DS_4mm)||2.5) : (parseFloat(data.Retail_Adder_DS_10mm)||5);
+        R(`Double Sided Adder`, (dsAdder * sqft) * inputs.qty, `${inputs.qty}x Sides @ $${dsAdder}/sf`);
+    }
 
-    const feeSetup = inputs.setupPerFile ? (parseFloat(data.Retail_Fee_Setup || 15) * inputs.files) : parseFloat(data.Retail_Fee_Setup || 15);
-    const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
+    if (inputs.laminate && inputs.laminate !== 'None') {
+        const lamAdder = parseFloat(data.Retail_Price_Gloss || 8);
+        R(`Laminate Finish`, (lamAdder * sqft) * inputs.qty, `${inputs.qty}x Lam @ $${lamAdder}/sf`);
+    }
 
-    const grandTotalRaw = retailPrint + routerFee + feeDesign + feeSetup;
+    if (inputs.shape !== 'Rectangle') {
+        const fee = inputs.shape === 'CNC Simple' ? parseFloat(data.Retail_Fee_Router_Easy||30) : parseFloat(data.Retail_Fee_Router_Hard||50);
+        R(`CNC Router Fee`, fee, `Flat Shape Routing Fee`);
+    }
+
+    const feeSetup = R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Fee`);
+    
+    let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
+    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
 
-    // --- 2. COST ENGINE (MATH LEDGER) ---
-    const bd = [];
-    const L = (label, total, formula) => { if(total > 0) bd.push({label, total, formula}); return total; };
+    // --- 2. COST ENGINE (PHYSICS & BOM) ---
+    const cst = [];
+    const L = (label, total, formula) => { if(total > 0) cst.push({label, total, formula}); return total; };
 
     const sheetCost = thk === '10mm' ? parseFloat(data.Cost_Stock_10mm_4x8 || 33.49) : parseFloat(data.Cost_Stock_4mm_4x8 || 8.40);
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
@@ -46,65 +63,47 @@ function calculateCoro(inputs, data) {
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
 
-    const sheetsNeeded = totalSqFt / 32;
-    const rawBlanks = L(`Raw Substrate (${thk})`, sheetsNeeded * sheetCost, `(${totalSqFt.toFixed(1)} SF / 32) * $${sheetCost.toFixed(2)}/sht`);
-    const wasteCost = L(`Material Waste Buffer`, rawBlanks * (wastePct - 1), `Substrate Cost * ${(wastePct-1)*100}%`);
-    
-    const setupMins = parseFloat(data.Time_Setup_Job || 15);
-    const costSetupPrint = L(`Job Setup (File RIP)`, (setupMins / 60) * rateOp, `${setupMins} Mins * $${rateOp}/hr`);
+    const rawBlanks = L(`Raw Substrate (${thk})`, (totalSqFt / 32) * sheetCost, `(${totalSqFt.toFixed(1)} SF / 32) * $${sheetCost.toFixed(2)}/sht`);
+    L(`Material Waste Buffer`, rawBlanks * (wastePct - 1), `Substrate Cost * ${(wastePct-1)*100}%`);
 
-    let subHardCost = rawBlanks + wasteCost + costSetupPrint;
+    L(`Job Setup (File RIP)`, (parseFloat(data.Time_Setup_Job || 15) / 60) * rateOp, `15 Mins * $${rateOp}/hr`);
 
-    if (thk === '10mm') {
-        const vinCost = totalSqFt * parseFloat(data.Cost_Vin_Cal || 0.21) * multDS;
-        L(`Print Media`, vinCost, `${totalSqFt.toFixed(1)} SF * $0.21/SF * ${multDS} Sides`);
-        const lamCost = totalSqFt * parseFloat(data.Cost_Lam_Cal || 0.36) * multDS;
-        L(`Laminate Media`, lamCost, `${totalSqFt.toFixed(1)} SF * $0.36/SF * ${multDS} Sides`);
-        const inkCost = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * multDS;
-        L(`Latex Ink`, inkCost, `${totalSqFt.toFixed(1)} SF * $0.16/SF * ${multDS} Sides`);
-        
-        const printHrs = (totalSqFt / parseFloat(data.Speed_Print_Roll || 150)) * multDS;
-        const opPrint = L(`Print Op (Attn Ratio)`, printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `${printHrs.toFixed(2)} Hrs * $${rateOp}/hr * 10%`);
-        const machPrint = L(`Roll Printer Run`, printHrs * parseFloat(data.Rate_Machine_Print || 5), `${printHrs.toFixed(2)} Hrs * $5/hr`);
-        
-        const mountHrs = (totalSqFt / 32) * (15 / 60) * multDS;
-        const mountLab = L(`Manual Board Mounting`, mountHrs * rateShop, `${(totalSqFt/32).toFixed(1)} Sheets * 15 Mins * $${rateShop}/hr * ${multDS} Sides`);
+    // Ink & Flatbed
+    L(`Flatbed Ink`, totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * multDS, `${totalSqFt.toFixed(1)} SF * $0.16/SF * ${multDS} Sides`);
+    const printHrs = ((inputs.h / 12) * inputs.qty / parseFloat(data.Machine_Speed_LF_Hr || 25)) * multDS;
+    L(`Flatbed Op (Attn Ratio)`, printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `${printHrs.toFixed(2)} Hrs * $${rateOp}/hr * 10%`);
+    L(`Flatbed Machine Run`, printHrs * parseFloat(data.Rate_Machine_Flatbed || 10), `${printHrs.toFixed(2)} Hrs * $10/hr`);
+    L(`Load/Unload Printer`, (parseFloat(data.Time_Handling || 5) * multDS / 60) * rateOp, `5 Mins * $${rateOp}/hr * ${multDS} Sides`);
 
-        subHardCost += vinCost + lamCost + inkCost + opPrint + machPrint + mountLab;
-    } else {
-        const inkCost = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * multDS;
-        L(`Flatbed Ink`, inkCost, `${totalSqFt.toFixed(1)} SF * $0.16/SF * ${multDS} Sides`);
-        
-        const printHrs = ((inputs.h / 12) * inputs.qty / parseFloat(data.Machine_Speed_LF_Hr || 25)) * multDS;
-        const opPrint = L(`Flatbed Op (Attn Ratio)`, printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `${printHrs.toFixed(2)} Hrs * $${rateOp}/hr * 10%`);
-        const machPrint = L(`Flatbed Machine Run`, printHrs * parseFloat(data.Rate_Machine_Flatbed || 10), `${printHrs.toFixed(2)} Hrs * $10/hr`);
-
-        // NEW: Double Handling for Double-Sided
-        const handleMins = parseFloat(data.Time_Handling || 5) * multDS;
-        const costHandle = L(`Material Handling`, (handleMins / 60) * rateOp, `${handleMins} Mins * $${rateOp}/hr`);
-
-        subHardCost += inkCost + opPrint + machPrint + costHandle;
+    // Laminator Math (Specifically requested by user)
+    if (inputs.laminate && inputs.laminate !== 'None') {
+        const lamCost = totalSqFt * parseFloat(data.Cost_Lam_SqFt || 0.36) * multDS;
+        L(`Laminate Media`, lamCost * wastePct, `${totalSqFt.toFixed(1)} SF * $0.36/SF * Waste`);
+        const lamHrs = totalSqFt / parseFloat(data.Speed_Lam_Roll || 300) * multDS;
+        L(`Laminator Op (100% Attn)`, lamHrs * rateShop, `${lamHrs.toFixed(2)} Hrs * $${rateShop}/hr * 100%`);
+        L(`Laminator Machine Run`, lamHrs * parseFloat(data.Rate_Machine_Lam || 5), `${lamHrs.toFixed(2)} Hrs * $5/hr`);
+        L(`Load/Unload Laminator`, (parseFloat(data.Time_Handling || 5) * multDS / 60) * rateShop, `Handling Mins * ${multDS} Sides`);
     }
 
-    // Finishing Math
+    // Finishing Math (Shear vs CNC)
     if (inputs.shape !== 'Rectangle') {
         const cutHrs = (totalSqFt * (inputs.shape === 'CNC Simple' ? 1 : 2)) / 60;
-        const machCNC = L(`CNC Router Run`, cutHrs * parseFloat(data.Rate_Machine_CNC || 10), `${cutHrs.toFixed(2)} Hrs * $10/hr`);
-        const labCNC = L(`CNC Op (Attn Ratio)`, cutHrs * parseFloat(data.Rate_CNC_Labor || 25), `${cutHrs.toFixed(2)} Hrs * $25/hr`);
-        subHardCost += machCNC + labCNC;
+        L(`CNC Router Run`, cutHrs * parseFloat(data.Rate_Machine_CNC || 10), `${cutHrs.toFixed(2)} Hrs * $10/hr`);
+        L(`CNC Op (Attn Ratio)`, cutHrs * parseFloat(data.Rate_CNC_Labor || 25), `${cutHrs.toFixed(2)} Hrs * $25/hr`);
+        L(`Load/Unload Router`, (parseFloat(data.Time_Handling || 5) / 60) * rateOp, `5 Mins * $${rateOp}/hr`);
     } else {
-        const perimeterLF = ((inputs.w * 2) + (inputs.h * 2)) / 12;
-        const totalLF = perimeterLF * inputs.qty;
-        const handMins = totalLF * parseFloat(data.Time_Cut_Hand || 0.25);
-        const costCutHand = L(`Hand/Shear Cutting`, (handMins / 60) * rateShop, `${totalLF.toFixed(1)} LF * 0.25 Mins/LF * $${rateShop}/hr`);
-        subHardCost += costCutHand;
+        const shearSetup = parseFloat(data.Time_Shear_Setup || 5);
+        L(`Shear Machine Setup`, (shearSetup / 60) * rateShop, `${shearSetup} Mins * $${rateShop}/hr`);
+        const shearCuts = inputs.qty * 4; // Approx 4 perimeter cuts per sign
+        L(`Shear Per-Cut Run`, (shearCuts * parseFloat(data.Time_Shear_Cut || 1) / 60) * rateShop, `${shearCuts} Cuts * 1 Min * $${rateShop}/hr`);
     }
 
-    const totalCost = subHardCost * riskFactor;
+    let hardCostRaw = cst.reduce((sum, i) => sum + i.total, 0);
+    const totalCost = hardCostRaw * riskFactor;
 
     return {
-        retail: { unitPrice: grandTotal / inputs.qty, printTotal: retailPrint, routerFee: routerFee, setupFee: feeSetup, designFee: feeDesign, grandTotal: grandTotal },
-        cost: { total: totalCost, breakdown: bd },
+        retail: { unitPrice: grandTotal / inputs.qty, grandTotal: grandTotal, breakdown: ret },
+        cost: { total: totalCost, breakdown: cst },
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
@@ -114,9 +113,9 @@ window.CORO_CONFIG = {
     controls: [
         { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'4mm', t:'4mm Standard'}, {v:'10mm', t:'10mm Heavy Duty'}] },
         { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
-        { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square Cut'}, {v:'CNC Simple', t:'CNC Simple'}] }
+        { id: 'laminate', label: 'Laminate', type: 'select', opts: [{v:'None', t:'None'}, {v:'Standard', t:'Standard Lam'}] },
+        { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square (Shear)'}, {v:'CNC Simple', t:'CNC Simple'}] }
     ],
-    retails: [ { key: 'COR4_T1_Rate', label: '4mm Rate ($)' } ],
-    costs: [ { key: 'Cost_Stock_4mm_4x8', label: '4mm Sheet ($)' } ]
+    retails: [ { key: 'COR4_T1_Rate', label: '4mm Base ($)' }, { key: 'Retail_Adder_DS_4mm', label: 'DS Adder ($)' } ],
+    costs: [ { key: 'Cost_Stock_4mm_4x8', label: '4mm Sheet ($)' }, { key: 'Cost_Lam_SqFt', label: 'Laminate ($/SF)' } ]
 };
-// Keep window.CORO_CONFIG from previous version, just omit the renderReceipt function since UI handles array natively!
