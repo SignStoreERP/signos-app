@@ -1,39 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Analytics v6.1</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="signos-core.js"></script>
-    
-    <!-- LOAD ALL PHYSICS ENGINES -->
-    <script src="cost_yard.js"></script>
-    <script src="cost_coro.js"></script>
-    <script src="cost_pvc.js"></script>
-    <script src="cost_foam.js"></script>
-    <script src="cost_banner.js"></script>
-    <script src="cost_acm.js"></script>
-    <script src="cost_acrylic.js"></script>
-    <script src="cost_cut.js"></script>
-    <script src="cost_decal.js"></script>
-    <script src="cost_wrap.js"></script>
-    <script src="cost_wall.js"></script>
-    <script src="cost_ada.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing Analytics v6.2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="signos-core.js"></script>
 
-    <style>
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; overflow-y: auto; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        #signos-island { min-height: calc(100vh - 2rem); margin: 0 auto; max-width: 1600px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1); }
-        .sticky-col { position: sticky; left: 0; background-color: #f8fafc; z-index: 20; border-right: 2px solid #e2e8f0; }
-        .sticky-row { position: sticky; top: 0; background-color: #f8fafc; z-index: 30; border-bottom: 2px solid #e2e8f0; }
-        .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.1s; cursor: crosshair; border: 1px solid #f1f5f9; }
-        .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 5px 10px rgba(0,0,0,0.1); border-color: #3b82f6; }
-    </style>
+<script src="cost_yard.js"></script>
+<script src="cost_coro.js"></script>
+<script src="cost_pvc.js"></script>
+<script src="cost_foam.js"></script>
+<script src="cost_banner.js"></script>
+<script src="cost_acm.js"></script>
+<script src="cost_acrylic.js"></script>
+<script src="cost_cut.js"></script>
+<script src="cost_decal.js"></script>
+<script src="cost_wrap.js"></script>
+<script src="cost_wall.js"></script>
+<script src="cost_ada.js"></script>
+
+<style>
+    body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; overflow-y: auto; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    #signos-island { min-height: calc(100vh - 2rem); margin: 0 auto; max-width: 1600px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1); }
+    .sticky-col { position: sticky; left: 0; background-color: #f8fafc; z-index: 20; border-right: 2px solid #e2e8f0; }
+    .sticky-row { position: sticky; top: 0; background-color: #f8fafc; z-index: 30; border-bottom: 2px solid #e2e8f0; }
+    .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.1s; cursor: crosshair; border: 1px solid #f1f5f9; }
+    /* Crosshair Hover CSS */
+    .heatmap-table-container { overflow: auto; position: relative; }
+    .row-hover { background-color: #eff6ff !important; }
+    .col-hover { background-color: #eff6ff !important; }
+    .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 5px 10px rgba(0,0,0,0.1); border-color: #3b82f6; background-color: #dbeafe !important; }
+</style>
 </head>
 <body class="p-0 sm:p-4">
 
@@ -43,14 +45,9 @@
     <div class="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         
         <div class="w-full lg:w-64 bg-slate-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col shrink-0">
-            <div class="p-4 bg-gray-100 border-b border-gray-200">
-                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block text-center">Module Select</label>
-            </div>
+            <div class="p-4 bg-gray-100 border-b border-gray-200"><label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block text-center">Module Select</label></div>
             <div class="max-h-48 overflow-y-auto p-3 space-y-1 custom-scrollbar border-b border-gray-200" id="module-nav"></div>
-            
-            <div class="p-4 bg-gray-100 border-b border-gray-200 flex justify-between items-center">
-                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Base Specifications</label>
-            </div>
+            <div class="p-4 bg-gray-100 border-b border-gray-200"><label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Base Specifications</label></div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar" id="product-specific-controls"></div>
             <div class="p-4 bg-white border-t border-gray-200 shrink-0">
                 <button onclick="generateMatrix()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-lg shadow-md uppercase tracking-widest text-[10px] transition">Run Simulation</button>
@@ -96,29 +93,35 @@
                     <canvas id="physicsChart"></canvas>
                 </div>
 
-                <div id="view-heatmap" class="hidden flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative min-h-0 flex flex-col">
+                <div id="view-heatmap" class="hidden flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative min-h-0 flex flex-col heatmap-table-container">
                     <div class="flex-1 overflow-auto custom-scrollbar">
                         <table class="border-collapse text-[11px] w-full table-fixed" id="heatmap-table">
                             <thead id="heatmap-head" class="sticky-row"></thead>
-                            <tbody id="heatmap-body"></tbody>
+                            <tbody id="heatmap-body" onmouseleave="clearCrosshairs()"></tbody>
                         </table>
-                    </div>
-                    <div class="p-3 bg-blue-50 border-t border-blue-200 text-center shrink-0">
-                        <span class="text-[10px] font-bold text-blue-800 uppercase tracking-widest">💡 Adjust settings in the "Base Specifications" panel (Left) and click "Run Simulation" to update grid.</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="w-full lg:w-[350px] bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)] min-h-[400px] lg:min-h-0">
-            <div class="p-4 bg-gray-900 border-b border-gray-800 shrink-0">
-                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-center">Point Inspection</label>
+        <div class="w-full lg:w-[400px] bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)] min-h-[400px] lg:min-h-0">
+            <div class="p-4 bg-gray-900 border-b border-gray-800 shrink-0 flex justify-between items-center">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Point Inspection</label>
+                <button onclick="toggleSandbox()" class="text-[9px] bg-gray-700 text-gray-300 hover:text-white px-2 py-1 rounded transition uppercase font-black">⚙️ Live Overrides</button>
             </div>
-            <div id="inspection-meta" class="p-6 bg-slate-50 border-b border-gray-200 text-center flex flex-col items-center justify-center min-h-[120px] shrink-0">
+            <div id="inspection-meta" class="p-4 bg-slate-50 border-b border-gray-200 text-center flex flex-col items-center justify-center min-h-[100px] shrink-0">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point on the chart to inspect.</span>
             </div>
             
-            <!-- Interactive Ledger / Receipt -->
+            <div id="sandbox-panel" class="hidden bg-gray-800 p-4 border-b border-gray-700 shrink-0 shadow-inner">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Local Variable Sandbox</span>
+                    <button onclick="resetSandbox()" class="text-[9px] text-gray-400 hover:text-red-400 uppercase font-bold">Reset</button>
+                </div>
+                <div id="sandbox-inputs" class="max-h-48 overflow-y-auto custom-scrollbar space-y-2 pr-2"></div>
+                <button onclick="recalcLocalPoint()" class="w-full mt-3 bg-blue-600 hover:bg-blue-500 text-white font-black py-2 rounded shadow text-[10px] uppercase tracking-widest transition">Apply to Point</button>
+            </div>
+
             <div id="receipt-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50"></div>
         </div>
     </div>
@@ -134,7 +137,7 @@
         { id: 'acrylic', name: 'Acrylic Signs', config: window.ACRYLIC_CONFIG },
         { id: 'banner', name: 'Vinyl Banners', config: window.BANNER_CONFIG },
         { id: 'cut', name: 'Cut Vinyl', config: window.CUT_CONFIG },
-        { id: 'decal', name: 'Decals & Stickers', config: window.DECAL_CONFIG },
+        { id: 'decal', name: 'Digital Graphics', config: window.DECAL_CONFIG },
         { id: 'wrap', name: 'Vehicle Wraps', config: window.WRAP_CONFIG },
         { id: 'wall', name: 'Interior Wall Wraps', config: window.WALL_CONFIG },
         { id: 'ada', name: 'ADA & Multi-Layer', config: window.ADA_CONFIG } 
@@ -146,13 +149,14 @@
 
     let activeConfig = null;
     let backendData = {};
+    let customSimData = {}; // Holds local sandbox tweaks
     let chartInstance = null;
     let currentView = 'chart';
     let currentChartDataMap = {};
-    let activeLedgerData = null; // Stores physics output for UI recalculation
+    let activePointKey = null;
 
     window.onload = () => {
-        injectHeader("Pricing Analytics v6.1", true);
+        injectHeader("Pricing Analytics v6.2", true);
         renderProductMenu();
     };
 
@@ -181,6 +185,8 @@
                 }
 
                 currentChartDataMap = {};
+                activePointKey = null;
+                customSimData = {};
                 document.getElementById('initial-state').classList.add('hidden');
                 document.getElementById('loader').classList.remove('hidden');
                 document.getElementById('receipt-container').innerHTML = '';
@@ -189,20 +195,13 @@
                 try {
                     const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
                     backendData = await req.json();
-                    
-                    const sTxt = document.getElementById("status-text");
-                    if(sTxt) { sTxt.innerText = "ONLINE"; sTxt.className = "font-bold text-green-500"; }
-                    const sDot = document.getElementById("status-dot");
-                    if(sDot) { sDot.className = "w-2 h-2 rounded-full bg-green-500"; sDot.classList.remove("animate-pulse"); }
+                    customSimData = { ...backendData }; // Reset sandbox to baseline
+                    buildSandboxInputs();
 
                     renderProductSpecificControls();
                     generateMatrix();
-                } catch(e) {
-                    console.error("Fetch failed", e);
-                    alert("Failed to load backend data for " + m.name);
-                } finally {
-                    document.getElementById('loader').classList.add('hidden');
-                }
+                } catch(e) { console.error("Fetch failed", e); } 
+                finally { document.getElementById('loader').classList.add('hidden'); }
             };
             nav.appendChild(btn);
         });
@@ -213,17 +212,11 @@
         ctrlBox.innerHTML = "";
         if (!activeConfig) return;
 
-        let html = `
-        <div>
-            <label class="block text-[9px] font-black text-blue-600 uppercase mb-1">Simulate Base Qty</label>
-            <input type="number" id="chart-qty" value="1" min="1" class="w-full border border-blue-300 bg-blue-50 rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-inner">
-        </div>`;
+        let html = `<div><label class="block text-[9px] font-black text-blue-600 uppercase mb-1">Simulate Base Qty</label><input type="number" id="chart-qty" value="1" min="1" class="w-full border border-blue-300 bg-blue-50 rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-inner"></div>`;
 
         activeConfig.controls.forEach(c => {
             if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; 
-            
             html += `<div><label class="block text-[9px] font-black text-gray-500 uppercase mb-1">${c.label}</label>`;
-            
             if (c.type === 'select') {
                 html += `<select id="ctrl_${c.id}" class="w-full border border-gray-200 bg-white rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm cursor-pointer">`;
                 c.opts.forEach(o => { html += `<option value="${o.v}">${o.t}</option>`; });
@@ -235,6 +228,51 @@
             }
         });
         ctrlBox.innerHTML = html;
+    }
+
+    function toggleSandbox() { document.getElementById('sandbox-panel').classList.toggle('hidden'); }
+    
+    function buildSandboxInputs() {
+        let html = '';
+        const buildSection = (arr, color) => {
+            arr.forEach(i => {
+                const v = customSimData[i.key] !== undefined ? customSimData[i.key] : '';
+                html += `<div class="flex justify-between items-center gap-2"><label class="text-[9px] font-bold text-gray-400 truncate flex-1">${i.label}</label><input type="text" id="sbx_${i.key}" value="${v}" class="w-16 bg-gray-900 border border-gray-600 text-gray-200 text-xs font-mono text-center rounded outline-none focus:border-${color}-500 py-0.5"></div>`;
+            });
+        };
+        if(activeConfig.retails) buildSection(activeConfig.retails, 'blue');
+        if(activeConfig.costs) buildSection(activeConfig.costs, 'red');
+        document.getElementById('sandbox-inputs').innerHTML = html;
+    }
+
+    function resetSandbox() { customSimData = { ...backendData }; buildSandboxInputs(); if(activePointKey) recalcLocalPoint(); }
+
+    function recalcLocalPoint() {
+        if(!activeConfig || !activePointKey) return;
+        const payload = currentChartDataMap[activePointKey];
+        if(!payload) return;
+        
+        // Harvest Sandbox values
+        const updateVals = (arr) => {
+            arr.forEach(i => {
+                let v = document.getElementById(`sbx_${i.key}`).value;
+                if(v==='TRUE'||v==='true') customSimData[i.key] = true;
+                else if(v==='FALSE'||v==='false') customSimData[i.key] = false;
+                else if(v !== "") customSimData[i.key] = parseFloat(v);
+            });
+        };
+        if(activeConfig.retails) updateVals(activeConfig.retails);
+        if(activeConfig.costs) updateVals(activeConfig.costs);
+
+        // Recalculate JUST this point
+        const res = activeConfig.engine(payload.inputs, customSimData);
+        
+        const mode = document.getElementById('hm-analysis-mode').value;
+        const margin = res.metrics.margin;
+        let displayStr = mode === 'margin' ? (margin*100).toFixed(1) + '%' : '$' + (mode === 'retail' ? (res.retail.unitPrice || res.retail.grandTotal/payload.inputs.qty) : res.cost.total/payload.inputs.qty).toFixed(2);
+        
+        payload.res = res; // Save it back
+        renderInspection(activePointKey, displayStr);
     }
 
     function setView(view) {
@@ -254,11 +292,9 @@
 
     function generateMatrix() {
         if(!activeConfig) return;
-        const simData = { ...backendData };
-
         currentChartDataMap = {};
-        if (currentView === 'chart') drawLineChart(simData);
-        else drawHeatmap(simData);
+        if (currentView === 'chart') drawLineChart(customSimData);
+        else drawHeatmap(customSimData);
     }
 
     function getProductBounds(id) {
@@ -336,10 +372,8 @@
             permutations.push({ label: "Clear (Oracal 3640)", inputs: { ...baseInputs, material: 'Clear' } });
             permutations.push({ label: "Reflective", inputs: { ...baseInputs, material: 'Reflective' } });
         } else if (id === 'cut') {
-            permutations.push({ label: "Flat (751)", inputs: { ...baseInputs, material: 'Flat' } });
-            permutations.push({ label: "Vehicle (951)", inputs: { ...baseInputs, material: 'Vehicle' } });
-            permutations.push({ label: "Backlit Std (8500)", inputs: { ...baseInputs, material: 'Backlit_8500' } });
-            permutations.push({ label: "Backlit Prem (8800)", inputs: { ...baseInputs, material: 'Backlit_8800' } });
+            permutations.push({ label: "Flat (751)", inputs: { ...baseInputs, material: '751' } });
+            permutations.push({ label: "Vehicle (951)", inputs: { ...baseInputs, material: '951' } });
         } else if (id === 'wrap' || id === 'wall') {
             const defMat = id === 'wall' ? 'smooth' : 'wrap';
             permutations.push({ label: "Solid Media", inputs: { ...baseInputs, material: defMat } });
@@ -352,6 +386,7 @@
 
         const datasets = new Array();
         const lineColors = new Array('#3b82f6', '#10b981', '#8b5cf6', '#f97316'); 
+        const renderKey = mode === 'retail' ? 'ret' : (mode === 'cost' ? 'cst' : 'marg');
 
         permutations.forEach((perm, index) => {
             const dataTarget = new Array(); 
@@ -362,6 +397,7 @@
                 
                 if (id === 'yard') {
                     runInputs.qty = stepVal;
+                    runInputs.w = 24; runInputs.h = 18; // Specific fix for Yard
                 } else if (id === 'ada') {
                     runInputs.w = stepVal.w;
                     runInputs.h = stepVal.h;
@@ -387,40 +423,30 @@
                     const unitCst = res.cost.total / runInputs.qty;
                     const margin = res.metrics.margin;
 
-                    const pointPayload = {
-                        ret: unitRet,
-                        cst: unitCst,
-                        prof: unitRet - unitCst,
-                        marg: margin * 100
-                    };
-                    dataTarget.push(pointPayload);
+                    dataTarget.push({ ret: unitRet, cst: unitCst, prof: unitRet - unitCst, marg: margin * 100 });
 
                     if (id === 'wrap' || id === 'wall') {
-                        // Extract labor properly even if nested
                         let laborSum = 0;
-                        if(Array.isArray(res.cost.breakdown)) {
-                            res.cost.breakdown.forEach(b => { if(b.label.includes('Install')) laborSum += b.total; });
-                        } else {
-                            laborSum = res.cost.breakdown.installLabor || 0;
-                        }
-                        dataLabor.push(laborSum / runInputs.qty);
+                        if(Array.isArray(res.cost.breakdown)) res.cost.breakdown.forEach(b => { if(b.label.includes('Install')) laborSum += b.total; });
+                        dataLabor.push({cst: laborSum / runInputs.qty});
                     }
-
                 } catch(e) {
                     dataTarget.push(null); dataLabor.push(null);
                 }
             });
 
+            // Map specifically to primitives for safe Chart.js parsing
             datasets.push({
-                type: 'line', label: perm.label, data: dataTarget,
-                parsing: { yAxisKey: mode === 'retail' ? 'ret' : (mode === 'cost' ? 'cst' : 'marg') },
+                type: 'line', label: perm.label, 
+                data: dataTarget.map(d => d ? d[renderKey] : null),
                 borderColor: lineColors[index % lineColors.length], backgroundColor: lineColors[index % lineColors.length],
                 borderWidth: 3, tension: 0.1, pointRadius: 4, _permIndex: index
             });
 
-            if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
+            if ((id === 'wrap' || id === 'wall') && mode === 'cost') {
                 datasets.push({
-                    type: 'line', label: perm.label + " (Install Cost)", data: dataLabor,
+                    type: 'line', label: perm.label + " (Install Labor)", 
+                    data: dataLabor.map(d => d ? d.cst : null),
                     borderColor: '#f43f5e', borderDash: [1], borderWidth: 2, tension: 0.1, pointRadius: 0, _permIndex: index
                 });
             }
@@ -444,13 +470,18 @@
                         callbacks: {
                             label: function(ctx) {
                                 const permIndex = ctx.dataset._permIndex;
-                                const stepIndex = ctx.dataIndex;
-                                const pointKey = 'ch-' + permIndex + '-' + stepIndex;
+                                const pointKey = 'ch-' + permIndex + '-' + ctx.dataIndex;
                                 const payload = currentChartDataMap[pointKey];
-                                if(!payload) return "No Data";
+                                if(!payload || !payload.res) return "No Data";
 
-                                const d = ctx.raw;
-                                if(ctx.dataset.label.includes('Install Cost')) return `Labor Cost: $${d.toFixed(2)}`;
+                                const d = {
+                                    ret: payload.res.retail.unitPrice || (payload.res.retail.grandTotal / payload.inputs.qty),
+                                    cst: payload.res.cost.total / payload.inputs.qty,
+                                    marg: payload.res.metrics.margin * 100
+                                };
+                                d.prof = d.ret - d.cst;
+
+                                if(ctx.dataset.label.includes('Install')) return `Labor Cost: $${ctx.raw.toFixed(2)}`;
 
                                 return [
                                     `${ctx.dataset.label}`,
@@ -470,14 +501,18 @@
                 onClick: (e, elements) => {
                     if (elements.length > 0) {
                         const el = elements;
-                        const dataIndex = el.index;
-                        const datasetIndex = el.datasetIndex;
-                        const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
+                        const permIndex = chartInstance.data.datasets[el.datasetIndex]._permIndex;
+                        const pointKey = 'ch-' + permIndex + '-' + el.index;
                         
-                        const pointKey = 'ch-' + permIndex + '-' + dataIndex;
-                        const d = chartInstance.data.datasets[datasetIndex].data[dataIndex];
-                        let displayStr = mode === 'margin' ? d.marg.toFixed(1) + '%' : '$' + (mode === 'retail' ? d.ret : d.cst).toFixed(2);
+                        const payload = currentChartDataMap[pointKey];
+                        if(!payload) return;
                         
+                        const margin = payload.res.metrics.margin;
+                        const unitRet = payload.res.retail.unitPrice || (payload.res.retail.grandTotal/payload.inputs.qty);
+                        const unitCst = payload.res.cost.total/payload.inputs.qty;
+                        let displayStr = mode === 'margin' ? (margin*100).toFixed(1) + '%' : '$' + (mode === 'retail' ? unitRet : unitCst).toFixed(2);
+                        
+                        activePointKey = pointKey;
                         renderInspection(pointKey, displayStr);
                     }
                 }
@@ -485,25 +520,28 @@
         });
     }
 
-    function drawHeatmap(simData) {
-        if (activeConfig.id === 'yard' || activeConfig.id === 'banner') {
-            document.getElementById('heatmap-head').innerHTML = '';
-            document.getElementById('heatmap-body').innerHTML = `<tr><td class="p-10 text-center text-gray-500 font-bold uppercase tracking-widest bg-gray-50 rounded-xl shadow-inner border border-gray-200">⚠️ Heatmap Disabled for ${activeConfig.name}<br><span class="text-[10px] text-gray-400 normal-case mt-2 block">Please use the Line Chart view.</span></td></tr>`;
-            return;
+    // Interactive Heatmap Crosshairs
+    function highlightCol(index) {
+        const table = document.getElementById('heatmap-table');
+        for(let i = 0; i < table.rows.length; i++) {
+            if(table.rows[i].cells[index]) table.rows[i].cells[index].classList.add('col-hover');
         }
+    }
+    function clearCrosshairs() {
+        document.querySelectorAll('.col-hover').forEach(el => el.classList.remove('col-hover'));
+    }
 
+    function drawHeatmap(simData) {
         const mode = document.getElementById('hm-analysis-mode').value;
         const bounds = getProductBounds(activeConfig.id);
         const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
         
-        // NEW: Dynamic Axis Steps for Heatmap!
-        let axisStepsW = [];
-        let axisStepsH = [];
+        let axisStepsW = new Array();
+        let axisStepsH = new Array();
         
         if (activeConfig.id === 'ada') {
-            // Force specific jumps for ADA sizing
-            axisStepsW = [1-9];
-            axisStepsH = [1-9];
+            axisStepsW = [2-7];
+            axisStepsH = [2-5, 7, 8];
         } else {
             for(let i=bounds.stepW||1; i<=bounds.w; i+=(bounds.stepW||1)) axisStepsW.push(i);
             for(let i=bounds.stepH||1; i<=bounds.h; i+=(bounds.stepH||1)) axisStepsH.push(i);
@@ -512,9 +550,9 @@
         const header = document.getElementById('heatmap-head');
         const body = document.getElementById('heatmap-body');
         
-        let headHtml = '<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>';
+        let headHtml = '<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row z-40">H \\ W</th>';
         axisStepsW.forEach(w => {
-            headHtml += '<th class="p-2 border border-slate-200">' + w + (activeConfig.id === 'ada' ? '"' : (activeConfig.id === 'wrap' || activeConfig.id === 'wall' ? ' ft' : '\'')) + '</th>';
+            headHtml += '<th class="p-2 border border-slate-200 z-30">' + w + (activeConfig.id === 'ada' ? '"' : (activeConfig.id === 'wrap' || activeConfig.id === 'wall' ? ' ft' : '\'')) + '</th>';
         });
         header.innerHTML = headHtml + '</tr>';
 
@@ -526,10 +564,10 @@
         });
 
         let bodyHtml = '';
-        axisStepsH.forEach(h => {
-            bodyHtml += `<tr><th class="bg-slate-100 p-2 border border-slate-200 sticky-col text-slate-400 text-[9px]">${h}${activeConfig.id === 'ada' ? '"' : (activeConfig.id === 'wrap' || activeConfig.id === 'wall' ? ' ft' : '\'')}</th>`;
+        axisStepsH.forEach((h, rIndex) => {
+            bodyHtml += `<tr onmouseover="this.classList.add('row-hover')" onmouseout="this.classList.remove('row-hover')"><th class="bg-slate-100 p-2 border border-slate-200 sticky-col z-20 text-slate-400 text-[9px]">${h}${activeConfig.id === 'ada' ? '"' : (activeConfig.id === 'wrap' || activeConfig.id === 'wall' ? ' ft' : '\'')}</th>`;
             
-            axisStepsW.forEach(w => {
+            axisStepsW.forEach((w, cIndex) => {
                 let inputs = { ...baseInputs };
                 if (activeConfig.id === 'ada') { inputs.w = w; inputs.h = h; } 
                 else if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
@@ -539,8 +577,8 @@
                     inputs.panels = [{ label: "Panel", qty: 1, w: inputs.w, h: inputs.h, material: inputs.material, included: false }];
                 } else { inputs.w = w * 12; inputs.h = h * 12; }
 
-                if (activeConfig.id === 'cut') inputs.material = inputs.material || 'Flat';
-                if (activeConfig.id === 'decal') inputs.material = inputs.material || 'Cal';
+                if (activeConfig.id === 'cut') inputs.material = inputs.material || '751';
+                if (activeConfig.id === 'decal') inputs.material = inputs.material || 'Standard';
 
                 if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
 
@@ -565,7 +603,7 @@
                         if (margin < 0) cellClass += " loss-alert";
                     }
 
-                    bodyHtml += `<td class="${cellClass}" style="${bgStyle}" onclick="renderInspection('${pointKey}', '${display}')">${display}</td>`;
+                    bodyHtml += `<td class="${cellClass}" style="${bgStyle}" onmouseover="highlightCol(${cIndex+1})" onclick="activePointKey='${pointKey}'; renderInspection('${pointKey}', '${display}')">${display}</td>`;
 
                 } catch(e) { bodyHtml += `<td class="heatmap-cell bg-gray-50 text-gray-300">ERR</td>`; }
             });
@@ -574,13 +612,12 @@
         body.innerHTML = bodyHtml;
     }
 
-    // THE NEW INTERACTIVE LEDGER RENDERER (Phase 5)
+    // INTERACTIVE DUAL-LEDGER RENDERER
     function renderInspection(pointKey, valDisplay) {
         const payload = currentChartDataMap[pointKey];
         if (!payload) return;
         const res = payload.res;
         const inputs = payload.inputs;
-        activeLedgerData = res.cost.breakdown; 
 
         document.getElementById('inspection-meta').innerHTML = `
             <div class="flex flex-col items-center">
@@ -593,40 +630,43 @@
         const container = document.getElementById('receipt-container');
         const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
 
-        // --- NEW ARRAY LEDGER LOGIC ---
+        let html = '';
+
+        // 1. RETAIL LEDGER
+        if (Array.isArray(res.retail.breakdown)) {
+            html += `<div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden mb-4"><div class="bg-blue-600 text-white p-2 text-center border-b border-blue-700"><h3 class="text-[10px] font-black uppercase tracking-widest">Market Ledger</h3></div><div class="p-0">`;
+            res.retail.breakdown.forEach((item, idx) => {
+                html += `
+                <div class="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition group">
+                    <div class="flex items-center p-3 cursor-pointer" onclick="toggleMathDetails('math-ret-${idx}')">
+                        <input type="checkbox" checked onchange="event.stopPropagation(); recalcLedgers();" class="ledger-ret-checkbox w-4 h-4 text-blue-600 rounded mr-3 cursor-pointer" data-val="${item.total}">
+                        <div class="flex-1 flex justify-between items-center"><span class="text-[11px] font-bold text-gray-700">${item.label}</span><span class="text-xs font-black text-blue-700">${fmt(item.total)}</span></div>
+                    </div>
+                    <div id="math-ret-${idx}" class="hidden px-10 pb-3 text-[9px] font-mono text-gray-500 bg-gray-50 border-t border-gray-100 border-dashed"><div class="pt-2"><b>Math:</b> <span class="text-blue-600">${item.formula}</span></div></div>
+                </div>`;
+            });
+            html += `</div><div class="bg-blue-50 p-3 border-t-2 border-blue-200 flex justify-between items-center"><span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Retail Total:</span><span id="ledger-ret-total" class="text-lg font-black text-blue-900">${fmt(res.retail.grandTotal)}</span></div></div>`;
+        }
+
+        // 2. COST LEDGER
         if (Array.isArray(res.cost.breakdown)) {
-            let html = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="bg-gray-800 text-white p-3 text-center border-b border-gray-900"><h3 class="text-[10px] font-black uppercase tracking-widest">Interactive Math Ledger</h3></div><div class="p-0">`;
-            
+            html += `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="bg-gray-800 text-white p-2 text-center border-b border-gray-900"><h3 class="text-[10px] font-black uppercase tracking-widest">Physics Ledger</h3></div><div class="p-0">`;
             res.cost.breakdown.forEach((item, idx) => {
                 html += `
                 <div class="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition group">
-                    <div class="flex items-center p-3 cursor-pointer" onclick="toggleMathDetails('math-det-${idx}')">
-                        <input type="checkbox" checked onchange="event.stopPropagation(); recalcLedger();" class="ledger-checkbox w-4 h-4 text-blue-600 rounded mr-3 cursor-pointer" data-val="${item.total}">
-                        <div class="flex-1 flex justify-between items-center">
-                            <span class="text-xs font-bold text-gray-700">${item.label}</span>
-                            <span class="text-xs font-black text-blue-700">${fmt(item.total)}</span>
-                        </div>
+                    <div class="flex items-center p-3 cursor-pointer" onclick="toggleMathDetails('math-cst-${idx}')">
+                        <input type="checkbox" checked onchange="event.stopPropagation(); recalcLedgers();" class="ledger-cst-checkbox w-4 h-4 text-gray-600 rounded mr-3 cursor-pointer" data-val="${item.total}">
+                        <div class="flex-1 flex justify-between items-center"><span class="text-[11px] font-bold text-gray-700">${item.label}</span><span class="text-xs font-black text-gray-700">${fmt(item.total)}</span></div>
                     </div>
-                    <div id="math-det-${idx}" class="hidden px-10 pb-3 text-[10px] font-mono text-gray-500 bg-gray-50 border-t border-gray-100 border-dashed">
-                        <div class="pt-2"><b>Formula:</b> <span class="text-indigo-600">${item.formula}</span></div>
-                    </div>
+                    <div id="math-cst-${idx}" class="hidden px-10 pb-3 text-[9px] font-mono text-gray-500 bg-gray-50 border-t border-gray-100 border-dashed"><div class="pt-2"><b>Math:</b> <span class="text-gray-600">${item.formula}</span></div></div>
                 </div>`;
             });
-
-            html += `</div>
-            <div class="bg-gray-100 p-4 border-t-2 border-gray-300 flex justify-between items-center">
-                <span class="text-xs font-black text-gray-600 uppercase tracking-widest">Adjusted Total:</span>
-                <span id="ledger-live-total" class="text-xl font-black text-gray-900">${fmt(res.cost.total)}</span>
-            </div>
-            </div>`;
-            container.innerHTML = html;
-        } 
-        // --- LEGACY RENDERER FALLBACK ---
-        else if (activeConfig && typeof activeConfig.renderReceipt === 'function') {
-            container.innerHTML = activeConfig.renderReceipt(res, fmt);
+            html += `</div><div class="bg-gray-100 p-3 border-t-2 border-gray-300 flex justify-between items-center"><span class="text-[10px] font-black text-gray-600 uppercase tracking-widest">Hard Cost Total:</span><span id="ledger-cst-total" class="text-lg font-black text-gray-900">${fmt(res.cost.total)}</span></div></div>`;
         } else {
-            container.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs italic">Native receipt renderer missing for this module.</div>`;
+            html += `<div class="p-4 text-center text-gray-400 text-xs italic">Legacy receipt renderer fallback required.</div>`;
         }
+
+        container.innerHTML = html;
     }
 
     function toggleMathDetails(id) {
@@ -634,12 +674,14 @@
         if(el) el.classList.toggle('hidden');
     }
 
-    function recalcLedger() {
-        let total = 0;
-        document.querySelectorAll('.ledger-checkbox').forEach(cb => {
-            if (cb.checked) total += parseFloat(cb.getAttribute('data-val'));
-        });
-        document.getElementById('ledger-live-total').innerText = "$" + total.toFixed(2);
+    function recalcLedgers() {
+        let retTot = 0, cstTot = 0;
+        document.querySelectorAll('.ledger-ret-checkbox').forEach(cb => { if(cb.checked) retTot += parseFloat(cb.getAttribute('data-val')); });
+        document.querySelectorAll('.ledger-cst-checkbox').forEach(cb => { if(cb.checked) cstTot += parseFloat(cb.getAttribute('data-val')); });
+        const retEl = document.getElementById('ledger-ret-total');
+        const cstEl = document.getElementById('ledger-cst-total');
+        if(retEl) retEl.innerText = "$" + retTot.toFixed(2);
+        if(cstEl) cstEl.innerText = "$" + cstTot.toFixed(2);
     }
 </script>
 </body>
