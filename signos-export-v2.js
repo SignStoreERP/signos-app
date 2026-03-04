@@ -28,6 +28,7 @@ function downloadProductionSVG() {
 }
 
 function downloadBulkProductionSVG() {
+    // currentManifests is populated by the Bulk Calculator
     if (!currentManifests || currentManifests.length === 0) return alert("Build a batch first!");
 
     const DPI = 72; 
@@ -72,9 +73,8 @@ function downloadBulkProductionSVG() {
         }
     });
 
-    // FIX: Using .at(0) instead of square brackets to safely check the height!
-    const firstManifest = currentManifests.at(0).manifest;
-    if (currentY + firstManifest.height > sheetH - margin) {
+    // Alert the user if the layout spills off the bottom of the 24" sheet
+    if (currentY + currentManifests.manifest.height > sheetH - margin) {
         alert("Note: This batch requires more than one 48x24 sheet. The overflowing signs will be located below the artboard boundary in CorelDraw.");
     }
 
@@ -94,3 +94,27 @@ function downloadBulkProductionSVG() {
     a.click();
     URL.revokeObjectURL(url);
 }
+
+// Append to the bottom of signos-export-v2.js
+SignOS_Export_v2.exportADA = function(manifest) {
+    if (!manifest || !manifest.svgContent) return alert("Manifest not ready!");
+
+    let finalSVG = `<?xml version="1.0" encoding="UTF-8"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="${manifest.w}in" height="${manifest.h}in" viewBox="0 0 ${manifest.w} ${manifest.h}">
+        <!-- Substrate Boundary -->
+        <rect width="${manifest.w}" height="${manifest.h}" fill="${manifest.coreHex}" rx="${manifest.radius}" ry="${manifest.radius}" />
+        <!-- Vector Tactile & Braille Paths -->
+        <g fill="${manifest.tactileHex}">
+            ${manifest.svgContent.replace(/currentColor/g, manifest.tactileHex)}
+        </g>
+    </svg>`;
+
+    const blob = new Blob([finalSVG], {type: 'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SignOS_PROD_ADA_${manifest.w}x${manifest.h}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
