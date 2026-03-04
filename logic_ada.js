@@ -1,45 +1,54 @@
 /**
- * ULTRA-SIMPLE RETAIL ENGINE: ADA Signs (v1.5)
- * Secure Market-Value Math. Returns zeroed costs to protect margins.
+ * ULTRA-SIMPLE RETAIL ENGINE: ADA Signs (v2.1)
+ * Safely mapped with fallbacks to the PROD_Nameplates backend schema.
  */
-
 function calculateADA(inputs, data) {
     const sqin = inputs.w * inputs.h;
 
-    // 1/8" Core = Base Reverse Rate ($0.80) | 1/16" Core = Base Front Rate ($0.60)
-    let baseRate = inputs.structure === '1/8' 
-        ? parseFloat(data.Retail_Price_Base_Reverse || 0.80) 
-        : parseFloat(data.Retail_Price_Base_Front || 0.60);
-
-    // Tactile is standard in this version
-    let tactileRate = parseFloat(data.Retail_Adder_Tactile || 0.60);
+    // 1. RETAIL ENGINE (MARKET VALUE)
+    // Uses Nameplate variables as the fallback base if ADA keys are missing
+    let baseRateSqIn = parseFloat(data.Retail_Price_Base_Front || data.Retail_Price_Mattes_116 || 0.55);
     
-    // Backer Adders
-    let backerRate = 0;
-    if (inputs.backer && inputs.backer.includes('PVC')) backerRate = parseFloat(data.Retail_Adder_PVC_Backer || 0.40);
-    if (inputs.backer && inputs.backer.includes('Acrylic')) backerRate = parseFloat(data.Retail_Adder_Acr_Backer || 0.60);
+    if (inputs.coreThick === '1/8') {
+        baseRateSqIn = parseFloat(data.Retail_Price_Base_Reverse || data.Retail_Price_Ultra_18 || 0.85);
+    }
 
-    let unitPrint = (baseRate + tactileRate + backerRate) * sqin;
+    let retailUnit = sqin * baseRateSqIn;
+
+    // Tactile & Hardware Adders
+    if (inputs.hasTactile) retailUnit += (sqin * parseFloat(data.Retail_Adder_Tactile || 0.40));
     
-    // Braille is standard (1 line assumed for base calculations)
-    unitPrint += parseFloat(data.Retail_Adder_Braille_Line || 10.00);
+    if (inputs.backer === 'Black PVC' || inputs.backer === 'White PVC') {
+        retailUnit += (sqin * parseFloat(data.Retail_Adder_PVC_Backer || 0.15));
+    } else if (inputs.backer === 'Clear Acrylic') {
+        retailUnit += (sqin * parseFloat(data.Retail_Adder_Acr_Backer || 0.25));
+    }
 
-    let retailTotal = unitPrint * inputs.qty;
+    // Braille Adder
+    if (inputs.hasBraille && inputs.brailleLines > 0) {
+        retailUnit += (inputs.brailleLines * parseFloat(data.Retail_Adder_Braille_Line || 10.00));
+    }
 
-    const minOrder = (inputs.backer !== 'None') 
-        ? parseFloat(data.Retail_Min_Order_CNC || 75.00) 
-        : parseFloat(data.Retail_Min_Order_Etch || 50.00);
+    let subTotal = retailUnit * inputs.qty;
+    subTotal += parseFloat(data.Retail_Fee_Setup || 15);
 
-    const grandTotal = Math.max(retailTotal, minOrder);
+    // Min Order Fallbacks (CNC vs Etch vs Nameplates Global)
+    let minOrder = parseFloat(data.Retail_Min_Order || 50);
+    if (inputs.backer !== 'None' && data.Retail_Min_Order_CNC) {
+        minOrder = parseFloat(data.Retail_Min_Order_CNC);
+    } else if (data.Retail_Min_Order_Etch) {
+        minOrder = parseFloat(data.Retail_Min_Order_Etch);
+    }
+
+    let grandTotal = Math.max(subTotal, minOrder);
 
     return {
-        retail: { 
-            unitPrice: grandTotal / inputs.qty, 
-            printTotal: retailTotal, 
-            grandTotal: grandTotal, 
-            isMinApplied: retailTotal < minOrder 
+        retail: {
+            unitPrice: retailUnit,
+            grandTotal: grandTotal,
+            isMinApplied: subTotal < minOrder
         },
-        cost: { total: 0 } // Security block
+        cost: { total: 0 }, // Stubbed out to keep the frontend headless and fast
+        metrics: { margin: 0 }
     };
 }
-
