@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v2.5 - Blueprint Builder</title>
+    <title>ADA Signs v2.6 - Auto-Scale Blueprint Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
@@ -25,7 +25,7 @@
             stroke-width: 0.008;
         }
 
-        /* 3D Exploded View CSS (True Vertical Extrusions) */
+        /* 3D Exploded View CSS (Restored to True Isometric) */
         #preview-wrapper { perspective: 1200px; }
         #svg-preview-container { 
             transform-style: preserve-3d; 
@@ -38,13 +38,13 @@
             transform-style: preserve-3d; 
         }
         
-        /* Tilted straight back, no Z-rotation */
-        .exploded-view #svg-preview-container { transform: rotateX(55deg); }
-        .exploded-view .layer-backer { transform: translateZ(-40px); box-shadow: var(--edge-shadow, 0px 2px 10px rgba(0,0,0,0.2)); }
-        .exploded-view .layer-core { transform: translateZ(0px); box-shadow: var(--edge-shadow, 0px 2px 10px rgba(0,0,0,0.1)); }
+        /* Restored Isometric Angles & Drop Shadows */
+        .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
+        .exploded-view .layer-backer { transform: translateZ(-30px); box-shadow: var(--edge-shadow, -10px 10px 15px rgba(0,0,0,0.2)); }
+        .exploded-view .layer-core { transform: translateZ(0px); box-shadow: var(--edge-shadow, -5px 5px 10px rgba(0,0,0,0.1)); }
         .exploded-view .layer-tactile { 
-            transform: translateZ(40px); 
-            filter: drop-shadow(0px 2px 0px rgba(0,0,0,0.3)) drop-shadow(0px 5px 5px rgba(0,0,0,0.2)); 
+            transform: translateZ(30px); 
+            filter: drop-shadow(-3px 3px 2px rgba(0,0,0,0.3)); 
         }
 
         /* Blueprint Callouts */
@@ -57,12 +57,31 @@
     <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
         <!-- 1. VISUAL PREVIEW -->
-        <div id="preview-wrapper" class="bg-blue-50 p-6 border-b border-blue-100 relative flex flex-col items-center justify-center min-h-[280px] shadow-inner overflow-hidden">
+        <!-- Note: Removed overflow-hidden to allow callouts to extend naturally -->
+        <div id="preview-wrapper" class="bg-blue-50 p-6 border-b border-blue-100 relative flex flex-col items-center justify-center min-h-[300px] shadow-inner">
+            
             <span class="absolute top-2 left-3 text-[8px] font-black text-blue-400 uppercase tracking-widest">Engineering Preview</span>
+            
+            <!-- Dynamic Auto-Scale Toggle -->
+            <label class="absolute top-7 left-3 z-20 flex items-center gap-1.5 cursor-pointer bg-white/80 backdrop-blur px-2 py-1 rounded shadow-sm border border-blue-200 hover:bg-white transition">
+                <input type="checkbox" id="auto-scale" checked onchange="runCalc()" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
+                <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest">Auto-Scale Content</span>
+            </label>
+
             <button onclick="toggle3D()" class="absolute top-2 right-3 z-20 bg-white/80 hover:bg-white text-blue-600 border border-blue-200 px-2 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">
                 Toggle 3D Layers
             </button>
-            <div id="svg-preview-container" class="mt-4" style="width: 100px; height: 100px;"></div>
+            
+            <div id="svg-preview-container" class="mt-8" style="width: 100px; height: 100px;"></div>
+
+            <!-- Dynamic ADA Compliance Warning -->
+            <div id="ada-warn-box" class="hidden absolute bottom-3 left-1/2 -translate-x-1/2 w-11/12 max-w-[90%] bg-red-50/95 backdrop-blur border border-red-200 p-2 rounded shadow-md z-30 flex items-start gap-2">
+                <span class="text-red-500 text-base leading-none">⚠️</span>
+                <div class="flex flex-col">
+                    <span class="text-[9px] font-black text-red-800 uppercase tracking-widest">ADA Physics Warning</span>
+                    <span id="ada-warn-text" class="text-[9px] font-bold text-red-600 leading-tight mt-0.5">---</span>
+                </div>
+            </div>
         </div>
 
         <!-- 2. DIMENSIONS (Directly under preview) -->
@@ -151,13 +170,14 @@
             </div>
             
             <div id="acc-content" class="hidden p-5 pt-0 space-y-3">
+                <!-- Pictogram Section -->
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center">
                         <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
                             <input type="checkbox" id="toggle-picto" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
                             Pictogram
                         </label>
-                        <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
+                        <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner transition-opacity">
                             <label class="text-[9px] font-bold text-gray-500 uppercase">Height (in):</label>
                             <input type="number" id="picto-size" value="4" step="0.25" min="1" oninput="runCalc()" class="w-14 border border-gray-300 p-0.5 rounded text-xs font-bold text-center outline-none">
                         </div>
@@ -167,6 +187,7 @@
                     </div>
                 </div>
 
+                <!-- Text Section -->
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center mb-1">
                         <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
@@ -195,11 +216,12 @@
                         </div>
                         <div class="col-span-2 sm:col-span-1">
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label>
-                            <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px] text-center">
+                            <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px] text-center transition-opacity">
                         </div>
                     </div>
                 </div>
 
+                <!-- Braille Section -->
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
                         <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
@@ -226,7 +248,7 @@
             </div>
         </div>
 
-        <!-- OUTPUTS -->
+        <!-- OUTPUTS & NARRATIVE GENERATOR -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
             <textarea id="job-desc" class="w-full text-xs p-3 border rounded bg-white h-24 text-gray-600 font-mono outline-none shadow-inner leading-relaxed mb-3" readonly></textarea>
@@ -259,20 +281,31 @@
         let activeModal = ''; 
         let is3D = false;
 
-        // Accordion Controller
         function toggleAccordion(contentId, arrowId) {
             document.getElementById(contentId).classList.toggle('hidden');
             document.getElementById(arrowId).classList.toggle('rotate-180');
         }
 
-        // 3D View Controller
         function toggle3D() {
             is3D = !is3D;
             document.getElementById('preview-wrapper').classList.toggle('exploded-view', is3D);
             runCalc(); 
         }
 
-        // Hardware Controls
+        function handleContentToggles() {
+            const hasPicto = document.getElementById('toggle-picto').checked;
+            const hasText = document.getElementById('toggle-text').checked;
+
+            document.getElementById('wrap-picto').classList.toggle('hidden', !hasPicto);
+            document.getElementById('picto-size-wrap').classList.toggle('opacity-30', !hasPicto);
+            document.getElementById('wrap-text').classList.toggle('hidden', !hasText);
+            
+            document.getElementById('wrap-tactile-color').style.opacity = (hasPicto || hasText) ? '1' : '0.3';
+            document.getElementById('wrap-tactile-color').style.pointerEvents = (hasPicto || hasText) ? 'auto' : 'none';
+
+            runCalc();
+        }
+
         function setThickness(val) {
             document.getElementById('core-thick').value = val;
             const is18 = val === '1/8';
@@ -309,23 +342,7 @@
             runCalc();
         }
 
-        // Layout Toggles
-        function handleContentToggles() {
-            const hasPicto = document.getElementById('toggle-picto').checked;
-            const hasText = document.getElementById('toggle-text').checked;
-
-            document.getElementById('wrap-picto').classList.toggle('hidden', !hasPicto);
-            document.getElementById('picto-size-wrap').classList.toggle('hidden', !hasPicto);
-            document.getElementById('wrap-text').classList.toggle('hidden', !hasText);
-            
-            document.getElementById('wrap-tactile-color').style.opacity = (hasPicto || hasText) ? '1' : '0.3';
-            document.getElementById('wrap-tactile-color').style.pointerEvents = (hasPicto || hasText) ? 'auto' : 'none';
-
-            runCalc();
-        }
-
-        // --- 3D EDGE GENERATOR ---
-        // Extrudes straight down (Y-Axis) since we only rotate on the X-Axis
+        // --- 3D EDGE GENERATOR (Restored Isometric Shadow Math) ---
         function makeEdge(hex, depthPx) {
             if (!hex || hex === 'Transparent' || hex.includes('rgba')) return 'none';
             let c = hex.replace('#', '');
@@ -338,10 +355,11 @@
             let rgb = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
             
             let shadow = [];
+            // Map down and left for Isometric effect
             for(let i=1; i<=depthPx; i++) {
-                shadow.push(`0px ${i}px 0 ${rgb}`);
+                shadow.push(`-${i}px ${i}px 0 ${rgb}`);
             }
-            shadow.push(`0px ${depthPx+5}px 15px rgba(0,0,0,0.3)`);
+            shadow.push(`-${depthPx+5}px ${depthPx+5}px 15px rgba(0,0,0,0.3)`);
             return shadow.join(', ');
         }
 
@@ -358,11 +376,50 @@
             const hasPicto = document.getElementById('toggle-picto').checked;
             const hasText = document.getElementById('toggle-text').checked;
             const hasBraille = document.getElementById('toggle-braille').checked;
+            const isAutoScale = document.getElementById('auto-scale').checked;
 
-            let pictoSize = hasPicto ? (parseFloat(document.getElementById('picto-size').value) || 4) : 0;
-            let fontSize = hasText ? (parseFloat(document.getElementById('text-height').value) || 0.625) : 0;
+            // 1. AUTO-SCALE LOGIC
+            const pictoInput = document.getElementById('picto-size');
+            const textInput = document.getElementById('text-height');
+
+            pictoInput.disabled = isAutoScale;
+            textInput.disabled = isAutoScale;
+            pictoInput.classList.toggle('opacity-50', isAutoScale);
+            textInput.classList.toggle('opacity-50', isAutoScale);
+
+            if (isAutoScale) {
+                let scaledPicto = Math.min(w * 0.6, h * 0.45, 5);
+                let scaledText = h * 0.08;
+                if(hasPicto) pictoInput.value = scaledPicto.toFixed(2);
+                if(hasText) textInput.value = scaledText.toFixed(3);
+            }
+
+            let pictoSize = hasPicto ? (parseFloat(pictoInput.value) || 4) : 0;
+            let fontSize = hasText ? (parseFloat(textInput.value) || 0.625) : 0;
             let fontFam = document.getElementById('sign-font').value || 'sans-serif';
 
+            // 2. ADA PHYSICS GUARDRAILS
+            let reqHeight = 0.375; // Top margin
+            if (hasPicto) reqHeight += 6.0; // ADA 6" Icon field
+            if (hasPicto && (hasText || hasBraille)) reqHeight += 0.375; // Gap below field
+            if (hasText) reqHeight += fontSize; // Text height
+            if (hasText && hasBraille) reqHeight += 0.375; // Gap below text
+            if (hasBraille) reqHeight += 0.25; // Braille height
+            reqHeight += 0.375; // Bottom margin
+
+            let warnMsgs = [];
+            if (hasText && fontSize < 0.625) warnMsgs.push("Tactile text height is below the 5/8\" ADA minimum.");
+            if (h < reqHeight && (hasPicto || hasText || hasBraille)) warnMsgs.push(`Total layout requires ~${reqHeight.toFixed(2)}" of vertical space.`);
+
+            const warnBox = document.getElementById('ada-warn-box');
+            if (warnMsgs.length > 0) {
+                warnBox.classList.remove('hidden');
+                document.getElementById('ada-warn-text').innerText = warnMsgs.join(" ");
+            } else {
+                warnBox.classList.add('hidden');
+            }
+
+            // 3. PHYSICAL LAYOUT CALCULATIONS
             let contentH = 0;
             if(hasPicto) contentH += pictoSize;
             if(hasPicto && (hasText || hasBraille)) contentH += 0.5; 
@@ -402,7 +459,8 @@
                 xPos = w - 0.375;
             }
 
-            const scale = Math.min(260 / w, 200 / h);
+            // Scale UI div smaller to allow room for the Isometric Callouts inside the parent container
+            const scale = Math.min(220 / w, 160 / h);
             const pxW = w * scale;
             const pxH = h * scale;
             const pxR = r * scale;
@@ -419,10 +477,11 @@
             const coreDepth = document.getElementById('core-thick').value.includes('1/8') ? 6 : 3;
             const backerDepth = backerType.includes('Acrylic') ? 4 : 6;
 
+            // Updated Callout to position top right with no transformations so text remains clean
             let calloutHtml = (name) => `
-                <div class="blueprint-callout absolute left-full ml-4 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-50">
-                    <div class="w-8 border-b border-blue-400"></div>
-                    <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded shadow border border-blue-200">${name}</span>
+                <div class="blueprint-callout absolute top-0 -right-4 translate-x-full flex items-center gap-1 z-50">
+                    <div class="w-6 border-b border-blue-400"></div>
+                    <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded border border-blue-200 shadow-sm">${name}</span>
                 </div>`;
 
             let html = '';
@@ -436,7 +495,7 @@
 
             // L2: ADA Core Substrate
             html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${pxR}px; --edge-shadow: ${makeEdge(coreHex, coreDepth)};">
-                ${is3D ? calloutHtml(document.getElementById('core-thick').value + ' ADA Core') : ''}
+                ${is3D ? calloutHtml(document.getElementById('core-thick').value + '" ADA Core') : ''}
             </div>`;
 
             // L3: Applique & Braille
@@ -482,11 +541,9 @@
             let svgEl = container.querySelector('.layer-tactile svg');
             if(!svgEl) return alert("No tactile layer found to export.");
 
-            // Hardcode currentColor to actual hex for Illustrator/Corel
             let svgData = svgEl.outerHTML;
             svgData = svgData.replace(/currentColor/g, tactileHex);
 
-            // Package into physical coordinate system
             let finalSVG = `<?xml version="1.0" encoding="UTF-8"?>
             <svg xmlns="http://www.w3.org/2000/svg" width="${w}in" height="${h}in" viewBox="0 0 ${w} ${h}">
                 <!-- Substrate Boundary -->
@@ -556,12 +613,14 @@
                     w: parseFloat(document.getElementById('w').value) || 8,
                     h: parseFloat(document.getElementById('h').value) || 8,
                     structure: document.getElementById('core-thick').value,
-                    hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
+                    hasPicto: document.getElementById('toggle-picto').checked,
+                    hasText: document.getElementById('toggle-text').checked,
                     hasBraille: document.getElementById('toggle-braille').checked,
+                    hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
                     backer: document.getElementById('backer').value,
                     mounting: document.getElementById('mounting').value,
                     bevel: document.getElementById('bevel').checked,
-                    radius: document.getElementById('radius').value
+                    radius: parseFloat(document.getElementById('radius').value) || 0
                 };
 
                 const result = calculateADA(inputs, backendData);
@@ -577,20 +636,34 @@
                 document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-                let desc = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Compliant Sign.\n`;
-                desc += `Structure: ${inputs.structure === '1/8' ? '1/8" Core' : '1/16" Core + Backer'}.\n`;
-                desc += `Core: [${selectedCore.Code}] ${selectedCore.Name}.\n`;
-                if(inputs.hasTactile) desc += `Tactile 1/32": [${selectedTactile.Code}] ${selectedTactile.Name}.\n`;
-                if(inputs.hasBraille) desc += `Includes Clear Raster Braille.\n`;
-                if (inputs.backer !== 'None') desc += `Mounted to ${inputs.backer}.\n`;
+                // --- 4. NARRATIVE JOB DESCRIPTION GENERATOR ---
+                let qty = inputs.qty;
+                let dim = `${inputs.w}" x ${inputs.h}"`;
                 
-                let finishes = [];
-                if (inputs.bevel) finishes.push('Beveled Edges');
-                if (parseFloat(inputs.radius) > 0) finishes.push(`${inputs.radius}" Radius Corners`);
-                if (finishes.length > 0) desc += `Edge Finish: ${finishes.join(' | ')}.\n`;
-                if (inputs.mounting !== 'None') desc += `Supplied with ${inputs.mounting}.`;
-                
-                document.getElementById('job-desc').value = desc;
+                let tactileArr = [];
+                if(inputs.hasPicto) tactileArr.push("pictogram");
+                if(inputs.hasText) tactileArr.push("text");
+                if(inputs.hasBraille) tactileArr.push("braille");
+
+                let tactStr = "";
+                if (tactileArr.length > 0) {
+                    let tactList = tactileArr.join(", ").replace(/,([^,]*)$/, ' and$1');
+                    if (inputs.hasTactile) {
+                        tactStr = `with 1/32" [${selectedTactile.Code}] ${selectedTactile.Name} tactile ${tactList}`;
+                    } else {
+                        tactStr = `with clear raster ${tactList}`; 
+                    }
+                }
+
+                let coreStr = `on ${inputs.structure === '1/8' ? '1/8"' : '1/16"'} [${selectedCore.Code}] ${selectedCore.Name} ADA core`;
+                let edgeStr = inputs.bevel ? "with beveled edges" : "with straight cut edges";
+                let backerStr = inputs.backer !== 'None' ? `with ${inputs.backer === 'Black PVC' || inputs.backer === 'White PVC' ? '3mm ' + inputs.backer : '3/16" Clear Acrylic'} backer` : "";
+                let radStr = inputs.radius > 0 ? `with ${inputs.radius}" radius corners` : "with square corners";
+                let mountStr = inputs.mounting !== 'None' ? `with ${inputs.mounting.toLowerCase()}` : "without mounting hardware";
+
+                let narrative = `(x${qty}) ${dim} ADA signs ${tactStr} ${coreStr} ${edgeStr} ${backerStr} ${radStr} ${mountStr}.`.replace(/\s+/g, ' ');
+
+                document.getElementById('job-desc').value = narrative;
 
             } catch(e) { console.error("Math Engine Error:", e); }
         }
@@ -644,7 +717,6 @@
                 document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Hex_Code;
                 document.getElementById('label-tactile').innerText = selectedTactile.Name;
 
-                // INTELLIGENT DEFAULT PICTOGRAM (Find Restroom or fallback to first)
                 const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
                 if (activeIcons.length > 0) {
                     selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men') || p.Name.toLowerCase().includes('women')) || activeIcons; 
@@ -676,7 +748,6 @@
                 setThickness('1/16'); 
                 setBacker('Black PVC');
 
-                // Visual Only Delay (Applies the blue ring without affecting math)
                 setTimeout(() => {
                     if (selectedIcon) {
                         const btn = document.querySelector(`#icon-grid button[data-code="${selectedIcon.Item_Code}"]`);
