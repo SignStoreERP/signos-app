@@ -149,8 +149,10 @@ window.WRAP_CONFIG = {
         { id: 'h', label: 'Simulated Height', type: 'number', def: 60 },
         { id: 'material', label: 'Material', type: 'select', opts: [{v:'wrap', t:'Cast Wrap'}, {v:'perf', t:'Window Perf'}, {v:'decal', t:'Spot Decal'}] },
         { id: 'complexity', label: 'Vehicle Type', type: 'select', opts: [{v:'simple', t:'Flat / Box Truck'}, {v:'complex', t:'Complex / Van'}] },
+        { id: 'install', label: 'Installation', type: 'select', opts: [{v:'Yes', t:'Yes'}, {v:'No', t:'No'}] },
         { id: 'incDesign', label: 'Design Fee', type: 'toggle', def: false }
     ],
+
     dynamicUI: function(inputs) {
         inputs.panels = [{ label: "Simulated Panel", qty: 1, w: inputs.w, h: inputs.h, material: inputs.material, included: false }];
         return inputs;
@@ -205,3 +207,4 @@ window.WRAP_CONFIG = {
         `;
     }
 };
+
