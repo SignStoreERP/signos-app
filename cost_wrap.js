@@ -153,3 +153,22 @@ window.WRAP_CONFIG = {
         { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
     ]
 };
+
+window.WRAP_CONFIG = {
+    tab: 'PROD_Vinyl_Wraps',
+    engine: calculateWrap,
+    controls: [
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'wrap', t:'Cast Wrap'}, {v:'perf6040', t:'Window Perf (60/40)'}] },
+        { id: 'complexity', label: 'Vehicle Type', type: 'select', opts: [{v:'simple', t:'Flat / Box Truck'}, {v:'complex', t:'Complex / Van'}] }
+    ],
+    retails: [
+        { key: 'Retail_Price_Vehicle_SqFt', label: 'Wrap Rate ($/sf)' },
+        { key: 'Retail_Price_Perf_SqFt', label: 'Perf Rate ($/sf)' },
+        { key: 'Retail_Install_Vehicle_SqFt', label: 'Base Install ($/sf)' }
+    ],
+    costs: [
+        { key: 'Cost_Vin_Vehicle', label: 'Cast Vinyl ($/sf)' },
+        { key: 'Cost_Lam_Vehicle', label: 'Cast Lam ($/sf)' },
+        { key: 'Rate_Install', label: 'Installer ($/Hr)' }
+    ]
+};
