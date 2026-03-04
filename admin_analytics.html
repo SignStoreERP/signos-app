@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Analytics v5.5</title>
+    <title>Pricing Analytics v5.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
@@ -59,10 +59,17 @@
                     <div class="flex items-center space-x-2 border-l border-gray-200 pl-4 ml-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase">Data Stream:</label>
                         <select id="hm-analysis-mode" onchange="generateMatrix()" class="text-[10px] font-bold bg-transparent border-none text-blue-600 uppercase outline-none cursor-pointer">
+                            <option value="margin" selected>Net Margin (%)</option>
                             <option value="retail">Market (Retail + Profit)</option>
                             <option value="cost">Physics (Hard Cost)</option>
-                            <option value="margin">Net Margin (%)</option>
                         </select>
+                    </div>
+                    <!-- GLOBAL INSTALL TOGGLE -->
+                    <div id="wrap-install-toggle" class="hidden items-center space-x-2 border-l border-gray-200 pl-4 ml-2">
+                        <label class="flex items-center gap-1.5 cursor-pointer bg-blue-50 px-2 py-1 rounded shadow-inner border border-blue-200 hover:bg-blue-100 transition">
+                            <input type="checkbox" id="global-install" class="w-3 h-3 text-blue-600 rounded cursor-pointer" onchange="generateMatrix()">
+                            <span class="text-[9px] font-black text-blue-800 uppercase tracking-widest">Include Install</span>
+                        </label>
                     </div>
                 </div>
 
@@ -89,12 +96,10 @@
                     <span class="text-xs font-black text-white tracking-widest uppercase">Computing Matrix...</span>
                 </div>
 
-                <!-- CHART -->
                 <div id="view-chart" class="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 relative min-h-0">
                     <canvas id="physicsChart"></canvas>
                 </div>
 
-                <!-- HEATMAP -->
                 <div id="view-heatmap" class="hidden flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative min-h-0">
                     <table class="border-collapse text-[11px] w-full table-fixed" id="heatmap-table">
                         <thead id="heatmap-head" class="sticky-row"></thead>
@@ -173,7 +178,7 @@
     let currentChartDataMap = {};
 
     window.onload = () => {
-        injectHeader("Pricing Analytics v5.5", true);
+        injectHeader("Pricing Analytics v5.6", true);
         renderProductMenu();
     };
 
@@ -194,6 +199,14 @@
                 activeConfig = m.config;
                 activeConfig.id = m.id; 
 
+                // Toggle Install Toolbar
+                const tgInstall = document.getElementById('wrap-install-toggle');
+                if (m.id === 'wrap' || m.id === 'wall') {
+                    tgInstall.classList.remove('hidden'); tgInstall.classList.add('flex');
+                } else {
+                    tgInstall.classList.add('hidden'); tgInstall.classList.remove('flex');
+                }
+
                 currentChartDataMap = {};
                 document.getElementById('initial-state').classList.add('hidden');
                 document.getElementById('loader').classList.remove('hidden');
@@ -205,6 +218,13 @@
                 try {
                     const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
                     backendData = await req.json();
+                    
+                    // Kill Loading StatusBar visual securely
+                    const sTxt = document.getElementById("status-text");
+                    if(sTxt) { sTxt.innerText = "ONLINE"; sTxt.className = "font-bold text-green-500"; }
+                    const sDot = document.getElementById("status-dot");
+                    if(sDot) { sDot.className = "w-2 h-2 rounded-full bg-green-500"; sDot.classList.remove("animate-pulse"); }
+
                     renderOverrides();
                     renderProductSpecificControls();
                     generateMatrix();
@@ -306,7 +326,6 @@
         generateMatrix();
     }
 
-    // Dynamic HSL Margin Color Engine (0=Red, 50=Yellow, 100=Green)
     function getMarginColor(margin) {
         let mPct = Math.max(0, Math.min(1, margin));
         let hue = mPct * 120; 
@@ -333,18 +352,20 @@
     }
 
     function getProductBounds(id) {
-        if (id === 'acm') return { w: 10, h: 5, sqft: 50 }; 
-        if (id === 'pvc') return { w: 10, h: 5, sqft: 50 }; // Expanded to 5x10 per request
-        if (id === 'banner') return { w: 12, h: 5, sqft: 60 };
-        if (id === 'wrap' || id === 'wall' || id === 'decal' || id === 'cut') return { w: 10, h: 5, sqft: 50 };
-        if (id === 'ada') return { w: 12, h: 12, sqft: 144 }; 
-        return { w: 8, h: 4, sqft: 32 }; 
+        if (id === 'acm') return { w: 10, h: 5, sqft: 50, stepW: 1, stepH: 1 }; 
+        if (id === 'pvc') return { w: 10, h: 5, sqft: 50, stepW: 1, stepH: 1 }; 
+        if (id === 'banner') return { w: 12, h: 5, sqft: 60, stepW: 1, stepH: 1 };
+        if (id === 'wrap' || id === 'wall') return { w: 40, h: 10, sqft: 400, stepW: 2, stepH: 1 }; // Increased up to 40' Wide Heatmap
+        if (id === 'decal' || id === 'cut') return { w: 10, h: 5, sqft: 50, stepW: 1, stepH: 1 };
+        if (id === 'ada') return { w: 12, h: 12, sqft: 144, stepW: 1, stepH: 1 }; 
+        return { w: 8, h: 4, sqft: 32, stepW: 1, stepH: 1 }; 
     }
 
     function drawLineChart(simData) {
         const id = activeConfig.id;
         const mode = document.getElementById('hm-analysis-mode').value;
         const bounds = getProductBounds(id);
+        const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
         
         let steps = [];
         if (id === 'yard') steps = [...X_STEPS_YARD];
@@ -392,9 +413,6 @@
             permutations.push({ label: "1\" Thick", inputs: { ...baseInputs, thickness: '1' } });
         } else if (id === 'banner') {
             permutations.push({ label: "13oz Standard", inputs: { ...baseInputs, material: '13oz' } });
-            permutations.push({ label: "15oz Blockout", inputs: { ...baseInputs, material: '15oz' } });
-            permutations.push({ label: "18oz Heavy", inputs: { ...baseInputs, material: '18oz' } });
-            permutations.push({ label: "8oz Mesh", inputs: { ...baseInputs, material: 'Mesh' } });
         } else if (id === 'decal') {
             permutations.push({ label: "Standard (Cal)", inputs: { ...baseInputs, material: 'Standard' } });
             permutations.push({ label: "Premium (Cast)", inputs: { ...baseInputs, material: 'Cast' } });
@@ -437,6 +455,7 @@
                     runInputs.h = stepVal * 12;
 
                     if (id === 'wrap' || id === 'wall') {
+                        runInputs.install = globalInstall ? 'Yes' : 'No';
                         runInputs.panels = [{ label: "Panel", qty: 1, w: runInputs.w, h: runInputs.h, material: runInputs.material, included: false }];
                     }
                 }
@@ -458,7 +477,7 @@
                     else if (mode === 'cost') dataTarget.push(unitCst);
                     else dataTarget.push(margin * 100);
 
-                    // Map specific Labor for Wraps & Walls
+                    // Dedicated Install Cost Mapping
                     if (id === 'wrap' || id === 'wall') {
                         const installCost = (res.cost.breakdown && res.cost.breakdown.installLabor) ? res.cost.breakdown.installLabor / runInputs.qty : 0;
                         dataLabor.push(installCost);
@@ -481,7 +500,7 @@
                 borderWidth: 3, tension: 0.1, pointRadius: 3, _permIndex: index
             });
 
-            // Dedicated Labor Line for Wraps/Walls
+            // Specific Dash Line mapped for Installation Output
             if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
                 datasets.push({
                     type: 'line', label: perm.label + " (Install Cost)", data: dataLabor,
@@ -550,12 +569,15 @@
         const bounds = getProductBounds(activeConfig.id);
         const maxW = bounds.w; 
         const maxH = bounds.h;
+        const stepW = bounds.stepW || 1;
+        const stepH = bounds.stepH || 1;
         
         const header = document.getElementById('heatmap-head');
         const body = document.getElementById('heatmap-body');
+        const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
         
         let headHtml = '<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>';
-        for(let w=1; w<=maxW; w++) headHtml += '<th class="p-2 border border-slate-200">' + w + (activeConfig.id === 'ada' ? '"' : '\'') + '</th>';
+        for(let w=stepW; w<=maxW; w+=stepW) headHtml += '<th class="p-2 border border-slate-200">' + w + (activeConfig.id === 'ada' ? '"' : '\'') + '</th>';
         header.innerHTML = headHtml + '</tr>';
 
         let baseInputs = { qty: parseInt(document.getElementById('chart-qty').value) || 1 };
@@ -566,10 +588,10 @@
         });
 
         let bodyHtml = '';
-        for(let h=1; h<=maxH; h++) {
+        for(let h=stepH; h<=maxH; h+=stepH) {
             bodyHtml += `<tr><th class="bg-slate-100 p-2 border border-slate-200 sticky-col text-slate-400 text-[9px]">${h}${activeConfig.id === 'ada' ? '"' : '\''}</th>`;
             
-            for(let w=1; w<=maxW; w++) {
+            for(let w=stepW; w<=maxW; w+=stepW) {
                 let inputs = { ...baseInputs };
                 if (activeConfig.id === 'ada') {
                     inputs.w = w; inputs.h = h;
@@ -578,8 +600,14 @@
                 }
 
                 if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
+                    inputs.material = inputs.material || (activeConfig.id === 'wall' ? 'smooth' : 'wrap');
+                    inputs.install = globalInstall ? 'Yes' : 'No';
                     inputs.panels = [{ label: "Panel", qty: 1, w: inputs.w, h: inputs.h, material: inputs.material, included: false }];
                 }
+
+                // Fallbacks so missing DOM controllers do not cause native JS string errors in older engines
+                if (activeConfig.id === 'cut') inputs.material = inputs.material || 'Flat';
+                if (activeConfig.id === 'decal') inputs.material = inputs.material || 'Cal';
 
                 if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
 
@@ -591,7 +619,6 @@
                     let val = 0, display = "";
                     let cellClass = "heatmap-cell border border-gray-100 text-center relative group text-slate-700 font-black";
                     
-                    // Unified Gradient Logic applied to all views
                     const margin = res.metrics ? res.metrics.margin : 0;
                     let bgStyle = getMarginColor(margin);
 
@@ -642,7 +669,6 @@
         if(res.retail.installTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-indigo-600"><span>Installation:</span><span>${fmt(res.retail.installTotal)}</span></div>`;
         if(res.retail.setupFee) retailLines += `<div class="flex justify-between text-[10px] font-bold"><span>Setup Fee:</span><span>${fmt(res.retail.setupFee)}</span></div>`;
 
-        // Dynamic Line Item Breakdowns (No more grouping)
         let costLines = "";
         const b = res.cost.breakdown || {};
         for(const key in b) {
