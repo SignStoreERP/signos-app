@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Analytics v5.4.1</title>
+    <title>Pricing Analytics v5.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
@@ -31,7 +31,6 @@
         #signos-island { min-height: calc(100vh - 2rem); margin: 0 auto; max-width: 1600px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1); }
         .sticky-col { position: sticky; left: 0; background-color: #f8fafc; z-index: 20; border-right: 2px solid #e2e8f0; }
         .sticky-row { position: sticky; top: 0; background-color: #f8fafc; z-index: 30; border-bottom: 2px solid #e2e8f0; }
-        .loss-alert { background-color: rgba(239, 68, 68, 0.1); color: #b91c1c; font-weight: 900; }
         .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.1s; cursor: crosshair; border: 1px solid #f1f5f9; }
         .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 5px 10px rgba(0,0,0,0.1); border-color: #3b82f6; }
     </style>
@@ -97,7 +96,7 @@
 
                 <!-- HEATMAP -->
                 <div id="view-heatmap" class="hidden flex-1 overflow-auto custom-scrollbar bg-white rounded-2xl border border-gray-200 shadow-sm relative min-h-0">
-                    <table class="border-collapse text-[11px] w-full table-fixed">
+                    <table class="border-collapse text-[11px] w-full table-fixed" id="heatmap-table">
                         <thead id="heatmap-head" class="sticky-row"></thead>
                         <tbody id="heatmap-body"></tbody>
                     </table>
@@ -161,6 +160,11 @@
     
     const MODULES = ALL_MODULES.filter(m => m.config);
     const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000);
+    const ADA_SIZES = [
+        {w: 3, h: 2, label: '3x2"'}, {w: 4, h: 4, label: '4x4"'}, {w: 6, h: 6, label: '6x6"'}, 
+        {w: 8, h: 6, label: '8x6"'}, {w: 8, h: 8, label: '8x8"'}, {w: 10, h: 10, label: '10x10"'},
+        {w: 12, h: 12, label: '12x12"'}, {w: 12, h: 16, label: '12x16"'}, {w: 16, h: 16, label: '16x16"'}, {w: 24, h: 24, label: '24x24"'}
+    ];
 
     let activeConfig = null;
     let backendData = {};
@@ -169,7 +173,7 @@
     let currentChartDataMap = {};
 
     window.onload = () => {
-        injectHeader("Pricing Analytics v5.4.1", true);
+        injectHeader("Pricing Analytics v5.5", true);
         renderProductMenu();
     };
 
@@ -188,7 +192,7 @@
                 btn.classList.remove('bg-white', 'text-gray-700');
                 
                 activeConfig = m.config;
-                activeConfig.id = m.id; // FIX: Inject missing ID so drawing engines know what to load!
+                activeConfig.id = m.id; 
 
                 currentChartDataMap = {};
                 document.getElementById('initial-state').classList.add('hidden');
@@ -302,6 +306,13 @@
         generateMatrix();
     }
 
+    // Dynamic HSL Margin Color Engine (0=Red, 50=Yellow, 100=Green)
+    function getMarginColor(margin) {
+        let mPct = Math.max(0, Math.min(1, margin));
+        let hue = mPct * 120; 
+        return `background-color: hsl(${hue}, 85%, 85%); color: hsl(${hue}, 90%, 20%);`;
+    }
+
     function generateMatrix() {
         if(!activeConfig) return;
 
@@ -323,6 +334,7 @@
 
     function getProductBounds(id) {
         if (id === 'acm') return { w: 10, h: 5, sqft: 50 }; 
+        if (id === 'pvc') return { w: 10, h: 5, sqft: 50 }; // Expanded to 5x10 per request
         if (id === 'banner') return { w: 12, h: 5, sqft: 60 };
         if (id === 'wrap' || id === 'wall' || id === 'decal' || id === 'cut') return { w: 10, h: 5, sqft: 50 };
         if (id === 'ada') return { w: 12, h: 12, sqft: 144 }; 
@@ -332,12 +344,12 @@
     function drawLineChart(simData) {
         const id = activeConfig.id;
         const mode = document.getElementById('hm-analysis-mode').value;
-        const isYard = id === 'yard';
         const bounds = getProductBounds(id);
         
-        const steps = isYard ? [...X_STEPS_YARD] : [];
-
-        if (!isYard) {
+        let steps = [];
+        if (id === 'yard') steps = [...X_STEPS_YARD];
+        else if (id === 'ada') steps = ADA_SIZES.map(s => s.label);
+        else {
             const maxVal = parseInt(document.getElementById('chart-max-sqft').value) || bounds.sqft;
             for(let i=1; i<=maxVal; i++) steps.push(i);
         }
@@ -351,7 +363,7 @@
 
         const permutations = new Array();
 
-        if (isYard) {
+        if (id === 'yard') {
             permutations.push({ label: "Single-Sided (No Stakes)", inputs: { ...baseInputs, sides: 1, hasStakes: false } });
             permutations.push({ label: "Single-Sided (With Stakes)", inputs: { ...baseInputs, sides: 1, hasStakes: true } });
             permutations.push({ label: "Double-Sided (With Stakes)", inputs: { ...baseInputs, sides: 2, hasStakes: true } });
@@ -405,21 +417,20 @@
 
         const datasets = new Array();
         const lineColors = new Array('#3b82f6', '#10b981', '#8b5cf6', '#f97316'); 
-        const profitColor = 'rgba(234, 179, 8, 0.3)'; 
 
         permutations.forEach((perm, index) => {
             const dataTarget = new Array(); 
-            const dataProfit = new Array(); 
+            const dataLabor = new Array();
 
-            steps.forEach(stepVal => {
+            steps.forEach((stepVal, stepIndex) => {
                 let runInputs = { ...perm.inputs };
                 
-                if (isYard) {
+                if (id === 'yard') {
                     runInputs.qty = stepVal;
                 } else if (id === 'ada') {
                     runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
-                    runInputs.w = stepVal; 
-                    runInputs.h = 1;
+                    runInputs.w = ADA_SIZES[stepIndex].w;
+                    runInputs.h = ADA_SIZES[stepIndex].h;
                 } else {
                     runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
                     runInputs.w = 12; 
@@ -437,23 +448,25 @@
                     const pointKey = 'ch-' + index + '-' + stepVal;
                     currentChartDataMap[pointKey] = { res, inputs: runInputs };
 
-                    if (!res || !res.retail) { dataTarget.push(null); dataProfit.push(null); return; }
+                    if (!res || !res.retail) { dataTarget.push(null); dataLabor.push(null); return; }
 
                     const unitRet = res.retail.unitPrice;
                     const unitCst = res.cost.total / runInputs.qty;
                     const margin = res.metrics.margin;
 
-                    if (mode === 'retail') {
-                        dataTarget.push(unitRet);
-                        dataProfit.push(Math.max(unitRet - unitCst, 0));
-                    } else if (mode === 'cost') {
-                        dataTarget.push(unitCst);
-                    } else {
-                        dataTarget.push(margin * 100);
+                    if (mode === 'retail') dataTarget.push(unitRet);
+                    else if (mode === 'cost') dataTarget.push(unitCst);
+                    else dataTarget.push(margin * 100);
+
+                    // Map specific Labor for Wraps & Walls
+                    if (id === 'wrap' || id === 'wall') {
+                        const installCost = (res.cost.breakdown && res.cost.breakdown.installLabor) ? res.cost.breakdown.installLabor / runInputs.qty : 0;
+                        dataLabor.push(installCost);
                     }
+
                 } catch(e) {
                     console.error("Chart point failed:", e);
-                    dataTarget.push(null); dataProfit.push(null);
+                    dataTarget.push(null); dataLabor.push(null);
                 }
             });
 
@@ -463,23 +476,16 @@
             else dLabel += " (Margin %)";
 
             datasets.push({
-                type: 'line',
-                label: dLabel,
-                data: dataTarget,
-                borderColor: lineColors[index % lineColors.length],
-                backgroundColor: lineColors[index % lineColors.length],
-                borderWidth: 3, tension: 0.1, pointRadius: 3,
-                _permIndex: index
+                type: 'line', label: dLabel, data: dataTarget,
+                borderColor: lineColors[index % lineColors.length], backgroundColor: lineColors[index % lineColors.length],
+                borderWidth: 3, tension: 0.1, pointRadius: 3, _permIndex: index
             });
 
-            if (mode === 'retail') {
+            // Dedicated Labor Line for Wraps/Walls
+            if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
                 datasets.push({
-                    type: 'bar',
-                    label: perm.label + " (Profit)",
-                    data: dataProfit,
-                    backgroundColor: profitColor,
-                    borderWidth: 1, borderColor: '#ca8a04',
-                    _permIndex: index
+                    type: 'line', label: perm.label + " (Install Cost)", data: dataLabor,
+                    borderColor: '#f43f5e', borderDash: [1], borderWidth: 2, tension: 0.1, pointRadius: 0, _permIndex: index
                 });
             }
         });
@@ -487,7 +493,7 @@
         if (chartInstance) chartInstance.destroy();
         const ctx = document.getElementById('physicsChart').getContext('2d');
 
-        let xTitle = isYard ? 'Quantity Ordered' : (id === 'ada' ? 'Total Square Inches (Size)' : 'Total Square Footage (Size)');
+        let xTitle = id === 'yard' ? 'Quantity Ordered' : (id === 'ada' ? 'Physical Size (WxH)' : 'Total Square Footage (Size)');
         let yTitle = mode === 'margin' ? 'Net Margin (%)' : 'Money / Unit ($)';
 
         chartInstance = new Chart(ctx, {
@@ -502,7 +508,7 @@
                             label: function(ctx) {
                                 let label = ctx.dataset.label || '';
                                 if (label) label += ': ';
-                                if (mode === 'margin') label += ctx.parsed.y.toFixed(1) + '%';
+                                if (mode === 'margin' && !label.includes('Labor')) label += ctx.parsed.y.toFixed(1) + '%';
                                 else label += '$' + ctx.parsed.y.toFixed(2);
                                 return label;
                             }
@@ -511,7 +517,7 @@
                 },
                 scales: {
                     x: { title: { display: true, text: xTitle, font: { weight: 'bold' } }, grid: { display: false } },
-                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: true }
+                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: false } // Allows dynamic zooming
                 },
                 onClick: (e, elements) => {
                     if (elements.length > 0) {
@@ -519,9 +525,10 @@
                         const dataIndex = el.index;
                         const datasetIndex = el.datasetIndex;
                         const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
-                        const stepVal = steps[dataIndex];
                         
+                        const stepVal = steps[dataIndex];
                         const pointKey = 'ch-' + permIndex + '-' + stepVal;
+                        
                         let valDisplay = chartInstance.data.datasets[datasetIndex].data[dataIndex];
                         let displayStr = mode === 'margin' ? valDisplay.toFixed(1) + '%' : '$' + valDisplay.toFixed(2);
                         
@@ -533,6 +540,12 @@
     }
 
     function drawHeatmap(simData) {
+        if (activeConfig.id === 'yard') {
+            document.getElementById('heatmap-head').innerHTML = '';
+            document.getElementById('heatmap-body').innerHTML = '<tr><td class="p-10 text-center text-gray-500 font-bold uppercase tracking-widest bg-gray-50 rounded-xl shadow-inner border border-gray-200">⚠️ Heatmap Disabled for Yard Signs<br><span class="text-[10px] text-gray-400 normal-case mt-2 block">Yard Sign pricing is primarily driven by Bulk Quantity breaks rather than linear Width/Height scales. Please use the Line Chart view.</span></td></tr>';
+            return;
+        }
+
         const mode = document.getElementById('hm-analysis-mode').value;
         const bounds = getProductBounds(activeConfig.id);
         const maxW = bounds.w; 
@@ -559,11 +572,9 @@
             for(let w=1; w<=maxW; w++) {
                 let inputs = { ...baseInputs };
                 if (activeConfig.id === 'ada') {
-                    inputs.w = w;
-                    inputs.h = h;
+                    inputs.w = w; inputs.h = h;
                 } else {
-                    inputs.w = w * 12;
-                    inputs.h = h * 12;
+                    inputs.w = w * 12; inputs.h = h * 12;
                 }
 
                 if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
@@ -579,21 +590,20 @@
 
                     let val = 0, display = "";
                     let cellClass = "heatmap-cell border border-gray-100 text-center relative group text-slate-700 font-black";
-                    let bgStyle = "";
+                    
+                    // Unified Gradient Logic applied to all views
+                    const margin = res.metrics ? res.metrics.margin : 0;
+                    let bgStyle = getMarginColor(margin);
 
                     if (mode === 'retail') {
                         val = res.retail.unitPrice;
                         display = "$" + val.toFixed(2);
-                        bgStyle = "background-color: #f0f9ff;";
                     } else if (mode === 'cost') {
                         val = res.cost.total / inputs.qty;
                         display = "$" + val.toFixed(2);
-                        bgStyle = "background-color: #fff5f5;";
                     } else {
-                        const margin = res.metrics ? res.metrics.margin * 100 : 0;
-                        display = margin.toFixed(1) + "%";
+                        display = (margin * 100).toFixed(1) + "%";
                         if (margin < 0) cellClass += " loss-alert";
-                        else bgStyle = `background-color: rgba(34, 197, 94, ${Math.min(margin/70, 0.8)});`;
                     }
 
                     bodyHtml += `<td class="${cellClass}" style="${bgStyle}" onclick="renderInspection('${pointKey}', '${display}')">${display}</td>`;
@@ -632,15 +642,19 @@
         if(res.retail.installTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-indigo-600"><span>Installation:</span><span>${fmt(res.retail.installTotal)}</span></div>`;
         if(res.retail.setupFee) retailLines += `<div class="flex justify-between text-[10px] font-bold"><span>Setup Fee:</span><span>${fmt(res.retail.setupFee)}</span></div>`;
 
+        // Dynamic Line Item Breakdowns (No more grouping)
         let costLines = "";
         const b = res.cost.breakdown || {};
-        
-        const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || b.materials || 0) + (b.totalInk || b.rawInk || 0) + (b.stakeCost || 0) + (b.rawLam || 0) + (b.rawTape || 0);
-        const labor = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0) + (b.costSetup || 0) + (b.costFinish || 0) + (b.costWeed || 0) + (b.installLabor || 0) + (b.printLabor || 0) + (b.machine || 0) + (b.costPrepress || 0) + (b.costHandling || 0) + (b.costMachRun || 0) + (b.costOpAttn || 0);
-
-        costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Materials & Ink:</span><span>${fmt(mats)}</span></div>`;
-        costLines += `<div class="flex justify-between text-[10px] font-bold"><span>Labor & Machine:</span><span>${fmt(labor)}</span></div>`;
-        if(b.wasteCost) costLines += `<div class="flex justify-between text-[10px] font-bold text-red-400"><span>Waste Buffer:</span><span>${fmt(b.wasteCost)}</span></div>`;
+        for(const key in b) {
+            if(typeof b[key] === 'number' && !key.toLowerCase().includes('pct') && !key.toLowerCase().includes('hrs')) {
+                if(b[key] > 0) {
+                    let label = key.replace(/([A-Z])/g, ' $1').trim();
+                    label = label.charAt(0).toUpperCase() + label.slice(1);
+                    costLines += `<div class="flex justify-between text-[10px] font-bold text-gray-600 border-b border-gray-100 pb-0.5"><span>${label}:</span><span>${fmt(b[key])}</span></div>`;
+                }
+            }
+        }
+        if(b.wasteCost) costLines += `<div class="flex justify-between text-[10px] font-bold text-red-500 mt-1"><span>Waste Buffer:</span><span>${fmt(b.wasteCost)}</span></div>`;
 
         container.innerHTML = `
             <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm">
@@ -653,7 +667,7 @@
                 <label class="text-[9px] font-black text-red-600 uppercase block mb-2 border-b border-red-200 pb-1 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Physics Engine</label>
                 <div class="space-y-1.5">${costLines}</div>
                 <div class="flex justify-between text-xs font-black border-t-2 border-red-200 mt-2 pt-2 text-red-900"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>
-                <div class="flex justify-between text-[11px] font-black text-red-600 mt-2 pt-2 border-t border-red-100 bg-white p-2 rounded"><span>Net Profit:</span><span>${fmt(res.retail.grandTotal - res.cost.total)} (${(res.metrics.margin*100).toFixed(1)}%)</span></div>
+                <div class="flex justify-between text-[11px] font-black mt-2 pt-2 border-t border-red-200 bg-white p-2 rounded shadow-sm" style="${getMarginColor(res.metrics.margin)} border: 1px solid rgba(0,0,0,0.1);"><span>Net Profit:</span><span>${fmt(res.retail.grandTotal - res.cost.total)} (${(res.metrics.margin*100).toFixed(1)}%)</span></div>
             </div>
         `;
     }
