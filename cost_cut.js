@@ -55,3 +55,14 @@ function calculateCutVinyl(inputs, data) {
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
+
+window.CUT_CONFIG = {
+    tab: 'PROD_Cut_Vinyl', engine: calculateCutVinyl,
+    controls: [
+        { id: 'material', label: 'Material Series', type: 'select', opts: [{v:'751', t:'Oracal 751 (Flat)'}, {v:'951', t:'Oracal 951 (Vehicle)'}, {v:'8500', t:'Oracal 8500 (Backlit)'}, {v:'8800', t:'Oracal 8800 (Premium Trans)'}] },
+        { id: 'complexity', label: 'Weeding Level', type: 'select', opts: [{v:'Standard', t:'Standard'}, {v:'Complex', t:'Complex'}] }
+    ],
+    retails: [ { key: 'Retail_Price_751', label: '751 Base Rate ($)' } ],
+    costs: [ { key: 'Cost_Vinyl_751', label: '751 Vinyl ($)' }, { key: 'Cost_Transfer_Tape', label: 'Mask Tape ($)' } ]
+};
+
