@@ -8,46 +8,48 @@ function calculateADA(inputs, data) {
 
     // --- 1. RETAIL ENGINE ---
     let baseRateSqIn = inputs.coreThick === '1/8' ? parseFloat(data.Retail_Price_Ultra_18 || 0.85) : parseFloat(data.Retail_Price_Mattes_116 || 0.55);
-
     if (inputs.hasTactile) baseRateSqIn += parseFloat(data.Retail_Adder_Tactile || 0.15);
-    
-    if (inputs.backer === 'Black PVC' || inputs.backer === 'White PVC') baseRateSqIn += parseFloat(data.Retail_Adder_PVC_Backer || 0.10);
-    else if (inputs.backer === 'Clear Acrylic') baseRateSqIn += parseFloat(data.Retail_Adder_Acr_Backer || 0.20);
 
-    const retailPrint = baseRateSqIn * totalSqin;
-    const brailleFee = inputs.hasBraille ? (parseFloat(data.Retail_Adder_Braille_Line || 3) * inputs.brailleLines * inputs.qty) : 0;
-    
-    const grandTotalRaw = retailPrint + brailleFee;
+    let retailUnit = sqin * baseRateSqIn;
+    if (inputs.backer === 'Black PVC' || inputs.backer === 'White PVC') retailUnit += (sqin * parseFloat(data.Retail_Adder_PVC_Backer || 0.15));
+    else if (inputs.backer === 'Clear Acrylic') retailUnit += (sqin * parseFloat(data.Retail_Adder_Acr_Backer || 0.25));
+
+    let brailleFee = 0;
+    if (inputs.hasBraille && inputs.brailleLines > 0) {
+        brailleFee = inputs.brailleLines * parseFloat(data.Retail_Adder_Braille_Line || 10.00);
+        retailUnit += brailleFee;
+    }
+
+    const retailPrint = retailUnit * inputs.qty;
+    const grandTotalRaw = retailPrint;
     const minOrder = parseFloat(data.Retail_Min_Order || 35);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
     // --- 2. COST ENGINE ---
-    const sheetSqIn = 24 * 48; 
+    const sheetSqIn = 24 * 48;
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
     const riskFactor = parseFloat(data.Factor_Risk || 1.05);
 
-    // Materials
     const costBackground = inputs.coreThick === '1/8' ? parseFloat(data.Cost_Stock_18_ADA || 117)/sheetSqIn : parseFloat(data.Cost_Stock_116_ADA || 75)/sheetSqIn;
     const costApplique = inputs.hasTactile ? parseFloat(data.Cost_Stock_132_Applique || 65)/sheetSqIn : 0;
     const costTape = parseFloat(data.Cost_ADA_Tape || 0.30) / 144;
     const costBead = parseFloat(data.Cost_Raster_Bead || 0.05);
-    
+
     const rawBackground = (totalSqin * costBackground) * wastePct;
     const rawApplique = (totalSqin * costApplique) * wastePct;
     const rawTape = (totalSqin * costTape) * wastePct;
     const rawBeads = inputs.hasBraille ? (inputs.qty * inputs.brailleLines * 10 * costBead) * wastePct : 0;
 
     let rawBacker = 0;
-    if(inputs.backer === 'Black PVC' || inputs.backer === 'White PVC') rawBacker = (totalSqin / 144) * 0.75; // Approx 3mm PVC
-    else if(inputs.backer === 'Clear Acrylic') rawBacker = (totalSqin / 144) * 2.00; // Approx 3/16 Acr
+    if(inputs.backer === 'Black PVC' || inputs.backer === 'White PVC') rawBacker = (totalSqin / 144) * 0.75; 
+    else if(inputs.backer === 'Clear Acrylic') rawBacker = (totalSqin / 144) * 2.00; 
 
-    // Labor Mapping (Explicit Separation)
+    // Labor Mapping
     const opRate = parseFloat(data.Rate_Operator || 25);
     const machRate = parseFloat(data.Rate_Machine_Engraver || 15);
-    
+
     const costFilePrepress = (parseFloat(data.Time_Preflight_Job || 10) / 60) * opRate;
     const costMachineSetup = (parseFloat(data.Time_Engraver_Load_Per_Item || 2) * inputs.qty / 60) * opRate;
-    
     const runMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.5);
     const costMachineRun = (runMins / 60) * machRate;
     const costOpAttn = (runMins / 60) * opRate * parseFloat(data.Labor_Attendance_Ratio || 0.20);
@@ -58,11 +60,7 @@ function calculateADA(inputs, data) {
 
     return {
         retail: { unitPrice: grandTotal / inputs.qty, printTotal: retailPrint, brailleFee: brailleFee, grandTotal: grandTotal },
-        cost: { total: totalCost, breakdown: { 
-            rawBackground, rawApplique, rawTape, rawBeads, rawBacker, 
-            costFilePrepress, costMachineSetup, costMachineRun, costOpAttn, costWeedPrep,
-            wasteCost: subHardCost - (subHardCost/wastePct), riskCost: totalCost - subHardCost 
-        }},
+        cost: { total: totalCost, breakdown: { rawBackground, rawApplique, rawTape, rawBeads, rawBacker, costFilePrepress, costMachineSetup, costMachineRun, costOpAttn, costWeedPrep, wasteCost: subHardCost - (subHardCost/wastePct), riskCost: totalCost - subHardCost } },
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
