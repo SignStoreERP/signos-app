@@ -91,3 +91,18 @@ function calculateBanner(inputs, data) {
     };
 }
 // window.BANNER_CONFIG remains identical, just remove renderReceipt
+
+window.BANNER_CONFIG = {
+    tab: 'PROD_Vinyl_Banners', engine: calculateBanner,
+    controls: [
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'13oz', t:'13oz Standard'}, {v:'15oz', t:'15oz Blockout'}, {v:'18oz', t:'18oz Heavy'}, {v:'Mesh', t:'8oz Mesh'}] },
+        { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'pockets', label: 'Pole Pockets', type: 'select', opts: [{v:'None', t:'None'}, {v:'Top', t:'Top'}, {v:'TopBottom', t:'Top & Bottom'}] },
+        { id: 'windSlits', label: 'Wind Slits', type: 'select', opts: [{v:'No', t:'No'}, {v:'Yes', t:'Yes'}] },
+        { id: 'hems', label: 'Include Hems', type: 'toggle', def: true },
+        { id: 'grommets', label: 'Include Grommets', type: 'toggle', def: true }
+    ],
+    retails: [ { key: 'BAN13_T3_Rate', label: 'Base Rate ($)' } ],
+    costs: [ { key: 'Cost_Media_13oz', label: '13oz Media ($)' } ]
+};
+
