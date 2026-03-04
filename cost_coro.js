@@ -108,4 +108,15 @@ function calculateCoro(inputs, data) {
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
+
+window.CORO_CONFIG = {
+    tab: 'PROD_Coroplast_Signs', engine: calculateCoro,
+    controls: [
+        { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'4mm', t:'4mm Standard'}, {v:'10mm', t:'10mm Heavy Duty'}] },
+        { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square Cut'}, {v:'CNC Simple', t:'CNC Simple'}] }
+    ],
+    retails: [ { key: 'COR4_T1_Rate', label: '4mm Rate ($)' } ],
+    costs: [ { key: 'Cost_Stock_4mm_4x8', label: '4mm Sheet ($)' } ]
+};
 // Keep window.CORO_CONFIG from previous version, just omit the renderReceipt function since UI handles array natively!
