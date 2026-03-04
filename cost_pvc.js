@@ -80,3 +80,15 @@ function calculatePVC(inputs, data) {
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
+
+window.PVC_CONFIG = {
+    tab: 'PROD_PVC_Signs', engine: calculatePVC,
+    controls: [
+        { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'3mm', t:'3mm Std'}, {v:'6mm', t:'6mm HD'}] },
+        { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square Cut'}, {v:'CNC Simple', t:'CNC Simple'}, {v:'CNC Complex', t:'CNC Complex'}] }
+    ],
+    retails: [ { key: 'PVC3_T1_Rate', label: '3mm Rate ($)' } ],
+    costs: [ { key: 'Cost_Stock_3mm_4x8', label: '3mm Sheet ($)' } ]
+};
+
