@@ -486,7 +486,7 @@
         });
     }
 
-    function drawHeatmap(simData) {
+   function drawHeatmap(simData) {
         if (activeConfig.id === 'yard' || activeConfig.id === 'banner') {
             document.getElementById('heatmap-head').innerHTML = '';
             document.getElementById('heatmap-body').innerHTML = `<tr><td class="p-10 text-center text-gray-500 font-bold uppercase tracking-widest bg-gray-50 rounded-xl shadow-inner border border-gray-200">⚠️ Heatmap Disabled for ${activeConfig.name}<br><span class="text-[10px] text-gray-400 normal-case mt-2 block">Please use the Line Chart view.</span></td></tr>`;
@@ -495,17 +495,28 @@
 
         const mode = document.getElementById('hm-analysis-mode').value;
         const bounds = getProductBounds(activeConfig.id);
-        const maxW = bounds.w; 
-        const maxH = bounds.h;
-        const stepW = bounds.stepW || 1;
-        const stepH = bounds.stepH || 1;
+        const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
+        
+        // NEW: Dynamic Axis Steps for Heatmap!
+        let axisStepsW = [];
+        let axisStepsH = [];
+        
+        if (activeConfig.id === 'ada') {
+            // Force specific jumps, skipping odd/1-inch sizes after 12
+            axisStepsW = [1-9];
+            axisStepsH = [1-9];
+        } else {
+            for(let i=bounds.stepW||1; i<=bounds.w; i+=(bounds.stepW||1)) axisStepsW.push(i);
+            for(let i=bounds.stepH||1; i<=bounds.h; i+=(bounds.stepH||1)) axisStepsH.push(i);
+        }
         
         const header = document.getElementById('heatmap-head');
         const body = document.getElementById('heatmap-body');
-        const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
         
         let headHtml = '<tr class="bg-slate-100 text-slate-400 font-black text-[9px]"><th class="p-3 border border-slate-200 sticky-col sticky-row">H \\ W</th>';
-        for(let w=stepW; w<=maxW; w+=stepW) headHtml += '<th class="p-2 border border-slate-200">' + w + (activeConfig.id === 'ada' ? '"' : (activeConfig.id === 'wrap' || activeConfig.id === 'wall' ? ' ft' : '\'')) + '</th>';
+        axisStepsW.forEach(w => {
+            headHtml += '<th class="p-2 border border-slate-200">' + w + (activeConfig.id === 'ada' ? '"' : (activeConfig.id === 'wrap' || activeConfig.id === 'wall' ? ' ft' : '\'')) + '</th>';
+        });
         header.innerHTML = headHtml + '</tr>';
 
         let baseInputs = { qty: parseInt(document.getElementById('chart-qty').value) || 1 };
@@ -516,21 +527,18 @@
         });
 
         let bodyHtml = '';
-        for(let h=stepH; h<=maxH; h+=stepH) {
+        axisStepsH.forEach(h => {
             bodyHtml += `<tr><th class="bg-slate-100 p-2 border border-slate-200 sticky-col text-slate-400 text-[9px]">${h}${activeConfig.id === 'ada' ? '"' : (activeConfig.id === 'wrap' || activeConfig.id === 'wall' ? ' ft' : '\'')}</th>`;
             
-            for(let w=stepW; w<=maxW; w+=stepW) {
+            axisStepsW.forEach(w => {
                 let inputs = { ...baseInputs };
-                if (activeConfig.id === 'ada') {
-                    inputs.w = w; inputs.h = h;
-                } else if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
+                if (activeConfig.id === 'ada') { inputs.w = w; inputs.h = h; } 
+                else if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
                     inputs.w = w * 12; inputs.h = h * 12;
                     inputs.material = inputs.material || (activeConfig.id === 'wall' ? 'smooth' : 'wrap');
                     inputs.install = globalInstall ? 'Yes' : 'No';
                     inputs.panels = [{ label: "Panel", qty: 1, w: inputs.w, h: inputs.h, material: inputs.material, included: false }];
-                } else {
-                    inputs.w = w * 12; inputs.h = h * 12;
-                }
+                } else { inputs.w = w * 12; inputs.h = h * 12; }
 
                 if (activeConfig.id === 'cut') inputs.material = inputs.material || 'Flat';
                 if (activeConfig.id === 'decal') inputs.material = inputs.material || 'Cal';
@@ -544,7 +552,6 @@
 
                     let val = 0, display = "";
                     let cellClass = "heatmap-cell border border-gray-100 text-center relative group text-slate-700 font-black";
-                    
                     const margin = res.metrics ? res.metrics.margin : 0;
                     let bgStyle = getMarginColor(margin);
 
@@ -561,12 +568,10 @@
 
                     bodyHtml += `<td class="${cellClass}" style="${bgStyle}" onclick="renderInspection('${pointKey}', '${display}')">${display}</td>`;
 
-                } catch(e) {
-                    bodyHtml += `<td class="heatmap-cell bg-gray-50 text-gray-300">ERR</td>`;
-                }
-            }
+                } catch(e) { bodyHtml += `<td class="heatmap-cell bg-gray-50 text-gray-300">ERR</td>`; }
+            });
             bodyHtml += '</tr>';
-        }
+        });
         body.innerHTML = bodyHtml;
     }
 
