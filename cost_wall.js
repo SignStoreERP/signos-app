@@ -98,3 +98,21 @@ window.WALL_CONFIG = {
         { key: 'Rate_Install', label: 'Installer ($/Hr)' }
     ]
 };
+
+window.WALL_CONFIG = {
+    tab: 'PROD_Vinyl_Wraps', // Using Wraps tab per your architecture
+    engine: calculateWall,
+    controls: [
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'smooth', t:'Smooth Wall (GF226)'}, {v:'textured', t:'Textured Wall (3M)'}] }
+    ],
+    retails: [
+        { key: 'Retail_Price_Wall_Smooth_SqFt', label: 'Smooth Rate ($/sf)' },
+        { key: 'Retail_Price_Wall_Text_SqFt', label: 'Textured Rate ($/sf)' },
+        { key: 'Retail_Install_Wall_SqFt', label: 'Base Install ($/sf)' }
+    ],
+    costs: [
+        { key: 'Cost_Vin_Wall', label: 'Smooth Vin ($/sf)' },
+        { key: 'Cost_Vin_Wall_Text', label: 'Textured Vin ($/sf)' },
+        { key: 'Rate_Install', label: 'Installer ($/Hr)' }
+    ]
+};
