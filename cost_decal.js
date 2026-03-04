@@ -70,3 +70,16 @@ function calculateDecal(inputs, data) {
         metrics: { margin: (grandTotal - (subTotal * riskFactor)) / grandTotal }
     };
 }
+
+window.DECAL_CONFIG = {
+    tab: 'PROD_Decals', engine: calculateDecal,
+    controls: [
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'Standard', t:'Standard Cal'}, {v:'Cast', t:'Premium Cast'}, {v:'Clear', t:'Clear'}, {v:'Translucent', t:'Translucent'}, {v:'Reflective', t:'Reflective'}] },
+        { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square Cut'}, {v:'Contour', t:'Contour Cut'}] },
+        { id: 'weeding', label: 'Weeding Level', type: 'select', opts: [{v:'Standard', t:'Standard'}, {v:'Complex', t:'Complex'}] },
+        { id: 'masking', label: 'Apply Tape?', type: 'select', opts: [{v:'No', t:'No'}, {v:'Yes', t:'Yes'}] }
+    ],
+    retails: [ { key: 'Retail_Price_Cal_SqFt', label: 'Cal Base Rate ($)' } ],
+    costs: [ { key: 'Cost_Vin_Cal', label: 'Cal Vinyl ($)' } ]
+};
+
