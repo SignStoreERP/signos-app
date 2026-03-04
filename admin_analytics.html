@@ -345,10 +345,9 @@
             permutations.push({ label: "Solid Media", inputs: { ...baseInputs, material: defMat } });
             permutations.push({ label: "Window Perf", inputs: { ...baseInputs, material: 'perf6040' } });
         } else if (id === 'ada') {
-            permutations.push({ label: "1/32\" on 1/8\" Core", inputs: { ...baseInputs, coreThick: '1/8', backer: 'None', hasTactile: true, hasBraille: true, brailleLines: 1 } });
-            permutations.push({ label: "1/32\" on 1/16\" on 3mm Blk PVC", inputs: { ...baseInputs, coreThick: '1/16', backer: 'Black PVC', hasTactile: true, hasBraille: true, brailleLines: 1 } });
-            permutations.push({ label: "1/32\" on 1/16\" on 3mm Wht PVC", inputs: { ...baseInputs, coreThick: '1/16', backer: 'White PVC', hasTactile: true, hasBraille: true, brailleLines: 1 } });
-            permutations.push({ label: "1/32\" on 1/16\" on 3/16 Clr Acr", inputs: { ...baseInputs, coreThick: '1/16', backer: 'Clear Acrylic', hasTactile: true, hasBraille: true, brailleLines: 1 } });
+            permutations.push({ label: "Standard (1/8\" Core)", inputs: { ...baseInputs, signType: 'Standard' } });
+            permutations.push({ label: "Layered (PVC Backer)", inputs: { ...baseInputs, signType: 'Layered_PVC' } });
+            permutations.push({ label: "Premium Layered (Acrylic)", inputs: { ...baseInputs, signType: 'Layered_Acrylic' } });
         }
 
         const datasets = new Array();
@@ -419,19 +418,13 @@
                 borderWidth: 3, tension: 0.1, pointRadius: 4, _permIndex: index
             });
 
-if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
-            datasets.push({
-                type: 'line', 
-                label: perm.label + " (Install Cost)", 
-                data: dataLabor,
-                borderColor: '#f43f5e', 
-                borderDash: [5, 5], 
-                borderWidth: 2, 
-                tension: 0.1, 
-                pointRadius: 0, 
-                _permIndex: index
-            });
-        }
+            if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
+                datasets.push({
+                    type: 'line', label: perm.label + " (Install Cost)", data: dataLabor,
+                    borderColor: '#f43f5e', borderDash: [1], borderWidth: 2, tension: 0.1, pointRadius: 0, _permIndex: index
+                });
+            }
+        });
 
         if (chartInstance) chartInstance.destroy();
         const ctx = document.getElementById('physicsChart').getContext('2d');
@@ -492,7 +485,7 @@ if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) 
         });
     }
 
-   function drawHeatmap(simData) {
+    function drawHeatmap(simData) {
         if (activeConfig.id === 'yard' || activeConfig.id === 'banner') {
             document.getElementById('heatmap-head').innerHTML = '';
             document.getElementById('heatmap-body').innerHTML = `<tr><td class="p-10 text-center text-gray-500 font-bold uppercase tracking-widest bg-gray-50 rounded-xl shadow-inner border border-gray-200">⚠️ Heatmap Disabled for ${activeConfig.name}<br><span class="text-[10px] text-gray-400 normal-case mt-2 block">Please use the Line Chart view.</span></td></tr>`;
@@ -503,17 +496,15 @@ if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) 
         const bounds = getProductBounds(activeConfig.id);
         const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
         
-       // NEW: Dynamic Axis Steps for Heatmap!
+        // NEW: Dynamic Axis Steps for Heatmap!
         let axisStepsW = [];
         let axisStepsH = [];
-
+        
         if (activeConfig.id === 'ada') {
             // Force specific jumps for ADA sizing
-            axisStepsW = [3, 4, 5, 6, 8, 10, 11, 12, 13];
-            axisStepsH = [3, 4, 5, 6, 8, 10, 11, 12, 13];
+            axisStepsW = [1-9];
+            axisStepsH = [1-9];
         } else {
-
-
             for(let i=bounds.stepW||1; i<=bounds.w; i+=(bounds.stepW||1)) axisStepsW.push(i);
             for(let i=bounds.stepH||1; i<=bounds.h; i+=(bounds.stepH||1)) axisStepsH.push(i);
         }
