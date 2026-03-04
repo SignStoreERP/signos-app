@@ -1,6 +1,6 @@
 /**
  * PURE PHYSICS ENGINE: Custom Coroplast (v2.4)
- * Integrating Roll Media + Mounting Physics for 10mm.
+ * Integrating Roll Media + Mounting Physics for 10mm to correct margin reporting.
  */
 function calculateCoro(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -9,7 +9,6 @@ function calculateCoro(inputs, data) {
 
     // --- 1. RETAIL ENGINE ---
     let baseSqFtRate = 0;
-    
     if (thk === '4mm') {
         if (sqft <= 3.99) baseSqFtRate = parseFloat(data.COR4_T1_Rate) || 8.33;
         else if (sqft <= 15.99) baseSqFtRate = parseFloat(data.COR4_T2_Rate) || 7.00;
@@ -22,12 +21,14 @@ function calculateCoro(inputs, data) {
         else baseSqFtRate = parseFloat(data.COR10_T4_Rate) || 15.00;
     }
 
-    const dsMult = thk === '10mm' ? parseFloat(data.Retail_Adder_DS_10mm || 5) : parseFloat(data.Retail_Adder_DS_4mm || 2.5);
-    const baseRate = baseSqFtRate + (inputs.sides === 2 ? dsMult : 0);
-    const retailPrint = baseRate * totalSqFt;
+    let retailPrint = baseSqFtRate * totalSqFt;
+    if (inputs.sides === 2) retailPrint += (totalSqFt * parseFloat(thk === '10mm' ? data.Retail_Adder_DS_10mm || 5 : data.Retail_Adder_DS_4mm || 2.5));
 
-    const routerFee = inputs.shape === 'CNC Simple' ? parseFloat(data.Retail_Fee_Router_Easy || 30) : (inputs.shape === 'CNC Complex' ? parseFloat(data.Retail_Fee_Router_Hard || 50) : 0);
-    const feeSetup = inputs.setupPerFile ? (parseFloat(data.Retail_Fee_Setup || 0) * inputs.files) : parseFloat(data.Retail_Fee_Setup || 0);
+    let routerFee = 0;
+    if (inputs.shape === 'CNC Simple') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30);
+    else if (inputs.shape === 'CNC Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50);
+
+    const feeSetup = inputs.setupPerFile ? (parseFloat(data.Retail_Fee_Setup || 15) * inputs.files) : parseFloat(data.Retail_Fee_Setup || 15);
     const feeDesign = inputs.incDesign ? parseFloat(data.Retail_Fee_Design || 45) : 0;
 
     const grandTotalRaw = retailPrint + routerFee + feeDesign + feeSetup;
@@ -37,47 +38,62 @@ function calculateCoro(inputs, data) {
     // --- 2. COST ENGINE ---
     const sheetCost = thk === '10mm' ? parseFloat(data.Cost_Stock_10mm_4x8 || 33.49) : parseFloat(data.Cost_Stock_4mm_4x8 || 8.40);
     const rawBlanks = Math.ceil(totalSqFt / 32) * sheetCost;
+    const wastePct = parseFloat(data.Waste_Factor || 1.10);
     
-    const wastePct = parseFloat(data.Waste_Factor || 1.15);
-    const riskFactor = parseFloat(data.Factor_Risk || 1.05);
+    const rateOp = parseFloat(data.Rate_Operator || 25);
+    const rateMachPrint = parseFloat(data.Rate_Machine_Flatbed || 10);
+    const costSetup = (parseFloat(data.Time_Setup_Job || 15) / 60) * rateOp;
 
+    let subHardCost = 0;
     let totalInk = 0;
-    let costPrintMach = 0, costPrintOp = 0, costMountLabor = 0, rawMountVin = 0, rawMountLam = 0;
+    let costPrintMach = 0;
+    let costPrintOp = 0;
+    let costCutMach = 0;
+    let costCutLabor = 0;
+    let costMountLabor = 0;
+    let rawMountVin = 0;
+    let rawMountLam = 0;
 
-    const opRate = parseFloat(data.Rate_Operator || 25);
-    const attnRatio = parseFloat(data.Labor_Attendance_Ratio || 0.10);
-
-    if (thk === '4mm') {
-        // Flatbed direct print
-        totalInk = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * wastePct * inputs.sides;
-        const printSpeed = parseFloat(data.Machine_Speed_LF_Hr || 25);
-        const printHrs = (Math.max(inputs.w, inputs.h) / 12) / printSpeed;
-        costPrintMach = printHrs * parseFloat(data.Rate_Machine_Flatbed || 10);
-        costPrintOp = printHrs * opRate * attnRatio;
-    } else {
-        // Roll Print + Mount Logic for 10mm
-        totalInk = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * wastePct * inputs.sides;
+    if (thk === '10mm') {
+        // Roll Print + Mount Workflow
         rawMountVin = totalSqFt * parseFloat(data.Cost_Vin_Cal || 0.21) * wastePct * inputs.sides;
         rawMountLam = totalSqFt * parseFloat(data.Cost_Lam_Cal || 0.36) * wastePct * inputs.sides;
+        totalInk = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * inputs.sides;
         
-        const rollSpeed = parseFloat(data.Speed_Print_Roll || 150);
-        const rollHrs = totalSqFt / rollSpeed;
-        costPrintMach = rollHrs * parseFloat(data.Rate_Machine_Print || 5);
-        costPrintOp = rollHrs * opRate * attnRatio;
-        costMountLabor = (totalSqFt / 32) * (15/60) * parseFloat(data.Rate_Shop_Labor || 20); // 15 mins per sheet mounting
+        const printHrs = (totalSqFt / parseFloat(data.Speed_Print_Roll || 150)) * inputs.sides;
+        costPrintOp = printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10);
+        costPrintMach = printHrs * parseFloat(data.Rate_Machine_Print || 5);
+        
+        // Labor: 15 mins per sheet area per side to mount
+        const mountHrs = (totalSqFt / 32) * (15 / 60) * inputs.sides;
+        costMountLabor = mountHrs * parseFloat(data.Rate_Shop_Labor || 20);
+
+        if (inputs.shape !== 'Rectangle') {
+            const cutHrs = (totalSqFt * (inputs.shape === 'CNC Simple' ? 1 : 2)) / 60;
+            costCutMach = cutHrs * parseFloat(data.Rate_Machine_CNC || 10);
+            costCutLabor = cutHrs * parseFloat(data.Rate_CNC_Labor || 25);
+        }
+
+        subHardCost = rawBlanks + (rawBlanks*(wastePct-1)) + rawMountVin + rawMountLam + totalInk + costSetup + costPrintOp + costPrintMach + costMountLabor + costCutMach + costCutLabor;
+    } else {
+        // Direct Flatbed Workflow
+        totalInk = totalSqFt * inputs.sides * parseFloat(data.Cost_Ink_Latex || 0.16);
+        const printHrs = ((inputs.h / 12) * inputs.qty / parseFloat(data.Machine_Speed_LF_Hr || 25)) * inputs.sides;
+        costPrintOp = printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10);
+        costPrintMach = printHrs * rateMachPrint;
+
+        if (inputs.shape !== 'Rectangle') {
+            const cutHrs = (totalSqFt * (inputs.shape === 'CNC Simple' ? 1 : 2)) / 60;
+            costCutMach = cutHrs * parseFloat(data.Rate_Machine_CNC || 10);
+            costCutLabor = cutHrs * parseFloat(data.Rate_CNC_Labor || 25);
+        } else {
+            costCutLabor = ((parseFloat(data.Time_Shear_Setup || 5) + inputs.qty) / 60) * rateOp;
+        }
+        
+        subHardCost = rawBlanks + (rawBlanks*(wastePct-1)) + totalInk + costSetup + costPrintOp + costPrintMach + costCutMach + costCutLabor;
     }
 
-    const costSetup = (parseFloat(data.Time_Setup_Job || 15) / 60) * opRate;
-
-    let costCutMach = 0, costCutLabor = 0;
-    if (inputs.shape !== 'Rectangle') {
-        const cncSpeed = inputs.shape === 'CNC Simple' ? parseFloat(data.Time_CNC_Easy_SqFt || 1) : parseFloat(data.Time_CNC_Complex_SqFt || 2);
-        const runHrsCNC = (totalSqFt * cncSpeed) / 60;
-        costCutMach = runHrsCNC * parseFloat(data.Rate_Machine_CNC || 10);
-        costCutLabor = runHrsCNC * parseFloat(data.Rate_CNC_Labor || 25) * attnRatio;
-    }
-
-    const subHardCost = rawBlanks + rawMountVin + rawMountLam + totalInk + costSetup + costPrintMach + costPrintOp + costMountLabor + costCutMach + costCutLabor;
+    const riskFactor = parseFloat(data.Factor_Risk || 1.05);
     const totalCost = subHardCost * riskFactor;
 
     return {
