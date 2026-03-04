@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v3.0 - Physics Pipeline</title>
+    <title>ADA Signs v3.0.1 - Physics Pipeline</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
     <script src="signos-canvas.js"></script>
-    <script src="logic_ada.js"></script>
+    <script src="cost_ada.js"></script>
     <style>
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .color-scroll::-webkit-scrollbar { width: 6px; }
@@ -402,6 +402,7 @@
             let rgb = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
             
             let shadow = [];
+            // Map down and left for Isometric effect
             for(let i=1; i<=depthPx; i++) {
                 shadow.push(`-${i}px ${i}px 0 ${rgb}`);
             }
@@ -426,19 +427,18 @@
             }
         }
 
-        // --- NEW: MATH BRAILLE PLOTTER ---
+        // --- NEW: MATH BRAILLE PLOTTER (FIXED SYNTAX) ---
         function generateBraillePaths(text, startX, startY, align) {
             if (!text) return "";
             
-            // Basic Grade 1 mapping for prototype visualization
+            // Valid Grade 1 mapping with correct JS arrays
             const brailleMap = {
-                'a': [1], 'b': [1], 'c': [1], 'd': [1],
-                'e': [1], 'f': [1], 'g': [1], 'h': [1],
-                'i': [1], 'j': [1], 'k': [1], 'l': [1],
-                'm': [1], 'n': [1], 'o': [1], 'p': [1],
-                'q': [1], 'r': [1], 's': [1], 't': [1],
-                'u': [1], 'v': [1], 'w': [1], 'x': [1],
-                'y': [1], 'z': [1], ' ': 
+                'a': [1], 'b': [1, 2], 'c': [1, 3], 'd': [1, 3, 4], 'e': [1, 4],
+                'f': [1-3], 'g': [1-4], 'h': [1, 2, 4], 'i': [2, 3], 'j': [2-4],
+                'k': [1, 5], 'l': [1, 2, 5], 'm': [1, 3, 5], 'n': [1, 3-5], 'o': [1, 4, 5],
+                'p': [1-3, 5], 'q': [1-5], 'r': [1, 2, 4, 5], 's': [2, 3, 5], 't': [2-5],
+                'u': [1, 5, 6], 'v': [1, 2, 5, 6], 'w': [2-4, 6], 'x': [1, 3, 5, 6], 'y': [1, 3-6], 'z': [1, 4-6],
+                ' ': [], '#': [3-6]
             };
 
             const DOT_PITCH = 0.100; // Federal spacing between dots in a cell
@@ -446,7 +446,6 @@
             const DOT_RADIUS = 0.025; 
             
             let str = text.toLowerCase();
-            // Prefix number indicator (simulated)
             if (/\d/.test(str)) str = "#" + str;
 
             let totalWidth = str.length * CELL_PITCH;
@@ -459,22 +458,21 @@
 
             for (let i = 0; i < str.length; i++) {
                 let char = str[i];
-                let dots = brailleMap[char] || ;
+                let dots = brailleMap[char] || [];
 
-                if (char === '#') dots = [1]; // Number sign
+                if (char === '#') dots = brailleMap['#']; // Number sign
                 else if (/\d/.test(char)) {
-                    // Map numbers to a-j
                     const numMap = ['j','a','b','c','d','e','f','g','h','i'];
-                    dots = brailleMap[numMap[parseInt(char)]] || ;
+                    dots = brailleMap[numMap[parseInt(char)]] || [];
                 }
 
-                // Draw Dots (1-3 left col, 4-6 right col)
-                if(dots) paths += `<circle cx="${cursorX}" cy="${startY}" r="${DOT_RADIUS}" />`;
-                if(dots[1]) paths += `<circle cx="${cursorX}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
-                if(dots[2]) paths += `<circle cx="${cursorX}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
-                if(dots[3]) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY}" r="${DOT_RADIUS}" />`;
-                if(dots[4]) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
-                if(dots[5]) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
+                // Draw Dots based on valid arrays
+                if(dots.includes(1)) paths += `<circle cx="${cursorX}" cy="${startY}" r="${DOT_RADIUS}" />`;
+                if(dots.includes(2)) paths += `<circle cx="${cursorX}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
+                if(dots.includes(3)) paths += `<circle cx="${cursorX}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
+                if(dots.includes(4)) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY}" r="${DOT_RADIUS}" />`;
+                if(dots.includes(5)) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
+                if(dots.includes(6)) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
 
                 cursorX += CELL_PITCH;
             }
@@ -579,8 +577,8 @@
             container.style.width = `${pxW}px`;
             container.style.height = `${pxH}px`;
             
-            const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000';
-            const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
+            const coreHex = selectedCore ? selectedCore.Cap_Hex : '#000000';
+            const tactileHex = selectedTactile ? selectedTactile.Cap_Hex : '#ffffff';
             let backerHex = '#111827';
             if (backerType === 'White PVC') backerHex = '#ffffff';
             if (backerType === 'Clear Acrylic') backerHex = 'rgba(255,255,255,0.4)';
@@ -657,8 +655,8 @@
             const w = parseFloat(document.getElementById('w').value) || 8;
             const h = parseFloat(document.getElementById('h').value) || 8;
             
-            const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000';
-            const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
+            const coreHex = selectedCore ? selectedCore.Cap_Hex : '#000000';
+            const tactileHex = selectedTactile ? selectedTactile.Cap_Hex : '#ffffff';
 
             let svgEl = document.getElementById('live-production-preview');
             if(!svgEl) return alert("No tactile layer found to export.");
@@ -696,18 +694,18 @@
             SignOS_UI.buildColorGrid({
                 containerId: 'modal-grid',
                 data: data,
-                type: 'paint', 
+                type: 'rowmark', 
                 btnClass: 'w-10 h-10', 
                 activeRingClass: activeClass,
                 onSelect: (item) => {
                     if (activeModal === 'tactile') {
                         selectedTactile = item;
-                        document.getElementById('swatch-tactile').style.backgroundColor = item.Hex_Code;
-                        document.getElementById('label-tactile').innerText = item.Name;
+                        document.getElementById('swatch-tactile').style.backgroundColor = item.Cap_Hex;
+                        document.getElementById('label-tactile').innerText = item.Cap_Color;
                     } else {
                         selectedCore = item;
-                        document.getElementById('swatch-core').style.backgroundColor = item.Hex_Code;
-                        document.getElementById('label-core').innerText = item.Name;
+                        document.getElementById('swatch-core').style.backgroundColor = item.Cap_Hex;
+                        document.getElementById('label-core').innerText = item.Cap_Color;
                     }
                     closeModal();
                     runCalc();
@@ -717,7 +715,7 @@
             const activeItem = type === 'tactile' ? selectedTactile : selectedCore;
             if(activeItem) {
                 setTimeout(() => {
-                    const btn = document.querySelector(`#modal-grid button[data-code="${activeItem.Code}"]`);
+                    const btn = document.querySelector(`#modal-grid button[data-code="${activeItem.Item_Code}"]`);
                     if(btn) btn.classList.add('ring-2', 'ring-offset-1', activeClass);
                 }, 50);
             }
@@ -736,14 +734,16 @@
                     qty: parseFloat(document.getElementById('qty').value) || 1,
                     w: parseFloat(document.getElementById('w').value) || 8,
                     h: parseFloat(document.getElementById('h').value) || 8,
-                    structure: document.getElementById('core-thick').value,
+                    coreThick: document.getElementById('core-thick').value,
+                    baseStyle: 'Front',
                     hasPicto: document.getElementById('toggle-picto').checked,
                     hasText: document.getElementById('toggle-text').checked,
                     hasBraille: document.getElementById('toggle-braille').checked,
+                    brailleLines: document.getElementById('toggle-braille').checked ? 1 : 0,
                     hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
                     backer: document.getElementById('backer').value,
                     mounting: document.getElementById('mounting').value,
-                    bevel: document.getElementById('bevel').checked,
+                    bevel: document.getElementById('bevel').checked ? 'Yes' : 'No',
                     radius: parseFloat(document.getElementById('radius').value) || 0
                 };
 
@@ -772,14 +772,14 @@
                 if (tactileArr.length > 0) {
                     let tactList = tactileArr.join(", ").replace(/,([^,]*)$/, ' and$1');
                     if (inputs.hasTactile) {
-                        tactStr = `with 1/32" [${selectedTactile.Code}] ${selectedTactile.Name} tactile ${tactList}`;
+                        tactStr = `with 1/32" [${selectedTactile.Item_Code}] ${selectedTactile.Cap_Color} tactile ${tactList}`;
                     } else {
                         tactStr = `with clear raster ${tactList}`; 
                     }
                 }
 
-                let coreStr = `on ${inputs.structure === '1/8' ? '1/8"' : '1/16"'} [${selectedCore.Code}] ${selectedCore.Name} ADA core`;
-                let edgeStr = inputs.bevel ? "with beveled edges" : "with straight cut edges";
+                let coreStr = `on ${inputs.coreThick} [${selectedCore.Item_Code}] ${selectedCore.Cap_Color} ADA core`;
+                let edgeStr = inputs.bevel === 'Yes' ? "with beveled edges" : "with straight cut edges";
                 let backerStr = inputs.backer !== 'None' ? `with ${inputs.backer === 'Black PVC' || inputs.backer === 'White PVC' ? '3mm ' + inputs.backer : '3/16" Clear Acrylic'} backer` : "";
                 let radStr = inputs.radius > 0 ? `with ${inputs.radius}" radius corners` : "with square corners";
                 let mountStr = inputs.mounting !== 'None' ? `with ${inputs.mounting.toLowerCase()}` : "without mounting hardware";
@@ -799,11 +799,17 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
+                // Fetch Data including Pictograms!
                 const payload = await SignOS.fetchProductData('PROD_ADA_Signs', ['REF_Colors_Rowmark', 'REF_Pictograms', 'REF_Fonts']);
+                
                 backendData = payload.config;
                 const rawRowmark = payload.tables['REF_Colors_Rowmark'] || [];
                 pictograms = payload.tables['REF_Pictograms'] || [];
                 systemFonts = payload.tables['REF_Fonts'] || [];
+
+                if (SignOS_Canvas && SignOS_Canvas.loadFonts) {
+                    SignOS_Canvas.loadFonts(systemFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE'));
+                }
 
                 const fontSelect = document.getElementById('sign-font');
                 let fontHtml = '';
@@ -814,27 +820,21 @@
                 });
                 fontSelect.innerHTML = fontHtml;
 
-                coreColors = rawRowmark.filter(r => r.Series && (r.Series.includes('Ultra-Mattes') || r.Series.includes('Mattes'))).map(c => {
-                    let hex = c.Cap_Hex;
-                    if(hex === 'Transparent' || c.Cap_Color.includes('Clear')) hex = '#e5e7eb';
-                    return { Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: hex };
-                });
-
-                if (!coreColors.find(c => c.Name.includes('Clear'))) {
-                    coreColors.push({ Code: '322-101', Name: 'Clear', Hex_Code: '#e5e7eb' });
+                coreColors = rawRowmark.filter(r => r.Series && (r.Series.includes('Ultra-Mattes') || r.Series.includes('Mattes')));
+                
+                if (!coreColors.find(c => c.Cap_Color && c.Cap_Color.includes('Clear'))) {
+                    coreColors.push({ Item_Code: '322-101', Cap_Color: 'Clear', Cap_Hex: '#e5e7eb' });
                 }
 
-                tactileColors = rawRowmark.filter(r => r.Series && r.Series.includes('ADA Alternative')).map(c => {
-                    return { Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: c.Cap_Hex };
-                });
+                tactileColors = rawRowmark.filter(r => r.Series && r.Series.includes('ADA Alternative'));
 
-                selectedCore = coreColors.find(c => c.Name.includes('Black')) || coreColors;
-                selectedTactile = tactileColors.find(c => c.Name.includes('White')) || tactileColors;
+                selectedCore = coreColors.find(c => c.Cap_Color && c.Cap_Color.includes('Black')) || coreColors;
+                selectedTactile = tactileColors.find(c => c.Cap_Color && c.Cap_Color.includes('White')) || tactileColors;
                 
-                document.getElementById('swatch-core').style.backgroundColor = selectedCore.Hex_Code;
-                document.getElementById('label-core').innerText = selectedCore.Name;
-                document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Hex_Code;
-                document.getElementById('label-tactile').innerText = selectedTactile.Name;
+                document.getElementById('swatch-core').style.backgroundColor = selectedCore.Cap_Hex;
+                document.getElementById('label-core').innerText = selectedCore.Cap_Color;
+                document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Cap_Hex;
+                document.getElementById('label-tactile').innerText = selectedTactile.Cap_Color;
 
                 const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
                 if (activeIcons.length > 0) {
