@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v2.4 - Layout Builder</title>
+    <title>ADA Signs v2.5 - Blueprint Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
@@ -25,6 +25,7 @@
             stroke-width: 0.008;
         }
 
+        /* 3D Exploded View CSS (True Vertical Extrusions) */
         #preview-wrapper { perspective: 1200px; }
         #svg-preview-container { 
             transform-style: preserve-3d; 
@@ -36,13 +37,19 @@
             transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s ease; 
             transform-style: preserve-3d; 
         }
-        .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-40deg); }
-        .exploded-view .layer-backer { transform: translateZ(-30px); box-shadow: var(--edge-shadow, -2px 2px 10px rgba(0,0,0,0.2)); }
-        .exploded-view .layer-core { transform: translateZ(0px); box-shadow: var(--edge-shadow, -2px 2px 10px rgba(0,0,0,0.1)); }
+        
+        /* Tilted straight back, no Z-rotation */
+        .exploded-view #svg-preview-container { transform: rotateX(55deg); }
+        .exploded-view .layer-backer { transform: translateZ(-40px); box-shadow: var(--edge-shadow, 0px 2px 10px rgba(0,0,0,0.2)); }
+        .exploded-view .layer-core { transform: translateZ(0px); box-shadow: var(--edge-shadow, 0px 2px 10px rgba(0,0,0,0.1)); }
         .exploded-view .layer-tactile { 
-            transform: translateZ(30px); 
-            filter: drop-shadow(-1px 1px 0px rgba(0,0,0,0.4)) drop-shadow(-2px 2px 3px rgba(0,0,0,0.2)); 
+            transform: translateZ(40px); 
+            filter: drop-shadow(0px 2px 0px rgba(0,0,0,0.3)) drop-shadow(0px 5px 5px rgba(0,0,0,0.2)); 
         }
+
+        /* Blueprint Callouts */
+        .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s; pointer-events: none; }
+        .exploded-view .blueprint-callout { opacity: 1; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
@@ -50,152 +57,155 @@
     <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
         <!-- 1. VISUAL PREVIEW -->
-        <div id="preview-wrapper" class="bg-blue-50 p-6 border-b border-blue-100 relative flex flex-col items-center justify-center min-h-[260px] shadow-inner overflow-hidden">
-            <span class="absolute top-2 left-3 text-[8px] font-black text-blue-400 uppercase tracking-widest">Dynamic Sign Designer</span>
+        <div id="preview-wrapper" class="bg-blue-50 p-6 border-b border-blue-100 relative flex flex-col items-center justify-center min-h-[280px] shadow-inner overflow-hidden">
+            <span class="absolute top-2 left-3 text-[8px] font-black text-blue-400 uppercase tracking-widest">Engineering Preview</span>
             <button onclick="toggle3D()" class="absolute top-2 right-3 z-20 bg-white/80 hover:bg-white text-blue-600 border border-blue-200 px-2 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">
                 Toggle 3D Layers
             </button>
             <div id="svg-preview-container" class="mt-4" style="width: 100px; height: 100px;"></div>
         </div>
 
-        <!-- 2. COLORS (Directly under preview) -->
-        <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 border-b border-gray-200">
+        <!-- 2. DIMENSIONS (Directly under preview) -->
+        <div class="p-5 bg-white border-b border-gray-200 shadow-sm z-10 relative">
+            <div class="grid grid-cols-3 gap-3">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-blue-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+            </div>
+            <div class="flex items-end gap-4 mt-3">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Radius (in)</label>
+                    <input type="number" id="radius" value="0.5" min="0" step="0.125" oninput="runCalc()" class="w-full border p-2 rounded font-bold text-gray-800 text-sm bg-white focus:border-blue-500 outline-none shadow-sm h-[40px] text-center">
+                </div>
+                <div class="flex-1">
+                    <label class="flex items-center gap-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest cursor-pointer bg-white p-2 rounded border border-gray-200 shadow-sm hover:bg-gray-50 transition h-[40px] px-3">
+                        <input type="checkbox" id="bevel" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
+                        Bevel Edges
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. COLORS -->
+        <div class="grid grid-cols-2 gap-4 p-5 bg-gray-50 border-b border-gray-200">
             <div id="wrap-tactile-color">
                 <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
                 <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 overflow-hidden">
                         <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                        <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-20">Loading...</span>
+                        <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
                     </div>
                 </div>
             </div>
             <div>
                 <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
                 <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 overflow-hidden">
                         <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                        <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-20">Loading...</span>
+                        <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 3. DIMENSIONS -->
-        <div class="p-6 space-y-4 border-b border-gray-200 bg-white">
-            <div class="grid grid-cols-3 gap-3">
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-sm" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-sm" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border p-2 rounded font-bold text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-sm" oninput="runCalc()"></div>
+        <!-- 4. ACCORDION: SIGN STRUCTURE -->
+        <div class="bg-white border-b border-gray-200">
+            <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition" onclick="toggleAccordion('acc-structure', 'arr-structure')">
+                <label class="text-[10px] font-black text-gray-800 uppercase tracking-widest cursor-pointer">Sign Structure & Backers</label>
+                <svg id="arr-structure" class="w-4 h-4 text-gray-400 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
-            <div class="flex items-end gap-4">
-                <div class="flex-1">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Corner Radius (in)</label>
-                    <input type="number" id="radius" value="0.5" min="0" step="0.125" oninput="runCalc()" class="w-full border p-2 rounded font-bold text-gray-800 text-sm bg-white focus:border-blue-500 outline-none shadow-sm h-[42px] text-center">
+            <div id="acc-structure" class="hidden p-5 pt-0 space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Core Thickness</label>
+                    <div class="flex bg-gray-100 p-1 rounded-lg">
+                        <button id="btn-thick-18" onclick="setThickness('1/8')" class="flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 border border-transparent transition-all">1/8" Core</button>
+                        <button id="btn-thick-116" onclick="setThickness('1/16')" class="flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all">1/16" Core</button>
+                    </div>
+                    <input type="hidden" id="core-thick" value="1/16">
                 </div>
-                <div class="flex-1">
-                    <label class="flex items-center gap-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest cursor-pointer bg-white p-2 rounded border border-gray-200 shadow-sm hover:bg-gray-50 transition h-[42px] px-3">
-                        <input type="checkbox" id="bevel" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-                        Beveled Edges
-                    </label>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Rigid Backer</label>
+                    <div class="flex bg-gray-100 p-1 rounded-lg text-[9px]">
+                        <button id="btn-back-none" onclick="setBacker('None')" class="flex-1 py-2 font-bold rounded text-gray-500 transition-all">None</button>
+                        <button id="btn-back-blk" onclick="setBacker('Black PVC')" class="flex-1 py-2 font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all truncate">3mm Blk PVC</button>
+                        <button id="btn-back-wht" onclick="setBacker('White PVC')" class="flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 transition-all truncate">3mm Wht PVC</button>
+                        <button id="btn-back-clr" onclick="setBacker('Clear Acrylic')" class="flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 transition-all truncate">3/16" Clr Acr</button>
+                    </div>
+                    <input type="hidden" id="backer" value="Black PVC">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mounting</label>
+                    <select id="mounting" class="w-full border p-2 rounded bg-white font-bold text-sm h-[40px] focus:border-blue-500 outline-none shadow-sm" onchange="runCalc()">
+                        <option value="Foam Tape" selected>Foam Tape</option>
+                        <option value="None">None</option>
+                    </select>
                 </div>
             </div>
         </div>
 
-        <!-- 4. CONTENT & TYPOGRAPHY BUILDER -->
-        <div class="p-5 bg-gray-50 border-b border-gray-200 space-y-3">
-            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Sign Content & Typography</label>
+        <!-- 5. ACCORDION: CONTENT & TYPOGRAPHY -->
+        <div class="bg-gray-50 border-b border-gray-200">
+            <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-100 transition" onclick="toggleAccordion('acc-content', 'arr-content')">
+                <label class="text-[10px] font-black text-gray-800 uppercase tracking-widest cursor-pointer">Sign Content & Typography</label>
+                <svg id="arr-content" class="w-4 h-4 text-gray-400 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
             
-            <!-- Pictogram Section -->
-            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <div class="flex justify-between items-center">
+            <div id="acc-content" class="hidden p-5 pt-0 space-y-3">
+                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
+                            <input type="checkbox" id="toggle-picto" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
+                            Pictogram
+                        </label>
+                        <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
+                            <label class="text-[9px] font-bold text-gray-500 uppercase">Height (in):</label>
+                            <input type="number" id="picto-size" value="4" step="0.25" min="1" oninput="runCalc()" class="w-14 border border-gray-300 p-0.5 rounded text-xs font-bold text-center outline-none">
+                        </div>
+                    </div>
+                    <div id="wrap-picto" class="mt-3 pt-3 border-t border-gray-100">
+                        <div id="icon-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
+                            <input type="checkbox" id="toggle-text" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
+                            Tactile Copy
+                        </label>
+                    </div>
+                    <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String</label>
+                            <input type="text" id="sign-text" value="RESTROOM" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Alignment</label>
+                            <select id="sign-align" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
+                                <option value="left">Left Aligned</option>
+                                <option value="center" selected>Center Aligned</option>
+                                <option value="right">Right Aligned</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
+                            <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
+                                <!-- Injected via Canvas Engine -->
+                            </select>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label>
+                            <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px] text-center">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                        <input type="checkbox" id="toggle-picto" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
-                        Pictogram
-                    </label>
-                    <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
-                        <label class="text-[9px] font-bold text-gray-500 uppercase">Height (in):</label>
-                        <input type="number" id="picto-size" value="4" step="0.25" min="1" oninput="runCalc()" class="w-14 border border-gray-300 p-0.5 rounded text-xs font-bold text-center outline-none">
-                    </div>
-                </div>
-                <div id="wrap-picto" class="mt-3 pt-3 border-t border-gray-100">
-                    <div id="icon-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
-                </div>
-            </div>
-
-            <!-- Text Section -->
-            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                        <input type="checkbox" id="toggle-text" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
-                        Tactile Copy
+                        <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
+                        Grade 2 Braille
                     </label>
                 </div>
-                <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
-                    <div class="col-span-2 sm:col-span-1">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String</label>
-                        <input type="text" id="sign-text" value="RESTROOM" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Alignment</label>
-                        <select id="sign-align" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
-                            <option value="left">Left Aligned</option>
-                            <option value="center" selected>Center Aligned</option>
-                            <option value="right">Right Aligned</option>
-                        </select>
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
-                        <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
-                            <!-- Injected via Canvas Engine -->
-                        </select>
-                    </div>
-                    <div class="col-span-2 sm:col-span-1">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label>
-                        <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px] text-center">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Braille Section -->
-            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                    <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
-                    Grade 2 Braille
-                </label>
-            </div>
-        </div>
-
-        <!-- 5. HARDWARE & SUBSTRATE INPUTS -->
-        <div class="p-6 space-y-4 bg-white">
-            
-            <!-- THICKNESS SLIDER -->
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Core Thickness</label>
-                <div class="flex bg-gray-100 p-1 rounded-lg">
-                    <button id="btn-thick-18" onclick="setThickness('1/8')" class="flex-1 py-2 text-xs font-bold rounded text-gray-500 hover:text-gray-800 border border-transparent transition-all">1/8" Core</button>
-                    <button id="btn-thick-116" onclick="setThickness('1/16')" class="flex-1 py-2 text-xs font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all">1/16" Core</button>
-                </div>
-                <input type="hidden" id="core-thick" value="1/16">
-            </div>
-
-            <!-- BACKER SLIDER -->
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Rigid Backer</label>
-                <div class="flex bg-gray-100 p-1 rounded-lg text-[9px]">
-                    <button id="btn-back-none" onclick="setBacker('None')" class="flex-1 py-2 font-bold rounded text-gray-500 transition-all">None</button>
-                    <button id="btn-back-blk" onclick="setBacker('Black PVC')" class="flex-1 py-2 font-bold rounded bg-white shadow-sm border border-gray-200 text-blue-700 transition-all truncate">3mm Blk PVC</button>
-                    <button id="btn-back-wht" onclick="setBacker('White PVC')" class="flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 transition-all truncate">3mm Wht PVC</button>
-                    <button id="btn-back-clr" onclick="setBacker('Clear Acrylic')" class="flex-1 py-2 font-bold rounded text-gray-500 hover:text-gray-800 transition-all truncate">3/16" Clr Acr</button>
-                </div>
-                <input type="hidden" id="backer" value="Black PVC">
-            </div>
-
-            <div class="border-t border-gray-100 pt-4 mt-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mounting</label>
-                <select id="mounting" class="w-full border p-2 rounded bg-white font-bold text-sm h-[42px] focus:border-blue-500 outline-none shadow-sm" onchange="runCalc()">
-                    <option value="Foam Tape" selected>Foam Tape</option>
-                    <option value="None">None</option>
-                </select>
             </div>
         </div>
 
@@ -216,9 +226,15 @@
             </div>
         </div>
 
+        <!-- OUTPUTS -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-            <textarea id="job-desc" class="w-full text-xs p-3 border rounded bg-white h-24 text-gray-600 font-mono outline-none shadow-inner leading-relaxed" readonly></textarea>
+            <textarea id="job-desc" class="w-full text-xs p-3 border rounded bg-white h-24 text-gray-600 font-mono outline-none shadow-inner leading-relaxed mb-3" readonly></textarea>
+            
+            <button onclick="downloadProductionSVG()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded shadow-md text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Export Production SVG
+            </button>
         </div>
     </div>
 
@@ -243,26 +259,20 @@
         let activeModal = ''; 
         let is3D = false;
 
+        // Accordion Controller
+        function toggleAccordion(contentId, arrowId) {
+            document.getElementById(contentId).classList.toggle('hidden');
+            document.getElementById(arrowId).classList.toggle('rotate-180');
+        }
+
+        // 3D View Controller
         function toggle3D() {
             is3D = !is3D;
             document.getElementById('preview-wrapper').classList.toggle('exploded-view', is3D);
             runCalc(); 
         }
 
-        function handleContentToggles() {
-            const hasPicto = document.getElementById('toggle-picto').checked;
-            const hasText = document.getElementById('toggle-text').checked;
-
-            document.getElementById('wrap-picto').classList.toggle('hidden', !hasPicto);
-            document.getElementById('picto-size-wrap').classList.toggle('hidden', !hasPicto);
-            document.getElementById('wrap-text').classList.toggle('hidden', !hasText);
-            
-            document.getElementById('wrap-tactile-color').style.opacity = (hasPicto || hasText) ? '1' : '0.3';
-            document.getElementById('wrap-tactile-color').style.pointerEvents = (hasPicto || hasText) ? 'auto' : 'none';
-
-            runCalc();
-        }
-
+        // Hardware Controls
         function setThickness(val) {
             document.getElementById('core-thick').value = val;
             const is18 = val === '1/8';
@@ -299,7 +309,23 @@
             runCalc();
         }
 
+        // Layout Toggles
+        function handleContentToggles() {
+            const hasPicto = document.getElementById('toggle-picto').checked;
+            const hasText = document.getElementById('toggle-text').checked;
+
+            document.getElementById('wrap-picto').classList.toggle('hidden', !hasPicto);
+            document.getElementById('picto-size-wrap').classList.toggle('hidden', !hasPicto);
+            document.getElementById('wrap-text').classList.toggle('hidden', !hasText);
+            
+            document.getElementById('wrap-tactile-color').style.opacity = (hasPicto || hasText) ? '1' : '0.3';
+            document.getElementById('wrap-tactile-color').style.pointerEvents = (hasPicto || hasText) ? 'auto' : 'none';
+
+            runCalc();
+        }
+
         // --- 3D EDGE GENERATOR ---
+        // Extrudes straight down (Y-Axis) since we only rotate on the X-Axis
         function makeEdge(hex, depthPx) {
             if (!hex || hex === 'Transparent' || hex.includes('rgba')) return 'none';
             let c = hex.replace('#', '');
@@ -313,13 +339,13 @@
             
             let shadow = [];
             for(let i=1; i<=depthPx; i++) {
-                shadow.push(`-${i}px ${i}px 0 ${rgb}`);
+                shadow.push(`0px ${i}px 0 ${rgb}`);
             }
-            shadow.push(`-${depthPx+5}px ${depthPx+5}px 15px rgba(0,0,0,0.3)`);
+            shadow.push(`0px ${depthPx+5}px 15px rgba(0,0,0,0.3)`);
             return shadow.join(', ');
         }
 
-        // --- 3D DYNAMIC ADA PREVIEW ---
+        // --- DYNAMIC PREVIEW & CALLOUTS ---
         function updatePreview() {
             const w = parseFloat(document.getElementById('w').value) || 8;
             const h = parseFloat(document.getElementById('h').value) || 8;
@@ -384,8 +410,8 @@
             container.style.width = `${pxW}px`;
             container.style.height = `${pxH}px`;
             
-            const coreHex = selectedCore ? selectedCore.Hex_Code : '#000';
-            const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#fff';
+            const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000';
+            const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
             let backerHex = '#111827';
             if (backerType === 'White PVC') backerHex = '#ffffff';
             if (backerType === 'Clear Acrylic') backerHex = 'rgba(255,255,255,0.4)';
@@ -393,16 +419,28 @@
             const coreDepth = document.getElementById('core-thick').value.includes('1/8') ? 6 : 3;
             const backerDepth = backerType.includes('Acrylic') ? 4 : 6;
 
+            let calloutHtml = (name) => `
+                <div class="blueprint-callout absolute left-full ml-4 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-50">
+                    <div class="w-8 border-b border-blue-400"></div>
+                    <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded shadow border border-blue-200">${name}</span>
+                </div>`;
+
             let html = '';
 
+            // L1: Backer Plate
             if (backerType !== 'None') {
-                html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${pxR}px; --edge-shadow: ${makeEdge(backerHex, backerDepth)};"></div>`;
+                html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${pxR}px; --edge-shadow: ${makeEdge(backerHex, backerDepth)};">
+                    ${is3D ? calloutHtml(backerType + ' Backer') : ''}
+                </div>`;
             }
 
-            html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${pxR}px; --edge-shadow: ${makeEdge(coreHex, coreDepth)};"></div>`;
+            // L2: ADA Core Substrate
+            html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${pxR}px; --edge-shadow: ${makeEdge(coreHex, coreDepth)};">
+                ${is3D ? calloutHtml(document.getElementById('core-thick').value + ' ADA Core') : ''}
+            </div>`;
 
+            // L3: Applique & Braille
             let svgContent = '';
-            
             if (hasPicto && selectedIcon) {
                 let pX = (w/2) - (pictoSize/2); 
                 let viewB = selectedIcon.ViewBox || "0 0 100 100";
@@ -423,10 +461,47 @@
                 <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor">
                     ${svgContent}
                 </svg>
+                ${is3D ? calloutHtml('1/32" Tactile & Braille') : ''}
             </div>
             `;
 
             container.innerHTML = html;
+        }
+
+        // --- SVG EXPORT ---
+        function downloadProductionSVG() {
+            const container = document.getElementById('svg-preview-container');
+            if (!container) return alert("Preview not ready!");
+
+            const w = parseFloat(document.getElementById('w').value) || 8;
+            const h = parseFloat(document.getElementById('h').value) || 8;
+            
+            const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000';
+            const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
+
+            let svgEl = container.querySelector('.layer-tactile svg');
+            if(!svgEl) return alert("No tactile layer found to export.");
+
+            // Hardcode currentColor to actual hex for Illustrator/Corel
+            let svgData = svgEl.outerHTML;
+            svgData = svgData.replace(/currentColor/g, tactileHex);
+
+            // Package into physical coordinate system
+            let finalSVG = `<?xml version="1.0" encoding="UTF-8"?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="${w}in" height="${h}in" viewBox="0 0 ${w} ${h}">
+                <!-- Substrate Boundary -->
+                <rect width="100%" height="100%" fill="${coreHex}" />
+                <!-- Tactile & Braille Layer -->
+                ${svgData.replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '')}
+            </svg>`;
+
+            const blob = new Blob([finalSVG], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ADA_Sign_PROD_${w}x${h}.svg`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         // --- MODAL LOGIC ---
@@ -569,10 +644,10 @@
                 document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Hex_Code;
                 document.getElementById('label-tactile').innerText = selectedTactile.Name;
 
-                // INSTANT PICTOGRAM ASSIGNMENT (Fixes the visual load bug)
+                // INTELLIGENT DEFAULT PICTOGRAM (Find Restroom or fallback to first)
                 const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
                 if (activeIcons.length > 0) {
-                    selectedIcon = activeIcons; 
+                    selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men') || p.Name.toLowerCase().includes('women')) || activeIcons; 
                 }
 
                 if (SignOS_UI.buildIconGrid) {
