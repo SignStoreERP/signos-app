@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: PVC Signs (v2.0)
- * Upgraded to Educational Math Ledger format.
+ * PURE PHYSICS ENGINE: PVC Signs (v3.0)
+ * Dual-Ledger Arrays. Includes Explicit Laminate & Shear math.
  */
 function calculatePVC(inputs, data) {
     const sqft = (inputs.w * inputs.h) / 144;
@@ -8,6 +8,9 @@ function calculatePVC(inputs, data) {
     const multDS = inputs.sides === 2 ? 2 : 1;
 
     // --- 1. RETAIL ENGINE ---
+    const ret = [];
+    const R = (label, total, formula) => { if(total > 0) ret.push({label, total, formula}); return total; };
+
     let baseSqFtRate = 0;
     if (inputs.thickness === '3mm') {
         if (sqft <= 2.99) baseSqFtRate = parseFloat(data.PVC3_T1_Rate || 44);
@@ -21,21 +24,28 @@ function calculatePVC(inputs, data) {
         else baseSqFtRate = parseFloat(data.PVC6_T4_Rate || 13);
     }
 
-    let retailPrint = baseSqFtRate * totalSqFt;
-    if (inputs.sides === 2) retailPrint += (totalSqFt * parseFloat(data.Retail_Adder_DS_Mult || 0.5) * baseSqFtRate);
+    let unitPrint = baseSqFtRate * totalSqFt;
+    R(`Base Print (${inputs.thickness})`, unitPrint, `${totalSqFt.toFixed(1)} SF @ $${baseSqFtRate}`);
 
-    let routerFee = 0;
-    if (inputs.shape === 'CNC Simple') routerFee = parseFloat(data.Retail_Fee_Router_Easy || 30);
-    else if (inputs.shape === 'CNC Complex') routerFee = parseFloat(data.Retail_Fee_Router_Hard || 50);
+    if (inputs.sides === 2) R(`Double Sided Adder`, (totalSqFt * parseFloat(data.Retail_Adder_DS_Mult || 0.5) * baseSqFtRate), `+50% Side 2 Markup`);
+    
+    if (inputs.laminate === 'None') R(`No Laminate Deduction`, -(unitPrint * parseFloat(data.Retail_Lam_Deduct || 0.10)), `-10% Base Deduction`);
+    
+    if (inputs.shape !== 'Rectangle') {
+        const fee = inputs.shape === 'CNC Simple' ? parseFloat(data.Retail_Fee_Router_Easy || 30) : parseFloat(data.Retail_Fee_Router_Hard || 50);
+        R(`CNC Router Fee`, fee, `Shape Routing Fee`);
+    }
 
-    const feeSetup = inputs.setupPerFile ? parseFloat(data.Retail_Fee_Setup || 15) * inputs.files : parseFloat(data.Retail_Fee_Setup || 15);
-    const grandTotalRaw = retailPrint + routerFee + feeSetup;
+    R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Setup`);
+
+    let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
+    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
 
-    // --- 2. COST ENGINE (MATH LEDGER) ---
-    const bd = [];
-    const L = (label, total, formula) => { if(total > 0) bd.push({label, total, formula}); return total; };
+    // --- 2. COST ENGINE ---
+    const cst = [];
+    const L = (label, total, formula) => { if(total > 0) cst.push({label, total, formula}); return total; };
 
     const sheetCost = inputs.thickness === '6mm' ? parseFloat(data.Cost_Stock_6mm_4x8 || 58.37) : parseFloat(data.Cost_Stock_3mm_4x8 || 29.09);
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
@@ -43,40 +53,43 @@ function calculatePVC(inputs, data) {
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
 
-    const sheetsNeeded = totalSqFt / 32;
-    const rawBlanks = L(`PVC Substrate (${inputs.thickness})`, sheetsNeeded * sheetCost, `(${totalSqFt.toFixed(1)} SF / 32) * $${sheetCost.toFixed(2)}/sht`);
-    const wasteCost = L(`Material Waste Buffer`, rawBlanks * (wastePct - 1), `Substrate Cost * ${(wastePct-1)*100}%`);
-    
-    const inkCost = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * multDS;
-    L(`Flatbed Ink`, inkCost, `${totalSqFt.toFixed(1)} SF * $0.16/SF * ${multDS} Sides`);
+    const rawBlanks = L(`PVC Substrate (${inputs.thickness})`, (totalSqFt / 32) * sheetCost, `(${totalSqFt.toFixed(1)} SF / 32) * $${sheetCost.toFixed(2)}/sht`);
+    L(`Material Waste Buffer`, rawBlanks * (wastePct - 1), `Substrate Cost * ${(wastePct-1)*100}%`);
 
-    const setupMins = parseFloat(data.Time_Setup_Job || 15);
-    const costSetupPrint = L(`Job Setup (File RIP)`, (setupMins / 60) * rateOp, `${setupMins} Mins * $${rateOp}/hr`);
-
-    const handleMins = parseFloat(data.Time_Handling || 5) * multDS;
-    const costHandle = L(`Material Handling`, (handleMins / 60) * rateOp, `5 Mins * $${rateOp}/hr * ${multDS} Sides`);
+    L(`Flatbed Ink`, totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * multDS, `${totalSqFt.toFixed(1)} SF * $0.16/SF * ${multDS} Sides`);
+    L(`Job Setup (File RIP)`, (15 / 60) * rateOp, `15 Mins * $${rateOp}/hr`);
+    L(`Material Handling`, (parseFloat(data.Time_Handling || 5) * multDS / 60) * rateOp, `5 Mins * $${rateOp}/hr * ${multDS} Sides`);
 
     const printHrs = ((inputs.h / 12) * inputs.qty / parseFloat(data.Machine_Speed_LF_Hr || 18)) * multDS;
-    const opPrint = L(`Flatbed Op (Attn Ratio)`, printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `${printHrs.toFixed(2)} Hrs * $${rateOp}/hr * 10%`);
-    const machPrint = L(`Flatbed Machine Run`, printHrs * parseFloat(data.Rate_Machine_Flatbed || 10), `${printHrs.toFixed(2)} Hrs * $10/hr`);
+    L(`Flatbed Op (Attn Ratio)`, printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `${printHrs.toFixed(2)} Hrs * $${rateOp}/hr * 10%`);
+    L(`Flatbed Machine Run`, printHrs * parseFloat(data.Rate_Machine_Flatbed || 10), `${printHrs.toFixed(2)} Hrs * $10/hr`);
 
-    let subHardCost = rawBlanks + wasteCost + inkCost + costSetupPrint + costHandle + opPrint + machPrint;
+    if (inputs.laminate && inputs.laminate !== 'None') {
+        const lamCost = totalSqFt * parseFloat(data.Cost_Lam_SqFt || 0.36) * multDS;
+        L(`Laminate Media`, lamCost * wastePct, `${totalSqFt.toFixed(1)} SF * $0.36/SF * Waste`);
+        const lamHrs = totalSqFt / parseFloat(data.Speed_Lam_Roll || 300) * multDS;
+        L(`Laminator Op (100% Attn)`, lamHrs * rateShop, `${lamHrs.toFixed(2)} Hrs * $${rateShop}/hr * 100%`);
+        L(`Laminator Machine Run`, lamHrs * parseFloat(data.Rate_Machine_Lam || 5), `${lamHrs.toFixed(2)} Hrs * $5/hr`);
+        L(`Load/Unload Laminator`, (parseFloat(data.Time_Handling || 5) * multDS / 60) * rateShop, `Handling Mins * ${multDS} Sides`);
+    }
 
     if (inputs.shape !== 'Rectangle') {
         const cutHrs = (totalSqFt * (inputs.shape === 'CNC Simple' ? 1 : 2)) / 60;
-        subHardCost += L(`CNC Router Run`, cutHrs * parseFloat(data.Rate_Machine_CNC || 10), `${cutHrs.toFixed(2)} Hrs * $10/hr`);
-        subHardCost += L(`CNC Op (Attn Ratio)`, cutHrs * parseFloat(data.Rate_CNC_Labor || 25), `${cutHrs.toFixed(2)} Hrs * $25/hr`);
-    } else if (inputs.thickness === '3mm') { // Only handcut 3mm
-        const perimeterLF = ((inputs.w * 2) + (inputs.h * 2)) / 12;
-        const handMins = perimeterLF * inputs.qty * parseFloat(data.Time_Cut_Hand || 0.25);
-        subHardCost += L(`Hand/Shear Cutting`, (handMins / 60) * rateShop, `${(perimeterLF * inputs.qty).toFixed(1)} LF * 0.25 Mins/LF * $${rateShop}/hr`);
+        L(`CNC Router Run`, cutHrs * parseFloat(data.Rate_Machine_CNC || 10), `${cutHrs.toFixed(2)} Hrs * $10/hr`);
+        L(`CNC Op (Attn Ratio)`, cutHrs * parseFloat(data.Rate_CNC_Labor || 25), `${cutHrs.toFixed(2)} Hrs * $25/hr`);
+    } else { 
+        const shearSetup = parseFloat(data.Time_Shear_Setup || 5);
+        L(`Shear Machine Setup`, (shearSetup / 60) * rateShop, `${shearSetup} Mins * $${rateShop}/hr`);
+        const shearCuts = inputs.qty * 4; 
+        L(`Shear Per-Cut Run`, (shearCuts * parseFloat(data.Time_Shear_Cut || 1) / 60) * rateShop, `${shearCuts} Cuts * 1 Min * $${rateShop}/hr`);
     }
 
-    const totalCost = subHardCost * riskFactor;
+    let hardCostRaw = cst.reduce((sum, i) => sum + i.total, 0);
+    const totalCost = hardCostRaw * riskFactor;
 
     return {
-        retail: { unitPrice: grandTotal / inputs.qty, printTotal: retailPrint, routerFee: routerFee, setupFee: feeSetup, grandTotal: grandTotal },
-        cost: { total: totalCost, breakdown: bd },
+        retail: { unitPrice: grandTotal / inputs.qty, grandTotal: grandTotal, breakdown: ret },
+        cost: { total: totalCost, breakdown: cst },
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
@@ -86,9 +99,9 @@ window.PVC_CONFIG = {
     controls: [
         { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'3mm', t:'3mm Std'}, {v:'6mm', t:'6mm HD'}] },
         { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'laminate', label: 'Laminate', type: 'select', opts: [{v:'None', t:'None'}, {v:'Gloss', t:'Gloss Lam'}, {v:'Matte', t:'Matte Lam'}] },
         { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square Cut'}, {v:'CNC Simple', t:'CNC Simple'}, {v:'CNC Complex', t:'CNC Complex'}] }
     ],
     retails: [ { key: 'PVC3_T1_Rate', label: '3mm Rate ($)' } ],
-    costs: [ { key: 'Cost_Stock_3mm_4x8', label: '3mm Sheet ($)' } ]
+    costs: [ { key: 'Cost_Stock_3mm_4x8', label: '3mm Sheet ($)' }, { key: 'Cost_Lam_SqFt', label: 'Laminate ($/SF)' } ]
 };
-
