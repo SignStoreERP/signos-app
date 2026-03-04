@@ -1,26 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Simulator v3.0</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="signos-core.js"></script>
-    
-    <!-- LOAD ALL PHYSICS ENGINES -->
-    <script src="cost_yard.js"></script>
-    <script src="cost_coro.js"></script>
-    <script src="cost_pvc.js"></script>
-    <script src="cost_foam.js"></script>
-    <script src="cost_banner.js"></script>
-    <script src="cost_acm.js"></script>
-    <script src="cost_acrylic.js"></script>
-    <script src="cost_cut.js"></script>
-    <script src="cost_decal.js"></script>
-    <script src="cost_wrap.js"></script>
-    <script src="cost_ada.js"></script
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing Simulator v3.1</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="signos-core.js"></script>
 
-    <style>input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }</style>
+<!-- LOAD ALL PHYSICS ENGINES (Fixed typos and added Wall) -->
+<script src="cost_yard.js"></script>
+<script src="cost_coro.js"></script>
+<script src="cost_pvc.js"></script>
+<script src="cost_foam.js"></script>
+<script src="cost_banner.js"></script>
+<script src="cost_acm.js"></script>
+<script src="cost_acrylic.js"></script>
+<script src="cost_cut.js"></script>
+<script src="cost_decal.js"></script>
+<script src="cost_wrap.js"></script>
+<script src="cost_wall.js"></script>
+<script src="cost_ada.js"></script>
+
+<style>
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+</style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10">
 
@@ -45,186 +51,224 @@
             <div class="bg-gray-800 text-white p-3 text-center border-b border-gray-900">
                 <h3 class="text-xs font-black uppercase tracking-widest">Job Inputs</h3>
             </div>
-            <div class="p-4 flex-1 overflow-y-auto" id="dynamic-controls">
-                <!-- Inputs injected here -->
+            <div class="p-4 flex-1 bg-gray-50 overflow-y-auto custom-scrollbar" id="dynamic-controls">
+                <!-- Controls injected here -->
             </div>
-            <div class="p-4 bg-gray-50 border-t border-gray-200">
-                <button onclick="runSimulation()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded shadow-md transition uppercase text-xs tracking-widest">
-                    Run Simulation
-                </button>
+            <div class="p-4 bg-white border-t border-gray-200">
+                <button onclick="runSimulation()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-lg shadow-md uppercase tracking-widest text-xs transition">Run Simulation</button>
             </div>
         </div>
 
         <!-- COL 2: BLUE RETAIL OVERRIDES -->
-        <div class="bg-white rounded-xl shadow-lg border border-blue-200 overflow-hidden">
-            <div class="bg-blue-600 text-white p-3 text-center border-b border-blue-700">
+        <div class="bg-white rounded-xl shadow-lg border border-blue-200 overflow-hidden flex flex-col">
+            <div class="bg-blue-600 text-white p-3 text-center border-b border-blue-700 shrink-0">
                 <h3 class="text-xs font-black uppercase tracking-widest">Market Engine (Blue)</h3>
             </div>
-            <div class="p-4 space-y-2 h-[500px] overflow-y-auto" id="dynamic-retails">
-                <!-- Overrides injected here -->
-            </div>
+            <div class="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar bg-gray-50" id="dynamic-retails"></div>
         </div>
 
         <!-- COL 3: RED COST OVERRIDES -->
-        <div class="bg-white rounded-xl shadow-lg border border-red-200 overflow-hidden">
-            <div class="bg-red-600 text-white p-3 text-center border-b border-red-700">
+        <div class="bg-white rounded-xl shadow-lg border border-red-200 overflow-hidden flex flex-col">
+            <div class="bg-red-600 text-white p-3 text-center border-b border-red-700 shrink-0">
                 <h3 class="text-xs font-black uppercase tracking-widest">Physics Engine (Red)</h3>
             </div>
-            <div class="p-4 space-y-2 h-[500px] overflow-y-auto" id="dynamic-costs">
-                <!-- Overrides injected here -->
-            </div>
+            <div class="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar bg-gray-50" id="dynamic-costs"></div>
         </div>
 
         <!-- COL 4: RECEIPT OUTPUT -->
-        <div class="bg-gray-50 rounded-xl shadow-inner border border-gray-300 overflow-hidden flex flex-col relative">
+        <div class="bg-gray-50 rounded-xl shadow-inner border border-gray-300 overflow-hidden flex flex-col relative h-[600px] lg:h-auto">
             <div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 16px 16px;"></div>
-            <div class="bg-gray-300 text-gray-700 p-3 text-center border-b border-gray-400 relative z-10">
+            
+            <div class="bg-gray-300 text-gray-700 p-3 text-center border-b border-gray-400 relative z-10 shrink-0">
                 <h3 class="text-xs font-black uppercase tracking-widest">Test Receipt</h3>
             </div>
-            <div class="p-6 flex-1 overflow-y-auto relative z-10" id="receipt-container">
+            
+            <div class="p-4 flex-1 overflow-y-auto custom-scrollbar relative z-10" id="receipt-container">
                 <div class="text-center text-gray-400 text-xs font-bold mt-10 uppercase tracking-widest">Run simulation to generate receipt</div>
             </div>
-            <div class="bg-white p-4 border-t-2 border-dashed border-gray-300 relative z-10">
+            
+            <div class="bg-white p-4 border-t-2 border-dashed border-gray-300 relative z-10 shrink-0">
                 <div class="flex justify-between items-center mb-1">
                     <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Margin Output</span>
                     <span id="out-margin" class="font-bold text-sm text-gray-800">0.0%</span>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
 <script>
-    // Build Agnostic Registry dynamically (skips modules not yet built)
-    const ALL_MODULES = [
-        { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
-        { id: 'coro', name: 'Custom Coroplast', config: window.CORO_CONFIG },
-        { id: 'pvc', name: 'PVC Signs', config: window.PVC_CONFIG },
-        { id: 'foam', name: 'Foam Core', config: window.FOAM_CONFIG },
-        { id: 'acm', name: 'ACM Signs', config: window.ACM_CONFIG },
-        { id: 'acrylic', name: 'Acrylic Signs', config: window.ACRYLIC_CONFIG },
-        { id: 'banner', name: 'Vinyl Banners', config: window.BANNER_CONFIG },
-        { id: 'cut', name: 'Cut Vinyl', config: window.CUT_CONFIG },
-        { id: 'decal', name: 'Decals & Stickers', config: window.DECAL_CONFIG },
-        { id: 'wrap', name: 'Vehicle Wraps', config: window.WRAP_CONFIG },
-        { id: 'ada', name: 'ADA & Multi-Layer', config: window.ADA_CONFIG },
-    ];
-    
-    const MODULES = ALL_MODULES.filter(m => m.config);
-    let activeConfig = null;
-    let backendData = {};
+// Build Agnostic Registry dynamically
+const ALL_MODULES = [
+    { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
+    { id: 'coro', name: 'Custom Coroplast', config: window.CORO_CONFIG },
+    { id: 'pvc', name: 'PVC Signs', config: window.PVC_CONFIG },
+    { id: 'foam', name: 'Foam Core', config: window.FOAM_CONFIG },
+    { id: 'acm', name: 'ACM Signs', config: window.ACM_CONFIG },
+    { id: 'acrylic', name: 'Acrylic Signs', config: window.ACRYLIC_CONFIG },
+    { id: 'banner', name: 'Vinyl Banners', config: window.BANNER_CONFIG },
+    { id: 'cut', name: 'Cut Vinyl', config: window.CUT_CONFIG },
+    { id: 'decal', name: 'Decals & Stickers', config: window.DECAL_CONFIG },
+    { id: 'wrap', name: 'Vehicle Wraps', config: window.WRAP_CONFIG },
+    { id: 'wall', name: 'Interior Wall Wraps', config: window.WALL_CONFIG },
+    { id: 'ada', name: 'ADA & Multi-Layer', config: window.ADA_CONFIG }
+];
 
-    window.onload = () => {
-        injectHeader("Pricing Simulator");
-        const sel = document.getElementById('module-selector');
-        MODULES.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.id; opt.innerText = m.name;
-            sel.appendChild(opt);
+const MODULES = ALL_MODULES.filter(m => m.config);
+let activeConfig = null;
+let backendData = {};
+
+window.onload = () => {
+    injectHeader("Pricing Simulator");
+    const sel = document.getElementById('module-selector');
+    MODULES.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id; opt.innerText = m.name;
+        sel.appendChild(opt);
+    });
+};
+
+async function loadModule() {
+    const val = document.getElementById('module-selector').value;
+    if(!val) { document.getElementById('sim-dashboard').classList.add('hidden'); return; }
+    
+    activeConfig = MODULES.find(m => m.id === val).config;
+    document.getElementById('sim-dashboard').classList.remove('hidden');
+    document.getElementById('receipt-container').innerHTML = '<div class="text-center py-10"><div class="w-6 h-6 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div><p class="text-[10px] font-bold text-gray-400 mt-3 uppercase tracking-widest">Fetching Backend Defaults...</p></div>';
+
+    // 1. Build Controls
+    let ctrlHtml = `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Simulated Qty</label><input type="number" id="ctrl_qty" value="1" min="1" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm font-bold bg-white outline-none focus:border-indigo-500 transition shadow-inner"></div>`;
+    
+    activeConfig.controls.forEach(c => {
+        ctrlHtml += `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>`;
+        if (c.type === 'select') {
+            ctrlHtml += `<select id="ctrl_${c.id}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-bold bg-white outline-none focus:border-indigo-500 shadow-sm cursor-pointer">`;
+            c.opts.forEach(o => { ctrlHtml += `<option value="${o.v}">${o.t}</option>`; });
+            ctrlHtml += `</select></div>`;
+        } else if (c.type === 'toggle') {
+            ctrlHtml += `<label class="flex items-center gap-2 cursor-pointer bg-white border border-gray-300 p-2 rounded-lg shadow-sm hover:bg-gray-100 transition"><input type="checkbox" id="ctrl_${c.id}" ${c.def ? 'checked' : ''} class="w-4 h-4 text-indigo-600 rounded"><span class="text-xs font-bold text-gray-700 uppercase">Enable</span></label></div>`;
+        } else {
+            ctrlHtml += `<input type="number" id="ctrl_${c.id}" value="${c.def}" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm font-bold bg-white outline-none focus:border-indigo-500 transition shadow-inner"></div>`;
+        }
+    });
+    
+    document.getElementById('dynamic-controls').innerHTML = ctrlHtml;
+
+    // 2. Fetch Real Data
+    try {
+        const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
+        backendData = await req.json();
+
+        // 3. Build Overrides
+        const buildOvr = (arr, containerId) => {
+            let html = '';
+            arr.forEach(item => {
+                if(item.heading) html += `<h5 class="text-[9px] font-black text-gray-400 mt-4 mb-2 uppercase tracking-widest border-b border-gray-200 pb-1">${item.heading}</h5>`;
+                let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
+                html += `
+                <div class="flex justify-between items-center bg-white p-2 rounded border border-gray-200 shadow-sm mb-2 group hover:border-blue-400 transition">
+                    <label class="text-[10px] font-bold text-gray-600 truncate pr-2 group-hover:text-blue-700" title="${item.key}">${item.label}</label>
+                    <input type="text" id="ovr_${item.key}" value="${val}" class="w-20 border border-gray-300 rounded p-1 text-right text-xs font-mono font-bold text-gray-800 outline-none focus:border-blue-500 shadow-inner bg-gray-50">
+                </div>`;
+            });
+            document.getElementById(containerId).innerHTML = html;
+        };
+
+        buildOvr(activeConfig.retails, 'dynamic-retails');
+        buildOvr(activeConfig.costs, 'dynamic-costs');
+
+        document.getElementById('receipt-container').innerHTML = '<div class="text-center text-green-500 text-xs font-bold mt-10 uppercase tracking-widest">✅ Data Loaded. Ready.</div>';
+    } catch(e) {
+        document.getElementById('receipt-container').innerHTML = `<div class="text-center text-red-500 text-xs font-bold mt-10 uppercase tracking-widest">❌ API Fetch Failed</div>`;
+    }
+}
+
+function runSimulation() {
+    if(!activeConfig) return;
+
+    // 1. Harvest Inputs
+    let inputs = { qty: parseFloat(document.getElementById('ctrl_qty').value) || 1 };
+    activeConfig.controls.forEach(c => {
+        let el = document.getElementById('ctrl_' + c.id);
+        if(c.type === 'number') inputs[c.id] = parseFloat(el.value) || 0;
+        else if(c.type === 'toggle') inputs[c.id] = el.checked;
+        else inputs[c.id] = el.value;
+    });
+
+    if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
+
+    if (activeConfig.id === 'wrap' || activeConfig.id === 'wall') {
+        const material = document.getElementById('ctrl_material') ? document.getElementById('ctrl_material').value : (activeConfig.id === 'wall' ? 'smooth' : 'wrap');
+        inputs.panels = [{ label: "Panel", qty: 1, w: inputs.w, h: inputs.h, material: material, included: false }];
+    }
+
+    // 2. Harvest Overrides
+    let simData = { ...backendData };
+    const applyOvr = (arr) => {
+        arr.forEach(item => {
+            let val = document.getElementById('ovr_' + item.key).value;
+            if(val === 'TRUE' || val === 'true') simData[item.key] = true;
+            else if(val === 'FALSE' || val === 'false') simData[item.key] = false;
+            else if(val !== "") simData[item.key] = parseFloat(val);
+            else delete simData[item.key]; 
         });
     };
 
-    async function loadModule() {
-        const val = document.getElementById('module-selector').value;
-        if(!val) { document.getElementById('sim-dashboard').classList.add('hidden'); return; }
-        
-        activeConfig = MODULES.find(m => m.id === val).config;
-        document.getElementById('sim-dashboard').classList.remove('hidden');
-        document.getElementById('receipt-container').innerHTML = '<div class="text-center py-10"><div class="w-6 h-6 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div><p class="text-[10px] font-bold text-gray-400 mt-3 uppercase tracking-widest">Fetching Backend Defaults...</p></div>';
+    applyOvr(activeConfig.retails);
+    applyOvr(activeConfig.costs);
 
-        // 1. Build Controls
-        let ctrlHtml = `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Simulated Qty</label><input type="number" id="ctrl_qty" value="1" min="1" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm font-bold bg-gray-50 outline-none focus:border-indigo-500 transition shadow-inner"></div>`;
-        
-        activeConfig.controls.forEach(c => {
-            ctrlHtml += `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">${c.label}</label>`;
-            if(c.type === 'number') {
-                ctrlHtml += `<input type="number" id="ctrl_${c.id}" value="${c.def}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-bold outline-none focus:border-indigo-500 transition">`;
-            } else if(c.type === 'select') {
-                ctrlHtml += `<select id="ctrl_${c.id}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-bold outline-none focus:border-indigo-500 transition h-[42px] bg-white">`;
-                c.opts.forEach(o => ctrlHtml += `<option value="${o.v}">${o.t}</option>`);
-                ctrlHtml += `</select>`;
-            } else if(c.type === 'toggle') {
-                ctrlHtml += `<label class="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition"><input type="checkbox" id="ctrl_${c.id}" ${c.def ? 'checked' : ''} class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"><span class="text-xs font-bold text-gray-700">Enable</span></label>`;
-            }
-            ctrlHtml += `</div>`;
-        });
-        document.getElementById('dynamic-controls').innerHTML = ctrlHtml;
+    // 3. Execute Engine
+    const result = activeConfig.engine(inputs, simData);
 
-        // 2. Fetch Real Data
-        try {
-            const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
-            backendData = await req.json();
-            
-            // 3. Build Overrides
-            const buildOvr = (arr, containerId) => {
-                let html = '';
-                arr.forEach(item => {
-                    if(item.heading) html += `<h5 class="text-[9px] font-black text-gray-400 mt-4 mb-2 uppercase tracking-widest border-b border-gray-100 pb-1">${item.heading}</h5>`;
-                    let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
-                    html += `
-                    <div class="flex justify-between items-center text-xs mb-1 hover:bg-gray-50 p-1 -mx-1 rounded transition">
-                        <label class="text-gray-600 font-bold truncate pr-2" title="${item.key}">${item.label}</label>
-                        <input type="text" id="ovr_${item.key}" value="${val}" class="w-16 border border-gray-300 rounded p-1 text-right text-xs font-mono outline-none focus:border-indigo-500 shadow-inner bg-white shrink-0">
-                    </div>`;
-                });
-                document.getElementById(containerId).innerHTML = html;
-            };
-            
-            buildOvr(activeConfig.retails, 'dynamic-retails');
-            buildOvr(activeConfig.costs, 'dynamic-costs');
-            document.getElementById('receipt-container').innerHTML = '<div class="text-center text-green-500 text-xs font-bold mt-10 uppercase tracking-widest">✅ Data Loaded. Ready.</div>';
-
-        } catch(e) {
-            document.getElementById('receipt-container').innerHTML = `<div class="text-center text-red-500 text-xs font-bold mt-10 uppercase tracking-widest">❌ API Fetch Failed</div>`;
-        }
+    // 4. Render Output
+    if(!result || !result.retail) {
+        document.getElementById('receipt-container').innerHTML = '<div class="text-red-500 font-bold text-center mt-10 text-xs uppercase tracking-widest">Engine Aborted (Safety Stop)</div>';
+        return;
     }
 
-    function runSimulation() {
-        if(!activeConfig) return;
+    const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
+    const container = document.getElementById('receipt-container');
+
+    // NEW: Interactive Math Ledger Parser
+    if (Array.isArray(result.cost.breakdown)) {
+        let html = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-4"><div class="bg-gray-800 text-white p-2 text-center border-b border-gray-900"><h3 class="text-[9px] font-black uppercase tracking-widest">Market Engine</h3></div><div class="p-3 text-xs space-y-1">
+        <div class="flex justify-between"><span>Base Gross:</span> <span class="font-bold">${fmt(result.retail.printTotal)}</span></div>
+        <div class="flex justify-between font-black text-gray-900 border-t border-gray-200 pt-1 mt-1"><span>Total Retail:</span> <span>${fmt(result.retail.grandTotal)}</span></div>
+        </div></div>`;
+
+        html += `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="bg-red-800 text-white p-2 text-center border-b border-red-900"><h3 class="text-[9px] font-black uppercase tracking-widest">Physics Ledger</h3></div><div class="p-0">`;
         
-        // 1. Harvest Inputs
-        let inputs = { qty: parseFloat(document.getElementById('ctrl_qty').value) || 1 };
-        activeConfig.controls.forEach(c => {
-            let el = document.getElementById('ctrl_' + c.id);
-            if(c.type === 'number') inputs[c.id] = parseFloat(el.value) || 0;
-            else if(c.type === 'toggle') inputs[c.id] = el.checked;
-            else inputs[c.id] = el.value;
+        result.cost.breakdown.forEach((item, idx) => {
+            html += `
+            <div class="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition group p-3">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[11px] font-bold text-gray-700">${item.label}</span>
+                    <span class="text-xs font-black text-red-700">${fmt(item.total)}</span>
+                </div>
+                <div class="text-[9px] font-mono text-gray-500 bg-gray-50 p-1.5 rounded border border-gray-200 border-dashed">
+                    <b>Math:</b> <span class="text-indigo-600">${item.formula}</span>
+                </div>
+            </div>`;
         });
 
-        if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
-
-        // 2. Harvest Overrides
-        let simData = { ...backendData };
-        const applyOvr = (arr) => {
-            arr.forEach(item => {
-                let val = document.getElementById('ovr_' + item.key).value;
-                if(val === 'TRUE' || val === 'true') simData[item.key] = true;
-                else if(val === 'FALSE' || val === 'false') simData[item.key] = false;
-                else if(val !== "") simData[item.key] = parseFloat(val);
-                else delete simData[item.key]; // Triggers physics engine defaults!
-            });
-        };
-        applyOvr(activeConfig.retails);
-        applyOvr(activeConfig.costs);
-
-        // 3. Execute Engine
-        const result = activeConfig.engine(inputs, simData);
-        
-        // 4. Render output
-        if(!result || !result.retail) {
-            document.getElementById('receipt-container').innerHTML = '<div class="text-red-500 font-bold text-center mt-10 text-xs uppercase tracking-widest">Engine Aborted (Safety Stop)</div>';
-            return;
-        }
-
-        const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
-        document.getElementById('receipt-container').innerHTML = activeConfig.renderReceipt(result, fmt);
-        
-        const mEl = document.getElementById('out-margin');
-        const margin = result.metrics.margin;
-        mEl.innerText = (margin * 100).toFixed(1) + "%";
-        mEl.className = `font-black text-lg ${margin < 0.70 ? 'text-red-600' : 'text-green-600'}`;
+        html += `</div>
+        <div class="bg-red-50 p-3 border-t border-red-200 flex justify-between items-center">
+            <span class="text-[10px] font-black text-red-800 uppercase tracking-widest">Hard Cost Total:</span>
+            <span class="text-lg font-black text-red-900">${fmt(result.cost.total)}</span>
+        </div>
+        </div>`;
+        container.innerHTML = html;
+    } 
+    // LEGACY: Fallback for un-migrated tabs
+    else if (activeConfig.renderReceipt) {
+        container.innerHTML = activeConfig.renderReceipt(result, fmt);
     }
+
+    const mEl = document.getElementById('out-margin');
+    const margin = result.metrics.margin;
+    mEl.innerText = (margin * 100).toFixed(1) + "%";
+    mEl.className = `font-black text-lg ${margin < 0.40 ? 'text-red-600' : 'text-green-600'}`;
+}
 </script>
 </body>
 </html>
