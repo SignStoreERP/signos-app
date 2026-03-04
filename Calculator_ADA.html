@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v3.0.1 - Physics Pipeline</title>
+    <title>ADA Signs v3.2 - Centralized Pipeline</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+    
+    <!-- Centralized System Architecture -->
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
-    <script src="signos-canvas.js"></script>
     <script src="cost_ada.js"></script>
+    <script src="signos-builder.js"></script>
+    <script src="signos-view-svg.js"></script>
+    <script src="signos-export-v2.js"></script>
+
     <style>
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .color-scroll::-webkit-scrollbar { width: 6px; }
@@ -54,13 +59,12 @@
 
     <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
-        <!-- 1. VISUAL PREVIEW (INTERACTIVE) -->
-        <div id="preview-wrapper" class="bg-blue-50 relative flex flex-col items-center justify-center h-[320px] shadow-inner"
+        <!-- 1. VISUAL PREVIEW (INTERACTIVE & BOUNDED) -->
+        <div id="preview-wrapper" class="bg-blue-50 overflow-hidden relative flex flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100"
              onwheel="handleZoom(event)" onmousedown="startPan(event)" onmousemove="handlePan(event)" onmouseup="endPan()" onmouseleave="endPan()">
             
             <!-- Controls Overlay -->
             <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-start pointer-events-none">
-                <!-- Dynamic Auto-Scale Toggle -->
                 <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-white transition pointer-events-auto">
                     <input type="checkbox" id="auto-scale" checked onchange="runCalc()" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
                     <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest">Auto-Scale</span>
@@ -71,14 +75,14 @@
                         Toggle 3D View
                     </button>
                     <button onclick="resetView()" class="bg-white/80 hover:bg-white text-gray-500 border border-gray-200 px-3 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none self-end">
-                        Reset Pan/Zoom
+                        Reset View
                     </button>
                 </div>
             </div>
             
             <!-- Interactive Stage -->
             <div id="zoom-stage" class="w-full h-full flex items-center justify-center">
-                <div id="svg-preview-container" class="mt-4" style="width: 100px; height: 100px;"></div>
+                <div id="svg-preview-container" class="mt-4 relative" style="width: 100px; height: 100px;"></div>
             </div>
         </div>
 
@@ -177,7 +181,6 @@
             </div>
             
             <div id="acc-content" class="hidden p-5 pt-0 space-y-3">
-                <!-- Pictogram Section -->
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center">
                         <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
@@ -194,7 +197,6 @@
                     </div>
                 </div>
 
-                <!-- Text Section -->
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center mb-1">
                         <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
@@ -217,9 +219,7 @@
                         </div>
                         <div class="col-span-2 sm:col-span-1">
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
-                            <select id="sign-font" onchange="loadActiveFont()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
-                                <!-- Injected -->
-                            </select>
+                            <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm"></select>
                         </div>
                         <div class="col-span-2 sm:col-span-1">
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label>
@@ -228,7 +228,6 @@
                     </div>
                 </div>
 
-                <!-- Braille Section -->
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
                         <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
@@ -260,7 +259,7 @@
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
             <textarea id="job-desc" class="w-full text-xs p-3 border rounded bg-white h-24 text-gray-600 font-mono outline-none shadow-inner leading-relaxed mb-3" readonly></textarea>
             
-            <button onclick="downloadProductionSVG()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded shadow-md text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+            <button onclick="triggerExport()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded shadow-md text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 Export Production SVG (Vectors)
             </button>
@@ -288,8 +287,8 @@
         let activeModal = ''; 
         let is3D = false;
 
-        // NEW: OpenType Font Memory Cache
-        let cachedFont = null;
+        // Bridge to the Centralized Physics Engine
+        let currentManifest = null;
         const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
 
         // --- PAN & ZOOM LOGIC ---
@@ -297,6 +296,7 @@
         let isDragging = false, startX, startY;
 
         function handleZoom(e) {
+            if (!is3D) return;
             e.preventDefault();
             scaleZ += e.deltaY * -0.001;
             scaleZ = Math.min(Math.max(0.4, scaleZ), 3); 
@@ -304,13 +304,14 @@
         }
 
         function startPan(e) {
+            if (!is3D) return;
             isDragging = true;
             startX = e.clientX - panX;
             startY = e.clientY - panY;
         }
 
         function handlePan(e) {
-            if (!isDragging) return;
+            if (!isDragging || !is3D) return;
             panX = e.clientX - startX;
             panY = e.clientY - startY;
             updateTransform();
@@ -337,6 +338,7 @@
         function toggle3D() {
             is3D = !is3D;
             document.getElementById('preview-wrapper').classList.toggle('exploded-view', is3D);
+            if(!is3D) resetView();
             runCalc(); 
         }
 
@@ -402,7 +404,6 @@
             let rgb = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
             
             let shadow = [];
-            // Map down and left for Isometric effect
             for(let i=1; i<=depthPx; i++) {
                 shadow.push(`-${i}px ${i}px 0 ${rgb}`);
             }
@@ -410,77 +411,7 @@
             return shadow.join(', ');
         }
 
-        // --- NEW: FONT LOADER (Physics Pipeline) ---
-        async function loadActiveFont() {
-            const fontSelect = document.getElementById('sign-font');
-            const fileName = fontSelect.options[fontSelect.selectedIndex].dataset.filename;
-            if (!fileName) return;
-
-            try {
-                const fontUrl = GITHUB_BASE + encodeURIComponent(fileName);
-                cachedFont = await new Promise((res, rej) => {
-                    opentype.load(fontUrl, (err, f) => err ? rej(err) : res(f));
-                });
-                runCalc();
-            } catch(e) {
-                console.error("Failed to load OpenType font:", e);
-            }
-        }
-
-        // --- NEW: MATH BRAILLE PLOTTER (FIXED SYNTAX) ---
-        function generateBraillePaths(text, startX, startY, align) {
-            if (!text) return "";
-            
-            // Valid Grade 1 mapping with correct JS arrays
-            const brailleMap = {
-                'a': [1], 'b': [1, 2], 'c': [1, 3], 'd': [1, 3, 4], 'e': [1, 4],
-                'f': [1-3], 'g': [1-4], 'h': [1, 2, 4], 'i': [2, 3], 'j': [2-4],
-                'k': [1, 5], 'l': [1, 2, 5], 'm': [1, 3, 5], 'n': [1, 3-5], 'o': [1, 4, 5],
-                'p': [1-3, 5], 'q': [1-5], 'r': [1, 2, 4, 5], 's': [2, 3, 5], 't': [2-5],
-                'u': [1, 5, 6], 'v': [1, 2, 5, 6], 'w': [2-4, 6], 'x': [1, 3, 5, 6], 'y': [1, 3-6], 'z': [1, 4-6],
-                ' ': [], '#': [3-6]
-            };
-
-            const DOT_PITCH = 0.100; // Federal spacing between dots in a cell
-            const CELL_PITCH = 0.250; // Federal spacing between cells
-            const DOT_RADIUS = 0.025; 
-            
-            let str = text.toLowerCase();
-            if (/\d/.test(str)) str = "#" + str;
-
-            let totalWidth = str.length * CELL_PITCH;
-            
-            let cursorX = startX;
-            if (align === 'center') cursorX = startX - (totalWidth / 2);
-            if (align === 'right') cursorX = startX - totalWidth;
-
-            let paths = "";
-
-            for (let i = 0; i < str.length; i++) {
-                let char = str[i];
-                let dots = brailleMap[char] || [];
-
-                if (char === '#') dots = brailleMap['#']; // Number sign
-                else if (/\d/.test(char)) {
-                    const numMap = ['j','a','b','c','d','e','f','g','h','i'];
-                    dots = brailleMap[numMap[parseInt(char)]] || [];
-                }
-
-                // Draw Dots based on valid arrays
-                if(dots.includes(1)) paths += `<circle cx="${cursorX}" cy="${startY}" r="${DOT_RADIUS}" />`;
-                if(dots.includes(2)) paths += `<circle cx="${cursorX}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
-                if(dots.includes(3)) paths += `<circle cx="${cursorX}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
-                if(dots.includes(4)) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY}" r="${DOT_RADIUS}" />`;
-                if(dots.includes(5)) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
-                if(dots.includes(6)) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
-
-                cursorX += CELL_PITCH;
-            }
-
-            return paths;
-        }
-
-        // --- ASYNC DYNAMIC PREVIEW ---
+        // --- ASYNC DYNAMIC PREVIEW (via Builder) ---
         async function updatePreview() {
             const w = parseFloat(document.getElementById('w').value) || 8;
             const h = parseFloat(document.getElementById('h').value) || 8;
@@ -494,6 +425,15 @@
             const hasText = document.getElementById('toggle-text').checked;
             const hasBraille = document.getElementById('toggle-braille').checked;
             const isAutoScale = document.getElementById('auto-scale').checked;
+
+            const coreHex = selectedCore ? selectedCore.Cap_Hex : '#000000';
+            const tactileHex = selectedTactile ? selectedTactile.Cap_Hex : '#ffffff';
+            let backerHex = '#111827';
+            if (backerType === 'White PVC') backerHex = '#ffffff';
+            if (backerType === 'Clear Acrylic') backerHex = 'rgba(255,255,255,0.4)';
+
+            const coreDepth = document.getElementById('core-thick').value.includes('1/8') ? 6 : 3;
+            const backerDepth = backerType.includes('Acrylic') ? 4 : 6;
 
             // 1. AUTO-SCALE LOGIC
             const pictoInput = document.getElementById('picto-size');
@@ -555,7 +495,7 @@
 
             let textY = 0;
             if (hasText) {
-                textY = currentY + fontSize; 
+                textY = currentY; 
                 currentY += fontSize;
                 if (hasBraille) currentY += 0.375;
             }
@@ -565,11 +505,59 @@
                 brailleY = currentY + 0.15; 
             }
 
-            let xPos = w / 2;
-            if (align === 'left') xPos = 0.375; 
-            if (align === 'right') xPos = w - 0.375;
+            // 4. PASS TO BUILDER PIPELINE
+            const builderInputs = {
+                w: w, h: h,
+                coreHex: coreHex,
+                tactileHex: tactileHex,
+                backerHex: backerHex,
+                coreDepth: coreDepth,
+                backerDepth: backerDepth,
+                radius: r
+            };
 
-            const scale = Math.min(220 / w, 160 / h);
+            const elements = [];
+
+            if (hasPicto && selectedIcon) {
+                elements.push({
+                    type: 'picto',
+                    size: pictoSize,
+                    y: pictoY,
+                    viewBox: selectedIcon.ViewBox || "0 0 100 100",
+                    svg: selectedIcon.SVG_Path
+                });
+            }
+
+            const fontSelect = document.getElementById('sign-font');
+            const fontFileName = fontSelect.options[fontSelect.selectedIndex]?.dataset.filename || 'Arimo-Regular.ttf';
+
+            if (hasText && textVal) {
+                elements.push({
+                    type: 'text',
+                    text: textVal,
+                    fontFileName: fontFileName,
+                    fontSize: fontSize,
+                    y: textY,
+                    align: align
+                });
+            }
+
+            if (hasBraille) {
+                elements.push({
+                    type: 'braille',
+                    text: textVal,
+                    y: brailleY,
+                    align: align
+                });
+            }
+
+            currentManifest = await SignOS_Builder.buildADAManifest(builderInputs, elements, GITHUB_BASE);
+
+            // 5. UPDATE THE HTML DOM WITH MANIFEST SVG
+            const maxAllowedWidth = is3D ? 160 : 220;
+            const maxAllowedHeight = is3D ? 100 : 160;
+            const scale = Math.min(maxAllowedWidth / w, maxAllowedHeight / h);
+            
             const pxW = w * scale;
             const pxH = h * scale;
             const pxR = r * scale;
@@ -577,17 +565,8 @@
             container.style.width = `${pxW}px`;
             container.style.height = `${pxH}px`;
             
-            const coreHex = selectedCore ? selectedCore.Cap_Hex : '#000000';
-            const tactileHex = selectedTactile ? selectedTactile.Cap_Hex : '#ffffff';
-            let backerHex = '#111827';
-            if (backerType === 'White PVC') backerHex = '#ffffff';
-            if (backerType === 'Clear Acrylic') backerHex = 'rgba(255,255,255,0.4)';
-
-            const coreDepth = document.getElementById('core-thick').value.includes('1/8') ? 6 : 3;
-            const backerDepth = backerType.includes('Acrylic') ? 4 : 6;
-
             let calloutHtml = (name, index) => `
-                <div class="blueprint-callout absolute -right-4 translate-x-full flex items-center gap-1 z-50" style="top: ${index * 25}px;">
+                <div class="blueprint-callout absolute -right-4 translate-x-full flex items-center gap-1 z-50" style="top: -${index * 35}px;">
                     <div class="w-6 border-b border-blue-400"></div>
                     <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded border border-blue-200 shadow-sm">${name}</span>
                 </div>`;
@@ -605,40 +584,10 @@
                 ${is3D ? calloutHtml(document.getElementById('core-thick').value + '" ADA Core', layerIndex++) : ''}
             </div>`;
 
-            // L3: GENERATE ABSOLUTE VECTORS (Physics Pipeline)
-            let svgContent = '';
-            
-            if (hasPicto && selectedIcon) {
-                let pX = (w/2) - (pictoSize/2); 
-                let viewB = selectedIcon.ViewBox || "0 0 100 100";
-                svgContent += `<svg x="${pX}" y="${pictoY}" width="${pictoSize}" height="${pictoSize}" viewBox="${viewB}" fill="currentColor"><path d="${selectedIcon.SVG_Path}"/></svg>`;
-            }
-
-            if (hasText && cachedFont && textVal) {
-                // OPENTYPE PATH GENERATION
-                const fontScale = fontSize / cachedFont.ascender;
-                const pathObj = cachedFont.getPath(textVal, 0, 0, cachedFont.unitsPerEm * fontScale);
-                const bbox = pathObj.getBoundingBox();
-                
-                // Mathematical Alignment adjustments based on generated bounding box
-                let alignX = xPos;
-                if (align === 'center') alignX = xPos - ((bbox.x2 - bbox.x1) / 2) - bbox.x1;
-                if (align === 'right') alignX = xPos - (bbox.x2 - bbox.x1) - bbox.x1;
-                
-                svgContent += `<path d="${pathObj.toPathData()}" transform="translate(${alignX}, ${textY})" fill="currentColor" />`;
-            }
-
-            if (hasBraille) {
-                // BRAILLE PLOTTER GENERATION
-                svgContent += `<g fill="rgba(180, 180, 180, 0.35)" stroke="rgba(255, 255, 255, 0.7)" stroke-width="0.008">
-                    ${generateBraillePaths(textVal, xPos, brailleY, align)}
-                </g>`;
-            }
-
             html += `
             <div class="sign-layer layer-tactile" style="color: ${tactileHex};">
-                <svg id="live-production-preview" viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">
-                    ${svgContent}
+                <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">
+                    ${currentManifest.svgContent}
                 </svg>
                 ${is3D ? calloutHtml('1/32" Tactile & Braille', layerIndex++) : ''}
             </div>
@@ -647,39 +596,13 @@
             container.innerHTML = html;
         }
 
-        // --- SVG EXPORT (SignOS v3.0) ---
-        function downloadProductionSVG() {
-            const container = document.getElementById('svg-preview-container');
-            if (!container) return alert("Preview not ready!");
-
-            const w = parseFloat(document.getElementById('w').value) || 8;
-            const h = parseFloat(document.getElementById('h').value) || 8;
-            
-            const coreHex = selectedCore ? selectedCore.Cap_Hex : '#000000';
-            const tactileHex = selectedTactile ? selectedTactile.Cap_Hex : '#ffffff';
-
-            let svgEl = document.getElementById('live-production-preview');
-            if(!svgEl) return alert("No tactile layer found to export.");
-
-            let svgData = svgEl.outerHTML;
-            svgData = svgData.replace(/currentColor/g, tactileHex);
-
-            // Clean Physics Package using strict inch coordinates
-            let finalSVG = `<?xml version="1.0" encoding="UTF-8"?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="${w}in" height="${h}in" viewBox="0 0 ${w} ${h}">
-                <!-- Substrate Boundary -->
-                <rect width="${w}" height="${h}" fill="${coreHex}" />
-                <!-- Vector Tactile & Braille Paths -->
-                ${svgData.replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '')}
-            </svg>`;
-
-            const blob = new Blob([finalSVG], {type: 'image/svg+xml'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `SignOS_PROD_ADA_${w}x${h}.svg`;
-            a.click();
-            URL.revokeObjectURL(url);
+        // Export Function calls centralized v2 logic
+        function triggerExport() {
+            if(SignOS_Export_v2 && SignOS_Export_v2.exportADA) {
+                SignOS_Export_v2.exportADA(currentManifest);
+            } else {
+                alert("SignOS Export Module missing.");
+            }
         }
 
         function openModal(type) {
@@ -726,7 +649,6 @@
         async function runCalc() {
             if(!backendData.Retail_Min_Order_Etch || !selectedCore || !selectedTactile) return;
             
-            // Generate exact physics paths
             await updatePreview();
 
             try {
@@ -799,17 +721,12 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
-                // Fetch Data including Pictograms!
                 const payload = await SignOS.fetchProductData('PROD_ADA_Signs', ['REF_Colors_Rowmark', 'REF_Pictograms', 'REF_Fonts']);
                 
                 backendData = payload.config;
                 const rawRowmark = payload.tables['REF_Colors_Rowmark'] || [];
                 pictograms = payload.tables['REF_Pictograms'] || [];
                 systemFonts = payload.tables['REF_Fonts'] || [];
-
-                if (SignOS_Canvas && SignOS_Canvas.loadFonts) {
-                    SignOS_Canvas.loadFonts(systemFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE'));
-                }
 
                 const fontSelect = document.getElementById('sign-font');
                 let fontHtml = '';
@@ -861,9 +778,6 @@
                         statusDot.classList.remove("animate-pulse");
                     }
                 }
-
-                // Initial Font Load
-                await loadActiveFont();
 
                 if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper');
                 
