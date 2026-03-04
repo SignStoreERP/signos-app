@@ -74,3 +74,15 @@ function calculateFoam(inputs, data) {
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
+
+window.FOAM_CONFIG = {
+    tab: 'PROD_Foam_Signs', engine: calculateFoam,
+    controls: [
+        { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'3/16', t:'3/16" Standard'}] },
+        { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square Cut'}, {v:'CNC Simple', t:'CNC Simple'}] }
+    ],
+    retails: [ { key: 'FOM3_T1_Rate', label: '3/16" Rate ($)' } ],
+    costs: [ { key: 'Cost_Stock_316_4x8', label: '3/16" Sheet ($)' } ]
+};
+
