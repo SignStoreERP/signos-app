@@ -1,4 +1,4 @@
-// signos-builder.js (v4.1 - Unified Nameplate & ADA Architecture)
+// signos-builder.js (v4.2 - Unified Nameplate & ADA Architecture)
 
 const SignOS_Builder = {
 
@@ -174,7 +174,15 @@ const SignOS_Builder = {
         if (hasPicto && selectedIcon) {
             let pX = (w/2) - (pictoSize/2); 
             let viewB = selectedIcon.ViewBox || "0 0 100 100";
-            svgContent += `<svg x="${pX}" y="${pictoY}" width="${pictoSize}" height="${pictoSize}" viewBox="${viewB}" fill="currentColor"><path d="${selectedIcon.SVG_Path}"/></svg>`;
+            
+            // Extract the source width from the ViewBox mapping
+            let vParts = viewB.split(' ').map(Number);
+            let sourceW = vParts[2] || 100;
+            
+            // Pure Math: Calculate exact CAD scale ratio instead of using nested SVGs
+            let exactScale = pictoSize / sourceW;
+            
+            svgContent += `<g transform="translate(${pX}, ${pictoY}) scale(${exactScale})" fill="currentColor"><path d="${selectedIcon.SVG_Path}"/></g>`;
         }
 
         if (hasText && textVal) {
