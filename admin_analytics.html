@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Analytics v5.4</title>
+    <title>Pricing Analytics v5.4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
@@ -23,20 +23,14 @@
     <script src="cost_ada.js"></script>
 
     <style>
-        /* Unlocked body scrolling */
         body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; overflow-y: auto; }
-        
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        /* Fill remaining height of screen */
         #signos-island { min-height: calc(100vh - 2rem); margin: 0 auto; max-width: 1600px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1); }
-        
         .sticky-col { position: sticky; left: 0; background-color: #f8fafc; z-index: 20; border-right: 2px solid #e2e8f0; }
         .sticky-row { position: sticky; top: 0; background-color: #f8fafc; z-index: 30; border-bottom: 2px solid #e2e8f0; }
-        
         .loss-alert { background-color: rgba(239, 68, 68, 0.1); color: #b91c1c; font-weight: 900; }
         .heatmap-cell { min-width: 80px; height: 48px; transition: all 0.1s; cursor: crosshair; border: 1px solid #f1f5f9; }
         .heatmap-cell:hover { transform: scale(1.05); z-index: 40; box-shadow: 0 5px 10px rgba(0,0,0,0.1); border-color: #3b82f6; }
@@ -44,29 +38,19 @@
 </head>
 <body class="p-0 sm:p-4">
 
-<!-- Island Mode Container -->
 <div id="signos-island" class="bg-white rounded-2xl flex flex-col border border-gray-200">
-    
-    <!-- Header Hook -->
     <div id="main-card" class="w-full shrink-0 border-b border-gray-800"></div>
 
-    <!-- Main Workspace -->
     <div class="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         
-        <!-- LEFT COLUMN: PRODUCT NAVIGATION -->
         <div class="w-full lg:w-64 bg-slate-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col shrink-0">
             <div class="p-4 bg-gray-100 border-b border-gray-200">
                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block text-center">Module Select</label>
             </div>
-            <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar" id="module-nav">
-                <!-- Modules Injected Here -->
-            </div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar" id="module-nav"></div>
         </div>
 
-        <!-- CENTER WORKSPACE: CHART & SETTINGS -->
         <div class="flex-1 flex flex-col bg-slate-50 relative min-w-0">
-            
-            <!-- Center Toolbar -->
             <div class="h-auto lg:h-14 bg-white border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between p-4 lg:px-6 z-10 shrink-0 gap-3">
                 <div class="flex items-center space-x-4">
                     <div class="flex bg-gray-100 p-1 rounded-xl" id="view-toggles">
@@ -95,15 +79,12 @@
                 </div>
             </div>
 
-            <!-- Canvas Area -->
             <div id="canvas-area" class="flex-1 relative flex flex-col p-4 overflow-hidden min-h-[400px]">
-                
                 <div id="initial-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-40 transition-all duration-300">
                     <span class="text-5xl mb-4 text-blue-500">📊</span>
                     <h2 class="text-xl font-black text-gray-800 uppercase tracking-widest">Pricing Analytics</h2>
                     <p class="text-sm text-gray-500 font-bold mt-2 uppercase">Select a product from the left menu to load data matrix.</p>
                 </div>
-
                 <div id="loader" class="absolute inset-0 bg-gray-900/60 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all rounded-xl">
                     <div class="animate-spin rounded-full h-14 w-14 border-4 border-white border-t-blue-500 mb-4"></div>
                     <span class="text-xs font-black text-white tracking-widest uppercase">Computing Matrix...</span>
@@ -123,17 +104,13 @@
                 </div>
             </div>
 
-            <!-- Product Specifications -->
             <div class="bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_rgba(0,0,0,0.02)] z-20">
                 <div class="px-6 py-2 bg-gray-100 border-b border-gray-200">
                     <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Base Specifications (Affects Chart & Heatmap)</label>
                 </div>
-                <div id="product-specific-controls" class="p-4 flex flex-wrap gap-4 overflow-y-auto max-h-48 custom-scrollbar">
-                    <!-- Dynamic Controls Injected Here -->
-                </div>
+                <div id="product-specific-controls" class="p-4 flex flex-wrap gap-4 overflow-y-auto max-h-48 custom-scrollbar"></div>
             </div>
 
-            <!-- Overrides Section -->
             <div class="h-64 border-t-4 border-gray-300 bg-gray-50 flex flex-col shrink-0 z-10 relative">
                 <div class="flex flex-col md:flex-row items-center justify-between border-b border-gray-200 bg-gray-200 pr-4">
                     <div class="flex text-[10px] font-black uppercase tracking-widest text-center cursor-pointer w-full md:w-auto">
@@ -154,7 +131,6 @@
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: POINT INSPECTION -->
         <div class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)] min-h-[400px] lg:min-h-0">
             <div class="p-4 bg-gray-900 border-b border-gray-800">
                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-center">Point Inspection</label>
@@ -162,16 +138,12 @@
             <div id="inspection-meta" class="p-6 bg-slate-50 border-b border-gray-200 text-center flex flex-col items-center justify-center min-h-[120px]">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point on the chart to inspect.</span>
             </div>
-            <div id="receipt-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50">
-                <!-- Receipt Injected Here -->
-            </div>
+            <div id="receipt-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50"></div>
         </div>
-
     </div>
 </div>
 
 <script>
-    // --- SYSTEM CONFIG ---
     const ALL_MODULES = new Array(
         { id: 'yard', name: 'Yard Signs', config: window.YARD_CONFIG },
         { id: 'coro', name: 'Custom Coroplast', config: window.CORO_CONFIG },
@@ -184,7 +156,7 @@
         { id: 'decal', name: 'Decals & Stickers', config: window.DECAL_CONFIG },
         { id: 'wrap', name: 'Vehicle Wraps', config: window.WRAP_CONFIG },
         { id: 'wall', name: 'Interior Wall Wraps', config: window.WALL_CONFIG },
-        { id: 'ada', name: 'ADA & Multi-Layer', config: window.ADA_CONFIG } // ADDED ADA
+        { id: 'ada', name: 'ADA & Multi-Layer', config: window.ADA_CONFIG } 
     );
     
     const MODULES = ALL_MODULES.filter(m => m.config);
@@ -197,7 +169,7 @@
     let currentChartDataMap = {};
 
     window.onload = () => {
-        injectHeader("Pricing Analytics v5.4", true);
+        injectHeader("Pricing Analytics v5.4.1", true);
         renderProductMenu();
     };
 
@@ -216,11 +188,12 @@
                 btn.classList.remove('bg-white', 'text-gray-700');
                 
                 activeConfig = m.config;
+                activeConfig.id = m.id; // FIX: Inject missing ID so drawing engines know what to load!
+
                 currentChartDataMap = {};
                 document.getElementById('initial-state').classList.add('hidden');
                 document.getElementById('loader').classList.remove('hidden');
                 
-                // Dynamically transform axis label if ADA is selected
                 const lbl = document.getElementById('label-max-size');
                 if (lbl) lbl.innerText = m.id === 'ada' ? 'Max SqIn:' : 'Max SqFt:';
                 document.getElementById('chart-max-sqft').value = getProductBounds(m.id).sqft;
@@ -248,7 +221,7 @@
         if (!activeConfig) return;
 
         activeConfig.controls.forEach(c => {
-            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; // Ignore geometry dims, we loop them natively
+            if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; 
             
             let html = `<div class="flex flex-col min-w-[120px]"><label class="text-[9px] font-black text-gray-500 uppercase mb-1">${c.label}</label>`;
             
@@ -329,7 +302,6 @@
         generateMatrix();
     }
 
-    // --- LOGIC ENGINE ---
     function generateMatrix() {
         if(!activeConfig) return;
 
@@ -353,7 +325,7 @@
         if (id === 'acm') return { w: 10, h: 5, sqft: 50 }; 
         if (id === 'banner') return { w: 12, h: 5, sqft: 60 };
         if (id === 'wrap' || id === 'wall' || id === 'decal' || id === 'cut') return { w: 10, h: 5, sqft: 50 };
-        if (id === 'ada') return { w: 12, h: 12, sqft: 144 }; // Uses sqft key as sqin limit
+        if (id === 'ada') return { w: 12, h: 12, sqft: 144 }; 
         return { w: 8, h: 4, sqft: 32 }; 
     }
 
@@ -446,11 +418,11 @@
                     runInputs.qty = stepVal;
                 } else if (id === 'ada') {
                     runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
-                    runInputs.w = stepVal; // Linear width equals square inches if height is 1
+                    runInputs.w = stepVal; 
                     runInputs.h = 1;
                 } else {
                     runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
-                    runInputs.w = 12; // Lock width to 1ft to model linear length
+                    runInputs.w = 12; 
                     runInputs.h = stepVal * 12;
 
                     if (id === 'wrap' || id === 'wall') {
@@ -663,7 +635,6 @@
         let costLines = "";
         const b = res.cost.breakdown || {};
         
-        // Native mapping ensures ADA keys inject flawlessly alongside Rigid & Roll arrays
         const mats = (b.rawBlanks || b.rawSubstrate || b.rawMedia || b.rawVinyl || b.materials || 0) + (b.totalInk || b.rawInk || 0) + (b.stakeCost || 0) + (b.rawLam || 0) + (b.rawTape || 0);
         const labor = (b.costOp || b.costPrintLabor || 0) + (b.costCut || b.costCutLabor || 0) + (b.costMachine || b.costPrintMach || 0) + (b.costSetup || 0) + (b.costFinish || 0) + (b.costWeed || 0) + (b.installLabor || 0) + (b.printLabor || 0) + (b.machine || 0) + (b.costPrepress || 0) + (b.costHandling || 0) + (b.costMachRun || 0) + (b.costOpAttn || 0);
 
