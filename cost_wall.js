@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Interior Wall Wraps (v2.1)
- * Upgraded from a Stub to a full Physics BOM engine.
+ * PURE PHYSICS ENGINE: Interior Wall Wraps (v2.2)
+ * Cleaned for global Install toggle architecture.
  */
 function calculateWall(inputs, data) {
     if (!inputs.panels || inputs.panels.length === 0) return null;
@@ -8,14 +8,11 @@ function calculateWall(inputs, data) {
     let totalSqFt = 0;
     let totalInstallSqFt = 0;
     let totalRetailPrint = 0;
-    let panelLogs = [];
 
-    // Wall Media Base Rates
     const retSmooth = parseFloat(data.Retail_Price_Wall_Smooth_SqFt || 10);
     const retText = parseFloat(data.Retail_Price_Wall_Text_SqFt || 15);
     const retPerf = parseFloat(data.Retail_Price_Perf_SqFt || 12);
 
-    // --- 1. RETAIL ENGINE ---
     inputs.panels.forEach(p => {
         const area = (p.w * p.h) / 144;
         totalSqFt += area;
@@ -25,9 +22,7 @@ function calculateWall(inputs, data) {
         else if (p.material === 'textured') { retailUnit = retText; totalInstallSqFt += area; } 
         else if (p.material.startsWith('perf')) { retailUnit = p.included ? 0 : retPerf; totalInstallSqFt += area; }
 
-        const rowRetail = retailUnit * area;
-        totalRetailPrint += rowRetail;
-        panelLogs.push({ label: p.label, sqft: area, retail: rowRetail });
+        totalRetailPrint += (retailUnit * area);
     });
 
     const installRate = parseFloat(data.Retail_Install_Wall_SqFt || 3);
@@ -35,10 +30,9 @@ function calculateWall(inputs, data) {
     
     let subTotal = totalRetailPrint + totalInstall;
     let minOrder = parseFloat(data.Retail_Min_Order || 150);
-    let grandTotalRaw = subTotal;
-    let grandTotal = Math.max(grandTotalRaw, minOrder);
+    let grandTotal = Math.max(subTotal, minOrder);
 
-    // --- 2. COST ENGINE (PHYSICS) ---
+    // --- COST ENGINE ---
     const costVinSmooth = parseFloat(data.Cost_Vin_Wall || 0.59);
     const costVinText = parseFloat(data.Cost_Vin_Wall_Text || 1.14);
     const costVinPerf = parseFloat(data.Cost_Vinyl_Perf || 0.65);
@@ -50,17 +44,12 @@ function calculateWall(inputs, data) {
     
     inputs.panels.forEach(p => {
         const area = ((p.w * p.h) / 144) * wastePct;
-        let vCost = 0;
-        if(p.material === 'smooth') vCost = costVinSmooth;
-        else if(p.material === 'textured') vCost = costVinText;
-        else vCost = costVinPerf;
-
+        let vCost = p.material === 'smooth' ? costVinSmooth : (p.material === 'textured' ? costVinText : costVinPerf);
         let lCost = p.laminate !== 'No Lam' ? costLamStd : 0;
         totalCostMat += (vCost + lCost) * area;
     });
 
     const totalCostInk = totalSqFt * parseFloat(data.Cost_Ink_Latex || 0.16) * wastePct;
-    
     const opRate = parseFloat(data.Rate_Operator || 25);
     const machRate = parseFloat(data.Rate_Machine_Print || 5);
     const instRate = parseFloat(data.Rate_Install || 32);
@@ -79,11 +68,8 @@ function calculateWall(inputs, data) {
     const totalCost = subHardCost * riskFactor;
 
     return {
-        retail: { printTotal: totalRetailPrint, installTotal: totalInstall, grandTotal: grandTotal, isMinApplied: grandTotalRaw < minOrder, displaySqFt: totalSqFt },
-        cost: {
-            total: totalCost,
-            breakdown: { rawVinylAndLam: totalCostMat, totalInk: totalCostInk, costPrintLabor: costPrintOp, installLabor: costInstallLabor, costMachineRun: costMach, riskBuffer: totalCost - subHardCost }
-        },
+        retail: { printTotal: totalRetailPrint, installTotal: totalInstall, grandTotal: grandTotal, isMinApplied: subTotal < minOrder, displaySqFt: totalSqFt },
+        cost: { total: totalCost, breakdown: { rawVinylAndLam: totalCostMat, totalInk: totalCostInk, costPrintLabor: costPrintOp, installLabor: costInstallLabor, costMachineRun: costMach, riskBuffer: totalCost - subHardCost } },
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
@@ -94,8 +80,7 @@ window.WALL_CONFIG = {
     controls: [
         { id: 'w', label: 'Simulated Width', type: 'number', def: 120 },
         { id: 'h', label: 'Simulated Height', type: 'number', def: 96 },
-        { id: 'material', label: 'Material', type: 'select', opts: [{v:'smooth', t:'Smooth Wall'}, {v:'textured', t:'Textured Wall'}, {v:'perf6040', t:'Window Perf'}] },
-        { id: 'install', label: 'Installation', type: 'select', opts: [{v:'Yes', t:'Yes'}, {v:'No', t:'No'}] }
+        { id: 'material', label: 'Material', type: 'select', opts: [{v:'smooth', t:'Smooth Wall'}, {v:'textured', t:'Textured Wall'}, {v:'perf6040', t:'Window Perf'}] }
     ],
     dynamicUI: function(inputs) {
         inputs.panels = [{ label: "Simulated Panel", qty: 1, w: inputs.w, h: inputs.h, material: inputs.material, included: false }];
@@ -113,4 +98,3 @@ window.WALL_CONFIG = {
         { key: 'Rate_Install', label: 'Installer ($/Hr)' }
     ]
 };
-
