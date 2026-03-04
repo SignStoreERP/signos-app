@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Analytics v5.6</title>
+    <title>Pricing Analytics v6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="signos-core.js"></script>
@@ -42,13 +42,25 @@
 
     <div class="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         
-        <div class="w-full lg:w-64 bg-slate-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col shrink-0">
+        <!-- LEFT COLUMN: CONTROLS & SPECS -->
+        <div class="w-full lg:w-72 bg-slate-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col shrink-0">
             <div class="p-4 bg-gray-100 border-b border-gray-200">
                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block text-center">Module Select</label>
             </div>
-            <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar" id="module-nav"></div>
+            <div class="max-h-48 overflow-y-auto p-3 space-y-1.5 custom-scrollbar border-b border-gray-200 bg-white" id="module-nav"></div>
+            
+            <div class="p-4 bg-gray-100 border-b border-gray-200 flex justify-between items-center">
+                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Base Specifications</label>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar" id="product-specific-controls">
+                <!-- Dynamic Base Specs Injected Here -->
+            </div>
+            <div class="p-4 bg-white border-t border-gray-200">
+                <button onclick="generateMatrix()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-lg shadow-md uppercase tracking-widest text-[10px] transition">Run Simulation</button>
+            </div>
         </div>
 
+        <!-- CENTER COLUMN: VISUALIZER -->
         <div class="flex-1 flex flex-col bg-slate-50 relative min-w-0">
             <div class="h-auto lg:h-14 bg-white border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between p-4 lg:px-6 z-10 shrink-0 gap-3">
                 <div class="flex items-center space-x-4">
@@ -64,23 +76,11 @@
                             <option value="cost">Physics (Hard Cost)</option>
                         </select>
                     </div>
-                    <!-- GLOBAL INSTALL TOGGLE -->
                     <div id="wrap-install-toggle" class="hidden items-center space-x-2 border-l border-gray-200 pl-4 ml-2">
                         <label class="flex items-center gap-1.5 cursor-pointer bg-blue-50 px-2 py-1 rounded shadow-inner border border-blue-200 hover:bg-blue-100 transition">
                             <input type="checkbox" id="global-install" class="w-3 h-3 text-blue-600 rounded cursor-pointer" onchange="generateMatrix()">
                             <span class="text-[9px] font-black text-blue-800 uppercase tracking-widest">Include Install</span>
                         </label>
-                    </div>
-                </div>
-
-                <div id="chart-controls" class="flex items-center space-x-3 hidden">
-                    <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner">
-                        <label class="text-[9px] font-black text-gray-500 uppercase mr-2">Simulate Qty:</label>
-                        <input type="number" id="chart-qty" value="1" min="1" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
-                    </div>
-                    <div class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1 shadow-inner" id="max-sqft-wrap">
-                        <label id="label-max-size" class="text-[9px] font-black text-gray-500 uppercase mr-2">Max SqFt:</label>
-                        <input type="number" id="chart-max-sqft" value="32" min="1" onchange="generateMatrix()" class="w-14 text-center text-xs font-bold text-blue-700 bg-transparent outline-none">
                     </div>
                 </div>
             </div>
@@ -89,7 +89,7 @@
                 <div id="initial-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-40 transition-all duration-300">
                     <span class="text-5xl mb-4 text-blue-500">📊</span>
                     <h2 class="text-xl font-black text-gray-800 uppercase tracking-widest">Pricing Analytics</h2>
-                    <p class="text-sm text-gray-500 font-bold mt-2 uppercase">Select a product from the left menu to load data matrix.</p>
+                    <p class="text-sm text-gray-500 font-bold mt-2 uppercase">Select a product to begin.</p>
                 </div>
                 <div id="loader" class="absolute inset-0 bg-gray-900/60 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all rounded-xl">
                     <div class="animate-spin rounded-full h-14 w-14 border-4 border-white border-t-blue-500 mb-4"></div>
@@ -107,34 +107,9 @@
                     </table>
                 </div>
             </div>
-
-            <div class="bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_rgba(0,0,0,0.02)] z-20">
-                <div class="px-6 py-2 bg-gray-100 border-b border-gray-200">
-                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Base Specifications (Affects Chart & Heatmap)</label>
-                </div>
-                <div id="product-specific-controls" class="p-4 flex flex-wrap gap-4 overflow-y-auto max-h-48 custom-scrollbar"></div>
-            </div>
-
-            <div class="h-64 border-t-4 border-gray-300 bg-gray-50 flex flex-col shrink-0 z-10 relative">
-                <div class="flex flex-col md:flex-row items-center justify-between border-b border-gray-200 bg-gray-200 pr-4">
-                    <div class="flex text-[10px] font-black uppercase tracking-widest text-center cursor-pointer w-full md:w-auto">
-                        <div id="tab-ovr-retail" onclick="switchOvrTab('retail')" class="flex-1 md:flex-none px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition">Market Vars (Blue)</div>
-                        <div id="tab-ovr-cost" onclick="switchOvrTab('cost')" class="flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent">Physics Vars (Red)</div>
-                    </div>
-                    <div class="flex gap-2 p-2 md:p-0">
-                        <button onclick="resetOverrides()" class="text-[9px] font-black text-gray-500 hover:text-gray-800 uppercase px-3 py-1.5 border border-gray-300 bg-white rounded shadow-sm transition">Reset</button>
-                        <button onclick="exportMatrix()" class="text-[9px] font-black text-white hover:bg-green-700 uppercase px-3 py-1.5 border border-green-700 bg-green-600 rounded shadow-sm transition">Copy to Clipboard</button>
-                    </div>
-                </div>
-                <div id="ovr-retail-wrap" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    <div id="retail-inputs" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-                </div>
-                <div id="ovr-cost-wrap" class="hidden flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    <div id="cost-inputs" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-                </div>
-            </div>
         </div>
 
+        <!-- RIGHT COLUMN: POINT INSPECTION & MATH EXPOSURE -->
         <div class="w-full lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.03)] min-h-[400px] lg:min-h-0">
             <div class="p-4 bg-gray-900 border-b border-gray-800">
                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-center">Point Inspection</label>
@@ -143,6 +118,18 @@
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point on the chart to inspect.</span>
             </div>
             <div id="receipt-container" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50"></div>
+            
+            <!-- Exposed Math Variables -->
+            <div id="exposed-math-container" class="hidden flex flex-col h-64 border-t-4 border-gray-300 bg-red-50">
+                <div class="bg-red-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 flex justify-between items-center">
+                    <span>Physics Variables</span>
+                    <button onclick="resetOverrides()" class="text-[8px] bg-red-800 hover:bg-red-900 px-2 py-1 rounded">RESET</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2" id="exposed-math-inputs"></div>
+                <div class="p-3 bg-white border-t border-red-200">
+                    <button onclick="generateMatrix()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded shadow-sm text-[10px] uppercase tracking-widest transition">Apply Overrides</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -164,12 +151,11 @@
     );
     
     const MODULES = ALL_MODULES.filter(m => m.config);
+    
+    // Custom X-Axis Steps
     const X_STEPS_YARD = new Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000);
-    const ADA_SIZES = [
-        {w: 3, h: 2, label: '3x2"'}, {w: 4, h: 4, label: '4x4"'}, {w: 6, h: 6, label: '6x6"'}, 
-        {w: 8, h: 6, label: '8x6"'}, {w: 8, h: 8, label: '8x8"'}, {w: 10, h: 10, label: '10x10"'},
-        {w: 12, h: 12, label: '12x12"'}, {w: 12, h: 16, label: '12x16"'}, {w: 16, h: 16, label: '16x16"'}, {w: 24, h: 24, label: '24x24"'}
-    ];
+    const ADA_SIZES = [{w: 3, h: 2}, {w: 4, h: 4}, {w: 6, h: 6}, {w: 8, h: 6}, {w: 8, h: 8}, {w: 10, h: 10}, {w: 12, h: 12}, {w: 12, h: 16}, {w: 16, h: 16}, {w: 24, h: 24}];
+    const BANNER_SIZES = [{w:2,h:4}, {w:3,h:6}, {w:4,h:8}, {w:4,h:10}, {w:5,h:10}, {w:5,h:20}];
 
     let activeConfig = null;
     let backendData = {};
@@ -178,7 +164,7 @@
     let currentChartDataMap = {};
 
     window.onload = () => {
-        injectHeader("Pricing Analytics v5.6", true);
+        injectHeader("Pricing Analytics v6.0", true);
         renderProductMenu();
     };
 
@@ -188,48 +174,35 @@
         
         MODULES.forEach(m => {
             const btn = document.createElement('button');
-            btn.className = "w-full text-left px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest text-gray-700 bg-white border border-gray-200 shadow-sm hover:border-blue-400 hover:text-blue-600 transition";
+            btn.className = "w-full text-left px-3 py-2 rounded text-xs font-black uppercase tracking-widest text-gray-700 bg-gray-50 border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition";
             btn.innerText = m.name;
             
             btn.onclick = async () => {
                 document.querySelectorAll('#module-nav button').forEach(b => b.classList.remove('bg-blue-600', 'text-white'));
                 btn.classList.add('bg-blue-600', 'text-white');
-                btn.classList.remove('bg-white', 'text-gray-700');
+                btn.classList.remove('bg-gray-50', 'text-gray-700');
                 
                 activeConfig = m.config;
                 activeConfig.id = m.id; 
 
-                // Toggle Install Toolbar
                 const tgInstall = document.getElementById('wrap-install-toggle');
-                if (m.id === 'wrap' || m.id === 'wall') {
-                    tgInstall.classList.remove('hidden'); tgInstall.classList.add('flex');
-                } else {
-                    tgInstall.classList.add('hidden'); tgInstall.classList.remove('flex');
-                }
+                if (m.id === 'wrap' || m.id === 'wall') { tgInstall.classList.remove('hidden'); tgInstall.classList.add('flex'); } 
+                else { tgInstall.classList.add('hidden'); tgInstall.classList.remove('flex'); }
 
-                currentChartDataMap = {};
                 document.getElementById('initial-state').classList.add('hidden');
                 document.getElementById('loader').classList.remove('hidden');
-                
-                const lbl = document.getElementById('label-max-size');
-                if (lbl) lbl.innerText = m.id === 'ada' ? 'Max SqIn:' : 'Max SqFt:';
-                document.getElementById('chart-max-sqft').value = getProductBounds(m.id).sqft;
+                document.getElementById('exposed-math-container').classList.add('hidden');
+                document.getElementById('receipt-container').innerHTML = '';
+                document.getElementById('inspection-meta').innerHTML = '<span class="text-xs font-bold text-gray-400 uppercase tracking-widest italic">Select a point on the chart to inspect.</span>';
 
                 try {
                     const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=${activeConfig.tab}`);
                     backendData = await req.json();
                     
-                    // Kill Loading StatusBar visual securely
-                    const sTxt = document.getElementById("status-text");
-                    if(sTxt) { sTxt.innerText = "ONLINE"; sTxt.className = "font-bold text-green-500"; }
-                    const sDot = document.getElementById("status-dot");
-                    if(sDot) { sDot.className = "w-2 h-2 rounded-full bg-green-500"; sDot.classList.remove("animate-pulse"); }
-
-                    renderOverrides();
                     renderProductSpecificControls();
+                    renderExposedMath(); // Build the right-column override list silently
                     generateMatrix();
                 } catch(e) {
-                    console.error("Fetch failed", e);
                     alert("Failed to load backend data for " + m.name);
                 } finally {
                     document.getElementById('loader').classList.add('hidden');
@@ -244,81 +217,53 @@
         ctrlBox.innerHTML = "";
         if (!activeConfig) return;
 
+        let html = `<div><label class="block text-[9px] font-black text-blue-600 uppercase mb-1">Simulate Base Qty</label><input type="number" id="chart-qty" value="1" min="1" class="w-full border border-blue-300 bg-blue-50 rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-inner"></div>`;
+
         activeConfig.controls.forEach(c => {
             if (c.id === 'w' || c.id === 'h' || c.id === 'qty') return; 
-            
-            let html = `<div class="flex flex-col min-w-[120px]"><label class="text-[9px] font-black text-gray-500 uppercase mb-1">${c.label}</label>`;
+            // Force Setup to False globally by default for clean reads
+            if (c.id.toLowerCase().includes('setup')) c.def = false;
+
+            html += `<div><label class="block text-[9px] font-black text-gray-500 uppercase mb-1">${c.label}</label>`;
             
             if (c.type === 'select') {
-                html += `<select id="ctrl_${c.id}" class="w-full border border-gray-200 bg-white rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm cursor-pointer" onchange="generateMatrix()">`;
+                html += `<select id="ctrl_${c.id}" class="w-full border border-gray-200 bg-white rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm cursor-pointer">`;
                 c.opts.forEach(o => { html += `<option value="${o.v}">${o.t}</option>`; });
                 html += `</select></div>`;
             } else if (c.type === 'toggle') {
-                html += `
-                <label class="flex items-center gap-2 cursor-pointer mt-1">
-                    <input type="checkbox" id="ctrl_${c.id}" ${c.def ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded cursor-pointer" onchange="generateMatrix()">
-                    <span class="text-[10px] font-bold text-gray-700 uppercase">Enable</span>
-                </label></div>`;
+                html += `<label class="flex items-center gap-2 cursor-pointer bg-white border border-gray-200 p-1.5 rounded shadow-sm hover:bg-gray-50"><input type="checkbox" id="ctrl_${c.id}" ${c.def ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded cursor-pointer"><span class="text-[10px] font-bold text-gray-700 uppercase">Enable</span></label></div>`;
             } else {
-                html += `<input type="number" id="ctrl_${c.id}" value="${c.def}" class="w-full border border-gray-200 bg-white rounded px-2 py-1 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onchange="generateMatrix()"></div>`;
+                html += `<input type="number" id="ctrl_${c.id}" value="${c.def}" class="w-full border border-gray-200 bg-white rounded px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"></div>`;
             }
-            ctrlBox.insertAdjacentHTML('beforeend', html);
+        });
+        ctrlBox.innerHTML = html;
+    }
+
+    function renderExposedMath() {
+        const container = document.getElementById('exposed-math-inputs');
+        container.innerHTML = "";
+        if (!activeConfig || !activeConfig.costs) return;
+
+        activeConfig.costs.forEach(item => {
+            let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
+            container.innerHTML += `
+                <div class="flex justify-between items-center bg-white p-1.5 rounded shadow-sm border border-red-100">
+                    <label class="text-[9px] font-bold text-gray-600 uppercase truncate pr-2" title="${item.key}">${item.label}</label>
+                    <input type="text" id="ovr_${item.key}" value="${val}" class="w-16 border border-gray-300 rounded p-1 text-right text-[10px] font-mono font-bold text-red-700 outline-none focus:border-red-500 shadow-inner bg-gray-50 shrink-0">
+                </div>
+            `;
         });
     }
 
-    function switchOvrTab(tab) {
-        const tRet = document.getElementById('tab-ovr-retail');
-        const tCst = document.getElementById('tab-ovr-cost');
-        const wRet = document.getElementById('ovr-retail-wrap');
-        const wCst = document.getElementById('ovr-cost-wrap');
-
-        if(tab === 'retail') {
-            tRet.className = "flex-1 md:flex-none px-6 py-2 bg-blue-100 text-blue-700 border-b-2 border-blue-600 transition";
-            tCst.className = "flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
-            wRet.classList.remove('hidden'); wCst.classList.add('hidden');
-        } else {
-            tCst.className = "flex-1 md:flex-none px-6 py-2 bg-red-100 text-red-700 border-b-2 border-red-600 transition";
-            tRet.className = "flex-1 md:flex-none px-6 py-2 text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent";
-            wCst.classList.remove('hidden'); wRet.classList.add('hidden');
-        }
-    }
-
-    function renderOverrides() {
-        const retailBox = document.getElementById('retail-inputs');
-        const costBox = document.getElementById('cost-inputs');
-        retailBox.innerHTML = ""; costBox.innerHTML = "";
-
-        const createCard = (item, color) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = `bg-white p-2 rounded shadow-sm border border-gray-200 border-l-4 border-l-${color}-500 hover:shadow-md transition`;
-            let val = backendData[item.key] !== undefined ? backendData[item.key] : '';
-            
-            wrapper.innerHTML = `
-                <label class="text-[8px] font-black text-gray-400 uppercase truncate block mb-1" title="${item.key}">${item.label}</label>
-                <input type="text" id="ovr_${item.key}" value="${val}" onchange="generateMatrix()" class="w-full bg-gray-50 border border-gray-200 rounded px-1.5 py-1 text-xs font-mono font-bold text-${color}-700 focus:border-${color}-500 outline-none text-right">
-            `;
-            return wrapper;
-        };
-
-        activeConfig.retails.forEach(item => retailBox.appendChild(createCard(item, 'blue')));
-        activeConfig.costs.forEach(item => costBox.appendChild(createCard(item, 'red')));
+    function resetOverrides() {
+        renderExposedMath(); // Re-pulls from pristine backendData
+        generateMatrix();
     }
 
     function setView(view) {
         currentView = view;
-        const vChart = document.getElementById('view-chart');
-        const vHm = document.getElementById('view-heatmap');
-        const cCtrls = document.getElementById('chart-controls');
-        
-        if (view === 'chart') {
-            vChart.classList.remove('hidden');
-            vHm.classList.add('hidden');
-            cCtrls.classList.remove('hidden');
-        } else {
-            vChart.classList.add('hidden');
-            vHm.classList.remove('hidden');
-            cCtrls.classList.add('hidden');
-        }
+        document.getElementById('view-chart').classList.toggle('hidden', view !== 'chart');
+        document.getElementById('view-heatmap').classList.toggle('hidden', view !== 'heatmap');
         
         document.getElementById('btn-view-heatmap').className = view === 'heatmap' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
         document.getElementById('btn-view-chart').className = view === 'chart' ? 'px-4 py-1.5 text-[10px] font-black rounded-lg bg-white shadow-sm text-blue-600 uppercase transition' : 'px-4 py-1.5 text-[10px] font-black rounded-lg text-gray-400 hover:text-gray-600 uppercase transition';
@@ -336,43 +281,39 @@
         if(!activeConfig) return;
 
         const simData = { ...backendData };
-        let overridesList = new Array();
-        activeConfig.retails.forEach(i => overridesList.push(i));
-        activeConfig.costs.forEach(i => overridesList.push(i));
-
-        overridesList.forEach(o => {
-            const el = document.getElementById('ovr_' + o.key);
-            if(el && el.value !== "") simData[o.key] = isNaN(el.value) ? el.value : parseFloat(el.value);
-            else delete simData[o.key];
-        });
+        
+        // Harvest Right-Column Overrides
+        if (activeConfig.costs) {
+            activeConfig.costs.forEach(o => {
+                const el = document.getElementById('ovr_' + o.key);
+                if(el && el.value !== "") simData[o.key] = isNaN(el.value) ? el.value : parseFloat(el.value);
+            });
+        }
 
         currentChartDataMap = {};
         if (currentView === 'chart') drawLineChart(simData);
         else drawHeatmap(simData);
     }
 
-    function getProductBounds(id) {
-        if (id === 'acm') return { w: 10, h: 5, sqft: 50, stepW: 1, stepH: 1 }; 
-        if (id === 'pvc') return { w: 10, h: 5, sqft: 50, stepW: 1, stepH: 1 }; 
-        if (id === 'banner') return { w: 12, h: 5, sqft: 60, stepW: 1, stepH: 1 };
-        if (id === 'wrap' || id === 'wall') return { w: 40, h: 10, sqft: 400, stepW: 2, stepH: 1 }; // Increased up to 40' Wide Heatmap
-        if (id === 'decal' || id === 'cut') return { w: 10, h: 5, sqft: 50, stepW: 1, stepH: 1 };
-        if (id === 'ada') return { w: 12, h: 12, sqft: 144, stepW: 1, stepH: 1 }; 
-        return { w: 8, h: 4, sqft: 32, stepW: 1, stepH: 1 }; 
-    }
-
     function drawLineChart(simData) {
         const id = activeConfig.id;
         const mode = document.getElementById('hm-analysis-mode').value;
-        const bounds = getProductBounds(id);
         const globalInstall = document.getElementById('global-install') ? document.getElementById('global-install').checked : false;
         
         let steps = [];
-        if (id === 'yard') steps = [...X_STEPS_YARD];
-        else if (id === 'ada') steps = ADA_SIZES.map(s => s.label);
+        let labels = [];
+
+        if (id === 'yard') { steps = [...X_STEPS_YARD]; labels = steps; }
+        else if (id === 'ada') { steps = ADA_SIZES; labels = steps.map(s => `${s.w}x${s.h}"`); }
+        else if (id === 'banner') { steps = BANNER_SIZES; labels = steps.map(s => `${s.w}x${s.h}'`); }
+        else if (id === 'wrap' || id === 'wall') { 
+            for(let i=1; i<=10; i++) steps.push(i); // Panels
+            labels = steps.map(s => `${s} Panel(s)`);
+        }
         else {
-            const maxVal = parseInt(document.getElementById('chart-max-sqft').value) || bounds.sqft;
-            for(let i=1; i<=maxVal; i++) steps.push(i);
+            const bounds = {w: 10, h: 5, sqft: 50}; // Default standard
+            for(let i=1; i<=bounds.sqft; i++) steps.push(i);
+            labels = steps;
         }
 
         let baseInputs = { qty: parseInt(document.getElementById('chart-qty').value) || 1 };
@@ -386,6 +327,7 @@
 
         if (id === 'yard') {
             permutations.push({ label: "Single-Sided (No Stakes)", inputs: { ...baseInputs, sides: 1, hasStakes: false } });
+            permutations.push({ label: "Double-Sided (No Stakes)", inputs: { ...baseInputs, sides: 2, hasStakes: false } }); // ADDED
             permutations.push({ label: "Single-Sided (With Stakes)", inputs: { ...baseInputs, sides: 1, hasStakes: true } });
             permutations.push({ label: "Double-Sided (With Stakes)", inputs: { ...baseInputs, sides: 2, hasStakes: true } });
         } else if (id === 'coro') {
@@ -407,12 +349,13 @@
             permutations.push({ label: "3/16\" Single-Sided", inputs: { ...baseInputs, thickness: '3/16', sides: 1 } });
             permutations.push({ label: "3/16\" Double-Sided", inputs: { ...baseInputs, thickness: '3/16', sides: 2 } });
         } else if (id === 'acrylic') {
-            permutations.push({ label: "1/4\" Thick", inputs: { ...baseInputs, thickness: '0.25' } });
-            permutations.push({ label: "1/2\" Thick", inputs: { ...baseInputs, thickness: '0.5' } });
-            permutations.push({ label: "3/4\" Thick", inputs: { ...baseInputs, thickness: '0.75' } });
-            permutations.push({ label: "1\" Thick", inputs: { ...baseInputs, thickness: '1' } });
+            // Guarantee valid variables pass to avoid NaN crash
+            permutations.push({ label: "1/4\" Thick", inputs: { ...baseInputs, thickness: '0.25', color: 'White', method: 'standard', shape: 'Rectangle' } });
+            permutations.push({ label: "1/2\" Thick", inputs: { ...baseInputs, thickness: '0.5', color: 'White', method: 'standard', shape: 'Rectangle' } });
+            permutations.push({ label: "3/4\" Thick", inputs: { ...baseInputs, thickness: '0.75', color: 'White', method: 'standard', shape: 'Rectangle' } });
+            permutations.push({ label: "1\" Thick", inputs: { ...baseInputs, thickness: '1', color: 'White', method: 'standard', shape: 'Rectangle' } });
         } else if (id === 'banner') {
-            permutations.push({ label: "13oz Standard", inputs: { ...baseInputs, material: '13oz' } });
+            permutations.push({ label: "13oz Standard", inputs: { ...baseInputs, material: '13oz' } }); // Restricted to 13oz
         } else if (id === 'decal') {
             permutations.push({ label: "Standard (Cal)", inputs: { ...baseInputs, material: 'Standard' } });
             permutations.push({ label: "Premium (Cast)", inputs: { ...baseInputs, material: 'Cast' } });
@@ -424,7 +367,8 @@
             permutations.push({ label: "Backlit Std (8500)", inputs: { ...baseInputs, material: 'Backlit_8500' } });
             permutations.push({ label: "Backlit Prem (8800)", inputs: { ...baseInputs, material: 'Backlit_8800' } });
         } else if (id === 'wrap' || id === 'wall') {
-            permutations.push({ label: "Cast Media", inputs: { ...baseInputs, material: 'wrap' } });
+            const defMat = id === 'wall' ? 'smooth' : 'wrap';
+            permutations.push({ label: "Solid Media", inputs: { ...baseInputs, material: defMat } });
             permutations.push({ label: "Window Perf", inputs: { ...baseInputs, material: 'perf6040' } });
         } else if (id === 'ada') {
             permutations.push({ label: "1/32\" on 1/8\" Core", inputs: { ...baseInputs, coreThick: '1/8', backer: 'None', hasTactile: true, hasBraille: true, brailleLines: 1 } });
@@ -446,30 +390,33 @@
                 if (id === 'yard') {
                     runInputs.qty = stepVal;
                 } else if (id === 'ada') {
-                    runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
-                    runInputs.w = ADA_SIZES[stepIndex].w;
-                    runInputs.h = ADA_SIZES[stepIndex].h;
+                    runInputs.w = stepVal.w;
+                    runInputs.h = stepVal.h;
+                } else if (id === 'banner') {
+                    runInputs.w = stepVal.w * 12;
+                    runInputs.h = stepVal.h * 12;
+                } else if (id === 'wrap' || id === 'wall') {
+                    // Mapping by full panels
+                    runInputs.install = globalInstall ? 'Yes' : 'No';
+                    runInputs.panels = [];
+                    for(let p=0; p<stepVal; p++) {
+                        runInputs.panels.push({ label: "Panel", qty: 1, w: 52, h: (id==='wall'?96:72), material: runInputs.material, included: false });
+                    }
                 } else {
-                    runInputs.qty = parseInt(document.getElementById('chart-qty').value) || 1;
                     runInputs.w = 12; 
                     runInputs.h = stepVal * 12;
-
-                    if (id === 'wrap' || id === 'wall') {
-                        runInputs.install = globalInstall ? 'Yes' : 'No';
-                        runInputs.panels = [{ label: "Panel", qty: 1, w: runInputs.w, h: runInputs.h, material: runInputs.material, included: false }];
-                    }
                 }
 
                 if (typeof activeConfig.dynamicUI === 'function') runInputs = activeConfig.dynamicUI(runInputs);
 
                 try {
                     const res = activeConfig.engine(runInputs, simData);
-                    const pointKey = 'ch-' + index + '-' + stepVal;
+                    const pointKey = 'ch-' + index + '-' + stepIndex; // Bound to index to match label
                     currentChartDataMap[pointKey] = { res, inputs: runInputs };
 
                     if (!res || !res.retail) { dataTarget.push(null); dataLabor.push(null); return; }
 
-                    const unitRet = res.retail.unitPrice;
+                    const unitRet = res.retail.unitPrice || (res.retail.grandTotal / runInputs.qty);
                     const unitCst = res.cost.total / runInputs.qty;
                     const margin = res.metrics.margin;
 
@@ -500,7 +447,6 @@
                 borderWidth: 3, tension: 0.1, pointRadius: 3, _permIndex: index
             });
 
-            // Specific Dash Line mapped for Installation Output
             if ((id === 'wrap' || id === 'wall') && (mode === 'cost' || mode === 'retail')) {
                 datasets.push({
                     type: 'line', label: perm.label + " (Install Cost)", data: dataLabor,
@@ -512,11 +458,11 @@
         if (chartInstance) chartInstance.destroy();
         const ctx = document.getElementById('physicsChart').getContext('2d');
 
-        let xTitle = id === 'yard' ? 'Quantity Ordered' : (id === 'ada' ? 'Physical Size (WxH)' : 'Total Square Footage (Size)');
+        let xTitle = id === 'yard' ? 'Quantity Ordered' : (id === 'wrap' || id === 'wall' ? 'Total Print Panels' : 'Physical Size');
         let yTitle = mode === 'margin' ? 'Net Margin (%)' : 'Money / Unit ($)';
 
         chartInstance = new Chart(ctx, {
-            data: { labels: steps, datasets: datasets },
+            data: { labels: labels, datasets: datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
@@ -525,18 +471,34 @@
                     tooltip: {
                         callbacks: {
                             label: function(ctx) {
-                                let label = ctx.dataset.label || '';
-                                if (label) label += ': ';
-                                if (mode === 'margin' && !label.includes('Labor')) label += ctx.parsed.y.toFixed(1) + '%';
-                                else label += '$' + ctx.parsed.y.toFixed(2);
-                                return label;
+                                // Dynamic 4-Line Tooltip Extractor
+                                const permIndex = ctx.dataset._permIndex;
+                                const stepIndex = ctx.dataIndex;
+                                const pointKey = 'ch-' + permIndex + '-' + stepIndex;
+                                const payload = currentChartDataMap[pointKey];
+                                
+                                if(!payload) return "No Data";
+                                const res = payload.res;
+                                const ret = res.retail.unitPrice || (res.retail.grandTotal / payload.inputs.qty);
+                                const cst = res.cost.total / payload.inputs.qty;
+                                const pro = ret - cst;
+                                const mrg = res.metrics.margin * 100;
+
+                                let lines = [
+                                    `🛒 Gross Retail: $${ret.toFixed(2)}`,
+                                    `⚙️ Hard Cost: $${cst.toFixed(2)}`,
+                                    `💰 Net Profit: $${pro.toFixed(2)}`,
+                                    `📊 Margin: ${mrg.toFixed(1)}%`
+                                ];
+                                if(ctx.dataset.label.includes('Install Cost')) return `Labor Cost: $${ctx.parsed.y.toFixed(2)}`;
+                                return lines;
                             }
                         }
                     }
                 },
                 scales: {
                     x: { title: { display: true, text: xTitle, font: { weight: 'bold' } }, grid: { display: false } },
-                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: false } // Allows dynamic zooming
+                    y: { title: { display: true, text: yTitle, font: { weight: 'bold' } }, beginAtZero: false } // Zoom enabled
                 },
                 onClick: (e, elements) => {
                     if (elements.length > 0) {
@@ -545,9 +507,7 @@
                         const datasetIndex = el.datasetIndex;
                         const permIndex = chartInstance.data.datasets[datasetIndex]._permIndex;
                         
-                        const stepVal = steps[dataIndex];
-                        const pointKey = 'ch-' + permIndex + '-' + stepVal;
-                        
+                        const pointKey = 'ch-' + permIndex + '-' + dataIndex;
                         let valDisplay = chartInstance.data.datasets[datasetIndex].data[dataIndex];
                         let displayStr = mode === 'margin' ? valDisplay.toFixed(1) + '%' : '$' + valDisplay.toFixed(2);
                         
@@ -605,10 +565,6 @@
                     inputs.panels = [{ label: "Panel", qty: 1, w: inputs.w, h: inputs.h, material: inputs.material, included: false }];
                 }
 
-                // Fallbacks so missing DOM controllers do not cause native JS string errors in older engines
-                if (activeConfig.id === 'cut') inputs.material = inputs.material || 'Flat';
-                if (activeConfig.id === 'decal') inputs.material = inputs.material || 'Cal';
-
                 if (typeof activeConfig.dynamicUI === 'function') inputs = activeConfig.dynamicUI(inputs);
 
                 try {
@@ -623,7 +579,7 @@
                     let bgStyle = getMarginColor(margin);
 
                     if (mode === 'retail') {
-                        val = res.retail.unitPrice;
+                        val = res.retail.unitPrice || (res.retail.grandTotal/inputs.qty);
                         display = "$" + val.toFixed(2);
                     } else if (mode === 'cost') {
                         val = res.cost.total / inputs.qty;
@@ -661,62 +617,15 @@
         const container = document.getElementById('receipt-container');
         const fmt = (n) => "$" + (parseFloat(n)||0).toFixed(2);
 
-        let retailLines = `<div class="flex justify-between text-[10px] font-bold"><span>Base Print:</span><span>${fmt(res.retail.printTotal)}</span></div>`;
-        if(res.retail.routerFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>CNC Routing:</span><span>${fmt(res.retail.routerFee)}</span></div>`;
-        if(res.retail.contourFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>Contour Cut:</span><span>${fmt(res.retail.contourFee)}</span></div>`;
-        if(res.retail.weedFee) retailLines += `<div class="flex justify-between text-[10px] font-bold text-pink-600"><span>Complex Weed:</span><span>${fmt(res.retail.weedFee)}</span></div>`;
-        if(res.retail.stakeTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-blue-600"><span>Hardware/Stakes:</span><span>${fmt(res.retail.stakeTotal)}</span></div>`;
-        if(res.retail.installTotal) retailLines += `<div class="flex justify-between text-[10px] font-bold text-indigo-600"><span>Installation:</span><span>${fmt(res.retail.installTotal)}</span></div>`;
-        if(res.retail.setupFee) retailLines += `<div class="flex justify-between text-[10px] font-bold"><span>Setup Fee:</span><span>${fmt(res.retail.setupFee)}</span></div>`;
-
-        let costLines = "";
-        const b = res.cost.breakdown || {};
-        for(const key in b) {
-            if(typeof b[key] === 'number' && !key.toLowerCase().includes('pct') && !key.toLowerCase().includes('hrs')) {
-                if(b[key] > 0) {
-                    let label = key.replace(/([A-Z])/g, ' $1').trim();
-                    label = label.charAt(0).toUpperCase() + label.slice(1);
-                    costLines += `<div class="flex justify-between text-[10px] font-bold text-gray-600 border-b border-gray-100 pb-0.5"><span>${label}:</span><span>${fmt(b[key])}</span></div>`;
-                }
-            }
+        // Dynamically invoke the native receipt generator if the active config has one
+        if (activeConfig && typeof activeConfig.renderReceipt === 'function') {
+            container.innerHTML = activeConfig.renderReceipt(res, fmt);
+        } else {
+            container.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs italic">Native receipt renderer missing for this module.</div>`;
         }
-        if(b.wasteCost) costLines += `<div class="flex justify-between text-[10px] font-bold text-red-500 mt-1"><span>Waste Buffer:</span><span>${fmt(b.wasteCost)}</span></div>`;
 
-        container.innerHTML = `
-            <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm">
-                <label class="text-[9px] font-black text-blue-600 uppercase block mb-2 border-b border-blue-200 pb-1 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Market Engine</label>
-                <div class="space-y-1.5">${retailLines}</div>
-                <div class="flex justify-between text-xs font-black border-t-2 border-blue-200 mt-2 pt-2 text-blue-900"><span>Total Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>
-            </div>
-
-            <div class="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm mt-4">
-                <label class="text-[9px] font-black text-red-600 uppercase block mb-2 border-b border-red-200 pb-1 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Physics Engine</label>
-                <div class="space-y-1.5">${costLines}</div>
-                <div class="flex justify-between text-xs font-black border-t-2 border-red-200 mt-2 pt-2 text-red-900"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>
-                <div class="flex justify-between text-[11px] font-black mt-2 pt-2 border-t border-red-200 bg-white p-2 rounded shadow-sm" style="${getMarginColor(res.metrics.margin)} border: 1px solid rgba(0,0,0,0.1);"><span>Net Profit:</span><span>${fmt(res.retail.grandTotal - res.cost.total)} (${(res.metrics.margin*100).toFixed(1)}%)</span></div>
-            </div>
-        `;
-    }
-
-    function resetOverrides() {
-        document.querySelectorAll('#override-container input').forEach(i => i.value = "");
-        generateMatrix();
-    }
-
-    function exportMatrix() {
-        const allOvr = new Array();
-        activeConfig.retails.forEach(i => allOvr.push(i));
-        activeConfig.costs.forEach(i => allOvr.push(i));
-
-        const payload = new Array();
-        allOvr.forEach(o => {
-            const val = document.getElementById('ovr_' + o.key).value;
-            if(val !== "") payload.push({ product: activeConfig.tab, cost: o.key, value: val });
-        });
-
-        if(payload.length === 0) return alert("No overrides detected.");
-        navigator.clipboard.writeText(JSON.stringify(payload));
-        alert("Payload Copied to Clipboard. Ready to commit to SYS_Cost_Matrix.");
+        // Expose Math Variables for Editing
+        document.getElementById('exposed-math-container').classList.remove('hidden');
     }
 </script>
 </body>
