@@ -1,34 +1,34 @@
 /**
- * ULTRA-SIMPLE RETAIL ENGINE: ADA Signs (v2.2)
- * Safely mapped with fallbacks to the PROD_Nameplates backend schema. Setup fee removed.
+ * MACRO RETAIL ENGINE: ADA Signs (v4.0)
+ * Uses predefined sign types to determine sqin rate based on size thresholds.
+ * Absorbs Braille, Tactile, and Tape into the single square inch rate.
  */
 function calculateADA(inputs, data) {
     const sqin = inputs.w * inputs.h;
+    const threshold = parseFloat(data.ADA_SqIn_Break || 36);
+    const isLarge = sqin >= threshold;
 
-    // 1. RETAIL ENGINE (MARKET VALUE)
-    let baseRateSqIn = parseFloat(data.Retail_Price_Base_Front || data.Retail_Price_Mattes_116 || 0.55);
+    // 1. RETAIL ENGINE (MACRO PRICING)
+    let baseRateSqIn = 0;
     
-    if (inputs.coreThick === '1/8') {
-        baseRateSqIn = parseFloat(data.Retail_Price_Base_Reverse || data.Retail_Price_Ultra_18 || 0.85);
+    if (inputs.signType === 'Standard') {
+        baseRateSqIn = isLarge ? parseFloat(data.ADA_TypeA_Large || 1.80) : parseFloat(data.ADA_TypeA_Small || 2.10);
+    } else if (inputs.signType === 'Layered_PVC') {
+        baseRateSqIn = isLarge ? parseFloat(data.ADA_TypeB1_Large || 1.95) : parseFloat(data.ADA_TypeB1_Small || 2.25);
+    } else if (inputs.signType === 'Layered_Acrylic') {
+        baseRateSqIn = isLarge ? parseFloat(data.ADA_TypeB2_Large || 2.20) : parseFloat(data.ADA_TypeB2_Small || 2.50);
+    } else {
+        baseRateSqIn = 1.80; // Safety Fallback
     }
-    
+
     let retailUnit = sqin * baseRateSqIn;
-    
-    if (inputs.hasTactile) retailUnit += (sqin * parseFloat(data.Retail_Adder_Tactile || 0.15));
-    if (inputs.backer === 'Black PVC' || inputs.backer === 'White PVC') retailUnit += (sqin * parseFloat(data.Retail_Adder_PVC_Backer || 0.15));
-    else if (inputs.backer === 'Clear Acrylic') retailUnit += (sqin * parseFloat(data.Retail_Adder_Acr_Backer || 0.25));
-
-    let brailleFee = 0;
-    if (inputs.hasBraille && inputs.brailleLines > 0) {
-        brailleFee = inputs.brailleLines * parseFloat(data.Retail_Adder_Braille_Line || 10.00);
-        retailUnit += brailleFee;
-    }
-
     let subTotal = retailUnit * inputs.qty;
+    
+    // Add file setup fee
+    subTotal += parseFloat(data.Retail_Fee_Setup || 15);
 
     // 2. MINIMUM ORDER GUARD
-    let minOrder = parseFloat(data.Retail_Min_Order || 35);
-    if (data.Retail_Min_Order_Etch) minOrder = parseFloat(data.Retail_Min_Order_Etch);
+    let minOrder = parseFloat(data.Retail_Min_Order || 50);
     let grandTotal = Math.max(subTotal, minOrder);
 
     return {
@@ -37,7 +37,7 @@ function calculateADA(inputs, data) {
             grandTotal: grandTotal,
             isMinApplied: subTotal < minOrder
         },
-        cost: { total: 0 }, // Stubbed out to keep the frontend headless and fast
+        cost: { total: 0 }, 
         metrics: { margin: 0 }
     };
 }
