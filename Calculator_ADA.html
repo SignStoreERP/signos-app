@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v3.4 - Modularized</title>
+    <title>ADA Signs v3.5 - Production Ready</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
-    <script src="cost_ada.js"></script>
+    
+    <!-- FIX: Restored Dual-Track Logic mapping -->
+    <script src="logic_ada.js"></script>
+    
     <script src="signos-builder.js"></script>
-    <script src="signos-export-v2.js"></script>
 
     <style>
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -38,7 +40,7 @@
 
     <div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
         
-        <!-- 1. VISUAL PREVIEW (INTERACTIVE CAMERA ABSTRACTED) -->
+        <!-- 1. VISUAL PREVIEW -->
         <div id="preview-wrapper" class="bg-blue-50 overflow-hidden relative flex flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100"
              onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
             
@@ -59,7 +61,6 @@
             </div>
         </div>
 
-        <!-- Dynamic ADA Compliance Warning -->
         <div id="ada-warn-box" class="hidden bg-red-50 border-b border-red-200 p-3 flex items-start gap-2 shadow-inner">
             <span class="text-red-500 text-base leading-none">⚠️</span>
             <div class="flex flex-col">
@@ -224,12 +225,13 @@
             </div>
         </div>
 
-        <!-- OUTPUTS & NARRATIVE GENERATOR -->
+        <!-- OUTPUTS & EXPORT MODULE -->
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
             <textarea id="job-desc" class="w-full text-xs p-3 border rounded bg-white h-24 text-gray-600 font-mono outline-none shadow-inner leading-relaxed mb-3" readonly></textarea>
             
             <button onclick="triggerExport()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded shadow-md text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 Export Production SVG (Vectors)
             </button>
         </div>
@@ -317,7 +319,6 @@
             const h = parseFloat(document.getElementById('h').value) || 8;
             const r = parseFloat(document.getElementById('radius').value) || 0;
             const container = document.getElementById('svg-preview-container');
-
             const fontSelect = document.getElementById('sign-font');
 
             const buildInputs = {
@@ -352,39 +353,61 @@
 
             // Draw HTML Shell
             const backerType = document.getElementById('backer').value;
-            const coreHex = selectedCore ? selectedCore.Cap_Hex : '#000000';
-            const tactileHex = selectedTactile ? selectedTactile.Cap_Hex : '#ffffff';
+            const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000'; // Using Hex_Code based on DB mapping
+            const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
             let backerHex = backerType === 'White PVC' ? '#ffffff' : (backerType === 'Clear Acrylic' ? 'rgba(255,255,255,0.4)' : '#111827');
 
             const scale = Math.min((SignOS_UI.Camera3D.is3D ? 160 : 220) / w, (SignOS_UI.Camera3D.is3D ? 100 : 160) / h);
             container.style.width = `${w * scale}px`;
             container.style.height = `${h * scale}px`;
             
-            let callout = (name, index) => `<div class="blueprint-callout absolute -right-4 translate-x-full flex items-center gap-1 z-50" style="top: -${index * 35}px;"><div class="w-6 border-b border-blue-400"></div><span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded border border-blue-200 shadow-sm">${name}</span></div>`;
+            // True Z-Axis native Left-Side Callouts (No fake pixel math)
+            let callout = (name) => `
+                <div class="blueprint-callout absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 flex items-center gap-1.5 z-50 pr-2">
+                    <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded border border-blue-200 shadow-sm whitespace-nowrap">${name}</span>
+                    <div class="w-8 border-b-[1.5px] border-blue-500 shadow-sm"></div>
+                </div>`;
 
             let html = '';
-            let layerIdx = 0;
 
             if (backerType !== 'None') {
-                html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${r*scale}px; --edge-shadow: ${makeEdge(backerHex, backerType.includes('Acrylic') ? 4 : 6)};">${SignOS_UI.Camera3D.is3D ? callout(backerType + ' Backer', layerIdx++) : ''}</div>`;
+                html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${r*scale}px; --edge-shadow: ${makeEdge(backerHex, backerType.includes('Acrylic') ? 4 : 6)};">${SignOS_UI.Camera3D.is3D ? callout(backerType + ' Backer') : ''}</div>`;
             }
 
-            html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${r*scale}px; --edge-shadow: ${makeEdge(coreHex, document.getElementById('core-thick').value.includes('1/8') ? 6 : 3)};">${SignOS_UI.Camera3D.is3D ? callout(document.getElementById('core-thick').value + '" ADA Core', layerIdx++) : ''}</div>`;
+            html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${r*scale}px; --edge-shadow: ${makeEdge(coreHex, document.getElementById('core-thick').value.includes('1/8') ? 6 : 3)};">${SignOS_UI.Camera3D.is3D ? callout(document.getElementById('core-thick').value + '" ADA Core') : ''}</div>`;
             
             html += `<div class="sign-layer layer-tactile" style="color: ${tactileHex};">
                 <svg id="live-production-preview" viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
-                ${SignOS_UI.Camera3D.is3D ? callout('1/32" Tactile & Braille', layerIdx++) : ''}
+                ${SignOS_UI.Camera3D.is3D ? callout('1/32" Tactile & Braille') : ''}
             </div>`;
 
             container.innerHTML = html;
 
-            // Save to global manifest for export
+            // Save to global manifest for direct internal export
             currentManifest = { w: w, h: h, coreHex: coreHex, tactileHex: tactileHex, radius: r, svgContent: layout.svgContent };
         }
 
+        // Direct standalone export
         function triggerExport() {
-            if(SignOS_Export_v2 && SignOS_Export_v2.exportADA) SignOS_Export_v2.exportADA(currentManifest);
-            else alert("SignOS Export Module missing.");
+            if(!currentManifest || !currentManifest.svgContent) return alert("Preview not ready!");
+
+            let finalSVG = `<?xml version="1.0" encoding="UTF-8"?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="${currentManifest.w}in" height="${currentManifest.h}in" viewBox="0 0 ${currentManifest.w} ${currentManifest.h}">
+                <!-- Substrate Boundary -->
+                <rect width="${currentManifest.w}" height="${currentManifest.h}" fill="${currentManifest.coreHex}" rx="${currentManifest.radius}" ry="${currentManifest.radius}" />
+                <!-- Vector Tactile & Braille Paths -->
+                <g fill="${currentManifest.tactileHex}">
+                    ${currentManifest.svgContent.replace(/currentColor/g, currentManifest.tactileHex)}
+                </g>
+            </svg>`;
+
+            const blob = new Blob([finalSVG], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `SignOS_PROD_ADA_${currentManifest.w}x${currentManifest.h}.svg`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function openModal(type) {
@@ -397,14 +420,14 @@
             SignOS_UI.buildColorGrid({
                 containerId: 'modal-grid', data: type === 'tactile' ? tactileColors : coreColors, type: 'rowmark', btnClass: 'w-10 h-10', activeRingClass: activeClass,
                 onSelect: (item) => {
-                    if (type === 'tactile') { selectedTactile = item; document.getElementById('swatch-tactile').style.backgroundColor = item.Cap_Hex; document.getElementById('label-tactile').innerText = item.Cap_Color; } 
-                    else { selectedCore = item; document.getElementById('swatch-core').style.backgroundColor = item.Cap_Hex; document.getElementById('label-core').innerText = item.Cap_Color; }
+                    if (type === 'tactile') { selectedTactile = item; document.getElementById('swatch-tactile').style.backgroundColor = item.Hex_Code; document.getElementById('label-tactile').innerText = item.Name; } 
+                    else { selectedCore = item; document.getElementById('swatch-core').style.backgroundColor = item.Hex_Code; document.getElementById('label-core').innerText = item.Name; }
                     closeModal(); runCalc();
                 }
             });
 
             const actItem = type === 'tactile' ? selectedTactile : selectedCore;
-            if(actItem) setTimeout(() => { const btn = document.querySelector(`#modal-grid button[data-code="${actItem.Item_Code}"]`); if(btn) btn.classList.add('ring-2', 'ring-offset-1', activeClass); }, 50);
+            if(actItem) setTimeout(() => { const btn = document.querySelector(`#modal-grid button[data-code="${actItem.Code}"]`); if(btn) btn.classList.add('ring-2', 'ring-offset-1', activeClass); }, 50);
         }
 
         function closeModal() { document.getElementById('color-modal').classList.add('hidden'); }
@@ -415,9 +438,14 @@
 
             try {
                 const inputs = {
-                    qty: parseFloat(document.getElementById('qty').value) || 1, w: parseFloat(document.getElementById('w').value) || 8, h: parseFloat(document.getElementById('h').value) || 8,
-                    coreThick: document.getElementById('core-thick').value, backer: document.getElementById('backer').value,
-                    hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked
+                    qty: parseFloat(document.getElementById('qty').value) || 1, 
+                    w: parseFloat(document.getElementById('w').value) || 8, 
+                    h: parseFloat(document.getElementById('h').value) || 8,
+                    coreThick: document.getElementById('core-thick').value, 
+                    backer: document.getElementById('backer').value,
+                    hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
+                    hasBraille: document.getElementById('toggle-braille').checked,
+                    brailleLines: document.getElementById('toggle-braille').checked ? 1 : 0
                 };
 
                 const result = calculateADA(inputs, backendData);
@@ -435,9 +463,9 @@
                 if(document.getElementById('toggle-picto').checked) tactArr.push("pictogram");
                 if(document.getElementById('toggle-text').checked) tactArr.push("text");
                 if(document.getElementById('toggle-braille').checked) tactArr.push("braille");
-                let tactStr = tactArr.length > 0 ? (inputs.hasTactile ? `with 1/32" [${selectedTactile.Item_Code}] ${selectedTactile.Cap_Color} tactile ${tactArr.join(", ").replace(/,([^,]*)$/, ' and$1')}` : `with clear raster braille`) : "";
+                let tactStr = tactArr.length > 0 ? (inputs.hasTactile ? `with 1/32" [${selectedTactile.Code}] ${selectedTactile.Name} tactile ${tactArr.join(", ").replace(/,([^,]*)$/, ' and$1')}` : `with clear raster braille`) : "";
 
-                let coreStr = `on ${inputs.coreThick} [${selectedCore.Item_Code}] ${selectedCore.Cap_Color} ADA core`;
+                let coreStr = `on ${inputs.coreThick} [${selectedCore.Code}] ${selectedCore.Name} ADA core`;
                 let edgeStr = document.getElementById('bevel').checked ? "with beveled edges" : "with straight cut edges";
                 let bType = inputs.backer;
                 let backerStr = bType !== 'None' ? `with ${bType === 'Black PVC' || bType === 'White PVC' ? '3mm ' + bType : '3/16" Clear Acrylic'} backer` : "";
@@ -457,7 +485,7 @@
             const statusDot = document.getElementById("status-dot");
 
             try {
-                // FECHES PROD_Nameplates schema to map against Live DB properly
+                // FETCHES PROD_Nameplates schema to map against Live DB properly
                 const payload = await SignOS.fetchProductData('PROD_Nameplates', ['REF_Colors_Rowmark', 'REF_Pictograms', 'REF_Fonts']);
                 backendData = payload.config;
                 const rawRowmark = payload.tables['REF_Colors_Rowmark'] || [];
@@ -469,17 +497,22 @@
                 systemFonts.forEach(f => { if(String(f.Is_Active).toUpperCase() === 'TRUE') fontHtml += `<option value="${f.CSS_Family}" data-filename="${f.File_Name}">${f.Font_Name}</option>`; });
                 fontSelect.innerHTML = fontHtml;
 
-                coreColors = rawRowmark.filter(r => r.Series && (r.Series.includes('Ultra-Mattes') || r.Series.includes('Mattes')));
-                if (!coreColors.find(c => c.Cap_Color && c.Cap_Color.includes('Clear'))) coreColors.push({ Item_Code: '322-101', Cap_Color: 'Clear', Cap_Hex: '#e5e7eb' });
-                tactileColors = rawRowmark.filter(r => r.Series && r.Series.includes('ADA Alternative'));
-
-                selectedCore = coreColors.find(c => c.Cap_Color && c.Cap_Color.includes('Black')) || coreColors;
-                selectedTactile = tactileColors.find(c => c.Cap_Color && c.Cap_Color.includes('White')) || tactileColors;
+                coreColors = rawRowmark.filter(r => r.Series && (r.Series.includes('Ultra-Mattes') || r.Series.includes('Mattes'))).map(c => ({
+                    Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: (c.Cap_Hex === 'Transparent' || c.Cap_Color.includes('Clear')) ? '#e5e7eb' : c.Cap_Hex
+                }));
+                if (!coreColors.find(c => c.Name.includes('Clear'))) coreColors.push({ Code: '322-101', Name: 'Clear', Hex_Code: '#e5e7eb' });
                 
-                document.getElementById('swatch-core').style.backgroundColor = selectedCore.Cap_Hex;
-                document.getElementById('label-core').innerText = selectedCore.Cap_Color;
-                document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Cap_Hex;
-                document.getElementById('label-tactile').innerText = selectedTactile.Cap_Color;
+                tactileColors = rawRowmark.filter(r => r.Series && r.Series.includes('ADA Alternative')).map(c => ({
+                    Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: c.Cap_Hex
+                }));
+
+                selectedCore = coreColors.find(c => c.Name.includes('Black')) || coreColors;
+                selectedTactile = tactileColors.find(c => c.Name.includes('White')) || tactileColors;
+                
+                document.getElementById('swatch-core').style.backgroundColor = selectedCore.Hex_Code;
+                document.getElementById('label-core').innerText = selectedCore.Name;
+                document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Hex_Code;
+                document.getElementById('label-tactile').innerText = selectedTactile.Name;
 
                 const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
                 if (activeIcons.length > 0) selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men') || p.Name.toLowerCase().includes('women')) || activeIcons; 
