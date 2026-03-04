@@ -79,3 +79,16 @@ function calculateAcrylic(inputs, data) {
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
+
+window.ACRYLIC_CONFIG = {
+    tab: 'PROD_Acrylic_Signs', engine: calculateAcrylic,
+    controls: [
+        { id: 'thickness', label: 'Thickness', type: 'select', opts: [{v:'0.25', t:'1/4"'}, {v:'0.5', t:'1/2"'}, {v:'0.75', t:'3/4"'}, {v:'1', t:'1"'}] },
+        { id: 'color', label: 'Color', type: 'select', opts: [{v:'Clear', t:'Clear'}, {v:'White', t:'White'}] },
+        { id: 'shape', label: 'Cut Type', type: 'select', opts: [{v:'Rectangle', t:'Square Cut'}, {v:'Easy', t:'CNC Simple'}, {v:'Complex', t:'CNC Complex'}] },
+        { id: 'method', label: 'Print Method', type: 'select', opts: [{v:'standard', t:'1st Surface'}, {v:'direct_white', t:'2nd Surface'}] }
+    ],
+    retails: [ { key: 'ACR_14_T1_Rate', label: '1/4" Rate ($)' } ],
+    costs: [ { key: 'Cost_Stock_14_4x8_C', label: '1/4" Clear ($)' } ]
+};
+
