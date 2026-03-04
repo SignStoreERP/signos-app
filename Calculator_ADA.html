@@ -3,35 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v2.7 - Interactive CAD Builder</title>
+    <title>ADA Signs v3.0 - Physics Pipeline</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
     <script src="signos-canvas.js"></script>
     <script src="logic_ada.js"></script>
     <style>
-        @font-face {
-            font-family: 'Swell Braille';
-            src: url('fonts/Swell-Braille.ttf') format('truetype');
-        }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .color-scroll::-webkit-scrollbar { width: 6px; }
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
         
-        .braille-bead {
-            fill: rgba(180, 180, 180, 0.35);
-            stroke: rgba(255, 255, 255, 0.7);
-            stroke-width: 0.008;
-        }
-
-        /* 3D Exploded View CSS (Restored to True Isometric) */
+        /* 3D Exploded View CSS (True Isometric) */
         #preview-wrapper { perspective: 1200px; cursor: grab; }
         #preview-wrapper:active { cursor: grabbing; }
         
         #zoom-stage {
             transform-origin: center;
-            transition: transform 0.1s ease-out; /* Smooth panning */
+            transition: transform 0.1s ease-out; 
         }
 
         #svg-preview-container { 
@@ -45,7 +36,7 @@
             transform-style: preserve-3d; 
         }
         
-        /* Restored Isometric Angles & Drop Shadows */
+        /* Isometric Angles & Drop Shadows */
         .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
         .exploded-view .layer-backer { transform: translateZ(-30px); box-shadow: var(--edge-shadow, -10px 10px 15px rgba(0,0,0,0.2)); }
         .exploded-view .layer-core { transform: translateZ(0px); box-shadow: var(--edge-shadow, -5px 5px 10px rgba(0,0,0,0.1)); }
@@ -89,10 +80,9 @@
             <div id="zoom-stage" class="w-full h-full flex items-center justify-center">
                 <div id="svg-preview-container" class="mt-4" style="width: 100px; height: 100px;"></div>
             </div>
-
         </div>
 
-        <!-- Dynamic ADA Compliance Warning (Moved Outside Preview) -->
+        <!-- Dynamic ADA Compliance Warning -->
         <div id="ada-warn-box" class="hidden bg-red-50 border-b border-red-200 p-3 flex items-start gap-2 shadow-inner">
             <span class="text-red-500 text-base leading-none">⚠️</span>
             <div class="flex flex-col">
@@ -227,8 +217,8 @@
                         </div>
                         <div class="col-span-2 sm:col-span-1">
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
-                            <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
-                                <!-- Injected via Canvas Engine -->
+                            <select id="sign-font" onchange="loadActiveFont()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm">
+                                <!-- Injected -->
                             </select>
                         </div>
                         <div class="col-span-2 sm:col-span-1">
@@ -242,7 +232,7 @@
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
                         <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> 
-                        Grade 2 Braille
+                        Grade 2 Braille (Auto-Translated)
                     </label>
                 </div>
             </div>
@@ -269,6 +259,11 @@
         <div class="bg-gray-50 p-4 border-t border-gray-200">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
             <textarea id="job-desc" class="w-full text-xs p-3 border rounded bg-white h-24 text-gray-600 font-mono outline-none shadow-inner leading-relaxed mb-3" readonly></textarea>
+            
+            <button onclick="downloadProductionSVG()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded shadow-md text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Export Production SVG (Vectors)
+            </button>
         </div>
     </div>
 
@@ -293,6 +288,10 @@
         let activeModal = ''; 
         let is3D = false;
 
+        // NEW: OpenType Font Memory Cache
+        let cachedFont = null;
+        const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
+
         // --- PAN & ZOOM LOGIC ---
         let panX = 0, panY = 0, scaleZ = 1;
         let isDragging = false, startX, startY;
@@ -300,7 +299,7 @@
         function handleZoom(e) {
             e.preventDefault();
             scaleZ += e.deltaY * -0.001;
-            scaleZ = Math.min(Math.max(0.4, scaleZ), 3); // Min 40%, Max 300%
+            scaleZ = Math.min(Math.max(0.4, scaleZ), 3); 
             updateTransform();
         }
 
@@ -327,7 +326,6 @@
         function updateTransform() {
             const stage = document.getElementById('zoom-stage');
             stage.style.transform = `translate(${panX}px, ${panY}px) scale(${scaleZ})`;
-            // Remove transition during active dragging so it feels perfectly responsive
             stage.style.transition = isDragging ? 'none' : 'transform 0.2s ease-out'; 
         }
 
@@ -392,7 +390,6 @@
             runCalc();
         }
 
-        // --- 3D EDGE GENERATOR ---
         function makeEdge(hex, depthPx) {
             if (!hex || hex === 'Transparent' || hex.includes('rgba')) return 'none';
             let c = hex.replace('#', '');
@@ -405,7 +402,6 @@
             let rgb = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
             
             let shadow = [];
-            // Map down and left for Isometric effect
             for(let i=1; i<=depthPx; i++) {
                 shadow.push(`-${i}px ${i}px 0 ${rgb}`);
             }
@@ -413,8 +409,81 @@
             return shadow.join(', ');
         }
 
-        // --- DYNAMIC PREVIEW & CALLOUTS ---
-        function updatePreview() {
+        // --- NEW: FONT LOADER (Physics Pipeline) ---
+        async function loadActiveFont() {
+            const fontSelect = document.getElementById('sign-font');
+            const fileName = fontSelect.options[fontSelect.selectedIndex].dataset.filename;
+            if (!fileName) return;
+
+            try {
+                const fontUrl = GITHUB_BASE + encodeURIComponent(fileName);
+                cachedFont = await new Promise((res, rej) => {
+                    opentype.load(fontUrl, (err, f) => err ? rej(err) : res(f));
+                });
+                runCalc();
+            } catch(e) {
+                console.error("Failed to load OpenType font:", e);
+            }
+        }
+
+        // --- NEW: MATH BRAILLE PLOTTER ---
+        function generateBraillePaths(text, startX, startY, align) {
+            if (!text) return "";
+            
+            // Basic Grade 1 mapping for prototype visualization
+            const brailleMap = {
+                'a': [1], 'b': [1], 'c': [1], 'd': [1],
+                'e': [1], 'f': [1], 'g': [1], 'h': [1],
+                'i': [1], 'j': [1], 'k': [1], 'l': [1],
+                'm': [1], 'n': [1], 'o': [1], 'p': [1],
+                'q': [1], 'r': [1], 's': [1], 't': [1],
+                'u': [1], 'v': [1], 'w': [1], 'x': [1],
+                'y': [1], 'z': [1], ' ': 
+            };
+
+            const DOT_PITCH = 0.100; // Federal spacing between dots in a cell
+            const CELL_PITCH = 0.250; // Federal spacing between cells
+            const DOT_RADIUS = 0.025; 
+            
+            let str = text.toLowerCase();
+            // Prefix number indicator (simulated)
+            if (/\d/.test(str)) str = "#" + str;
+
+            let totalWidth = str.length * CELL_PITCH;
+            
+            let cursorX = startX;
+            if (align === 'center') cursorX = startX - (totalWidth / 2);
+            if (align === 'right') cursorX = startX - totalWidth;
+
+            let paths = "";
+
+            for (let i = 0; i < str.length; i++) {
+                let char = str[i];
+                let dots = brailleMap[char] || ;
+
+                if (char === '#') dots = [1]; // Number sign
+                else if (/\d/.test(char)) {
+                    // Map numbers to a-j
+                    const numMap = ['j','a','b','c','d','e','f','g','h','i'];
+                    dots = brailleMap[numMap[parseInt(char)]] || ;
+                }
+
+                // Draw Dots (1-3 left col, 4-6 right col)
+                if(dots) paths += `<circle cx="${cursorX}" cy="${startY}" r="${DOT_RADIUS}" />`;
+                if(dots[1]) paths += `<circle cx="${cursorX}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
+                if(dots[2]) paths += `<circle cx="${cursorX}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
+                if(dots[3]) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY}" r="${DOT_RADIUS}" />`;
+                if(dots[4]) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + DOT_PITCH}" r="${DOT_RADIUS}" />`;
+                if(dots[5]) paths += `<circle cx="${cursorX + DOT_PITCH}" cy="${startY + (DOT_PITCH*2)}" r="${DOT_RADIUS}" />`;
+
+                cursorX += CELL_PITCH;
+            }
+
+            return paths;
+        }
+
+        // --- ASYNC DYNAMIC PREVIEW ---
+        async function updatePreview() {
             const w = parseFloat(document.getElementById('w').value) || 8;
             const h = parseFloat(document.getElementById('h').value) || 8;
             const r = parseFloat(document.getElementById('radius').value) || 0;
@@ -446,7 +515,6 @@
 
             let pictoSize = hasPicto ? (parseFloat(pictoInput.value) || 4) : 0;
             let fontSize = hasText ? (parseFloat(textInput.value) || 0.625) : 0;
-            let fontFam = document.getElementById('sign-font').value || 'sans-serif';
 
             // 2. ADA PHYSICS GUARDRAILS
             let reqHeight = 0.375; 
@@ -499,17 +567,10 @@
                 brailleY = currentY + 0.15; 
             }
 
-            let textAnchor = "middle";
             let xPos = w / 2;
-            if (align === 'left') {
-                textAnchor = "start";
-                xPos = 0.375; 
-            } else if (align === 'right') {
-                textAnchor = "end";
-                xPos = w - 0.375;
-            }
+            if (align === 'left') xPos = 0.375; 
+            if (align === 'right') xPos = w - 0.375;
 
-            // Scale UI div smaller to fit within the viewport comfortably
             const scale = Math.min(220 / w, 160 / h);
             const pxW = w * scale;
             const pxH = h * scale;
@@ -527,7 +588,6 @@
             const coreDepth = document.getElementById('core-thick').value.includes('1/8') ? 6 : 3;
             const backerDepth = backerType.includes('Acrylic') ? 4 : 6;
 
-            // Updated Callout with Index for Y-Axis Staggering
             let calloutHtml = (name, index) => `
                 <div class="blueprint-callout absolute -right-4 translate-x-full flex items-center gap-1 z-50" style="top: ${index * 25}px;">
                     <div class="w-6 border-b border-blue-400"></div>
@@ -537,38 +597,49 @@
             let html = '';
             let layerIndex = 0;
 
-            // L1: Backer Plate
             if (backerType !== 'None') {
                 html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${pxR}px; --edge-shadow: ${makeEdge(backerHex, backerDepth)};">
                     ${is3D ? calloutHtml(backerType + ' Backer', layerIndex++) : ''}
                 </div>`;
             }
 
-            // L2: ADA Core Substrate
             html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${pxR}px; --edge-shadow: ${makeEdge(coreHex, coreDepth)};">
                 ${is3D ? calloutHtml(document.getElementById('core-thick').value + '" ADA Core', layerIndex++) : ''}
             </div>`;
 
-            // L3: Applique & Braille
+            // L3: GENERATE ABSOLUTE VECTORS (Physics Pipeline)
             let svgContent = '';
+            
             if (hasPicto && selectedIcon) {
                 let pX = (w/2) - (pictoSize/2); 
                 let viewB = selectedIcon.ViewBox || "0 0 100 100";
                 svgContent += `<svg x="${pX}" y="${pictoY}" width="${pictoSize}" height="${pictoSize}" viewBox="${viewB}" fill="currentColor"><path d="${selectedIcon.SVG_Path}"/></svg>`;
             }
 
-            if (hasText) {
-                svgContent += `<text x="${xPos}" y="${textY}" font-family="'${fontFam}', sans-serif" class="font-dyn-${fontFam}" font-size="${fontSize}" font-weight="bold" text-anchor="${textAnchor}" letter-spacing="0.05">${textVal}</text>`;
+            if (hasText && cachedFont && textVal) {
+                // OPENTYPE PATH GENERATION
+                const fontScale = fontSize / cachedFont.ascender;
+                const pathObj = cachedFont.getPath(textVal, 0, 0, cachedFont.unitsPerEm * fontScale);
+                const bbox = pathObj.getBoundingBox();
+                
+                // Mathematical Alignment adjustments based on generated bounding box
+                let alignX = xPos;
+                if (align === 'center') alignX = xPos - ((bbox.x2 - bbox.x1) / 2) - bbox.x1;
+                if (align === 'right') alignX = xPos - (bbox.x2 - bbox.x1) - bbox.x1;
+                
+                svgContent += `<path d="${pathObj.toPathData()}" transform="translate(${alignX}, ${textY})" fill="currentColor" />`;
             }
 
             if (hasBraille) {
-                let brailleStr = "," + textVal.toLowerCase(); 
-                svgContent += `<text x="${xPos}" y="${brailleY}" class="braille-bead" font-family="'Swell Braille', sans-serif" font-size="0.28" text-anchor="${textAnchor}" letter-spacing="0.08">${brailleStr}</text>`;
+                // BRAILLE PLOTTER GENERATION
+                svgContent += `<g fill="rgba(180, 180, 180, 0.35)" stroke="rgba(255, 255, 255, 0.7)" stroke-width="0.008">
+                    ${generateBraillePaths(textVal, xPos, brailleY, align)}
+                </g>`;
             }
 
             html += `
             <div class="sign-layer layer-tactile" style="color: ${tactileHex};">
-                <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">
+                <svg id="live-production-preview" viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">
                     ${svgContent}
                 </svg>
                 ${is3D ? calloutHtml('1/32" Tactile & Braille', layerIndex++) : ''}
@@ -578,7 +649,41 @@
             container.innerHTML = html;
         }
 
-        // --- MODAL LOGIC ---
+        // --- SVG EXPORT (SignOS v3.0) ---
+        function downloadProductionSVG() {
+            const container = document.getElementById('svg-preview-container');
+            if (!container) return alert("Preview not ready!");
+
+            const w = parseFloat(document.getElementById('w').value) || 8;
+            const h = parseFloat(document.getElementById('h').value) || 8;
+            
+            const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000';
+            const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
+
+            let svgEl = document.getElementById('live-production-preview');
+            if(!svgEl) return alert("No tactile layer found to export.");
+
+            let svgData = svgEl.outerHTML;
+            svgData = svgData.replace(/currentColor/g, tactileHex);
+
+            // Clean Physics Package using strict inch coordinates
+            let finalSVG = `<?xml version="1.0" encoding="UTF-8"?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="${w}in" height="${h}in" viewBox="0 0 ${w} ${h}">
+                <!-- Substrate Boundary -->
+                <rect width="${w}" height="${h}" fill="${coreHex}" />
+                <!-- Vector Tactile & Braille Paths -->
+                ${svgData.replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '')}
+            </svg>`;
+
+            const blob = new Blob([finalSVG], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `SignOS_PROD_ADA_${w}x${h}.svg`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
         function openModal(type) {
             activeModal = type;
             document.getElementById('modal-title').innerText = type === 'tactile' ? 'Select Tactile Applique' : 'Select Core Background';
@@ -620,9 +725,11 @@
 
         function closeModal() { document.getElementById('color-modal').classList.add('hidden'); }
 
-        function runCalc() {
+        async function runCalc() {
             if(!backendData.Retail_Min_Order_Etch || !selectedCore || !selectedTactile) return;
-            updatePreview();
+            
+            // Generate exact physics paths
+            await updatePreview();
 
             try {
                 const inputs = {
@@ -653,7 +760,6 @@
                 document.getElementById('ui-min-text').innerText = `Shop Minimum: $${minOrder}`;
                 document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-                // NARRATIVE JOB DESCRIPTION GENERATOR
                 let qty = inputs.qty;
                 let dim = `${inputs.w}" x ${inputs.h}"`;
                 
@@ -699,15 +805,11 @@
                 pictograms = payload.tables['REF_Pictograms'] || [];
                 systemFonts = payload.tables['REF_Fonts'] || [];
 
-                if (SignOS_Canvas && SignOS_Canvas.loadFonts) {
-                    SignOS_Canvas.loadFonts(systemFonts.filter(f => String(f.Is_Active).toUpperCase() === 'TRUE'));
-                }
-
                 const fontSelect = document.getElementById('sign-font');
                 let fontHtml = '';
                 systemFonts.forEach(f => {
                     if(String(f.Is_Active).toUpperCase() === 'TRUE') {
-                        fontHtml += `<option value="${f.CSS_Family}">${f.Font_Name}</option>`;
+                        fontHtml += `<option value="${f.CSS_Family}" data-filename="${f.File_Name}">${f.Font_Name}</option>`;
                     }
                 });
                 fontSelect.innerHTML = fontHtml;
@@ -759,6 +861,9 @@
                         statusDot.classList.remove("animate-pulse");
                     }
                 }
+
+                // Initial Font Load
+                await loadActiveFont();
 
                 if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper');
                 
