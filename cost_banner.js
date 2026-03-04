@@ -1,15 +1,17 @@
 /**
- * PURE PHYSICS ENGINE: Vinyl Banners (v11.0)
- * Math Ledger integration and explicit Hem/Grommet labor lines.
+ * PURE PHYSICS ENGINE: Vinyl Banners (v12.0)
+ * Dual-Ledger Arrays. Explicit Hems, Grommets, and Hand Cut perimeter logic.
  */
 function calculateBanner(inputs, data) {
     const sqft = Math.ceil((inputs.w * inputs.h) / 144);
     const totalSqFt = sqft * inputs.qty;
 
     // --- 1. RETAIL ENGINE ---
+    const ret = [];
+    const R = (label, total, formula) => { if(total > 0) ret.push({label, total, formula}); return total; };
+
     const is1ft = (inputs.w === 12 || inputs.h === 12);
     let baseRate = 0;
-
     if (inputs.material === '15oz') baseRate = parseFloat(data.Retail_Price_Base_15oz || 7.50);
     else if (inputs.material === '18oz') baseRate = parseFloat(data.Retail_Price_Base_18oz || 8.00);
     else if (inputs.material === 'Mesh') baseRate = parseFloat(data.Retail_Price_Base_Mesh || 7.00);
@@ -19,27 +21,28 @@ function calculateBanner(inputs, data) {
         else baseRate = parseFloat(data.BAN13_T3_Rate || 5.00);
     }
 
-    let retailPrint = baseRate * totalSqFt;
-    if (inputs.sides === 2) retailPrint += (parseFloat(data.Retail_Adder_DS_SqFt || 3.00) * totalSqFt);
+    R(`Printed Banner (${inputs.material})`, baseRate * totalSqFt, `${totalSqFt} SF @ $${baseRate}`);
+    if (inputs.sides === 2) R(`Double Sided Adder`, (parseFloat(data.Retail_Adder_DS_SqFt || 3.00) * totalSqFt), `${totalSqFt} SF @ $3.00`);
 
-    let pktFee = 0;
-    if (inputs.pockets === 'Top') pktFee = (inputs.w / 12) * parseFloat(data.Retail_Fin_PolePkt_LF || 3) * inputs.qty;
-    else if (inputs.pockets === 'TopBottom') pktFee = ((inputs.w * 2) / 12) * parseFloat(data.Retail_Fin_PolePkt_LF || 3) * inputs.qty;
+    if (inputs.pockets === 'Top') R(`Pole Pockets (Top)`, (inputs.w / 12) * parseFloat(data.Retail_Fin_PolePkt_LF || 3) * inputs.qty, `Top Pocket per LF`);
+    else if (inputs.pockets === 'TopBottom') R(`Pole Pockets (T/B)`, ((inputs.w * 2) / 12) * parseFloat(data.Retail_Fin_PolePkt_LF || 3) * inputs.qty, `Top & Bot Pocket per LF`);
 
-    let windFee = inputs.windSlits === 'Yes' ? (totalSqFt * parseFloat(data.Retail_Price_WindSlits_SqFt || 1)) : 0;
-    const feeSetup = parseFloat(data.Retail_Fee_Setup || 15);
-    
+    if (inputs.windSlits === 'Yes') R(`Wind Slits`, (totalSqFt * parseFloat(data.Retail_Price_WindSlits_SqFt || 1)), `Wind Slit Adder per SF`);
+
+    R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Setup`);
+
+    let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
-    const grandTotalRaw = retailPrint + pktFee + windFee + feeSetup;
     const grandTotal = Math.max(grandTotalRaw, minOrder);
+    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
 
-    // --- 2. COST ENGINE (MATH LEDGER) ---
-    const bd = [];
-    const L = (label, total, formula) => { if(total > 0) bd.push({label, total, formula}); return total; };
+    // --- 2. COST ENGINE ---
+    const cst = [];
+    const L = (label, total, formula) => { if(total > 0) cst.push({label, total, formula}); return total; };
 
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
     const multDS = inputs.sides === 2 ? 2 : 1;
-    
+
     let vinCostRate = 0.30;
     if(inputs.material === '15oz') vinCostRate = parseFloat(data.Cost_Media_15oz || 0.46);
     else if(inputs.material === '18oz') vinCostRate = parseFloat(data.Cost_Media_18oz || 0.39);
@@ -59,38 +62,33 @@ function calculateBanner(inputs, data) {
     L(`Print Op (Attn Ratio)`, printHrs * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `${printHrs.toFixed(2)} Hrs * $${rateOp}/hr * 10%`);
     L(`Printer Run`, printHrs * parseFloat(data.Rate_Machine_Print || 5), `${printHrs.toFixed(2)} Hrs * $5/hr`);
 
-    // Finishing Math
+    // Finishing
     const perimeterLF = ((inputs.w * 2) + (inputs.h * 2)) / 12;
     L(`Hand Trimming (Perimeter)`, (perimeterLF * inputs.qty * parseFloat(data.Time_Cut_Hand || 0.25) / 60) * rateShop, `${(perimeterLF * inputs.qty).toFixed(1)} LF * 0.25 Mins/LF * $${rateShop}/hr`);
 
     if (inputs.hems) {
-        const tapeCost = perimeterLF * inputs.qty * parseFloat(data.Cost_Hem_Tape || 0.08);
-        L(`Hem Tape Material`, tapeCost, `${(perimeterLF * inputs.qty).toFixed(1)} LF * $0.08/LF`);
+        L(`Hem Tape Material`, perimeterLF * inputs.qty * parseFloat(data.Cost_Hem_Tape || 0.08), `${(perimeterLF * inputs.qty).toFixed(1)} LF * $0.08/LF`);
         const hemMins = perimeterLF * inputs.qty * parseFloat(data.Time_Hem_LF || 0.5);
         L(`Hemming Labor`, (hemMins / 60) * rateShop, `${(perimeterLF * inputs.qty).toFixed(1)} LF * 0.5 Mins/LF * $${rateShop}/hr`);
     }
 
     if (inputs.grommets) {
-        const gromCount = (perimeterLF / 2) * inputs.qty; // Approx 1 every 2ft
+        const gromCount = (perimeterLF / 2) * inputs.qty;
         L(`Nickel Grommets`, gromCount * parseFloat(data.Cost_Grommet || 0.13), `~${gromCount.toFixed(0)} Grommets * $0.13/Ea`);
         L(`Grommet Press Labor`, (gromCount * parseFloat(data.Time_Grommet_Per || 1) / 60) * rateShop, `${gromCount.toFixed(0)} Grommets * 1 Min/Ea * $${rateShop}/hr`);
     }
 
-    if (inputs.windSlits === 'Yes') {
-        const slitMins = totalSqFt * parseFloat(data.Time_WindSlits_SqFt || 0.1);
-        L(`Wind Slit Cutting`, (slitMins / 60) * rateShop, `${totalSqFt.toFixed(1)} SF * 0.1 Mins/SF * $${rateShop}/hr`);
-    }
+    if (inputs.windSlits === 'Yes') L(`Wind Slit Cutting`, ((totalSqFt * parseFloat(data.Time_WindSlits_SqFt || 0.1)) / 60) * rateShop, `${totalSqFt.toFixed(1)} SF * 0.1 Mins/SF * $${rateShop}/hr`);
 
-    let hardCostRaw = bd.reduce((sum, i) => sum + i.total, 0);
+    let hardCostRaw = cst.reduce((sum, i) => sum + i.total, 0);
     const totalCost = hardCostRaw * parseFloat(data.Factor_Risk || 1.10);
 
     return {
-        retail: { unitPrice: grandTotal / inputs.qty, printTotal: retailPrint, setupFee: feeSetup, grandTotal: grandTotal },
-        cost: { total: totalCost, breakdown: bd },
+        retail: { unitPrice: grandTotal / inputs.qty, grandTotal: grandTotal, breakdown: ret },
+        cost: { total: totalCost, breakdown: cst },
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
-// window.BANNER_CONFIG remains identical, just remove renderReceipt
 
 window.BANNER_CONFIG = {
     tab: 'PROD_Vinyl_Banners', engine: calculateBanner,
@@ -105,4 +103,3 @@ window.BANNER_CONFIG = {
     retails: [ { key: 'BAN13_T3_Rate', label: 'Base Rate ($)' } ],
     costs: [ { key: 'Cost_Media_13oz', label: '13oz Media ($)' } ]
 };
-
