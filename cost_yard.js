@@ -52,3 +52,13 @@ function calculateYardSign(inputs, data) {
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
 }
+
+window.YARD_CONFIG = {
+    tab: 'PROD_Yard_Signs', engine: calculateYardSign,
+    controls: [
+        { id: 'sides', label: 'Sides', type: 'select', opts: [{v:1, t:'1-Sided'}, {v:2, t:'2-Sided'}] },
+        { id: 'hasStakes', label: 'Include Stakes', type: 'toggle', def: true }
+    ],
+    retails: [ { key: 'Retail_Price_Sign_SS', label: 'Base Rate (SS)' }, { key: 'Retail_Price_Sign_DS', label: 'Side 2 Adder' } ],
+    costs: [ { key: 'Cost_Blank_Standard', label: 'Coro Blank ($)' }, { key: 'Cost_Stake', label: 'Stake Cost ($)' } ]
+};
