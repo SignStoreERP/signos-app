@@ -71,7 +71,7 @@
         <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-between items-center">
             <span class="text-xs font-black text-gray-800 uppercase tracking-widest">Sign Configuration</span>
             <button id="btn-toggle-view" onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition flex items-center gap-1">
-                👁️ <span>Open Viewfinder</span>
+                <span>Open Viewfinder</span>
             </button>
         </div>
 
@@ -278,7 +278,7 @@
             document.getElementById('preview-wrapper').classList.add('hidden');
             document.getElementById('preview-wrapper').classList.remove('flex');
             document.getElementById('content-module-wrap').classList.add('hidden');
-            btn.innerHTML = '👁️ <span>Open Viewfinder</span>';
+            btn.innerHTML = '<span>Open Viewfinder</span>';
             btn.classList.replace('text-gray-500', 'text-blue-600');
         }
     }
