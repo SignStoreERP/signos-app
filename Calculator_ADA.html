@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v5.0 - Custom Layer Builder</title>
+    <title>ADA Signs v5.1 - Layered Descriptions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -177,6 +177,29 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Finishing & Mounting Options -->
+                <div class="grid grid-cols-3 gap-3 mt-4 border-t border-gray-100 pt-4">
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Corner Radius</label>
+                        <input type="number" id="radius" value="0" step="0.125" min="0" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px]" oninput="runCalc()">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Edge Finish</label>
+                        <select id="bevel" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px]" onchange="runCalc()">
+                            <option value="Square">Square Cut</option>
+                            <option value="Bevel">Beveled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Mounting</label>
+                        <select id="mounting" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px]" onchange="runCalc()">
+                            <option value="None">None</option>
+                            <option value="Foam Tape">Foam Tape</option>
+                        </select>
+                    </div>
+                </div>
+
             </div>
 
             <!-- VIEWFINDER: CONTENT & TYPOGRAPHY -->
@@ -256,7 +279,7 @@
             <!-- NARRATIVE JOB DESCRIPTION -->
             <div class="bg-gray-50 p-4 border-t border-gray-200">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-                <textarea id="job-desc" class="w-full text-xs p-2 border border-gray-300 shadow-inner rounded bg-white h-20 text-gray-700 font-mono outline-none resize-none custom-scroll" readonly></textarea>
+                <textarea id="job-desc" class="w-full text-xs p-2 border border-gray-300 shadow-inner rounded bg-white h-24 text-gray-700 font-mono outline-none resize-none custom-scroll" readonly></textarea>
             </div>
             
         </div>
@@ -275,7 +298,9 @@
                 <div class="p-2 bg-white border-b border-gray-100">
                     <input type="text" id="glos-search" placeholder="Search variables..." oninput="filterGlossary()" class="w-full border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
                 </div>
-                <div id="glossary-grid" class="flex flex-col gap-2 p-3 max-h-80 overflow-y-auto custom-scroll bg-gray-50"></div>
+                <div id="glossary-grid" class="flex flex-col gap-2 p-3 max-h-80 overflow-y-auto custom-scroll bg-gray-50">
+                    <!-- Definitions injected here -->
+                </div>
             </div>
         </div>
 
@@ -458,7 +483,7 @@
         
         const w = parseFloat(document.getElementById('w').value) || 8;
         const h = parseFloat(document.getElementById('h').value) || 8;
-        const r = 0.5; 
+        const r = parseFloat(document.getElementById('radius').value) || 0; 
         const container = document.getElementById('svg-preview-container');
         const fontSelect = document.getElementById('sign-font');
         
@@ -715,6 +740,9 @@
             h: parseFloat(document.getElementById('h').value) || 8,
             coreThick: document.getElementById('bld-core').value,
             backer: document.getElementById('bld-backer').value,
+            radius: parseFloat(document.getElementById('radius').value) || 0,
+            bevel: document.getElementById('bevel').value,
+            mounting: document.getElementById('mounting').value,
             hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
             hasBraille: document.getElementById('toggle-braille').checked,
             brailleLines: document.getElementById('toggle-braille').checked ? lineCount : 0
@@ -733,13 +761,20 @@
             document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(dataToUse.Retail_Min_Order || 50)}`;
             document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-            // Populate Job Description Generator
-            let tactStr = inputs.hasTactile && selectedTactile ? `1/32" [${selectedTactile.Code}] ${selectedTactile.Name} Tactile` : `No Tactile`;
-            let brailleStr = inputs.hasBraille ? `w/ ${inputs.brailleLines} lines Raster Braille` : ``;
-            let coreStr = selectedCore ? `${inputs.coreThick}" [${selectedCore.Code}] ${selectedCore.Name} Core` : `${inputs.coreThick}" Core`;
-            let backerStr = inputs.backer !== 'None' ? `mounted to ${inputs.backer}` : `(No Backer)`;
-            
-            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers: ${tactStr} ${brailleStr} on ${coreStr} ${backerStr}.`.replace(/  +/g, ' ');
+            // Populate Layer-by-Layer Job Description Generator
+            let tactStr = (inputs.hasTactile && selectedTactile) ? `1/32" ${selectedTactile.Name} Tactile` : `No Tactile`;
+            let brailleStr = inputs.hasBraille ? ` w/ Braille` : ``;
+            let coreStr = selectedCore ? `${inputs.coreThick}" ${selectedCore.Name} Core` : `${inputs.coreThick}" Core`;
+            let backerStr = inputs.backer !== 'None' ? ` on ${inputs.backer}` : ``;
+            let layerDesc = `${tactStr}${brailleStr} on ${coreStr}${backerStr}`.replace(/  +/g, ' ');
+
+            let fin = [];
+            if (inputs.bevel === 'Bevel') fin.push("Beveled Edges");
+            if (inputs.radius > 0) fin.push(`${inputs.radius}" Radius Corners`);
+            if (inputs.mounting !== 'None') fin.push(`Mounted with ${inputs.mounting}`);
+            let finDesc = fin.length > 0 ? fin.join(", ") : "Square cut edges, no hardware";
+
+            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers: ${layerDesc}.\nFinishing: ${finDesc}.`;
 
             if (customSimData) {
                 lastSimResult = result;
@@ -759,7 +794,6 @@
         }
 
         // Apply loader correctly to the preview-wrapper container. 
-        // We temporarily remove hidden so it draws, and then hide it again.
         const previewWrap = document.getElementById('preview-wrapper');
         previewWrap.classList.remove('hidden');
         previewWrap.classList.add('flex');
