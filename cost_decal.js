@@ -21,12 +21,11 @@ function calculateDecal(inputs, data) {
     if (inputs.complexity === 'Complex') R(`Complex Weeding`, totalSqFt * parseFloat(data.Retail_Weed_Complex || 2.5), `${totalSqFt.toFixed(1)} SF @ $2.50`);
     if (inputs.masking === 'Yes') R(`Pre-Mask Application`, totalSqFt * parseFloat(data.Retail_Adder_Mask_SqFt || 1), `${totalSqFt.toFixed(1)} SF @ $1.00`);
     
-    R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Setup`);
 
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 35);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
-    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
+
 
     // --- COST ENGINE ---
     const cst = [];
