@@ -26,12 +26,11 @@ function calculateACM(inputs, data) {
         R(`CNC Router Fee`, fee, `Shape Routing Fee`);
     }
 
-    R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Fee`);
 
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
-    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
+
 
     // --- 2. COST ENGINE ---
     const cst = [];
@@ -98,3 +97,4 @@ window.ACM_CONFIG = {
     retails: [ { key: 'ACM3_T1_Rate', label: '3mm Rate ($)' }, { key: 'Retail_Fee_Router_Easy', label: 'CNC Easy Fee ($)' } ],
     costs: [ { key: 'Cost_Stock_3mm_4x8', label: '3mm Sheet ($)' }, { key: 'Time_Shear_Setup', label: 'Shear Setup' }, { key: 'Time_Shear_Cut', label: 'Shear Cut' } ]
 };
+
