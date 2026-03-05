@@ -46,12 +46,11 @@ function calculateCoro(inputs, data) {
         R(`CNC Router Fee`, fee, `Flat Shape Routing Fee`);
     }
 
-    const feeSetup = R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Fee`);
     
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
-    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
+
 
     // --- 2. COST ENGINE (PHYSICS & BOM) ---
     const cst = [];
@@ -119,3 +118,5 @@ window.CORO_CONFIG = {
     retails: [ { key: 'COR4_T1_Rate', label: '4mm Base ($)' }, { key: 'Retail_Adder_DS_4mm', label: 'DS Adder ($)' } ],
     costs: [ { key: 'Cost_Stock_4mm_4x8', label: '4mm Sheet ($)' }, { key: 'Cost_Lam_SqFt', label: 'Laminate ($/SF)' } ]
 };
+
+
