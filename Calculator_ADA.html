@@ -64,21 +64,15 @@
     <!-- CENTER: MAIN CALCULATOR ISLAND -->
     <div id="main-card" class="w-full max-w-md bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative z-20 shrink-0">
         
-        <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
+       <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
 
-        <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-between items-center">
-            <span class="text-xs font-black text-gray-800 uppercase tracking-widest">Sign Configuration</span>
+        <!-- VIEWFINDER TOGGLE BAR -->
+        <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-end items-center z-20 relative">
             <button id="btn-toggle-view" onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition flex items-center gap-1">
-                👁️ <span>Open Viewfinder</span>
+                <span>Open Viewfinder</span>
             </button>
         </div>
 
-        <!-- STATE 1: SPEC SUMMARY (ON BY DEFAULT) -->
-        <div id="spec-summary" class="bg-white p-5 border-b border-gray-200 shadow-inner">
-            <div id="summary-content" class="space-y-3">
-                <div class="text-center text-gray-400 text-xs font-bold py-4 italic">Calculating Specs...</div>
-            </div>
-        </div>
 
         <!-- STATE 2: 3D PREVIEW (HIDDEN BY DEFAULT) -->
         <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
@@ -288,7 +282,7 @@
             document.getElementById('preview-wrapper').classList.add('hidden');
             document.getElementById('preview-wrapper').classList.remove('flex');
             document.getElementById('content-module-wrap').classList.add('hidden');
-            btn.innerHTML = '👁️ <span>Open Viewfinder</span>';
+            btn.innerHTML = '<span>Open Viewfinder</span>';
             btn.classList.replace('text-gray-500', 'text-blue-600');
         }
     }
@@ -399,8 +393,8 @@
 
         // Reduced Thickness Physics
         const depthTactile = 1;
-        const depthCore = coreThickStr === '1/8' ? 4 : 2;
-        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 2 : 4);
+        const depthCore = coreThickStr === '1/8' ? 2 : 1;
+        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 1 : 3);
         
         const isExp = SignOS_UI.Camera3D.is3D;
         
@@ -571,7 +565,7 @@
         a.click();
     }
 
-    async function runCalc() {
+   async function runCalc() {
         if(!backendData.Retail_Min_Order) return;
         
         const rawText = document.getElementById('sign-text').value;
@@ -588,19 +582,6 @@
             brailleLines: document.getElementById('toggle-braille').checked ? lineCount : 0
         };
 
-        // Render Summary Texts
-        let sHtml = `<div class="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">`;
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Dimensions:</span> <span class="font-black text-gray-800">${inputs.w}" x ${inputs.h}"</span></div>`;
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Quantity:</span> <span class="font-black text-gray-800">${inputs.qty}</span></div>`;
-        
-        let bType = inputs.signType === 'Standard' ? 'None' : (inputs.signType === 'Layered_PVC' ? `3mm ${inputs.backerColor}` : '3/16" Clear Acrylic');
-        let cThk = inputs.signType === 'Standard' ? '1/8"' : '1/16"';
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Core Base:</span> <span class="font-bold text-blue-700 truncate w-32 text-right">${cThk} ${selectedCore ? selectedCore.Name : 'None'}</span></div>`;
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Rigid Backer:</span> <span class="font-bold text-gray-700 truncate w-32 text-right">${bType}</span></div>`;
-        
-        if(inputs.hasTactile) sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1 col-span-2"><span class="text-gray-400 font-bold uppercase text-[10px]">Tactile Applique:</span> <span class="font-bold text-purple-700">${selectedTactile ? selectedTactile.Name : 'None'}</span></div>`;
-        sHtml += `</div>`;
-
         try {
             const dataToUse = customSimData || backendData;
             const result = calculateADA(inputs, dataToUse);
@@ -609,8 +590,6 @@
             const ret = result.retail;
             const fmt = (n) => "$" + (n || 0).toFixed(2);
             
-            document.getElementById('summary-content').innerHTML = sHtml;
-
             document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
             document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
             document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(dataToUse.Retail_Min_Order || 50)}`;
