@@ -1,5 +1,5 @@
 /**
- * PURE PHYSICS ENGINE: ADA Signs (v4.6)
+ * PURE PHYSICS ENGINE: ADA Signs (v4.7)
  * Interactive String-Matcher Ledger. Custom Layer-Builder and Assembly Labor physics.
  */
 function calculateADA(inputs, data) {
@@ -91,6 +91,7 @@ function calculateADA(inputs, data) {
     let tapeLayers = 0;
     if (inputs.hasTactile) tapeLayers++;
     if (inputs.backer !== 'None') tapeLayers++;
+    if (inputs.mounting === 'Foam Tape') tapeLayers++; // Adds tape cost and 2 mins labor for applying the mount
 
     if (tapeLayers > 0) {
         const costTape = parseFloat(data.Cost_ADA_Tape || 0.30) / 144;
