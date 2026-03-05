@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ADA Signs (v4.2)
- * Full Exhaustive Ledger format. Includes full Sandbox Arrays.
+ * PURE PHYSICS ENGINE: ADA Signs (v4.3)
+ * Full Exhaustive Ledger format displaying explicit variable keys in formulas.
  */
 function calculateADA(inputs, data) {
     const sqin = inputs.w * inputs.h;
@@ -10,95 +10,105 @@ function calculateADA(inputs, data) {
     const ret = [];
     const R = (label, total, formula) => { if(total > 0) ret.push({label, total, formula}); return total; };
 
+    let baseRateKey = inputs.signType === 'Standard' ? 'Retail_Price_Ultra_18' : 'Retail_Price_Mattes_116';
     let baseRateSqIn = inputs.signType === 'Standard' ? parseFloat(data.Retail_Price_Ultra_18 || 0.85) : parseFloat(data.Retail_Price_Mattes_116 || 0.55);
-    R(`Base Engraved Body`, (sqin * baseRateSqIn) * inputs.qty, `${inputs.qty}x Signs @ ${sqin} sqin * $${baseRateSqIn.toFixed(2)}`);
+    R(`Base Engraved Body`, (sqin * baseRateSqIn) * inputs.qty, `Qty * SqIn * [${baseRateKey}]`);
 
     if (inputs.hasTactile) {
-        R(`Tactile Applique Adder`, (sqin * parseFloat(data.Retail_Adder_Tactile || 0.60)) * inputs.qty, `${inputs.qty}x Signs @ ${sqin} sqin * $0.60`);
+        R(`Tactile Applique Adder`, (sqin * parseFloat(data.Retail_Adder_Tactile || 0.60)) * inputs.qty, `Qty * SqIn * [Retail_Adder_Tactile]`);
     }
 
     if (inputs.signType === 'Layered_PVC') {
-        R(`PVC Rigid Backer`, (sqin * parseFloat(data.Retail_Adder_PVC_Backer || 0.40)) * inputs.qty, `${inputs.qty}x Signs @ ${sqin} sqin * $0.40`);
+        R(`PVC Rigid Backer`, (sqin * parseFloat(data.Retail_Adder_PVC_Backer || 0.40)) * inputs.qty, `Qty * SqIn * [Retail_Adder_PVC_Backer]`);
     } else if (inputs.signType === 'Layered_Acrylic') {
-        R(`Acrylic Rigid Backer`, (sqin * parseFloat(data.Retail_Adder_Acr_Backer || 0.60)) * inputs.qty, `${inputs.qty}x Signs @ ${sqin} sqin * $0.60`);
+        R(`Acrylic Rigid Backer`, (sqin * parseFloat(data.Retail_Adder_Acr_Backer || 0.60)) * inputs.qty, `Qty * SqIn * [Retail_Adder_Acr_Backer]`);
     }
 
     let brailleFee = 0;
     if (inputs.hasBraille && inputs.brailleLines > 0) {
         brailleFee = inputs.brailleLines * parseFloat(data.Retail_Adder_Braille_Line || 10.00);
-        R(`Raster Braille (Grade 2)`, brailleFee * inputs.qty, `${inputs.qty}x Signs @ ${inputs.brailleLines} Lines * $10.00`);
+        R(`Raster Braille (Grade 2)`, brailleFee * inputs.qty, `Qty * Braille Lines * [Retail_Adder_Braille_Line]`);
     }
 
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
+    const isMinApplied = grandTotalRaw < minOrder;
 
     // --- 2. COST ENGINE ---
     const cst = [];
     const L = (label, total, formula) => { if(total > 0) cst.push({label, total, formula}); return total; };
 
     const coreThick = inputs.signType === 'Standard' ? '1/8' : '1/16';
-    const sheetSqIn = 24 * 48; // 1152
+    const sheetSqIn = 24 * 48; // 1152 sq in per sheet
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
 
+    let coreKey = coreThick === '1/8' ? 'Cost_Stock_18_ADA' : 'Cost_Stock_116_ADA';
     const costBackground = coreThick === '1/8' ? parseFloat(data.Cost_Stock_18_ADA || 117)/sheetSqIn : parseFloat(data.Cost_Stock_116_ADA || 75)/sheetSqIn;
-    L(`ADA Core (${coreThick}")`, (totalSqin * costBackground) * wastePct, `(${totalSqin.toFixed(1)} SqIn * $${costBackground.toFixed(4)}/sqin) * ${wastePct} Waste`);
+    L(`ADA Core (${coreThick}")`, (totalSqin * costBackground) * wastePct, `(Total SqIn * [${coreKey}] / 1152) * [Waste_Factor]`);
 
     if (inputs.hasTactile) {
         const costApplique = parseFloat(data.Cost_Stock_132_Applique || 65)/sheetSqIn;
-        L(`Tactile Applique (1/32")`, (totalSqin * costApplique) * wastePct, `(${totalSqin.toFixed(1)} SqIn * $${costApplique.toFixed(4)}/sqin) * Waste`);
+        L(`Tactile Applique (1/32")`, (totalSqin * costApplique) * wastePct, `(Total SqIn * [Cost_Stock_132_Applique] / 1152) * [Waste_Factor]`);
+        
         const costTape = parseFloat(data.Cost_ADA_Tape || 0.30) / 144;
-        L(`3M Double Sided Tape`, (totalSqin * costTape) * wastePct, `(${totalSqin.toFixed(1)} SqIn * $${costTape.toFixed(4)}/sqin) * Waste`);
+        L(`3M Double Sided Tape`, (totalSqin * costTape) * wastePct, `(Total SqIn * [Cost_ADA_Tape] / 144) * [Waste_Factor]`);
     }
 
     if (inputs.hasBraille) {
         const costBead = parseFloat(data.Cost_Raster_Bead || 0.05);
         const totalBeads = inputs.qty * inputs.brailleLines * 10; // Approx 10 per line
-        L(`Raster Braille Beads`, totalBeads * costBead * wastePct, `${totalBeads} Beads * $${costBead.toFixed(2)}`);
+        L(`Raster Braille Beads`, totalBeads * costBead * wastePct, `Total Beads * [Cost_Raster_Bead] * [Waste_Factor]`);
     }
 
     if (inputs.signType !== 'Standard') {
         let backerCost = 0;
+        let backerKey = '';
+        
         if (inputs.signType === 'Layered_Acrylic') {
             backerCost = parseFloat(data.Cost_Stock_14_4x8_C || 120) / 4608;
+            backerKey = 'Cost_Stock_14_4x8_C';
         } else {
-            // Check UI input for Black vs White PVC
+            // White PVC vs Black PVC Logic
             if (inputs.backerColor === 'White PVC') {
                 backerCost = parseFloat(data.Cost_Stock_3mm_4x8_WW || 29.09) / 4608;
+                backerKey = 'Cost_Stock_3mm_4x8_WW';
             } else {
                 backerCost = parseFloat(data.Cost_Stock_3mm_4x8_BK || 32.53) / 4608;
+                backerKey = 'Cost_Stock_3mm_4x8_BK';
             }
         }
-        L(`Rigid Backer Material`, (totalSqin * backerCost) * wastePct, `(${totalSqin.toFixed(1)} SqIn * $${backerCost.toFixed(4)}/sqin) * Waste`);
+        L(`Rigid Backer Material`, (totalSqin * backerCost) * wastePct, `(Total SqIn * [${backerKey}] / 4608) * [Waste_Factor]`);
     }
 
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const shopRate = parseFloat(data.Rate_Shop_Labor || 20);
     const engraveRate = parseFloat(data.Rate_Machine_Engraver || 15);
 
-    L(`Engraver Prepress`, (10 / 60) * rateOp, `10 Mins * $${rateOp}/hr`);
-    L(`Engraver Setup`, (parseFloat(data.Time_Engraver_Load_Per_Item || 2) * inputs.qty / 60) * rateOp, `${inputs.qty} Signs * 2 Mins * $${rateOp}/hr`);
+    L(`Engraver Prepress`, (10 / 60) * rateOp, `10 Mins * [Rate_Operator]`);
+    L(`Engraver Setup`, (parseFloat(data.Time_Engraver_Load_Per_Item || 2) * inputs.qty / 60) * rateOp, `Qty * [Time_Engraver_Load_Per_Item] * [Rate_Operator]`);
     
     const runMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.25);
-    L(`Engraver Run Time`, (runMins / 60) * engraveRate, `${runMins.toFixed(1)} Mins * $${engraveRate}/hr`);
-    L(`Operator Attendance`, (runMins / 60) * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `${runMins.toFixed(1)} Mins * 10% Attn`);
+    L(`Engraver Run Time`, (runMins / 60) * engraveRate, `Total SqIn * [Time_Engrave_SqIn] * [Rate_Machine_Engraver]`);
+    L(`Operator Attendance`, (runMins / 60) * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `Engraver Run Time * [Labor_Attendance_Ratio] * [Rate_Operator]`);
 
     if (inputs.hasBraille) {
-        L(`Braille Bead Insertion`, ((inputs.qty * inputs.brailleLines * 10) * 0.05 / 60) * shopRate, `Beads * 0.05 Mins * $${shopRate}/hr`);
+        L(`Braille Bead Insertion`, ((inputs.qty * inputs.brailleLines * 10) * 0.05 / 60) * shopRate, `Total Beads * 0.05 Mins * [Rate_Shop_Labor]`);
     }
 
     if (inputs.signType !== 'Standard') {
         const cncRate = parseFloat(data.Rate_Machine_CNC || 10);
-        L(`CNC Prepress & Setup`, (25 / 60) * rateOp, `25 Mins * $${rateOp}/hr`);
+        L(`CNC Prepress & Setup`, (25 / 60) * rateOp, `25 Mins * [Rate_Operator]`);
+        
         const cncMins = totalSqin * parseFloat(data.Time_CNC_Easy_SqFt || 1) / 144;
-        L(`CNC Run Time`, (cncMins / 60) * cncRate, `${cncMins.toFixed(2)} Mins * $${cncRate}/hr`);
+        L(`CNC Run Time`, (cncMins / 60) * cncRate, `Total SqIn / 144 * [Time_CNC_Easy_SqFt] * [Rate_Machine_CNC]`);
     }
 
     let hardCostRaw = cst.reduce((sum, i) => sum + i.total, 0);
     const totalCost = hardCostRaw * parseFloat(data.Factor_Risk || 1.05);
 
     return {
-        retail: { unitPrice: grandTotal / inputs.qty, grandTotal: grandTotal, breakdown: ret },
+        retail: { unitPrice: grandTotal / inputs.qty, grandTotal: grandTotal, breakdown: ret, isMinApplied: isMinApplied },
         cost: { total: totalCost, breakdown: cst },
         metrics: { margin: (grandTotal - totalCost) / grandTotal }
     };
@@ -125,7 +135,8 @@ window.ADA_CONFIG = {
         { key: 'Cost_Stock_116_ADA', label: '1/16" Core ($/Sht)' }, 
         { key: 'Cost_Stock_18_ADA', label: '1/8" Core ($/Sht)' },
         { key: 'Cost_Stock_132_Applique', label: '1/32" Tactile ($/Sht)' },
-        { key: 'Cost_Stock_3mm_4x8_BK', label: '3mm PVC ($/Sht)' },
+        { key: 'Cost_Stock_3mm_4x8_BK', label: '3mm Blk PVC ($/Sht)' },
+        { key: 'Cost_Stock_3mm_4x8_WW', label: '3mm Wht PVC ($/Sht)' },
         { key: 'Cost_Stock_14_4x8_C', label: '1/4" Clear ($/Sht)' },
         { key: 'Cost_ADA_Tape', label: '3M Tape ($/SqFt)' },
         { key: 'Cost_Raster_Bead', label: 'Raster Bead ($/Ea)' },
@@ -135,8 +146,9 @@ window.ADA_CONFIG = {
         { key: 'Rate_Machine_CNC', label: 'CNC Mach ($/Hr)' },
         { key: 'Time_Engraver_Load_Per_Item', label: 'Load/Unload (Mins)' },
         { key: 'Time_Engrave_SqIn', label: 'Engrave Spd (Min/Sqin)' },
+        { key: 'Time_CNC_Easy_SqFt', label: 'CNC Spd (Min/SqFt)' },
         { key: 'Waste_Factor', label: 'Waste Buffer (1.x)' },
-        { key: 'Factor_Risk', label: 'Risk Buffer (1.x)' }
+        { key: 'Factor_Risk', label: 'Risk Buffer (1.x)' },
+        { key: 'Labor_Attendance_Ratio', label: 'Attn Ratio (0-1)' }
     ]
 };
-
