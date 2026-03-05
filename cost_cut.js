@@ -19,12 +19,11 @@ function calculateCutVinyl(inputs, data) {
     
     if (inputs.complexity === 'Complex') R(`Complex Weeding Markup`, totalSqFt * parseFloat(data.Retail_Weed_Complex_Add || 5), `${totalSqFt.toFixed(1)} SF @ $5.00`);
 
-    R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Setup`);
 
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 45);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
-    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
+
 
     // --- 2. COST ENGINE ---
     const cst = [];
