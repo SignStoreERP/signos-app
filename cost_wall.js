@@ -25,7 +25,7 @@ function calculateWall(inputs, data) {
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 150);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
-    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
+
 
     // --- 2. COST ENGINE ---
     const cst = [];
