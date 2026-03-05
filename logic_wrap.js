@@ -1,11 +1,10 @@
 /**
  * ULTRA-SIMPLE RETAIL ENGINE: Vehicle Wraps
- * Supports Extended Perf Models, Complex Curve Multipliers. Zero Setup Fees.
+ * Supports Cast Wrap and Window Perf. Zero Setup Fees.
  */
 function calculateWrap(inputs, data) {
     const retWrap = parseFloat(data.Retail_Price_Vehicle_SqFt) || 15.00;
-    const retPerfStd = parseFloat(data.Retail_Price_Perf_SqFt) || 12.00;
-    const retPerfDual = parseFloat(data.Retail_Price_PerfDual_SqFt) || 18.00;
+    const retPerf = parseFloat(data.Retail_Price_Perf_SqFt) || 12.00;
     
     // Install Base & Complexity Multiplier
     const baseInstall = parseFloat(data.Retail_Price_Install_Simple) || 5.00;
@@ -19,18 +18,16 @@ function calculateWrap(inputs, data) {
         const sqft = (p.w * p.h) / 144;
         const area = sqft * inputs.qty;
         displaySqFt += area;
-        let retailUnit = 0;
-
+        
         if (p.material.startsWith('perf')) {
             if (!p.included) {
-                retailUnit = p.material === 'perfdual' ? retPerfDual : retPerfStd;
+                totalRetailPrint += (retPerf * area);
                 totalInstallSqFt += area;
             }
         } else {
-            retailUnit = retWrap;
+            totalRetailPrint += (retWrap * area);
             totalInstallSqFt += area;
         }
-        totalRetailPrint += (retailUnit * area);
     });
 
     let discPct = 0;
@@ -38,16 +35,10 @@ function calculateWrap(inputs, data) {
     else if (inputs.qty >= (parseFloat(data.Tier_1_Qty) || 3)) discPct = parseFloat(data.Tier_1_Disc) || 0.05;
 
     let appliedPrintRetail = totalRetailPrint * (1 - discPct);
+    let retailInstall = inputs.install === 'Yes' ? (totalInstallSqFt * retInstall) : 0;
     
-    let retailInstall = 0;
-    if (inputs.install === 'Yes') {
-        retailInstall = totalInstallSqFt * retInstall;
-    }
-
     const minOrder = parseFloat(data.Retail_Min_Order) || 150;
     let grandTotalRaw = appliedPrintRetail + retailInstall;
-    
-    // Clean Shop Minimum Enforcement
     let grandTotal = Math.max(grandTotalRaw, minOrder);
 
     return {
@@ -62,3 +53,4 @@ function calculateWrap(inputs, data) {
         cost: { total: 0 }
     };
 }
+
