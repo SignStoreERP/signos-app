@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v6.0 - Custom Layer Builder</title>
+    <title>ADA Signs v6.1 - Manual 3D Viewfinder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -76,32 +76,8 @@
         <div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
             <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
 
-            <!-- VIEWFINDER TOGGLE BAR -->
-            <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-end items-center z-20 relative">
-                <button id="btn-toggle-view" onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition flex items-center gap-1">
-                    <span id="view-text">Open Viewfinder</span>
-                </button>
-            </div>
-
-            <!-- 3D PREVIEW (HIDDEN BY DEFAULT) -->
-            <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
-                <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-start pointer-events-none">
-                    <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-white transition pointer-events-auto">
-                        <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
-                        <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest">Auto-Scale</span>
-                    </label>
-                    <div class="flex flex-col gap-2 pointer-events-auto">
-                        <button onclick="toggle3D()" class="bg-white/90 hover:bg-white text-blue-600 border border-blue-200 px-3 py-1.5 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Toggle 3D View</button>
-                        <button onclick="SignOS_UI.Camera3D.reset()" class="bg-white/80 hover:bg-white text-gray-500 border border-gray-200 px-3 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none self-end">Reset View</button>
-                    </div>
-                </div>
-                <div id="zoom-stage" class="w-full h-full flex items-center justify-center">
-                    <div id="svg-preview-container" class="mt-4 relative" style="width: 100px; height: 100px;"></div>
-                </div>
-            </div>
-
             <!-- PRIMARY BUILDER -->
-            <div class="p-5 bg-white border-b border-gray-200 shadow-sm z-10 relative">
+            <div class="p-5 bg-white shadow-sm z-10 relative">
                 
                 <!-- Qty & Dims -->
                 <div class="grid grid-cols-3 gap-3 mb-4 border-b border-gray-100 pb-4">
@@ -127,24 +103,23 @@
                 </div>
 
                 <!-- DYNAMIC LAYER BUILDER -->
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-800 uppercase tracking-widest mb-1 border-b border-gray-200 pb-1">A La Carte Layer Stack</label>
+                <div class="bg-slate-200 p-3 rounded-xl shadow-inner border border-slate-300">
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-300 pb-1 pl-1">ADA Sign Layers</label>
                     
                     <div id="layer-list" class="flex flex-col gap-2 mt-2 max-h-64 overflow-y-auto custom-scroll pr-1">
                         <!-- Layers Injected Here -->
                     </div>
                     
-                    <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-                        <select id="new-layer-type" class="flex-1 border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none">
+                    <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-300">
+                        <select id="new-layer-type" class="flex-1 border border-white p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-sm">
                             <option value="Tactile">1/32" Tactile Applique</option>
                             <option value="1/16&quot; Core">1/16" ADA Core</option>
                             <option value="1/8&quot; Core">1/8" ADA Core</option>
-                            <option value="3mm Black PVC">3mm Black PVC</option>
-                            <option value="3mm White PVC">3mm White PVC</option>
+                            <option value="3mm PVC Backer">3mm PVC Backer</option>
                             <option value="1/4&quot; Clear Acrylic">1/4" Clear Acrylic</option>
                             <option value="Foam Tape">Foam Tape (Mounting)</option>
                         </select>
-                        <button onclick="addLayer()" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-2 rounded text-xs uppercase tracking-widest shadow-sm transition">Add</button>
+                        <button onclick="addLayer()" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-2 rounded text-xs uppercase tracking-widest shadow-md transition">Add</button>
                     </div>
                 </div>
                 
@@ -152,11 +127,11 @@
                 <div class="grid grid-cols-2 gap-3 mt-4 border-t border-gray-100 pt-4">
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Corner Radius</label>
-                        <input type="number" id="radius" value="0" step="0.125" min="0" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px]" oninput="runCalc()">
+                        <input type="number" id="radius" value="0" step="0.125" min="0" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px] shadow-sm" oninput="runCalc()">
                     </div>
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Edge Finish</label>
-                        <select id="bevel" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px]" onchange="runCalc()">
+                        <select id="bevel" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px] shadow-sm" onchange="runCalc()">
                             <option value="Square">Square Cut</option>
                             <option value="Bevel">Beveled</option>
                         </select>
@@ -165,8 +140,8 @@
 
             </div>
 
-            <!-- VIEWFINDER: CONTENT & TYPOGRAPHY -->
-            <div id="content-module-wrap" class="hidden bg-gray-50 border-b border-gray-200 p-5 space-y-3">
+            <!-- CONTENT & TYPOGRAPHY -->
+            <div id="content-module-wrap" class="bg-gray-50 border-t border-b border-gray-200 p-5 space-y-3">
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center">
                         <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
@@ -238,6 +213,31 @@
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
                 <textarea id="job-desc" class="w-full text-xs p-2 border border-gray-300 shadow-inner rounded bg-white h-24 text-gray-700 font-mono outline-none resize-none custom-scroll" readonly></textarea>
             </div>
+
+            <!-- MANUAL 3D VIEWFINDER GENERATOR -->
+            <div class="bg-slate-50 p-4 border-t border-gray-200 rounded-b-xl">
+                <button onclick="generatePreview()" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black py-3 rounded shadow-md uppercase tracking-widest transition flex items-center justify-center gap-2 focus:outline-none">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Generate 3D Preview
+                </button>
+                
+                <!-- 3D PREVIEW BLOCK (HIDDEN UNTIL BUTTON CLICKED) -->
+                <div id="preview-wrapper" class="hidden mt-4 bg-white overflow-hidden relative flex-col items-center justify-center h-[320px] shadow-inner border border-gray-200 rounded-lg" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
+                    <div class="absolute top-2 left-2 right-2 z-30 flex justify-between items-start pointer-events-none">
+                        <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-gray-200 hover:bg-gray-50 transition pointer-events-auto">
+                            <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
+                            <span class="text-[8px] font-black text-gray-700 uppercase tracking-widest">Auto-Scale</span>
+                        </label>
+                        <div class="flex flex-col gap-1.5 pointer-events-auto">
+                            <button onclick="toggle3D()" class="bg-white/90 hover:bg-gray-50 text-blue-600 border border-blue-200 px-3 py-1.5 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Toggle 3D</button>
+                            <button onclick="SignOS_UI.Camera3D.reset()" class="bg-white/80 hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none self-end">Reset</button>
+                        </div>
+                    </div>
+                    <div id="zoom-stage" class="w-full h-full flex items-center justify-center">
+                        <div id="svg-preview-container" class="mt-4 relative" style="width: 100px; height: 100px;"></div>
+                    </div>
+                </div>
+            </div>
             
         </div>
 
@@ -250,14 +250,11 @@
                 </span>
                 <svg id="glos-arrow" class="w-4 h-4 text-gray-400 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
-            
             <div id="glos-body" class="hidden flex-col">
                 <div class="p-2 bg-white border-b border-gray-100">
                     <input type="text" id="glos-search" placeholder="Search variables..." oninput="filterGlossary()" class="w-full border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
                 </div>
-                <div id="glossary-grid" class="flex flex-col gap-2 p-3 max-h-80 overflow-y-auto custom-scroll bg-gray-50">
-                    <!-- Definitions injected here -->
-                </div>
+                <div id="glossary-grid" class="flex flex-col gap-2 p-3 max-h-80 overflow-y-auto custom-scroll bg-gray-50"></div>
             </div>
         </div>
 
@@ -334,6 +331,9 @@
             const defCol = coreColors.find(c => c.Name.includes('Black')) || coreColors;
             layer.colorHex = defCol ? defCol.Hex_Code : '#000000';
             layer.colorName = defCol ? defCol.Name : 'Black';
+        } else if (typeStr === '3mm PVC Backer') {
+            layer.colorName = 'Black';
+            layer.colorHex = '#111827';
         }
         return layer;
     }
@@ -346,7 +346,7 @@
         } else if (preset === 'PVC') {
             layerStack.push(createLayer('Tactile'));
             layerStack.push(createLayer('1/16" Core'));
-            layerStack.push(createLayer('3mm Black PVC'));
+            layerStack.push(createLayer('3mm PVC Backer'));
         } else if (preset === 'Acrylic') {
             layerStack.push(createLayer('Tactile'));
             layerStack.push(createLayer('1/16" Core'));
@@ -382,8 +382,6 @@
     function moveLayer(id, dir) {
         const idx = layerStack.findIndex(l => l.id === id);
         if (idx < 0) return;
-        
-        // Enforce physical rule: Foam tape cannot be moved up, and nothing can move below it
         if (layerStack[idx].type === 'Foam Tape' && dir === -1) return; 
         
         const newIdx = idx + dir;
@@ -402,6 +400,18 @@
         if (layer) { layer.hasBraille = isChecked; runCalc(); }
     }
 
+    function updateLayerPVC(id, colorName) {
+        const layer = layerStack.find(l => l.id === id);
+        if (layer) { 
+            layer.colorName = colorName; 
+            if (colorName === 'White') layer.colorHex = '#ffffff';
+            else if (colorName === 'Red') layer.colorHex = '#ef4444';
+            else if (colorName === 'Light Blue') layer.colorHex = '#38bdf8';
+            else layer.colorHex = '#111827';
+            runCalc(); 
+        }
+    }
+
     function renderLayers() {
         const container = document.getElementById('layer-list');
         let html = '';
@@ -410,46 +420,57 @@
             const isFirst = index === 0;
             const isLast = index === layerStack.length - 1;
             const isTape = l.type === 'Foam Tape';
-            
-            // Disable up arrow if it's the top item, or if moving it up violates rules
             const disUp = isFirst || isTape;
-            // Disable down arrow if it's the bottom item, or if the item below it is Foam Tape
             const disDown = isLast || (layerStack[index+1] && layerStack[index+1].type === 'Foam Tape');
 
             let propertiesHtml = '';
+            
+            // Inline Color Button
             if (l.type === 'Tactile' || l.type.includes('Core')) {
                 propertiesHtml += `
-                <div class="flex items-center gap-2 mt-1 cursor-pointer bg-gray-50 border border-gray-200 px-2 py-1 rounded w-max hover:border-blue-400 transition shadow-inner" onclick="openLayerModal('${l.id}', '${l.type}')">
-                    <div class="w-3 h-3 rounded-full border border-gray-300" style="background-color: ${l.colorHex};"></div>
-                    <span class="text-[9px] text-gray-600 font-bold">${l.colorName}</span>
+                <div class="flex items-center gap-1.5 cursor-pointer bg-gray-50 border border-gray-200 px-2 py-1 rounded hover:border-blue-400 transition shadow-inner" onclick="openLayerModal('${l.id}', '${l.type}')">
+                    <div class="w-3 h-3 rounded-full border border-gray-300 shrink-0" style="background-color: ${l.colorHex};"></div>
+                    <span class="text-[9px] text-gray-600 font-bold truncate max-w-[120px]" title="${l.colorName}">${l.colorName}</span>
                 </div>`;
             }
+            
+            // Inline Braille Toggle
             if (l.type === 'Tactile') {
                 propertiesHtml += `
-                <label class="flex items-center gap-1.5 mt-2 text-[9px] font-bold text-gray-500 cursor-pointer">
+                <label class="flex items-center gap-1 text-[9px] font-bold text-gray-500 cursor-pointer ml-1 bg-white border border-gray-100 px-1.5 py-1 rounded">
                     <input type="checkbox" onchange="updateLayerBraille('${l.id}', this.checked)" ${l.hasBraille ? 'checked' : ''} class="w-3 h-3 text-blue-600 rounded">
-                    Add Raster Braille
+                    Braille
                 </label>`;
             }
 
+            // Inline PVC Dropdown
+            if (l.type === '3mm PVC Backer') {
+                propertiesHtml += `
+                <select onchange="updateLayerPVC('${l.id}', this.value)" class="border border-gray-200 p-1 rounded text-[9px] font-bold text-gray-600 bg-gray-50 outline-none focus:border-blue-500 shadow-inner">
+                    <option value="Black" ${l.colorName === 'Black' ? 'selected' : ''}>Black PVC</option>
+                    <option value="White" ${l.colorName === 'White' ? 'selected' : ''}>White PVC</option>
+                    <option value="Red" ${l.colorName === 'Red' ? 'selected' : ''}>Red PVC</option>
+                    <option value="Light Blue" ${l.colorName === 'Light Blue' ? 'selected' : ''}>Light Blue PVC</option>
+                </select>`;
+            }
+
             html += `
-            <div class="flex items-center bg-white p-2 rounded-lg shadow-sm border border-gray-200">
-                <div class="flex flex-col gap-1 pr-2 border-r border-gray-100">
-                    <button onclick="moveLayer('${l.id}', -1)" class="${disUp ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none" ${disUp ? 'disabled' : ''}>▲</button>
-                    <button onclick="moveLayer('${l.id}', 1)" class="${disDown ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none" ${disDown ? 'disabled' : ''}>▼</button>
+            <div class="flex items-center bg-white p-2 rounded-lg shadow-sm border border-gray-200 gap-2">
+                <div class="flex flex-col gap-0.5 border-r border-gray-100 pr-2 shrink-0">
+                    <button onclick="moveLayer('${l.id}', -1)" class="${disUp ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none leading-none h-4" ${disUp ? 'disabled' : ''}>▲</button>
+                    <button onclick="moveLayer('${l.id}', 1)" class="${disDown ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none leading-none h-4" ${disDown ? 'disabled' : ''}>▼</button>
                 </div>
-                <div class="flex-1 px-3 flex flex-col justify-center">
-                    <span class="text-[10px] font-black text-gray-800 uppercase tracking-widest">${l.type}</span>
+                <div class="flex-1 flex flex-wrap items-center gap-2 overflow-hidden">
+                    <span class="text-[10px] font-black text-gray-800 uppercase tracking-widest shrink-0 w-24">${l.type}</span>
                     ${propertiesHtml}
                 </div>
-                <button onclick="removeLayer('${l.id}')" class="text-gray-300 hover:text-red-500 transition font-black focus:outline-none px-2">✕</button>
+                <button onclick="removeLayer('${l.id}')" class="text-gray-300 hover:text-red-500 transition font-black focus:outline-none px-2 shrink-0">✕</button>
             </div>`;
         });
 
         if(layerStack.length === 0) {
-            html = `<div class="text-center py-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-2 border-dashed border-gray-200 rounded-lg">No layers selected</div>`;
+            html = `<div class="text-center py-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-2 border-dashed border-gray-300 rounded-lg">No layers selected</div>`;
         }
-
         container.innerHTML = html;
     }
 
@@ -488,32 +509,18 @@
         }
     });
 
-    function toggleViewfinder() {
-        isViewfinderOn = !isViewfinderOn;
-        const btnText = document.getElementById('view-text');
-        const btn = document.getElementById('btn-toggle-view');
-        
-        if (isViewfinderOn) {
-            document.getElementById('preview-wrapper').classList.remove('hidden');
-            document.getElementById('preview-wrapper').classList.add('flex');
-            document.getElementById('content-module-wrap').classList.remove('hidden');
-            btnText.innerText = 'Close Viewfinder';
-            btn.classList.replace('text-blue-600', 'text-gray-500');
-            updatePreview();
-        } else {
-            document.getElementById('preview-wrapper').classList.add('hidden');
-            document.getElementById('preview-wrapper').classList.remove('flex');
-            document.getElementById('content-module-wrap').classList.add('hidden');
-            btnText.innerText = 'Open Viewfinder';
-            btn.classList.replace('text-gray-500', 'text-blue-600');
-        }
+    function generatePreview() {
+        document.getElementById('preview-wrapper').classList.remove('hidden');
+        document.getElementById('preview-wrapper').classList.add('flex');
+        isViewfinderOn = true;
+        updatePreview();
     }
 
     function syncAutoScale(sourceId) {
         const isChecked = document.getElementById(sourceId).checked;
         document.getElementById('auto-scale-view').checked = isChecked;
         document.getElementById('auto-scale-text').checked = isChecked;
-        runCalc();
+        if(isViewfinderOn) updatePreview();
     }
 
     function toggle3D() {
@@ -553,10 +560,8 @@
         const hasPicto = document.getElementById('toggle-picto').checked;
         const hasText = document.getElementById('toggle-text').checked;
         
-        // Find topmost layer to color the SVG
         let topLayer = layerStack;
         let svgColorHex = topLayer && topLayer.colorHex ? topLayer.colorHex : '#ffffff';
-        // If the top layer is a core material, we render SVG as "engraved" so we grab the core color if we had it, but for simplicity we'll just use white or black
         if (topLayer && topLayer.type.includes('Core')) svgColorHex = topLayer.colorName === 'White' ? '#000000' : '#ffffff';
 
         const buildInputs = {
@@ -594,8 +599,6 @@
             </div>`;
 
         let html = '';
-        
-        // Render Array Top to Bottom
         let zPos = layerStack.length * 10;
         
         layerStack.forEach((l, index) => {
@@ -607,11 +610,9 @@
                 </div>`;
             } else if (l.type === 'Foam Tape') {
                 const shadow = isExp ? makeEdge('#4b5563', 2) : '0 1px 3px rgba(0,0,0,0.1)';
-                // Render slightly smaller so it looks like tape
                 html += `<div class="sign-layer border border-black/20" style="background-color: #4b5563; border-radius: ${r*scale}px; box-shadow: ${shadow}; transform: translateZ(${zPos}px) scale(0.9);">${isExp ? callout('Foam Tape') : ''}</div>`;
             } else {
                 let hex = l.colorHex || '#ffffff';
-                if (l.type.includes('Black PVC')) hex = '#111827';
                 if (l.type.includes('Clear Acrylic')) hex = 'rgba(255,255,255,0.4)';
                 
                 let depth = 2;
@@ -621,14 +622,14 @@
                 
                 html += `<div class="sign-layer border border-black/20" style="background-color: ${hex}; border-radius: ${r*scale}px; box-shadow: ${shadow}; transform: translateZ(${zPos}px);">${isExp ? callout(l.type) : ''}</div>`;
                 
-                // If this is the topmost layer AND it's not tactile, engrave the SVG into it
+                // Engrave SVG if top layer isn't tactile
                 if (index === 0 && !layerStack.find(x => x.type === 'Tactile') && (hasPicto || hasText)) {
                     html += `<div class="sign-layer" style="color: ${svgColorHex}; opacity: 0.8; transform: translateZ(${zPos + 1}px);">
                         <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
                     </div>`;
                 }
             }
-            zPos -= 20; // Shift down for next layer
+            zPos -= 20; 
         });
 
         container.innerHTML = html;
@@ -658,14 +659,12 @@
         allVars.forEach(item => {
             let desc = backendData['META_NOTE_' + item.key] || item.desc || "No definition provided in backend payload.";
             let searchStr = (item.key + " " + desc + " " + item.label).toLowerCase();
-            
             html += `
             <div class="border border-gray-200 p-2.5 rounded bg-white flex flex-col gap-1 shadow-sm glos-item" data-search="${searchStr}">
                 <span class="hover-var cursor-help font-black text-blue-800 border-b border-dotted border-blue-300 inline-block w-max transition-all" data-var="${item.key}" title="${desc}">${item.key}</span>
                 <span class="text-gray-500 leading-tight text-[10px] mt-0.5">${desc}</span>
             </div>`;
         });
-        
         grid.innerHTML = html;
     }
 
@@ -764,7 +763,6 @@
     function exportSandbox() {
         if(!lastSimResult) return;
         const fmt = (n) => "$" + (n||0).toFixed(2);
-        
         const cleanHTML = (str) => str.replace(/<[^>]*>?/gm, '');
 
         let txt = `SIGNOS DEV - ADA FULL LEDGER EXHAUST\nTimestamp: ${new Date().toISOString()}\n----------------------------------------\n`;
@@ -824,6 +822,7 @@
             let layerStrs = layerStack.map(l => {
                 if (l.type === 'Tactile') return `1/32" ${l.colorName} Tactile` + (l.hasBraille ? ' w/ Braille' : '');
                 if (l.type.includes('Core')) return `${l.type.replace(' Core', '')} ${l.colorName} Core`;
+                if (l.type === '3mm PVC Backer') return `3mm ${l.colorName} PVC`;
                 return l.type;
             });
             
@@ -841,7 +840,7 @@
                 renderLedgerUI(result);
             }
 
-            if (isViewfinderOn) await updatePreview();
+            // Note: We removed the auto-updatePreview here so the app doesn't crash on typing text.
 
         } catch(e) { console.error("Math Engine Error:", e); }
     }
@@ -854,9 +853,14 @@
         }
 
         const previewWrap = document.getElementById('preview-wrapper');
+        // Temporarily expose the container so the canvas engine can measure it
         previewWrap.classList.remove('hidden');
         previewWrap.classList.add('flex');
-        SignOS_UI.showLoader('preview-wrapper', 'Connecting to Source Data...');
+        
+        // Hide it immediately
+        previewWrap.classList.add('hidden');
+        previewWrap.classList.remove('flex');
+        
         SignOS_UI.Camera3D.init('zoom-stage'); 
 
         const statusText = document.getElementById("status-text");
@@ -886,22 +890,17 @@
             const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
             if (activeIcons.length > 0) selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men') || p.Name.toLowerCase().includes('women')) || activeIcons;
             
-            if (SignOS_UI.buildIconGrid) SignOS_UI.buildIconGrid({ containerId: 'icon-grid', data: activeIcons, activeRingClass: 'ring-blue-500', onSelect: (item) => { selectedIcon = item; runCalc(); } });
+            if (SignOS_UI.buildIconGrid) SignOS_UI.buildIconGrid({ containerId: 'icon-grid', data: activeIcons, activeRingClass: 'ring-blue-500', onSelect: (item) => { selectedIcon = item; } });
 
             if(statusText) { statusText.innerText = "ONLINE"; statusText.className = "font-bold text-green-500"; if(statusDot) { statusDot.className = "w-2 h-2 rounded-full bg-green-500"; statusDot.classList.remove("animate-pulse"); } }
-            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper');
 
             setTimeout(() => { if (selectedIcon) { const btn = document.querySelector(`#icon-grid button[data-code="${selectedIcon.Item_Code}"]`); if (btn) btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent'); } }, 100);
             
             // Set Initial State
             applyPreset('Standard');
             
-            previewWrap.classList.add('hidden');
-            previewWrap.classList.remove('flex');
-
         } catch(e) {
             console.error("API Error:", e);
-            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper', true, 'Connection Failed');
             if(statusText) { statusText.innerText = "OFFLINE"; statusText.className = "font-bold text-red-500"; }
         }
     });
