@@ -603,7 +603,7 @@
                         if (margin < 0) cellClass += " loss-alert";
                     }
 
-                    bodyHtml += `<td class="${cellClass}" style="${bgStyle}" onmouseover="highlightCol(${cIndex+1})" onclick="activePointKey='${pointKey}'; renderInspection('${pointKey}', '${display}')">${display}</td>`;
+                    bodyHtml += `<td class="${cellClass}" style="${bgStyle}" onclick="activePointKey='${pointKey}'; renderInspection('${pointKey}', '${display}')">${display}</td>`;
 
                 } catch(e) { bodyHtml += `<td class="heatmap-cell bg-gray-50 text-gray-300">ERR</td>`; }
             });
