@@ -1,6 +1,6 @@
 /**
  * ULTRA-SIMPLE RETAIL ENGINE: Interior Wall Wraps
- * Supports GF226 Smooth vs 3M IJ8624 Textured vs Perf. Zero Setup Fees.
+ * Supports GF226 Smooth, 3M IJ8624 Textured, and Window Perf. Zero Setup Fees.
  */
 function calculateWall(inputs, data) {
     let totalRetailPrint = 0;
@@ -12,7 +12,6 @@ function calculateWall(inputs, data) {
         const area = sqft * inputs.qty;
         totalSqFt += area;
 
-        // Apply distinct material rates
         let printUnit = 0;
         let installUnit = 0;
 
@@ -31,7 +30,6 @@ function calculateWall(inputs, data) {
         if (inputs.install === 'Yes') totalInstall += (installUnit * area);
     });
 
-    // Volume Discounts
     let discPct = 0;
     if (inputs.qty >= (parseFloat(data.Tier_2_Qty) || 5)) discPct = parseFloat(data.Tier_2_Disc) || 0.10;
     else if (inputs.qty >= (parseFloat(data.Tier_1_Qty) || 3)) discPct = parseFloat(data.Tier_1_Disc) || 0.05;
@@ -40,8 +38,6 @@ function calculateWall(inputs, data) {
 
     const minOrder = parseFloat(data.Retail_Min_Order) || 150;
     let grandTotalRaw = totalRetailPrint + totalInstall;
-    
-    // Clean Shop Minimum Enforcement
     let grandTotal = Math.max(grandTotalRaw, minOrder);
 
     return {
@@ -56,3 +52,4 @@ function calculateWall(inputs, data) {
         cost: { total: 0 }
     };
 }
+
