@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v4.3 - Refined UX</title>
+    <title>ADA Signs v4.4 - 3-Column Light Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -16,44 +16,109 @@
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
         .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 2px;}
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px;}
         #preview-wrapper { perspective: 1200px; cursor: grab; }
         #preview-wrapper:active { cursor: grabbing; }
         #svg-preview-container { transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
         .sign-layer { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s ease; transform-style: preserve-3d; }
+        
+        /* Reverted to the beautiful v1 3D spreading */
         .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
+        .exploded-view .layer-backer { transform: translateZ(-30px); }
+        .exploded-view .layer-core { transform: translateZ(0px); }
+        .exploded-view .layer-tactile { transform: translateZ(30px); }
         .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s; pointer-events: none; }
         .exploded-view .blueprint-callout { opacity: 1; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10 overflow-x-hidden">
 
-<div class="w-full flex items-start justify-center gap-4 mt-6 px-4 relative">
+<!-- DYNAMIC 3-COLUMN WRAPPER -->
+<div id="app-wrapper" class="w-full max-w-md mx-auto mt-8 transition-all duration-500 flex justify-center items-start gap-4 px-4">
     
-    <!-- LEFT: MAIN UI ISLAND -->
+    <!-- LEFT: FULL MATH LEDGER (Light Mode) -->
+    <div id="sandbox-ledger" class="hidden w-[380px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 h-[800px] relative z-10">
+        <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
+            <div>
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Financial Ledger</h2>
+                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Market vs. Physics Breakdown</span>
+            </div>
+            <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto custom-scroll p-5 space-y-6">
+            <div>
+                <h3 class="text-[11px] font-black text-blue-700 uppercase tracking-widest border-b-2 border-blue-100 pb-2 mb-3">Market Logic (Retail)</h3>
+                <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
+            </div>
+            <div>
+                <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest border-b-2 border-red-100 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
+                <div id="sbx-cost-breakdown" class="space-y-3"></div>
+            </div>
+        </div>
+        
+        <div class="border-t border-gray-200 bg-slate-50 p-4 rounded-b-xl flex justify-between items-center shrink-0">
+            <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Simulated Margin:</span>
+            <span id="sbx-margin" class="text-2xl font-black text-green-600 tracking-tight">--</span>
+        </div>
+    </div>
+
+    <!-- CENTER: MAIN CALCULATOR ISLAND -->
     <div id="main-card" class="w-full max-w-md bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative z-20 shrink-0">
         
         <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
 
         <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-between items-center">
             <span class="text-xs font-black text-gray-800 uppercase tracking-widest">Sign Configuration</span>
-            <button onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition">
-                Toggle Viewfinder
+            <button id="btn-toggle-view" onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition flex items-center gap-1">
+                👁️ <span>Open Viewfinder</span>
             </button>
         </div>
 
-        <!-- STATE 1: SPEC SUMMARY (ON BY DEFAULT) -->
-        <div id="spec-summary" class="bg-white p-5 border-b border-gray-200 shadow-inner">
-            <div id="summary-content" class="space-y-3">
-                <div class="text-center text-gray-400 text-xs font-bold py-4 italic">Calculating Specs...</div>
+        <!-- 1. BASE INPUTS (Always Visible) -->
+        <div class="p-5 bg-white border-b border-gray-200 shadow-sm relative z-10">
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-blue-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div id="wrap-tactile-color">
+                    <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
+                    <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
+                            <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
+                    <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
+                            <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Sign Type & Backer</label>
+                <select id="sign-type" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="runCalc()">
+                    <option value="Standard">Standard (1/32" Tactile on 1/8" Core)</option>
+                    <option value="Layered_PVC" selected>Layered (1/16" Core + 3mm Black PVC Backer)</option>
+                    <option value="Layered_Acrylic">Premium Layered (1/16" Core + 3/16" Clear Acrylic)</option>
+                </select>
             </div>
         </div>
 
-        <!-- STATE 2: 3D PREVIEW (HIDDEN BY DEFAULT) -->
-        <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
+        <!-- 2. VIEWFINDER: 3D VISUALIZER (Hidden by default) -->
+        <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
             <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-start pointer-events-none">
                 <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-white transition pointer-events-auto">
-                    <input type="checkbox" id="auto-scale" checked onchange="runCalc()" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
+                    <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
                     <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest">Auto-Scale</span>
                 </label>
                 <div class="flex flex-col gap-2 pointer-events-auto">
@@ -66,49 +131,8 @@
             </div>
         </div>
 
-        <!-- DIMENSIONS -->
-        <div class="p-5 bg-white border-b border-gray-200 shadow-sm z-10 relative">
-            <div class="grid grid-cols-3 gap-3">
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-blue-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-            </div>
-        </div>
-
-        <!-- COLORS -->
-        <div class="grid grid-cols-2 gap-4 p-5 bg-gray-50 border-b border-gray-200">
-            <div id="wrap-tactile-color">
-                <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
-                <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                        <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
-                <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                        <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MACRO STRUCTURE -->
-        <div class="bg-white border-b border-gray-200 p-5">
-            <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Sign Type</label>
-            <select id="sign-type" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="runCalc()">
-                <option value="Standard">Standard (1/32" Tactile on 1/8" Core)</option>
-                <option value="Layered_PVC" selected>Layered (1/32" on 1/16" Core + 3mm PVC Backer)</option>
-                <option value="Layered_Acrylic">Premium Layered (1/32" on 1/16" Core + 3/16" Acrylic Backer)</option>
-            </select>
-        </div>
-
-        <!-- CONTENT -->
-        <div class="bg-gray-50 border-b border-gray-200 p-5 space-y-3">
+        <!-- 3. VIEWFINDER: CONTENT & TYPOGRAPHY (Hidden by default) -->
+        <div id="content-module-wrap" class="hidden bg-gray-50 border-b border-gray-200 p-5 space-y-3">
             <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                 <div class="flex justify-between items-center">
                     <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
@@ -132,15 +156,21 @@
                 </div>
                 <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
                     <div class="col-span-2">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String</label>
-                        <input type="text" id="sign-text" value="RESTROOM" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String (Hit Enter for new line)</label>
+                        <textarea id="sign-text" rows="2" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm resize-none custom-scroll">RESTROOM</textarea>
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
                         <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm"></select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center justify-between">
+                            Height (in)
+                            <span class="flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" id="auto-scale-text" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded"> 
+                                <span class="text-[8px] text-blue-600 tracking-wider">AUTO</span>
+                            </span>
+                        </label>
                         <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-center text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
                     </div>
                 </div>
@@ -148,19 +178,23 @@
 
             <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                 <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                    <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Grade 2 Braille
+                    <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Grade 2 Braille (Auto-Translated)
                 </label>
             </div>
         </div>
 
-        <!-- RESULTS -->
+        <!-- 4. PRICING RESULTS (Always Visible) -->
         <div class="bg-blue-50 p-6 shadow-inner">
             <div class="flex justify-between items-end mb-2">
                 <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
                 <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
             </div>
             <div class="border-t border-blue-200/50 my-3"></div>
-            <div class="flex justify-between items-end pt-2">
+            
+            <!-- Dynamic Line Items Container -->
+            <div id="receipt-line-items" class="space-y-1 mb-3"></div>
+
+            <div class="flex justify-between items-end pt-2 border-t border-blue-200/50">
                 <div>
                     <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
                     <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $50</span>
@@ -175,45 +209,37 @@
         </div>
     </div>
 
-    <!-- RIGHT: EXHAUSTIVE LITE SIMULATOR (SLIDES IN) -->
-    <div id="admin-sandbox" class="hidden w-[450px] bg-gray-900 text-white shadow-2xl rounded-xl border border-gray-700 flex-col shrink-0 transform transition-all duration-300 opacity-0 z-10 origin-left">
-        <div class="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center shrink-0 rounded-t-xl">
+    <!-- RIGHT: SANDBOX VARIABLES (Light Mode) -->
+    <div id="sandbox-vars" class="hidden w-[300px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 h-[800px] relative z-10">
+        <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
             <div>
-                <h2 class="text-sm font-black text-white uppercase tracking-widest">Cost Sandbox</h2>
-                <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Full Math Ledger Projection</span>
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Sandbox Variables</h2>
+                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Modify System Inputs</span>
             </div>
-            <button onclick="toggleSandbox()" class="text-gray-400 hover:text-white transition font-bold text-sm">✕</button>
         </div>
         
-        <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-6 bg-gray-900 max-h-[800px]">
-            <div id="sbx-ledger-output" class="bg-gray-800 rounded-lg p-4 border border-gray-700 hidden shadow-inner">
-                <h3 class="text-[11px] font-black text-blue-400 uppercase tracking-widest border-b border-blue-900 pb-2 mb-3">Retail Ledger</h3>
-                <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
-                
-                <h3 class="text-[11px] font-black text-red-400 uppercase tracking-widest border-b border-red-900 pb-2 mb-3">Cost Ledger</h3>
-                <div id="sbx-cost-breakdown" class="space-y-3"></div>
-
-                <div class="border-t-2 border-gray-700 my-4 pt-3 flex justify-between items-center bg-gray-900 -mx-4 -mb-4 p-4 rounded-b-lg">
-                    <span class="text-xs font-black text-green-400 uppercase tracking-widest">Simulated Margin:</span>
-                    <span id="sbx-margin" class="text-2xl font-black text-green-400 tracking-tight">--</span>
+        <div class="flex-1 overflow-y-auto custom-scroll p-5 space-y-6">
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b border-blue-200 pb-1">Market Overrides</span>
                 </div>
+                <div id="sbx-retail-inputs" class="space-y-2"></div>
             </div>
-
-            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 shadow-inner">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Sandbox Variables</span>
-                    <button onclick="resetSandbox()" class="text-[9px] text-gray-400 hover:text-red-400 uppercase font-bold border border-gray-600 px-2 py-0.5 rounded transition">Reset</button>
-                </div>
-                <div id="sbx-retail-inputs" class="space-y-2 mb-4"></div>
+            <div>
+                <span class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-red-200 pb-1 mb-3 block">Physics Overrides</span>
                 <div id="sbx-cost-inputs" class="space-y-2"></div>
             </div>
         </div>
 
-        <div class="p-4 bg-gray-800 border-t border-gray-700 shrink-0 space-y-2 rounded-b-xl">
+        <div class="p-4 bg-slate-50 border-t border-gray-200 shrink-0 space-y-2 rounded-b-xl">
             <button onclick="applySandbox()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded shadow text-xs uppercase tracking-widest transition">Run Simulation</button>
-            <button onclick="exportSandbox()" id="btn-export" class="hidden w-full bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition">Download Math Exhaust (.txt)</button>
+            <div class="flex gap-2">
+                <button onclick="resetSandbox()" class="flex-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Reset</button>
+                <button onclick="exportSandbox()" id="btn-export" class="flex-1 hidden bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Export TXT</button>
+            </div>
         </div>
     </div>
+
 </div>
 
 <!-- COLOR MODAL -->
@@ -221,7 +247,7 @@
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh] overflow-hidden border border-gray-200 cursor-auto" onclick="event.stopPropagation()">
         <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0">
             <h3 class="font-black text-gray-800 uppercase tracking-widest text-xs" id="modal-title">Select Color</h3>
-            <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 font-bold transition">✕</button>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 font-bold transition focus:outline-none text-lg">✕</button>
         </div>
         <div class="p-3 shrink-0 border-b border-gray-100">
             <input type="text" id="color-search" placeholder="Search colors..." oninput="SignOS_UI.filterGrid('modal-grid', 'color-search')" class="w-full border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
@@ -239,9 +265,29 @@
 
     function toggleViewfinder() {
         isViewfinderOn = !isViewfinderOn;
-        document.getElementById('preview-wrapper').classList.toggle('hidden', !isViewfinderOn);
-        document.getElementById('spec-summary').classList.toggle('hidden', isViewfinderOn);
-        if(isViewfinderOn) updatePreview();
+        const btn = document.getElementById('btn-toggle-view');
+        
+        if (isViewfinderOn) {
+            document.getElementById('preview-wrapper').classList.remove('hidden');
+            document.getElementById('preview-wrapper').classList.add('flex');
+            document.getElementById('content-module-wrap').classList.remove('hidden');
+            btn.innerHTML = '✕ <span>Close Viewfinder</span>';
+            btn.classList.replace('text-blue-600', 'text-gray-500');
+            updatePreview();
+        } else {
+            document.getElementById('preview-wrapper').classList.add('hidden');
+            document.getElementById('preview-wrapper').classList.remove('flex');
+            document.getElementById('content-module-wrap').classList.add('hidden');
+            btn.innerHTML = '👁️ <span>Open Viewfinder</span>';
+            btn.classList.replace('text-gray-500', 'text-blue-600');
+        }
+    }
+
+    function syncAutoScale(sourceId) {
+        const isChecked = document.getElementById(sourceId).checked;
+        document.getElementById('auto-scale-view').checked = isChecked;
+        document.getElementById('auto-scale-text').checked = isChecked;
+        runCalc();
     }
 
     function toggle3D() {
@@ -256,6 +302,7 @@
         document.getElementById('wrap-picto').classList.toggle('hidden', !hasPicto);
         document.getElementById('picto-size-wrap').classList.toggle('opacity-30', !hasPicto);
         document.getElementById('wrap-text').classList.toggle('hidden', !hasText);
+        // Dim the tactile color selector if neither text nor picto are active
         document.getElementById('wrap-tactile-color').style.opacity = (hasPicto || hasText) ? '1' : '0.3';
         document.getElementById('wrap-tactile-color').style.pointerEvents = (hasPicto || hasText) ? 'auto' : 'none';
         runCalc();
@@ -274,7 +321,7 @@
         let r = parseInt(c.substr(0, 2), 16) * 0.6, g = parseInt(c.substr(2, 2), 16) * 0.6, b = parseInt(c.substr(4, 2), 16) * 0.6;
         let shadow = [];
         for(let i=1; i<=depthPx; i++) shadow.push(`-${i}px ${i}px 0 rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`);
-        shadow.push(`-${depthPx+2}px ${depthPx+2}px 5px rgba(0,0,0,0.15)`); 
+        shadow.push(`-${depthPx+5}px ${depthPx+5}px 15px rgba(0,0,0,0.3)`); 
         return shadow.join(', ');
     }
 
@@ -283,17 +330,17 @@
         
         const w = parseFloat(document.getElementById('w').value) || 8;
         const h = parseFloat(document.getElementById('h').value) || 8;
-        const r = 0.5; // Fixed corner radius for standard ADA
+        const r = 0.5; 
         const container = document.getElementById('svg-preview-container');
         const fontSelect = document.getElementById('sign-font');
         
         const buildInputs = {
-            w: w, h: h, align: document.getElementById('sign-align') ? document.getElementById('sign-align').value : 'center',
+            w: w, h: h, align: 'center',
             textVal: document.getElementById('sign-text').value.toUpperCase() || "",
             hasPicto: document.getElementById('toggle-picto').checked,
             hasText: document.getElementById('toggle-text').checked,
             hasBraille: document.getElementById('toggle-braille').checked,
-            isAutoScale: document.getElementById('auto-scale').checked,
+            isAutoScale: document.getElementById('auto-scale-view').checked,
             selectedIcon: selectedIcon,
             fontFileName: fontSelect.options[fontSelect.selectedIndex]?.dataset.filename || 'Arimo-Regular.ttf',
             pictoSize: parseFloat(document.getElementById('picto-size').value) || 4,
@@ -321,18 +368,16 @@
         container.style.width = `${w * scale}px`;
         container.style.height = `${h * scale}px`;
 
-        const depthTactile = 1;
-        const depthCore = coreThickStr === '1/8' ? 4 : 2;
-        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 6 : 4);
+        // Reverted to v1 visual thicknesses
+        const depthCore = coreThickStr === '1/8' ? 6 : 3;
+        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 4 : 6);
         
         const isExp = SignOS_UI.Camera3D.is3D;
-        const zBacker = isExp ? -40 : 0;
-        const zCore = isExp ? 0 : 0;
-        const zTactile = isExp ? 40 : 0;
-
+        
+        // Z-axis layers pushed exactly to match original blueprint look
         const shadowBacker = isExp ? makeEdge(backerHex, depthBacker) : '0 1px 3px rgba(0,0,0,0.1)';
         const shadowCore = isExp ? makeEdge(coreHex, depthCore) : '0 1px 3px rgba(0,0,0,0.1)';
-        const shadowTactile = isExp ? `drop-shadow(-${depthTactile}px ${depthTactile}px 1px rgba(0,0,0,0.4))` : 'none';
+        const shadowTactile = isExp ? `drop-shadow(-2px 2px 1px rgba(0,0,0,0.4))` : 'none';
 
         let callout = (name) => `
             <div class="blueprint-callout absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 flex items-center gap-1.5 z-50 pr-2">
@@ -342,10 +387,10 @@
 
         let html = '';
         if (backerType !== 'None') {
-            html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${r*scale}px; transform: translateZ(${zBacker}px); box-shadow: ${shadowBacker};">${isExp ? callout(backerType + ' Backer') : ''}</div>`;
+            html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${r*scale}px; box-shadow: ${shadowBacker};">${isExp ? callout(backerType + ' Backer') : ''}</div>`;
         }
-        html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${r*scale}px; transform: translateZ(${zCore}px); box-shadow: ${shadowCore};">${isExp ? callout(coreThickStr + '" ADA Core') : ''}</div>`;
-        html += `<div class="sign-layer layer-tactile" style="color: ${tactileHex}; transform: translateZ(${zTactile}px); filter: ${shadowTactile};">
+        html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${r*scale}px; box-shadow: ${shadowCore};">${isExp ? callout(coreThickStr + '" ADA Core') : ''}</div>`;
+        html += `<div class="sign-layer layer-tactile" style="color: ${tactileHex}; filter: ${shadowTactile};">
             <svg id="live-production-preview" viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
             ${isExp ? callout('1/32" Tactile & Braille') : ''}
         </div>`;
@@ -373,16 +418,31 @@
     }
     function closeModal() { document.getElementById('color-modal').classList.add('hidden'); }
 
-    // --- FULL MATH LEDGER SIMULATOR ---
+    // --- FULL MATH LEDGER SIMULATOR (3-COLUMN LAYOUT) ---
     function toggleSandbox() {
-        const panel = document.getElementById('admin-sandbox');
-        if (panel.classList.contains('hidden')) {
-            panel.classList.remove('hidden');
-            setTimeout(() => { panel.classList.remove('opacity-0'); panel.classList.add('opacity-100'); }, 10);
+        const wrap = document.getElementById('app-wrapper');
+        const left = document.getElementById('sandbox-ledger');
+        const right = document.getElementById('sandbox-vars');
+        
+        if (left.classList.contains('hidden')) {
+            // Open 3-Column Mode
+            wrap.classList.remove('max-w-md');
+            wrap.classList.add('max-w-[1200px]');
+            left.classList.remove('hidden');
+            left.classList.add('flex');
+            right.classList.remove('hidden');
+            right.classList.add('flex');
+            
             if(!customSimData) { customSimData = { ...backendData }; buildSandboxInputs(); }
+            applySandbox(); // Instantly populate ledger
         } else {
-            panel.classList.remove('opacity-100'); panel.classList.add('opacity-0');
-            setTimeout(() => { panel.classList.add('hidden'); }, 300);
+            // Close to Island Mode
+            wrap.classList.add('max-w-md');
+            wrap.classList.remove('max-w-[1200px]');
+            left.classList.add('hidden');
+            left.classList.remove('flex');
+            right.classList.add('hidden');
+            right.classList.remove('flex');
         }
     }
 
@@ -391,7 +451,7 @@
             let html = '';
             arr.forEach(i => {
                 const v = customSimData[i.key] !== undefined ? customSimData[i.key] : '';
-                html += `<div class="flex justify-between items-center gap-2"><label class="text-[9px] font-bold text-gray-400 truncate flex-1" title="${i.key}">${i.label}</label><input type="text" id="sbx_${i.key}" value="${v}" class="w-16 bg-gray-900 border border-gray-600 text-gray-200 text-xs font-mono text-center rounded outline-none focus:border-indigo-500 py-0.5"></div>`;
+                html += `<div class="flex justify-between items-center gap-2"><label class="text-[10px] font-bold text-gray-600 truncate flex-1" title="${i.key}">${i.label}</label><input type="text" id="sbx_${i.key}" value="${v}" class="w-16 bg-gray-50 border border-gray-300 text-gray-800 text-xs font-mono text-center rounded outline-none focus:border-blue-500 py-0.5 shadow-inner"></div>`;
             });
             document.getElementById(containerId).innerHTML = html;
         };
@@ -403,7 +463,6 @@
         customSimData = null;
         document.getElementById('sim-badge').classList.add('hidden');
         document.getElementById('main-card').classList.remove('border-yellow-400');
-        document.getElementById('sbx-ledger-output').classList.add('hidden');
         document.getElementById('btn-export').classList.add('hidden');
         buildSandboxInputs();
         runCalc();
@@ -427,31 +486,32 @@
 
     function renderLedgerUI(res) {
         const fmt = (n) => "$" + (n||0).toFixed(2);
-        document.getElementById('sbx-ledger-output').classList.remove('hidden');
         document.getElementById('btn-export').classList.remove('hidden');
 
+        // Light Mode Retail Loop
         let retHtml = res.retail.breakdown.map(i => `
-            <div class="mb-2 border-b border-gray-700/50 pb-1.5">
-                <div class="flex justify-between text-[11px] text-blue-300 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
+            <div class="mb-2 border-b border-gray-100 pb-1.5">
+                <div class="flex justify-between text-[11px] text-blue-800 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
                 <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula}</div>
             </div>
         `).join('');
-        retHtml += `<div class="flex justify-between text-[12px] font-black text-blue-400 mt-2 pt-2 border-t border-gray-600"><span>Gross Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>`;
+        retHtml += `<div class="flex justify-between text-[12px] font-black text-blue-700 mt-2 pt-2 border-t-2 border-blue-200"><span>Gross Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>`;
         document.getElementById('sbx-retail-breakdown').innerHTML = retHtml;
 
+        // Light Mode Cost Loop
         let cstHtml = res.cost.breakdown.map(i => `
-            <div class="mb-2 border-b border-gray-700/50 pb-1.5">
-                <div class="flex justify-between text-[11px] text-red-300 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
+            <div class="mb-2 border-b border-gray-100 pb-1.5">
+                <div class="flex justify-between text-[11px] text-red-800 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
                 <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula}</div>
             </div>
         `).join('');
-        cstHtml += `<div class="flex justify-between text-[12px] font-black text-red-400 mt-2 pt-2 border-t border-gray-600"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>`;
+        cstHtml += `<div class="flex justify-between text-[12px] font-black text-red-700 mt-2 pt-2 border-t-2 border-red-200"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>`;
         document.getElementById('sbx-cost-breakdown').innerHTML = cstHtml;
 
         const margin = res.metrics.margin * 100;
         const mEl = document.getElementById('sbx-margin');
         mEl.innerText = margin.toFixed(1) + '%';
-        mEl.className = margin >= 50 ? 'text-2xl font-black text-green-400 tracking-tight' : (margin > 0 ? 'text-2xl font-black text-yellow-400 tracking-tight' : 'text-2xl font-black text-red-500 tracking-tight');
+        mEl.className = margin >= 50 ? 'text-2xl font-black text-green-600 tracking-tight' : (margin > 0 ? 'text-2xl font-black text-yellow-600 tracking-tight' : 'text-2xl font-black text-red-600 tracking-tight');
     }
 
     function exportSandbox() {
@@ -484,6 +544,10 @@
     async function runCalc() {
         if(!backendData.Retail_Min_Order) return;
         
+        // Count lines in textarea for braille/math purposes
+        const rawText = document.getElementById('sign-text').value;
+        const lineCount = rawText ? rawText.split('\n').length : 0;
+
         const inputs = {
             qty: parseFloat(document.getElementById('qty').value) || 1,
             w: parseFloat(document.getElementById('w').value) || 8,
@@ -491,21 +555,8 @@
             signType: document.getElementById('sign-type').value,
             hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
             hasBraille: document.getElementById('toggle-braille').checked,
-            brailleLines: document.getElementById('toggle-braille').checked ? 1 : 0
+            brailleLines: document.getElementById('toggle-braille').checked ? lineCount : 0
         };
-
-        // Render Summary Texts
-        let sHtml = `<div class="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">`;
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Dimensions:</span> <span class="font-black text-gray-800">${inputs.w}" x ${inputs.h}"</span></div>`;
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Quantity:</span> <span class="font-black text-gray-800">${inputs.qty}</span></div>`;
-        
-        let bType = inputs.signType === 'Standard' ? 'None' : (inputs.signType === 'Layered_PVC' ? '3mm Black PVC' : '3/16" Clear Acrylic');
-        let cThk = inputs.signType === 'Standard' ? '1/8"' : '1/16"';
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Core Base:</span> <span class="font-bold text-blue-700 truncate w-32 text-right">${cThk} ${selectedCore ? selectedCore.Name : 'None'}</span></div>`;
-        sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">Rigid Backer:</span> <span class="font-bold text-gray-700 truncate w-32 text-right">${bType}</span></div>`;
-        
-        if(inputs.hasTactile) sHtml += `<div class="flex justify-between border-b border-gray-100 pb-1 col-span-2"><span class="text-gray-400 font-bold uppercase text-[10px]">Tactile Applique:</span> <span class="font-bold text-purple-700">${selectedTactile ? selectedTactile.Name : 'None'}</span></div>`;
-        sHtml += `</div>`;
 
         try {
             const dataToUse = customSimData || backendData;
@@ -515,14 +566,12 @@
             const ret = result.retail;
             const fmt = (n) => "$" + (n || 0).toFixed(2);
 
-            // Add Line items to summary
-            sHtml += `<div class="mt-4 pt-3 border-t border-gray-200 text-xs space-y-1">`;
+            // Clean UI Line Item Generator
+            let sHtml = "";
             ret.breakdown.forEach(item => {
-                sHtml += `<div class="flex justify-between text-gray-600"><span>${item.label}</span><span class="font-bold">${fmt(item.total)}</span></div>`;
+                sHtml += `<div class="flex justify-between text-[10px] text-gray-500 font-bold border-b border-blue-100/50 pb-1 pt-1"><span>${item.label}</span><span>${fmt(item.total)}</span></div>`;
             });
-            sHtml += `</div>`;
-            
-            document.getElementById('summary-content').innerHTML = sHtml;
+            document.getElementById('receipt-line-items').innerHTML = sHtml;
 
             document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
             document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
@@ -546,6 +595,9 @@
         if(sessionStorage.getItem('signos_role') === 'ADMIN' || sessionStorage.getItem('signos_role') === 'SUPER') {
             document.getElementById('btn-sandbox').classList.remove('hidden');
         }
+
+        SignOS_UI.showLoader('main-card', 'Connecting to Source Data...');
+        SignOS_UI.Camera3D.init('zoom-stage'); // Initialize 3D Pan/Zoom Engine
 
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
@@ -585,13 +637,15 @@
             if (SignOS_UI.buildIconGrid) SignOS_UI.buildIconGrid({ containerId: 'icon-grid', data: activeIcons, activeRingClass: 'ring-blue-500', onSelect: (item) => { selectedIcon = item; runCalc(); } });
 
             if(statusText) { statusText.innerText = "ONLINE"; statusText.className = "font-bold text-green-500"; if(statusDot) { statusDot.className = "w-2 h-2 rounded-full bg-green-500"; statusDot.classList.remove("animate-pulse"); } }
-            
+            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('main-card');
+
             setTimeout(() => { if (selectedIcon) { const btn = document.querySelector(`#icon-grid button[data-code="${selectedIcon.Item_Code}"]`); if (btn) btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent'); } }, 100);
             
             runCalc();
 
         } catch(e) {
             console.error("API Error:", e);
+            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('main-card', true, 'Connection Failed');
             if(statusText) { statusText.innerText = "OFFLINE"; statusText.className = "font-bold text-red-500"; }
         }
     });
