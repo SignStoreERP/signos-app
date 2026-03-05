@@ -1,14 +1,18 @@
 /**
- * PURE PHYSICS ENGINE: ADA Signs (v4.4)
- * Interactive String-Matcher Ledger with Constant mappings.
+ * PURE PHYSICS ENGINE: ADA Signs (v4.5)
+ * Interactive String-Matcher Ledger with native Tooltip injection.
  */
 function calculateADA(inputs, data) {
     const sqin = inputs.w * inputs.h;
     const totalSqin = sqin * inputs.qty;
 
-    // HOVER ENGINE WRAPPERS
-    const V = (k) => `<span class="hover-var text-blue-600 border-b border-dotted border-blue-400 cursor-help transition-all" data-var="${k}">[${k}]</span>`;
-    const C = (k, val) => `<span class="hover-var text-emerald-600 border-b border-dotted border-emerald-400 cursor-help transition-all font-bold" data-var="${k}">${val}</span>`;
+    // HOVER ENGINE & TOOLTIP WRAPPERS
+    const getDesc = (k) => data['META_NOTE_' + k] || "System parameter.";
+    const V = (k) => `<span class="hover-var text-blue-600 border-b border-dotted border-blue-400 cursor-help transition-all" data-var="${k}" title="${getDesc(k)}">[${k}]</span>`;
+    const C = (k, val) => {
+        let desc = window.ADA_CONFIG.constants.find(x => x.key === k)?.desc || "";
+        return `<span class="hover-var text-emerald-600 border-b border-dotted border-emerald-400 cursor-help transition-all font-bold" data-var="${k}" title="${desc}">${val}</span>`;
+    };
 
     // --- 1. RETAIL ENGINE ---
     const ret = [];
@@ -44,7 +48,7 @@ function calculateADA(inputs, data) {
     const L = (label, total, formula) => { if(total > 0) cst.push({label, total, formula}); return total; };
 
     const coreThick = inputs.signType === 'Standard' ? '1/8' : '1/16';
-    const sheetSqIn = 24 * 48; // 1152 sq in per sheet
+    const sheetSqIn = 24 * 48; 
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
 
     let coreKey = coreThick === '1/8' ? 'Cost_Stock_18_ADA' : 'Cost_Stock_116_ADA';
