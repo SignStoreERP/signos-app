@@ -74,12 +74,11 @@ function renderPanels() {
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-2 border-t border-gray-100 pt-1.5 mt-1">
-                <select onchange="updatePanel(${p.id}, 'material', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold ${isPerf ? 'text-indigo-700 bg-indigo-50' : 'text-gray-600 bg-gray-50'} outline-none focus:border-blue-500">
-                    <option value="wrap" ${p.material === 'wrap' ? 'selected' : ''}>3M IJ180 Cast</option>
-                    <option value="perf6040" ${p.material === 'perf6040' ? 'selected' : ''}>Perf (60/40)</option>
-                    <option value="perf7030" ${p.material === 'perf7030' ? 'selected' : ''}>Perf (70/30)</option>
-                    <option value="perfdual" ${p.material === 'perfdual' ? 'selected' : ''}>Dual Black Perf</option>
-                </select>
+<select onchange="updatePanel(${p.id}, 'material', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold ${isPerf ? 'text-indigo-700 bg-indigo-50' : 'text-gray-600 bg-gray-50'} outline-none focus:border-blue-500">
+<option value="wrap" ${p.material === 'wrap' ? 'selected' : ''}>3M IJ180 Cast</option>
+<option value="perf6040" ${p.material === 'perf6040' ? 'selected' : ''}>Window Perf</option>
+</select>
+
                 <select onchange="updatePanel(${p.id}, 'laminate', this.value)" class="w-full border border-gray-200 p-1 rounded text-xs font-bold text-gray-600 bg-gray-50 outline-none focus:border-blue-500">
                      ${isPerf ? `
                      <option value="Optically Clear" ${p.laminate === 'Optically Clear' ? 'selected' : ''}>Optically Clear Lam</option>
@@ -153,7 +152,8 @@ function runCalc() {
         const instTxt = inputs.install === 'Yes' ? 'Installation Labor Included.' : 'Print Only (No Install).';
         
         const panelTxt = panels.map(p => {
-            let matName = p.material === 'wrap' ? '3M IJ180 Cast' : (p.material === 'perfdual' ? 'Dual Black Perf' : (p.material === 'perf7030' ? 'Perf 70/30' : 'Perf 60/40'));
+            let matName = p.material === 'wrap' ? '3M IJ180 Cast' : 'Window Perf';
+
             let incName = (p.material.startsWith('perf') && p.included) ? ' (Cost Included)' : '';
             return ` - ${p.label}: ${p.w}" x ${p.h}" [${matName} | ${p.laminate}]${incName}`;
         }).join('\n');
