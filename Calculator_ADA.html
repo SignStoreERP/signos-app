@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v4.7 - Compact Interactive Dictionary</title>
+    <title>ADA Signs v5.0 - Custom Layer Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -29,7 +29,6 @@
         .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s; pointer-events: none; }
         .exploded-view .blueprint-callout { opacity: 1; }
         
-        /* HOVER ENGINE HIGHLIGHTS */
         .highlight-var {
             background-color: #fef08a !important;
             color: #854d0e !important;
@@ -45,7 +44,6 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10 overflow-x-hidden">
 
-<!-- DYNAMIC 3-COLUMN WRAPPER -->
 <div id="app-wrapper" class="w-full max-w-md mx-auto mt-8 transition-all duration-500 flex justify-center items-start gap-4 px-4">
     
     <!-- LEFT: FULL MATH LEDGER -->
@@ -75,22 +73,21 @@
         </div>
     </div>
 
-    <!-- CENTER: MAIN CALCULATOR ISLAND + DICTIONARY -->
+    <!-- CENTER: MAIN CALCULATOR ISLAND -->
     <div class="flex flex-col gap-4 w-full max-w-md shrink-0 z-20">
         
-        <!-- MAIN CARD -->
         <div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
             <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
 
             <!-- VIEWFINDER TOGGLE BAR -->
             <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-end items-center z-20 relative">
                 <button id="btn-toggle-view" onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition flex items-center gap-1">
-                    👁️ <span>Open Viewfinder</span>
+                    <span id="view-text">Open Viewfinder</span>
                 </button>
             </div>
 
             <!-- 3D PREVIEW (HIDDEN BY DEFAULT) -->
-            <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
+            <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
                 <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-start pointer-events-none">
                     <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-white transition pointer-events-auto">
                         <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
@@ -106,14 +103,17 @@
                 </div>
             </div>
 
-            <!-- DIMENSIONS -->
+            <!-- PRIMARY BUILDER -->
             <div class="p-5 bg-white border-b border-gray-200 shadow-sm z-10 relative">
-                <div class="grid grid-cols-3 gap-3 mb-4">
+                
+                <!-- Qty & Dims -->
+                <div class="grid grid-cols-3 gap-3 mb-4 border-b border-gray-100 pb-4">
                     <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-blue-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
                     <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
                     <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
                 </div>
 
+                <!-- Global Colors -->
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div id="wrap-tactile-color">
                         <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
@@ -135,21 +135,47 @@
                     </div>
                 </div>
 
+                <!-- Structural Layer Visual Buttons -->
                 <div>
-                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Sign Type & Backer</label>
-                    <select id="sign-type" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="toggleBackerColor(); runCalc()">
-                        <option value="Standard">Standard (1/32" Tactile on 1/8" Core)</option>
-                        <option value="Layered_PVC" selected>Layered (1/16" Core + 3mm PVC Backer)</option>
-                        <option value="Layered_Acrylic">Premium Layered (1/16" Core + 3/16" Clear Acrylic)</option>
-                    </select>
-                </div>
-                
-                <div id="backer-color-wrap" class="mt-3">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">PVC Backer Color</label>
-                    <select id="backer-color" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="runCalc()">
-                        <option value="Black PVC" selected>Black PVC</option>
-                        <option value="White PVC">White PVC</option>
-                    </select>
+                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Sign Structure</label>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <button id="st-Standard" onclick="applyPreset('Standard')" class="preset-btn ring-2 ring-blue-500 bg-blue-50 p-2 border border-gray-200 rounded shadow-sm text-left transition focus:outline-none">
+                            <span class="block text-xs font-black text-blue-800 uppercase">Standard</span>
+                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">1/8" Core Base</span>
+                        </button>
+                        <button id="st-Layered_PVC" onclick="applyPreset('Layered_PVC')" class="preset-btn p-2 border border-gray-200 rounded shadow-sm text-left transition hover:border-blue-300 focus:outline-none">
+                            <span class="block text-xs font-black text-blue-800 uppercase">Layered PVC</span>
+                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">1/16" Core + PVC</span>
+                        </button>
+                        <button id="st-Layered_Acrylic" onclick="applyPreset('Layered_Acrylic')" class="preset-btn p-2 border border-gray-200 rounded shadow-sm text-left transition hover:border-blue-300 focus:outline-none">
+                            <span class="block text-xs font-black text-blue-800 uppercase">Premium Acr</span>
+                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">1/16" Core + Acrylic</span>
+                        </button>
+                        <button id="st-Custom" onclick="applyPreset('Custom')" class="preset-btn p-2 border border-gray-200 rounded shadow-sm text-left transition hover:border-blue-300 focus:outline-none">
+                            <span class="block text-xs font-black text-blue-800 uppercase">Custom Build</span>
+                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">A La Carte Layers</span>
+                        </button>
+                    </div>
+
+                    <!-- Interactive Layer Selectors -->
+                    <div id="layer-builder" class="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-inner space-y-3">
+                        <div>
+                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Core Substrate Thickness</label>
+                            <select id="bld-core" onchange="checkCustom()" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none">
+                                <option value="1/8">1/8" ADA Core</option>
+                                <option value="1/16">1/16" ADA Core</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Rigid Backer Material</label>
+                            <select id="bld-backer" onchange="checkCustom()" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none">
+                                <option value="None">None</option>
+                                <option value="Black PVC">3mm Black PVC</option>
+                                <option value="White PVC">3mm White PVC</option>
+                                <option value="Clear Acrylic">1/4" Clear Acrylic</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -226,9 +252,16 @@
                     Launch Cost Sandbox
                 </button>
             </div>
+            
+            <!-- NARRATIVE JOB DESCRIPTION -->
+            <div class="bg-gray-50 p-4 border-t border-gray-200">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+                <textarea id="job-desc" class="w-full text-xs p-2 border border-gray-300 shadow-inner rounded bg-white h-20 text-gray-700 font-mono outline-none resize-none custom-scroll" readonly></textarea>
+            </div>
+            
         </div>
 
-        <!-- GLOSSARY TRAY (Matches 450px Island Width) -->
+        <!-- GLOSSARY TRAY -->
         <div id="sandbox-glossary" class="hidden w-full bg-white shadow-lg rounded-xl border border-gray-200 flex-col shrink-0 text-gray-700 overflow-hidden mb-10">
             <div class="p-3 bg-slate-50 border-b border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition" onclick="toggleGlossary()">
                 <span class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
@@ -242,9 +275,7 @@
                 <div class="p-2 bg-white border-b border-gray-100">
                     <input type="text" id="glos-search" placeholder="Search variables..." oninput="filterGlossary()" class="w-full border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
                 </div>
-                <div id="glossary-grid" class="flex flex-col gap-2 p-3 max-h-80 overflow-y-auto custom-scroll bg-gray-50">
-                    <!-- Definitions injected here -->
-                </div>
+                <div id="glossary-grid" class="flex flex-col gap-2 p-3 max-h-80 overflow-y-auto custom-scroll bg-gray-50"></div>
             </div>
         </div>
 
@@ -304,6 +335,46 @@
     let lastSimResult = null; 
     const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
 
+    // --- CUSTOM LAYER BUILDER LOGIC ---
+    function applyPreset(type) {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+            b.classList.add('hover:border-blue-300');
+        });
+        document.getElementById('st-' + type).classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+        document.getElementById('st-' + type).classList.remove('hover:border-blue-300');
+
+        const coreSel = document.getElementById('bld-core');
+        const backerSel = document.getElementById('bld-backer');
+
+        if (type === 'Standard') { coreSel.value = '1/8'; backerSel.value = 'None'; }
+        if (type === 'Layered_PVC') { coreSel.value = '1/16'; backerSel.value = 'Black PVC'; }
+        if (type === 'Layered_Acrylic') { coreSel.value = '1/16'; backerSel.value = 'Clear Acrylic'; }
+
+        runCalc();
+    }
+
+    function checkCustom() {
+        const core = document.getElementById('bld-core').value;
+        const backer = document.getElementById('bld-backer').value;
+
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+            b.classList.add('hover:border-blue-300');
+        });
+
+        if (core === '1/8' && backer === 'None') {
+            document.getElementById('st-Standard').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+        } else if (core === '1/16' && (backer === 'Black PVC' || backer === 'White PVC')) {
+            document.getElementById('st-Layered_PVC').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+        } else if (core === '1/16' && backer === 'Clear Acrylic') {
+            document.getElementById('st-Layered_Acrylic').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+        } else {
+            document.getElementById('st-Custom').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+        }
+        runCalc();
+    }
+
     // --- HOVER ENGINE LOGIC ---
     document.addEventListener('mouseover', e => {
         const target = e.target.closest('.hover-var');
@@ -323,29 +394,23 @@
 
     function toggleViewfinder() {
         isViewfinderOn = !isViewfinderOn;
+        const btnText = document.getElementById('view-text');
         const btn = document.getElementById('btn-toggle-view');
         
         if (isViewfinderOn) {
             document.getElementById('preview-wrapper').classList.remove('hidden');
             document.getElementById('preview-wrapper').classList.add('flex');
             document.getElementById('content-module-wrap').classList.remove('hidden');
-            btn.innerHTML = '✕ <span>Close Viewfinder</span>';
+            btnText.innerText = 'Close Viewfinder';
             btn.classList.replace('text-blue-600', 'text-gray-500');
             updatePreview();
         } else {
             document.getElementById('preview-wrapper').classList.add('hidden');
             document.getElementById('preview-wrapper').classList.remove('flex');
             document.getElementById('content-module-wrap').classList.add('hidden');
-            btn.innerHTML = '👁️ <span>Open Viewfinder</span>';
+            btnText.innerText = 'Open Viewfinder';
             btn.classList.replace('text-gray-500', 'text-blue-600');
         }
-    }
-
-    function toggleBackerColor() {
-        const st = document.getElementById('sign-type').value;
-        const wrap = document.getElementById('backer-color-wrap');
-        if (st === 'Layered_PVC') wrap.classList.remove('hidden');
-        else wrap.classList.add('hidden');
     }
 
     function syncAutoScale(sourceId) {
@@ -422,12 +487,8 @@
         document.getElementById('picto-size').classList.toggle('opacity-50', buildInputs.isAutoScale);
         document.getElementById('text-height').classList.toggle('opacity-50', buildInputs.isAutoScale);
 
-        const st = document.getElementById('sign-type').value;
-        let backerType = 'None';
-        if (st === 'Layered_PVC') backerType = document.getElementById('backer-color').value;
-        else if (st === 'Layered_Acrylic') backerType = 'Clear Acrylic';
-        
-        const coreThickStr = st === 'Standard' ? '1/8' : '1/16';
+        let backerType = document.getElementById('bld-backer').value;
+        const coreThickStr = document.getElementById('bld-core').value;
         const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000'; 
         const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
         let backerHex = backerType === 'White PVC' ? '#ffffff' : (backerType === 'Clear Acrylic' ? 'rgba(255,255,255,0.4)' : '#111827');
@@ -619,7 +680,7 @@
         const cleanHTML = (str) => str.replace(/<[^>]*>?/gm, '');
 
         let txt = `SIGNOS DEV - ADA FULL LEDGER EXHAUST\nTimestamp: ${new Date().toISOString()}\n----------------------------------------\n`;
-        txt += `SIZE: ${document.getElementById('w').value}" x ${document.getElementById('h').value}"\nQTY: ${document.getElementById('qty').value}\nTYPE: ${document.getElementById('sign-type').options[document.getElementById('sign-type').selectedIndex].text}\n\n`;
+        txt += `SIZE: ${document.getElementById('w').value}" x ${document.getElementById('h').value}"\nQTY: ${document.getElementById('qty').value}\n\n`;
         
         txt += `--- APPLIED VARIABLES ---\n`;
         window.ADA_CONFIG.retails.forEach(i => txt += `${i.key}: ${customSimData[i.key]}\n`);
@@ -652,8 +713,8 @@
             qty: parseFloat(document.getElementById('qty').value) || 1,
             w: parseFloat(document.getElementById('w').value) || 8,
             h: parseFloat(document.getElementById('h').value) || 8,
-            signType: document.getElementById('sign-type').value,
-            backerColor: document.getElementById('backer-color').value,
+            coreThick: document.getElementById('bld-core').value,
+            backer: document.getElementById('bld-backer').value,
             hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
             hasBraille: document.getElementById('toggle-braille').checked,
             brailleLines: document.getElementById('toggle-braille').checked ? lineCount : 0
@@ -672,6 +733,14 @@
             document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(dataToUse.Retail_Min_Order || 50)}`;
             document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
+            // Populate Job Description Generator
+            let tactStr = inputs.hasTactile && selectedTactile ? `1/32" [${selectedTactile.Code}] ${selectedTactile.Name} Tactile` : `No Tactile`;
+            let brailleStr = inputs.hasBraille ? `w/ ${inputs.brailleLines} lines Raster Braille` : ``;
+            let coreStr = selectedCore ? `${inputs.coreThick}" [${selectedCore.Code}] ${selectedCore.Name} Core` : `${inputs.coreThick}" Core`;
+            let backerStr = inputs.backer !== 'None' ? `mounted to ${inputs.backer}` : `(No Backer)`;
+            
+            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers: ${tactStr} ${brailleStr} on ${coreStr} ${backerStr}.`.replace(/  +/g, ' ');
+
             if (customSimData) {
                 lastSimResult = result;
                 renderLedgerUI(result);
@@ -689,7 +758,12 @@
             document.getElementById('btn-sandbox').classList.remove('hidden');
         }
 
-        SignOS_UI.showLoader('main-card', 'Connecting to Source Data...');
+        // Apply loader correctly to the preview-wrapper container. 
+        // We temporarily remove hidden so it draws, and then hide it again.
+        const previewWrap = document.getElementById('preview-wrapper');
+        previewWrap.classList.remove('hidden');
+        previewWrap.classList.add('flex');
+        SignOS_UI.showLoader('preview-wrapper', 'Connecting to Source Data...');
         SignOS_UI.Camera3D.init('zoom-stage'); 
 
         const statusText = document.getElementById("status-text");
@@ -730,15 +804,20 @@
             if (SignOS_UI.buildIconGrid) SignOS_UI.buildIconGrid({ containerId: 'icon-grid', data: activeIcons, activeRingClass: 'ring-blue-500', onSelect: (item) => { selectedIcon = item; runCalc(); } });
 
             if(statusText) { statusText.innerText = "ONLINE"; statusText.className = "font-bold text-green-500"; if(statusDot) { statusDot.className = "w-2 h-2 rounded-full bg-green-500"; statusDot.classList.remove("animate-pulse"); } }
-            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('main-card');
+            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper');
 
             setTimeout(() => { if (selectedIcon) { const btn = document.querySelector(`#icon-grid button[data-code="${selectedIcon.Item_Code}"]`); if (btn) btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent'); } }, 100);
             
-            runCalc();
+            // Set Initial State
+            applyPreset('Layered_PVC');
+            
+            // Re-hide viewfinder so it starts collapsed
+            previewWrap.classList.add('hidden');
+            previewWrap.classList.remove('flex');
 
         } catch(e) {
             console.error("API Error:", e);
-            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('main-card', true, 'Connection Failed');
+            if (SignOS_UI && SignOS_UI.hideLoader) SignOS_UI.hideLoader('preview-wrapper', true, 'Connection Failed');
             if(statusText) { statusText.innerText = "OFFLINE"; statusText.className = "font-bold text-red-500"; }
         }
     });
