@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ADA Signs (v4.1)
- * Full Exhaustive Ledger format for Sandbox projections.
+ * PURE PHYSICS ENGINE: ADA Signs (v4.2)
+ * Full Exhaustive Ledger format. Includes full Sandbox Arrays.
  */
 function calculateADA(inputs, data) {
     const sqin = inputs.w * inputs.h;
@@ -58,7 +58,17 @@ function calculateADA(inputs, data) {
     }
 
     if (inputs.signType !== 'Standard') {
-        const backerCost = inputs.signType === 'Layered_Acrylic' ? (parseFloat(data.Cost_Stock_14_4x8_C || 120) / 4608) : (parseFloat(data.Cost_Stock_3mm_4x8 || 29) / 4608);
+        let backerCost = 0;
+        if (inputs.signType === 'Layered_Acrylic') {
+            backerCost = parseFloat(data.Cost_Stock_14_4x8_C || 120) / 4608;
+        } else {
+            // Check UI input for Black vs White PVC
+            if (inputs.backerColor === 'White PVC') {
+                backerCost = parseFloat(data.Cost_Stock_3mm_4x8_WW || 29.09) / 4608;
+            } else {
+                backerCost = parseFloat(data.Cost_Stock_3mm_4x8_BK || 32.53) / 4608;
+            }
+        }
         L(`Rigid Backer Material`, (totalSqin * backerCost) * wastePct, `(${totalSqin.toFixed(1)} SqIn * $${backerCost.toFixed(4)}/sqin) * Waste`);
     }
 
@@ -115,7 +125,7 @@ window.ADA_CONFIG = {
         { key: 'Cost_Stock_116_ADA', label: '1/16" Core ($/Sht)' }, 
         { key: 'Cost_Stock_18_ADA', label: '1/8" Core ($/Sht)' },
         { key: 'Cost_Stock_132_Applique', label: '1/32" Tactile ($/Sht)' },
-        { key: 'Cost_Stock_3mm_4x8', label: '3mm PVC ($/Sht)' },
+        { key: 'Cost_Stock_3mm_4x8_BK', label: '3mm PVC ($/Sht)' },
         { key: 'Cost_Stock_14_4x8_C', label: '1/4" Clear ($/Sht)' },
         { key: 'Cost_ADA_Tape', label: '3M Tape ($/SqFt)' },
         { key: 'Cost_Raster_Bead', label: 'Raster Bead ($/Ea)' },
