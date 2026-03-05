@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v4.1 - Physics & Sandbox Edition</title>
+    <title>ADA Signs v4.2 - Sandbox Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -20,8 +20,6 @@
         #preview-wrapper { perspective: 1200px; cursor: grab; }
         #preview-wrapper:active { cursor: grabbing; }
         #svg-preview-container { transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
-        
-        /* The Z-axis transforms and box-shadows are now handled dynamically by JS Physics! */
         .sign-layer { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s ease; transform-style: preserve-3d; }
         .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
         .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s; pointer-events: none; }
@@ -30,15 +28,17 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10 relative">
 
-<!-- ADMIN TOP BAR -->
-<div class="bg-gray-900 text-white px-4 py-2 flex justify-between items-center z-40 shrink-0">
-    <div class="text-xs font-black tracking-widest text-gray-400">SIGNOS <span class="text-white">DEV</span></div>
-    <button onclick="toggleSandbox()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-3 py-1.5 rounded uppercase tracking-widest transition flex items-center gap-2 shadow-lg border border-indigo-400">
-        ⚙️ Admin Sandbox
+<!-- FLOATING ADMIN TOGGLES -->
+<div class="fixed top-4 right-4 z-50 flex gap-2">
+    <button onclick="toggleDevViewfinder()" class="bg-gray-800 hover:bg-gray-700 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg border border-gray-600 uppercase tracking-widest transition flex items-center gap-1.5">
+        👁️ Toggle Viewfinder
+    </button>
+    <button onclick="toggleSandbox()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg border border-indigo-400 uppercase tracking-widest transition flex items-center gap-1.5">
+        ⚙️ Cost Sandbox
     </button>
 </div>
 
-<div id="main-card" class="max-w-md mx-auto mt-6 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300">
+<div id="main-card" class="max-w-md mx-auto mt-12 w-[calc(100%-2rem)] sm:w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300">
     
     <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Live Simulation Active</div>
 
@@ -101,7 +101,7 @@
     </div>
 
     <!-- 5. CONTENT & TYPOGRAPHY -->
-    <div class="bg-gray-50 border-b border-gray-200 p-5 space-y-3">
+    <div id="content-module-wrap" class="bg-gray-50 border-b border-gray-200 p-5 space-y-3">
         <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
             <div class="flex justify-between items-center">
                 <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
@@ -164,40 +164,38 @@
     </div>
 </div>
 
-<!-- LITE SIMULATOR (SLIDE OUT PANEL) -->
-<div id="admin-sandbox" class="fixed inset-y-0 right-0 w-96 bg-gray-900 text-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-700">
+<!-- EXHAUSTIVE LITE SIMULATOR -->
+<div id="admin-sandbox" class="fixed inset-y-0 right-0 w-[450px] bg-gray-900 text-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-700">
     <div class="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center shrink-0">
         <div>
             <h2 class="text-sm font-black text-white uppercase tracking-widest">Cost Sandbox</h2>
-            <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Live Math Ledger</span>
+            <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Full Math Ledger Projection</span>
         </div>
-        <button onclick="toggleSandbox()" class="text-gray-400 hover:text-white transition">✕</button>
+        <button onclick="toggleSandbox()" class="text-gray-400 hover:text-white transition focus:outline-none">✕</button>
     </div>
     
-    <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-6">
-        <div>
-            <div class="flex justify-between items-center mb-3">
-                <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest border-b border-blue-900 pb-1">Market Override Variables</span>
-                <button onclick="resetSandbox()" class="text-[9px] text-gray-400 hover:text-red-400 uppercase font-bold">Reset</button>
+    <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-6 bg-gray-900">
+        <div id="sbx-ledger-output" class="bg-gray-800 rounded-lg p-4 border border-gray-700 hidden">
+            
+            <h3 class="text-[11px] font-black text-blue-400 uppercase tracking-widest border-b border-blue-900 pb-2 mb-3">Market Logic (Retail)</h3>
+            <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
+            
+            <h3 class="text-[11px] font-black text-red-400 uppercase tracking-widest border-b border-red-900 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
+            <div id="sbx-cost-breakdown" class="space-y-3"></div>
+
+            <div class="border-t-2 border-gray-700 my-4 pt-3 flex justify-between items-center bg-gray-900 -mx-4 -mb-4 p-4 rounded-b-lg">
+                <span class="text-xs font-black text-green-400 uppercase tracking-widest">Simulated Margin:</span>
+                <span id="sbx-margin" class="text-2xl font-black text-green-400 tracking-tight">--</span>
             </div>
-            <div id="sbx-retail-inputs" class="space-y-2"></div>
-        </div>
-        <div>
-            <span class="text-[10px] font-black text-red-400 uppercase tracking-widest border-b border-red-900 pb-1 mb-3 block">Physics Override Variables</span>
-            <div id="sbx-cost-inputs" class="space-y-2"></div>
         </div>
 
-        <div class="border-t border-gray-700 my-4"></div>
-        
-        <div id="sbx-ledger-output" class="bg-gray-800 rounded-lg p-3 border border-gray-700 hidden">
-            <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 text-center">Interactive Receipt</span>
-            <div id="sbx-retail-breakdown" class="space-y-1 mb-3"></div>
-            <div class="border-t border-gray-700 my-2"></div>
-            <div id="sbx-cost-breakdown" class="space-y-1"></div>
-            <div class="border-t border-gray-700 my-2 pt-2 flex justify-between items-center">
-                <span class="text-[10px] font-black text-green-400 uppercase tracking-widest">Simulated Margin:</span>
-                <span id="sbx-margin" class="text-lg font-black text-green-400">--</span>
+        <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 shadow-inner mt-4">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Sandbox Variables</span>
+                <button onclick="resetSandbox()" class="text-[9px] text-gray-400 hover:text-red-400 uppercase font-bold border border-gray-600 px-2 py-0.5 rounded transition">Reset</button>
             </div>
+            <div id="sbx-retail-inputs" class="space-y-2 mb-4"></div>
+            <div id="sbx-cost-inputs" class="space-y-2"></div>
         </div>
     </div>
 
@@ -225,8 +223,15 @@
     let backendData = {}, customSimData = null, coreColors = [], tactileColors = [], pictograms = [], systemFonts = [];
     let selectedCore = null, selectedTactile = null, selectedIcon = null, activeModal = '';
     let currentManifest = null;
-    let lastSimResult = null; // Holds payload for download
+    let lastSimResult = null; 
     const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
+
+    function toggleDevViewfinder() {
+        const view = document.getElementById('preview-wrapper');
+        const cont = document.getElementById('content-module-wrap');
+        view.classList.toggle('hidden');
+        cont.classList.toggle('hidden');
+    }
 
     function toggle3D() {
         SignOS_UI.Camera3D.toggle(!SignOS_UI.Camera3D.is3D);
@@ -253,7 +258,8 @@
         let r = parseInt(c.substr(0, 2), 16) * 0.6, g = parseInt(c.substr(2, 2), 16) * 0.6, b = parseInt(c.substr(4, 2), 16) * 0.6;
         let shadow = [];
         for(let i=1; i<=depthPx; i++) shadow.push(`-${i}px ${i}px 0 rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`);
-        shadow.push(`-${depthPx+5}px ${depthPx+5}px 15px rgba(0,0,0,0.3)`);
+        // REMOVED THE MASSIVE AMBIENT BLUR TO FIX THICKNESS BUG
+        shadow.push(`-${depthPx+2}px ${depthPx+2}px 5px rgba(0,0,0,0.15)`); 
         return shadow.join(', ');
     }
 
@@ -298,18 +304,21 @@
         container.style.width = `${w * scale}px`;
         container.style.height = `${h * scale}px`;
 
-        // --- NEW: PHYSICS-BASED Z-AXIS EXTRUSION ---
-        // Base Unit: 1/32" = 2px visual depth
-        const depthTactile = 2;
-        const depthCore = coreThickStr === '1/8' ? 8 : 4;
-        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 12 : 8);
-
+        // 1/32" is strictly 1px in UI scale.
+        const depthTactile = 1;
+        const depthCore = coreThickStr === '1/8' ? 4 : 2;
+        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 6 : 4);
+        
         const isExp = SignOS_UI.Camera3D.is3D;
         
-        // If exploded, space them out. If flat, stack them exactly on top of their physical depths.
         const zBacker = isExp ? -40 : 0;
-        const zCore = isExp ? 0 : depthBacker;
-        const zTactile = isExp ? 40 : (depthBacker + depthCore);
+        const zCore = isExp ? 0 : 0;
+        const zTactile = isExp ? 40 : 0;
+
+        // If not exploded in 3D, remove the deep drop shadows completely to simulate flat 2D layout
+        const shadowBacker = isExp ? makeEdge(backerHex, depthBacker) : '0 1px 3px rgba(0,0,0,0.1)';
+        const shadowCore = isExp ? makeEdge(coreHex, depthCore) : '0 1px 3px rgba(0,0,0,0.1)';
+        const shadowTactile = isExp ? `drop-shadow(-${depthTactile}px ${depthTactile}px 1px rgba(0,0,0,0.4))` : 'none';
 
         let callout = (name) => `
             <div class="blueprint-callout absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 flex items-center gap-1.5 z-50 pr-2">
@@ -319,10 +328,10 @@
 
         let html = '';
         if (backerType !== 'None') {
-            html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${r*scale}px; transform: translateZ(${zBacker}px); box-shadow: ${makeEdge(backerHex, depthBacker)};">${isExp ? callout(backerType + ' Backer') : ''}</div>`;
+            html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${r*scale}px; transform: translateZ(${zBacker}px); box-shadow: ${shadowBacker};">${isExp ? callout(backerType + ' Backer') : ''}</div>`;
         }
-        html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${r*scale}px; transform: translateZ(${zCore}px); box-shadow: ${makeEdge(coreHex, depthCore)};">${isExp ? callout(coreThickStr + '" ADA Core') : ''}</div>`;
-        html += `<div class="sign-layer layer-tactile" style="color: ${tactileHex}; transform: translateZ(${zTactile}px); filter: drop-shadow(-${depthTactile}px ${depthTactile}px 1px rgba(0,0,0,0.3));">
+        html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${r*scale}px; transform: translateZ(${zCore}px); box-shadow: ${shadowCore};">${isExp ? callout(coreThickStr + '" ADA Core') : ''}</div>`;
+        html += `<div class="sign-layer layer-tactile" style="color: ${tactileHex}; transform: translateZ(${zTactile}px); filter: ${shadowTactile};">
             <svg id="live-production-preview" viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
             ${isExp ? callout('1/32" Tactile & Braille') : ''}
         </div>`;
@@ -350,7 +359,7 @@
     }
     function closeModal() { document.getElementById('color-modal').classList.add('hidden'); }
 
-    // --- LITE SIMULATOR MODULE ---
+    // --- FULL MATH LEDGER SIMULATOR ---
     function toggleSandbox() {
         const panel = document.getElementById('admin-sandbox');
         if (panel.classList.contains('translate-x-full')) {
@@ -405,44 +414,56 @@
         document.getElementById('sbx-ledger-output').classList.remove('hidden');
         document.getElementById('btn-export').classList.remove('hidden');
 
-        let retHtml = res.retail.breakdown.map(i => `<div class="flex justify-between text-[10px] text-blue-300"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>`).join('');
-        retHtml += `<div class="flex justify-between text-[10px] font-bold text-blue-400 mt-1 pt-1 border-t border-gray-600"><span>Market Total:</span><span>${fmt(res.retail.grandTotal)}</span></div>`;
+        // Detailed Retail Loop
+        let retHtml = res.retail.breakdown.map(i => `
+            <div class="mb-2 border-b border-gray-700/50 pb-1.5">
+                <div class="flex justify-between text-[11px] text-blue-300 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
+                <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula}</div>
+            </div>
+        `).join('');
+        retHtml += `<div class="flex justify-between text-[12px] font-black text-blue-400 mt-2 pt-2 border-t border-gray-600"><span>Gross Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>`;
         document.getElementById('sbx-retail-breakdown').innerHTML = retHtml;
 
-        let cstHtml = res.cost.breakdown.map(i => `<div class="flex justify-between text-[10px] text-red-300"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>`).join('');
-        cstHtml += `<div class="flex justify-between text-[10px] font-bold text-red-400 mt-1 pt-1 border-t border-gray-600"><span>Physics Total:</span><span>${fmt(res.cost.total)}</span></div>`;
+        // Detailed Cost Loop
+        let cstHtml = res.cost.breakdown.map(i => `
+            <div class="mb-2 border-b border-gray-700/50 pb-1.5">
+                <div class="flex justify-between text-[11px] text-red-300 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
+                <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula}</div>
+            </div>
+        `).join('');
+        cstHtml += `<div class="flex justify-between text-[12px] font-black text-red-400 mt-2 pt-2 border-t border-gray-600"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>`;
         document.getElementById('sbx-cost-breakdown').innerHTML = cstHtml;
 
         const margin = res.metrics.margin * 100;
         const mEl = document.getElementById('sbx-margin');
         mEl.innerText = margin.toFixed(1) + '%';
-        mEl.className = margin >= 50 ? 'text-lg font-black text-green-400' : (margin > 0 ? 'text-lg font-black text-yellow-400' : 'text-lg font-black text-red-500');
+        mEl.className = margin >= 50 ? 'text-2xl font-black text-green-400 tracking-tight' : (margin > 0 ? 'text-2xl font-black text-yellow-400 tracking-tight' : 'text-2xl font-black text-red-500 tracking-tight');
     }
 
     function exportSandbox() {
         if(!lastSimResult) return;
         const fmt = (n) => "$" + (n||0).toFixed(2);
-        let txt = `SIGNOS DEV - ADA SIMULATION EXHAUST\nTimestamp: ${new Date().toISOString()}\n----------------------------------------\n`;
+        let txt = `SIGNOS DEV - ADA FULL LEDGER EXHAUST\nTimestamp: ${new Date().toISOString()}\n----------------------------------------\n`;
         txt += `SIZE: ${document.getElementById('w').value}" x ${document.getElementById('h').value}"\nQTY: ${document.getElementById('qty').value}\nTYPE: ${document.getElementById('sign-type').options[document.getElementById('sign-type').selectedIndex].text}\n\n`;
         
         txt += `--- APPLIED VARIABLES ---\n`;
         window.ADA_CONFIG.retails.forEach(i => txt += `${i.key}: ${customSimData[i.key]}\n`);
         window.ADA_CONFIG.costs.forEach(i => txt += `${i.key}: ${customSimData[i.key]}\n`);
         
-        txt += `\n--- RETAIL LEDGER ---\n`;
-        lastSimResult.retail.breakdown.forEach(i => txt += `${i.label.padEnd(30)} ${fmt(i.total)}\n  [Formula: ${i.formula}]\n`);
-        txt += `GRAND TOTAL: ${fmt(lastSimResult.retail.grandTotal)}\n`;
+        txt += `\n--- MARKET LEDGER (RETAIL) ---\n`;
+        lastSimResult.retail.breakdown.forEach(i => txt += `${i.label.padEnd(35)} ${fmt(i.total)}\n  [Math: ${i.formula}]\n`);
+        txt += `----------------------------------------\nGROSS RETAIL: ${fmt(lastSimResult.retail.grandTotal)}\n`;
 
-        txt += `\n--- COST LEDGER ---\n`;
-        lastSimResult.cost.breakdown.forEach(i => txt += `${i.label.padEnd(30)} ${fmt(i.total)}\n  [Formula: ${i.formula}]\n`);
-        txt += `HARD COST TOTAL: ${fmt(lastSimResult.cost.total)}\n`;
+        txt += `\n--- PHYSICS LEDGER (COST) ---\n`;
+        lastSimResult.cost.breakdown.forEach(i => txt += `${i.label.padEnd(35)} ${fmt(i.total)}\n  [Math: ${i.formula}]\n`);
+        txt += `----------------------------------------\nHARD COST TOTAL: ${fmt(lastSimResult.cost.total)}\n`;
         
         txt += `\nNET MARGIN: ${(lastSimResult.metrics.margin*100).toFixed(1)}%`;
 
         const blob = new Blob([txt], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `SignOS_Sim_ADA_${Date.now()}.txt`;
+        a.download = `SignOS_Ledger_ADA_${Date.now()}.txt`;
         a.click();
     }
 
@@ -539,3 +560,4 @@
 </script>
 </body>
 </html>
+
