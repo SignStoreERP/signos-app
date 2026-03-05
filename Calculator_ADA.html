@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v6.1 - Manual 3D Viewfinder</title>
+    <title>ADA Signs v6.6 - Tiered Curve Pricing & Ledger Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -18,13 +18,15 @@
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
+        
         #preview-wrapper { perspective: 1200px; cursor: grab; }
         #preview-wrapper:active { cursor: grabbing; }
         #svg-preview-container { transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
         .sign-layer { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s ease; transform-style: preserve-3d; }
-        .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
-        .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s; pointer-events: none; }
-        .exploded-view .blueprint-callout { opacity: 1; }
+        
+        .isometric-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
+        .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; }
+        .isometric-view .blueprint-callout { opacity: 1; }
         
         .highlight-var {
             background-color: #fef08a !important;
@@ -76,6 +78,35 @@
         <div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
             <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
 
+            <!-- MANUAL 3D VIEWFINDER GENERATOR -->
+            <div class="bg-slate-50 p-4 border-b border-gray-200">
+                <button onclick="toggleViewfinderWindow()" id="btn-generate-preview" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black py-3 rounded shadow-md uppercase tracking-widest transition flex items-center justify-center gap-2 focus:outline-none">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span id="view-text">Close 3D Preview</span>
+                </button>
+                
+                <div id="preview-wrapper" class="flex isometric-view mt-4 bg-blue-50 overflow-hidden relative flex-col items-center justify-center h-[320px] shadow-inner border border-blue-200 rounded-lg" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
+
+                    <div class="absolute top-2 left-2 right-2 z-30 flex justify-between items-start pointer-events-none">
+                        <label class="flex items-center gap-1.5 bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-gray-200 hover:bg-gray-50 transition pointer-events-auto cursor-pointer">
+                            <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
+                            <span class="text-[8px] font-black text-gray-700 uppercase tracking-widest">Auto-Scale</span>
+                        </label>
+                        <div class="flex flex-col gap-1.5 pointer-events-auto items-end">
+                            <div class="flex gap-1.5">
+                                <button onclick="toggle3D()" id="btn-3d" class="bg-white/90 hover:bg-gray-50 text-blue-600 border border-blue-200 px-3 py-1.5 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Flat 2D View</button>
+                                <!-- Defaults to Exploded state on load -->
+                                <button onclick="toggleExplode()" id="btn-explode" class="bg-white/90 text-blue-600 border border-blue-200 px-3 py-1.5 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Stack Layers</button>
+                            </div>
+                            <button onclick="SignOS_UI.Camera3D.reset()" class="bg-white/80 hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Reset Camera</button>
+                        </div>
+                    </div>
+                    <div id="zoom-stage" class="w-full h-full flex items-center justify-center ml-12"> 
+                        <div id="svg-preview-container" class="mt-4 relative" style="width: 100px; height: 100px;"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- PRIMARY BUILDER -->
             <div class="p-5 bg-white shadow-sm z-10 relative">
                 
@@ -104,22 +135,26 @@
 
                 <!-- DYNAMIC LAYER BUILDER -->
                 <div class="bg-slate-200 p-3 rounded-xl shadow-inner border border-slate-300">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-300 pb-1 pl-1">ADA Sign Layers</label>
+                    <div class="mb-2 border-b border-slate-300 pb-1 px-1">
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">ADA Sign Layers</label>
+                    </div>
                     
                     <div id="layer-list" class="flex flex-col gap-2 mt-2 max-h-64 overflow-y-auto custom-scroll pr-1">
                         <!-- Layers Injected Here -->
                     </div>
                     
-                    <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-300">
-                        <select id="new-layer-type" class="flex-1 border border-white p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-sm">
-                            <option value="Tactile">1/32" Tactile Applique</option>
-                            <option value="1/16&quot; Core">1/16" ADA Core</option>
-                            <option value="1/8&quot; Core">1/8" ADA Core</option>
-                            <option value="3mm PVC Backer">3mm PVC Backer</option>
-                            <option value="1/4&quot; Clear Acrylic">1/4" Clear Acrylic</option>
-                            <option value="Foam Tape">Foam Tape (Mounting)</option>
+                    <button onclick="addLayer()" class="w-full mt-3 mb-2 bg-slate-100 hover:bg-blue-50 border border-dashed border-slate-300 hover:border-blue-300 text-slate-500 hover:text-blue-600 font-black py-2 rounded text-[9px] uppercase tracking-widest shadow-sm transition focus:outline-none flex items-center justify-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>Add Sign Layer</span>
+                    </button>
+                    
+                    <!-- STATIC MOUNTING OPTION -->
+                    <div class="pt-3 border-t border-slate-300">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-1">Mounting Option</label>
+                        <select id="mounting" class="w-full border border-gray-200 p-2 rounded text-xs font-bold bg-white text-gray-700 focus:border-blue-500 shadow-sm outline-none" onchange="runCalc()">
+                            <option value="Foam Tape" selected>Foam Tape (VHB Mount)</option>
+                            <option value="None">None (Slide-in / Wall Bracket)</option>
                         </select>
-                        <button onclick="addLayer()" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-2 rounded text-xs uppercase tracking-widest shadow-md transition">Add</button>
                     </div>
                 </div>
                 
@@ -140,47 +175,54 @@
 
             </div>
 
-            <!-- CONTENT & TYPOGRAPHY -->
-            <div id="content-module-wrap" class="bg-gray-50 border-t border-b border-gray-200 p-5 space-y-3">
-                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                    <div class="flex justify-between items-center">
-                        <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                            <input type="checkbox" id="toggle-picto" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Pictogram
-                        </label>
-                        <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
-                            <label class="text-[9px] font-bold text-gray-500 uppercase">Height:</label>
-                            <input type="number" id="picto-size" value="4" step="0.25" min="1" oninput="runCalc()" class="w-12 border p-0.5 rounded text-xs font-bold text-center outline-none">
-                        </div>
-                    </div>
-                    <div id="wrap-picto" class="mt-3 pt-3 border-t border-gray-100">
-                        <div id="icon-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
-                    </div>
+            <!-- COLLAPSIBLE CONTENT & TYPOGRAPHY -->
+            <div class="bg-gray-50 border-t border-b border-gray-200">
+                <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-100 transition" onclick="toggleAcc('acc-design', 'arr-design')">
+                    <span class="text-[10px] font-black text-gray-800 uppercase tracking-widest">Design Elements</span>
+                    <svg id="arr-design" class="w-4 h-4 text-gray-400 transition-transform duration-200 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
-
-                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                            <input type="checkbox" id="toggle-text" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Text Copy
-                        </label>
-                    </div>
-                    <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
-                        <div class="col-span-2">
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String (Hit Enter for new line)</label>
-                            <textarea id="sign-text" rows="2" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm resize-none custom-scroll">RESTROOM</textarea>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
-                            <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm"></select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center justify-between">
-                                Height (in)
-                                <span class="flex items-center gap-1 cursor-pointer">
-                                    <input type="checkbox" id="auto-scale-text" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded"> 
-                                    <span class="text-[8px] text-blue-600 tracking-wider">AUTO</span>
-                                </span>
+                
+                <div id="acc-design" class="p-5 pt-0 space-y-3">
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
+                                <input type="checkbox" id="toggle-picto" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Pictogram
                             </label>
-                            <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-center text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                            <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
+                                <label class="text-[9px] font-bold text-gray-500 uppercase">Height:</label>
+                                <input type="number" id="picto-size" value="4" step="0.25" min="1" oninput="runCalc()" class="w-12 border p-0.5 rounded text-xs font-bold text-center outline-none">
+                            </div>
+                        </div>
+                        <div id="wrap-picto" class="mt-3 pt-3 border-t border-gray-100">
+                            <div id="icon-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
+                                <input type="checkbox" id="toggle-text" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Text Copy
+                            </label>
+                        </div>
+                        <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
+                            <div class="col-span-2">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String</label>
+                                <input type="text" id="sign-text" value="RESTROOM" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
+                                <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm"></select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center justify-between">
+                                    Height (in)
+                                    <span class="flex items-center gap-1 cursor-pointer">
+                                        <input type="checkbox" id="auto-scale-text" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded"> 
+                                        <span class="text-[8px] text-blue-600 tracking-wider">AUTO</span>
+                                    </span>
+                                </label>
+                                <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-center text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -209,34 +251,9 @@
             </div>
             
             <!-- NARRATIVE JOB DESCRIPTION -->
-            <div class="bg-gray-50 p-4 border-t border-gray-200">
+            <div class="bg-gray-50 p-4 border-t border-gray-200 rounded-b-xl">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
                 <textarea id="job-desc" class="w-full text-xs p-2 border border-gray-300 shadow-inner rounded bg-white h-24 text-gray-700 font-mono outline-none resize-none custom-scroll" readonly></textarea>
-            </div>
-
-            <!-- MANUAL 3D VIEWFINDER GENERATOR -->
-            <div class="bg-slate-50 p-4 border-t border-gray-200 rounded-b-xl">
-                <button onclick="generatePreview()" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black py-3 rounded shadow-md uppercase tracking-widest transition flex items-center justify-center gap-2 focus:outline-none">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    Generate 3D Preview
-                </button>
-                
-                <!-- 3D PREVIEW BLOCK (HIDDEN UNTIL BUTTON CLICKED) -->
-                <div id="preview-wrapper" class="hidden mt-4 bg-white overflow-hidden relative flex-col items-center justify-center h-[320px] shadow-inner border border-gray-200 rounded-lg" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
-                    <div class="absolute top-2 left-2 right-2 z-30 flex justify-between items-start pointer-events-none">
-                        <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-gray-200 hover:bg-gray-50 transition pointer-events-auto">
-                            <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
-                            <span class="text-[8px] font-black text-gray-700 uppercase tracking-widest">Auto-Scale</span>
-                        </label>
-                        <div class="flex flex-col gap-1.5 pointer-events-auto">
-                            <button onclick="toggle3D()" class="bg-white/90 hover:bg-gray-50 text-blue-600 border border-blue-200 px-3 py-1.5 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Toggle 3D</button>
-                            <button onclick="SignOS_UI.Camera3D.reset()" class="bg-white/80 hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none self-end">Reset</button>
-                        </div>
-                    </div>
-                    <div id="zoom-stage" class="w-full h-full flex items-center justify-center">
-                        <div id="svg-preview-container" class="mt-4 relative" style="width: 100px; height: 100px;"></div>
-                    </div>
-                </div>
             </div>
             
         </div>
@@ -310,7 +327,9 @@
 <script>
     let backendData = {}, customSimData = null, coreColors = [], tactileColors = [], pictograms = [], systemFonts = [];
     let selectedIcon = null;
-    let isViewfinderOn = false;
+    let isViewfinderOn = true; 
+    let is3D = true;
+    let isExploded = true; 
     let lastSimResult = null; 
     let activeLayerModalId = null;
     const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
@@ -318,22 +337,32 @@
     // --- LAYER STACK STATE ---
     let layerStack = [];
 
+    function toggleAcc(contentId, arrowId) {
+        document.getElementById(contentId).classList.toggle('hidden');
+        document.getElementById(arrowId).classList.toggle('rotate-180');
+    }
+
     function generateId() { return Math.random().toString(36).substr(2, 9); }
 
     function createLayer(typeStr) {
         let layer = { id: generateId(), type: typeStr };
         if (typeStr === 'Tactile') {
-            const defCol = tactileColors.find(c => c.Name.includes('White')) || tactileColors;
-            layer.colorHex = defCol ? defCol.Hex_Code : '#FFFFFF';
-            layer.colorName = defCol ? defCol.Name : 'White';
+            const defCol = tactileColors.find(c => c.Name.includes('White')) || tactileColors || {Hex_Code: '#FFFFFF', Name: 'White', Code: 'N/A'};
+            layer.colorHex = defCol.Hex_Code;
+            layer.colorName = defCol.Name;
+            layer.colorCode = defCol.Code;
             layer.hasBraille = true;
         } else if (typeStr.includes('Core')) {
-            const defCol = coreColors.find(c => c.Name.includes('Black')) || coreColors;
-            layer.colorHex = defCol ? defCol.Hex_Code : '#000000';
-            layer.colorName = defCol ? defCol.Name : 'Black';
+            const defCol = coreColors.find(c => c.Name.includes('Black')) || coreColors || {Hex_Code: '#000000', Name: 'Black', Code: 'N/A'};
+            layer.colorHex = defCol.Hex_Code;
+            layer.colorName = defCol.Name;
+            layer.colorCode = defCol.Code;
         } else if (typeStr === '3mm PVC Backer') {
             layer.colorName = 'Black';
             layer.colorHex = '#111827';
+        } else if (typeStr === '3/16" Clear Acrylic') {
+            layer.colorName = 'Clear';
+            layer.colorHex = 'rgba(255,255,255,0.4)';
         }
         return layer;
     }
@@ -350,27 +379,31 @@
         } else if (preset === 'Acrylic') {
             layerStack.push(createLayer('Tactile'));
             layerStack.push(createLayer('1/16" Core'));
-            layerStack.push(createLayer('1/4" Clear Acrylic'));
+            layerStack.push(createLayer('3/16" Clear Acrylic'));
         }
         renderLayers();
         runCalc();
     }
 
     function addLayer() {
-        const type = document.getElementById('new-layer-type').value;
-        const layer = createLayer(type);
-        if (type === 'Foam Tape') {
-            // Enforce Rule: Only one Foam Tape, forced to the bottom
-            layerStack = layerStack.filter(l => l.type !== 'Foam Tape');
-            layerStack.push(layer);
-        } else {
-            // Insert before Foam Tape if it exists
-            const tapeIdx = layerStack.findIndex(l => l.type === 'Foam Tape');
-            if (tapeIdx !== -1) layerStack.splice(tapeIdx, 0, layer);
-            else layerStack.push(layer);
-        }
+        const layer = createLayer('1/16" Core');
+        layerStack.push(layer);
         renderLayers();
         runCalc();
+    }
+    
+    function updateLayerType(id, newType) {
+        const layer = layerStack.find(l => l.id === id);
+        if (layer) {
+            layer.type = newType;
+            const defaults = createLayer(newType);
+            layer.colorHex = defaults.colorHex;
+            layer.colorName = defaults.colorName;
+            layer.colorCode = defaults.colorCode;
+            layer.hasBraille = defaults.hasBraille;
+            renderLayers();
+            runCalc();
+        }
     }
 
     function removeLayer(id) {
@@ -379,18 +412,17 @@
         runCalc();
     }
 
-    function moveLayer(id, dir) {
+    // New Native Reorder Arrows (Replacing Drag & Drop)
+    function moveLayer(id, direction) {
         const idx = layerStack.findIndex(l => l.id === id);
         if (idx < 0) return;
-        if (layerStack[idx].type === 'Foam Tape' && dir === -1) return; 
-        
-        const newIdx = idx + dir;
+        const newIdx = idx + direction;
         if (newIdx < 0 || newIdx >= layerStack.length) return;
-        if (layerStack[newIdx].type === 'Foam Tape' && dir === 1) return;
-
+        
         const temp = layerStack[idx];
         layerStack[idx] = layerStack[newIdx];
         layerStack[newIdx] = temp;
+        
         renderLayers();
         runCalc();
     }
@@ -404,10 +436,7 @@
         const layer = layerStack.find(l => l.id === id);
         if (layer) { 
             layer.colorName = colorName; 
-            if (colorName === 'White') layer.colorHex = '#ffffff';
-            else if (colorName === 'Red') layer.colorHex = '#ef4444';
-            else if (colorName === 'Light Blue') layer.colorHex = '#38bdf8';
-            else layer.colorHex = '#111827';
+            layer.colorHex = colorName === 'White' ? '#ffffff' : '#111827';
             runCalc(); 
         }
     }
@@ -417,51 +446,52 @@
         let html = '';
         
         layerStack.forEach((l, index) => {
-            const isFirst = index === 0;
-            const isLast = index === layerStack.length - 1;
-            const isTape = l.type === 'Foam Tape';
-            const disUp = isFirst || isTape;
-            const disDown = isLast || (layerStack[index+1] && layerStack[index+1].type === 'Foam Tape');
-
             let propertiesHtml = '';
             
-            // Inline Color Button
+            let typeSelect = `
+                <select onchange="updateLayerType('${l.id}', this.value)" class="border border-gray-200 p-1.5 rounded text-[10px] font-black text-gray-800 bg-gray-50 outline-none focus:border-blue-500 shadow-inner w-32 shrink-0">
+                    <option value="Tactile" ${l.type==='Tactile'?'selected':''}>1/32" Tactile</option>
+                    <option value="1/16&quot; Core" ${l.type==='1/16" Core'?'selected':''}>1/16" ADA Core</option>
+                    <option value="1/8&quot; Core" ${l.type==='1/8" Core'?'selected':''}>1/8" ADA Core</option>
+                    <option value="3mm PVC Backer" ${l.type==='3mm PVC Backer'?'selected':''}>3mm PVC Backer</option>
+                    <option value="3/16&quot; Clear Acrylic" ${l.type==='3/16" Clear Acrylic'?'selected':''}>3/16" Clear Acrylic</option>
+                </select>
+            `;
+            
             if (l.type === 'Tactile' || l.type.includes('Core')) {
                 propertiesHtml += `
-                <div class="flex items-center gap-1.5 cursor-pointer bg-gray-50 border border-gray-200 px-2 py-1 rounded hover:border-blue-400 transition shadow-inner" onclick="openLayerModal('${l.id}', '${l.type}')">
+                <div class="flex items-center gap-1.5 cursor-pointer bg-gray-50 border border-gray-200 px-2 py-1.5 rounded hover:border-blue-400 transition shadow-inner" onclick="openLayerModal('${l.id}')">
                     <div class="w-3 h-3 rounded-full border border-gray-300 shrink-0" style="background-color: ${l.colorHex};"></div>
-                    <span class="text-[9px] text-gray-600 font-bold truncate max-w-[120px]" title="${l.colorName}">${l.colorName}</span>
+                    <span class="text-[9px] text-gray-600 font-bold truncate max-w-[100px]" title="${l.colorName}">${l.colorName}</span>
                 </div>`;
             }
             
-            // Inline Braille Toggle
             if (l.type === 'Tactile') {
                 propertiesHtml += `
-                <label class="flex items-center gap-1 text-[9px] font-bold text-gray-500 cursor-pointer ml-1 bg-white border border-gray-100 px-1.5 py-1 rounded">
+                <label class="flex items-center gap-1 text-[9px] font-bold text-gray-500 cursor-pointer ml-1 bg-white border border-gray-100 px-1.5 py-1.5 rounded hover:bg-blue-50 transition">
                     <input type="checkbox" onchange="updateLayerBraille('${l.id}', this.checked)" ${l.hasBraille ? 'checked' : ''} class="w-3 h-3 text-blue-600 rounded">
                     Braille
                 </label>`;
             }
 
-            // Inline PVC Dropdown
             if (l.type === '3mm PVC Backer') {
                 propertiesHtml += `
-                <select onchange="updateLayerPVC('${l.id}', this.value)" class="border border-gray-200 p-1 rounded text-[9px] font-bold text-gray-600 bg-gray-50 outline-none focus:border-blue-500 shadow-inner">
+                <select onchange="updateLayerPVC('${l.id}', this.value)" class="border border-gray-200 p-1.5 rounded text-[9px] font-bold text-gray-600 bg-gray-50 outline-none focus:border-blue-500 shadow-inner">
                     <option value="Black" ${l.colorName === 'Black' ? 'selected' : ''}>Black PVC</option>
                     <option value="White" ${l.colorName === 'White' ? 'selected' : ''}>White PVC</option>
-                    <option value="Red" ${l.colorName === 'Red' ? 'selected' : ''}>Red PVC</option>
-                    <option value="Light Blue" ${l.colorName === 'Light Blue' ? 'selected' : ''}>Light Blue PVC</option>
                 </select>`;
             }
 
             html += `
-            <div class="flex items-center bg-white p-2 rounded-lg shadow-sm border border-gray-200 gap-2">
-                <div class="flex flex-col gap-0.5 border-r border-gray-100 pr-2 shrink-0">
-                    <button onclick="moveLayer('${l.id}', -1)" class="${disUp ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none leading-none h-4" ${disUp ? 'disabled' : ''}>▲</button>
-                    <button onclick="moveLayer('${l.id}', 1)" class="${disDown ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none leading-none h-4" ${disDown ? 'disabled' : ''}>▼</button>
+            <div class="flex items-center bg-white p-2 rounded-lg shadow-sm border border-gray-200 gap-2 transition">
+                
+                <div class="flex flex-col items-center justify-center gap-1 pr-2 border-r border-gray-100 shrink-0">
+                    <button onclick="moveLayer('${l.id}', -1)" class="text-gray-400 hover:text-blue-600 transition focus:outline-none leading-none ${index===0?'opacity-30 cursor-not-allowed':''}" ${index===0?'disabled':''}>▲</button>
+                    <button onclick="moveLayer('${l.id}', 1)" class="text-gray-400 hover:text-blue-600 transition focus:outline-none leading-none ${index===layerStack.length-1?'opacity-30 cursor-not-allowed':''}" ${index===layerStack.length-1?'disabled':''}>▼</button>
                 </div>
+                
+                ${typeSelect}
                 <div class="flex-1 flex flex-wrap items-center gap-2 overflow-hidden">
-                    <span class="text-[10px] font-black text-gray-800 uppercase tracking-widest shrink-0 w-24">${l.type}</span>
                     ${propertiesHtml}
                 </div>
                 <button onclick="removeLayer('${l.id}')" class="text-gray-300 hover:text-red-500 transition font-black focus:outline-none px-2 shrink-0">✕</button>
@@ -474,9 +504,12 @@
         container.innerHTML = html;
     }
 
-    function openLayerModal(layerId, type) {
+    function openLayerModal(layerId) {
         activeLayerModalId = layerId;
-        const isTactile = type === 'Tactile';
+        const l = layerStack.find(x => x.id === activeLayerModalId);
+        if (!l) return;
+        
+        const isTactile = l.type === 'Tactile';
         document.getElementById('modal-title').innerText = isTactile ? 'Select Tactile Color' : 'Select Core Color';
         document.getElementById('color-search').value = '';
         document.getElementById('color-modal').classList.remove('hidden');
@@ -484,8 +517,8 @@
         SignOS_UI.buildColorGrid({
             containerId: 'modal-grid', data: isTactile ? tactileColors : coreColors, type: 'rowmark', btnClass: 'w-10 h-10', activeRingClass: 'ring-blue-600',
             onSelect: (item) => {
-                const l = layerStack.find(x => x.id === activeLayerModalId);
-                if (l) { l.colorHex = item.Hex_Code; l.colorName = item.Name; }
+                const trg = layerStack.find(x => x.id === activeLayerModalId);
+                if (trg) { trg.colorHex = item.Hex_Code; trg.colorName = item.Name; trg.colorCode = item.Code; }
                 closeModal(); renderLayers(); runCalc();
             }
         });
@@ -509,11 +542,21 @@
         }
     });
 
-    function generatePreview() {
-        document.getElementById('preview-wrapper').classList.remove('hidden');
-        document.getElementById('preview-wrapper').classList.add('flex');
-        isViewfinderOn = true;
-        updatePreview();
+    function toggleViewfinderWindow() {
+        isViewfinderOn = !isViewfinderOn;
+        const wrap = document.getElementById('preview-wrapper');
+        const btnText = document.getElementById('view-text');
+        
+        if(isViewfinderOn) {
+            wrap.classList.remove('hidden');
+            wrap.classList.add('flex');
+            btnText.innerText = "Close 3D Preview";
+            updatePreview();
+        } else {
+            wrap.classList.add('hidden');
+            wrap.classList.remove('flex');
+            btnText.innerText = "Generate 3D Preview";
+        }
     }
 
     function syncAutoScale(sourceId) {
@@ -524,13 +567,26 @@
     }
 
     function toggle3D() {
-        SignOS_UI.Camera3D.toggle(!SignOS_UI.Camera3D.is3D);
-        document.getElementById('preview-wrapper').classList.toggle('exploded-view', SignOS_UI.Camera3D.is3D);
+        is3D = !is3D;
+        SignOS_UI.Camera3D.toggle(is3D);
+        document.getElementById('preview-wrapper').classList.toggle('isometric-view', is3D);
+        document.getElementById('btn-3d').innerText = is3D ? "Flat 2D View" : "3D Isometric View";
+        document.getElementById('btn-explode').style.display = is3D ? 'block' : 'none';
+        if(isViewfinderOn) updatePreview();
+    }
+    
+    function toggleExplode() {
+        isExploded = !isExploded;
+        document.getElementById('btn-explode').innerText = isExploded ? "Stack Layers" : "Explode Layers";
+        document.getElementById('btn-explode').classList.toggle('bg-blue-600', !isExploded);
+        document.getElementById('btn-explode').classList.toggle('text-white', !isExploded);
+        document.getElementById('btn-explode').classList.toggle('bg-white/90', isExploded);
+        document.getElementById('btn-explode').classList.toggle('text-blue-600', isExploded);
         if(isViewfinderOn) updatePreview();
     }
 
     function makeEdge(hex, depthPx) {
-        if (!hex || hex === 'Transparent') return 'none';
+        if (!hex || hex === 'Transparent' || depthPx <= 0) return 'none';
         let c = hex;
         if (c.includes('rgba')) { c = 'cbd5e1'; } 
         else {
@@ -540,8 +596,10 @@
         }
         let r = parseInt(c.substr(0, 2), 16) * 0.6, g = parseInt(c.substr(2, 2), 16) * 0.6, b = parseInt(c.substr(4, 2), 16) * 0.6;
         let shadow = [];
-        for(let i=1; i<=depthPx; i++) shadow.push(`-${i}px ${i}px 0 rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`);
-        shadow.push(`-${depthPx+2}px ${depthPx+2}px 10px rgba(0,0,0,0.2)`); 
+        for(let i=0.5; i<=depthPx; i+=0.5) {
+            shadow.push(`-${i}px ${i}px 0 rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`);
+        }
+        shadow.push(`-${depthPx+1}px ${depthPx+1}px 4px rgba(0,0,0,0.3)`); 
         return shadow.join(', ');
     }
 
@@ -555,18 +613,17 @@
         const fontSelect = document.getElementById('sign-font');
         
         const rawText = document.getElementById('sign-text').value.toUpperCase();
-        const cleanText = rawText.replace(/\n/g, '   ');
         
         const hasPicto = document.getElementById('toggle-picto').checked;
         const hasText = document.getElementById('toggle-text').checked;
         
-        let topLayer = layerStack;
+        let topLayer = layerStack.length > 0 ? layerStack : null;
         let svgColorHex = topLayer && topLayer.colorHex ? topLayer.colorHex : '#ffffff';
-        if (topLayer && topLayer.type.includes('Core')) svgColorHex = topLayer.colorName === 'White' ? '#000000' : '#ffffff';
+        if (topLayer && topLayer.type && topLayer.type.includes('Core')) svgColorHex = topLayer.colorName === 'White' ? '#000000' : '#ffffff';
 
         const buildInputs = {
             w: w, h: h, align: 'center',
-            textVal: cleanText,
+            textVal: rawText,
             hasPicto: hasPicto,
             hasText: hasText,
             hasBraille: topLayer && topLayer.type === 'Tactile' ? topLayer.hasBraille : false,
@@ -586,50 +643,55 @@
         document.getElementById('picto-size').classList.toggle('opacity-50', buildInputs.isAutoScale);
         document.getElementById('text-height').classList.toggle('opacity-50', buildInputs.isAutoScale);
 
-        const scale = Math.min((SignOS_UI.Camera3D.is3D ? 160 : 220) / w, (SignOS_UI.Camera3D.is3D ? 100 : 160) / h);
-        container.style.width = `${w * scale}px`;
+        // Increased bounding numerators to naturally zoom and fill the window
+        const scale = Math.min((is3D ? 260 : 340) / w, (is3D ? 180 : 280) / h);
+        container.style.width = `${w * scale}px`
         container.style.height = `${h * scale}px`;
 
-        const isExp = SignOS_UI.Camera3D.is3D;
-        
-        let callout = (name) => `
-            <div class="blueprint-callout absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 flex items-center gap-1.5 z-50 pr-2">
-                <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded border border-blue-200 shadow-sm whitespace-nowrap">${name}</span>
-                <div class="w-8 border-b-[1.5px] border-blue-500 shadow-sm"></div>
-            </div>`;
-
         let html = '';
-        let zPos = layerStack.length * 10;
+        let currentZ = layerStack.length * 10; 
         
         layerStack.forEach((l, index) => {
-            if (l.type === 'Tactile') {
-                const shadow = isExp ? `drop-shadow(-1px 1px 1px rgba(0,0,0,0.3))` : 'none';
-                html += `<div class="sign-layer" style="color: ${l.colorHex}; filter: ${shadow}; transform: translateZ(${zPos}px);">
-                    <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
-                    ${isExp ? callout('1/32" Tactile') : ''}
+            let physicalDepth = 0;
+            if (l.type === '1/16" Core') physicalDepth = 1;
+            else if (l.type === '1/8" Core') physicalDepth = 2;
+            else if (l.type === '3/16" Clear Acrylic') physicalDepth = 3;
+            else if (l.type === '3mm PVC Backer') physicalDepth = 4;
+            
+            // Tighter Callout Spacing anchored purely to the left bounding box
+            let calloutOffset = (is3D && isExploded) ? `transform: translateY(${index * 10}px);` : '';
+            let callout = (name) => `
+                <div class="blueprint-callout absolute right-[100%] top-1/2 -translate-y-1/2 flex items-center z-50 mr-2" style="${calloutOffset}">
+                    <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded border border-blue-200 shadow-sm whitespace-nowrap">${name}</span>
+                    <div class="w-8 border-b-[1.5px] border-blue-500 shadow-sm"></div>
                 </div>`;
-            } else if (l.type === 'Foam Tape') {
-                const shadow = isExp ? makeEdge('#4b5563', 2) : '0 1px 3px rgba(0,0,0,0.1)';
-                html += `<div class="sign-layer border border-black/20" style="background-color: #4b5563; border-radius: ${r*scale}px; box-shadow: ${shadow}; transform: translateZ(${zPos}px) scale(0.9);">${isExp ? callout('Foam Tape') : ''}</div>`;
+
+            if (l.type === 'Tactile') {
+                const shadow = is3D ? `drop-shadow(-1px 1px 1px rgba(0,0,0,0.3))` : 'none';
+                html += `<div class="sign-layer" style="color: ${l.colorHex}; filter: ${shadow}; transform: translateZ(${currentZ}px);">
+                    <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
+                    ${is3D ? callout('1/32" Tactile') : ''}
+                </div>`;
             } else {
                 let hex = l.colorHex || '#ffffff';
                 if (l.type.includes('Clear Acrylic')) hex = 'rgba(255,255,255,0.4)';
                 
-                let depth = 2;
-                if (l.type.includes('1/8') || l.type.includes('PVC') || l.type.includes('Acrylic')) depth = 4;
+                const shadow = is3D ? makeEdge(hex, physicalDepth) : '0 1px 3px rgba(0,0,0,0.1)';
+                html += `<div class="sign-layer border border-black/20" style="background-color: ${hex}; border-radius: ${r*scale}px; box-shadow: ${shadow}; transform: translateZ(${currentZ}px);">${is3D ? callout(l.type) : ''}</div>`;
                 
-                const shadow = isExp ? makeEdge(hex, depth) : '0 1px 3px rgba(0,0,0,0.1)';
-                
-                html += `<div class="sign-layer border border-black/20" style="background-color: ${hex}; border-radius: ${r*scale}px; box-shadow: ${shadow}; transform: translateZ(${zPos}px);">${isExp ? callout(l.type) : ''}</div>`;
-                
-                // Engrave SVG if top layer isn't tactile
                 if (index === 0 && !layerStack.find(x => x.type === 'Tactile') && (hasPicto || hasText)) {
-                    html += `<div class="sign-layer" style="color: ${svgColorHex}; opacity: 0.8; transform: translateZ(${zPos + 1}px);">
+                    html += `<div class="sign-layer" style="color: ${svgColorHex}; opacity: 0.8; transform: translateZ(${currentZ + 1}px);">
                         <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
                     </div>`;
                 }
             }
-            zPos -= 20; 
+            
+            if (is3D) {
+                if (isExploded) currentZ -= 15; // Tighter Exploded Visual Spacing
+                else currentZ -= (physicalDepth === 0 ? 0.5 : physicalDepth); // Stack flush (+0.5px Tactile Z-fighting fix)
+            } else {
+                currentZ -= 20; 
+            }
         });
 
         container.innerHTML = html;
@@ -736,10 +798,15 @@
         const fmt = (n) => "$" + (n||0).toFixed(2);
         document.getElementById('btn-export').classList.remove('hidden');
 
+        if (!res || !res.retail || !res.retail.breakdown) {
+            console.error("Invalid math engine response for ledger array.");
+            return;
+        }
+
         let retHtml = res.retail.breakdown.map(i => `
             <div class="mb-2 border-b border-gray-100 pb-1.5">
                 <div class="flex justify-between text-[11px] text-blue-800 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
-                <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula}</div>
+                <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula || ''}</div>
             </div>
         `).join('');
         retHtml += `<div class="flex justify-between text-[12px] font-black text-blue-700 mt-2 pt-2 border-t-2 border-blue-200"><span>Gross Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>`;
@@ -748,7 +815,7 @@
         let cstHtml = res.cost.breakdown.map(i => `
             <div class="mb-2 border-b border-gray-100 pb-1.5">
                 <div class="flex justify-between text-[11px] text-red-800 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
-                <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula}</div>
+                <div class="text-[9px] text-gray-500 font-mono italic mt-0.5">↳ ${i.formula || ''}</div>
             </div>
         `).join('');
         cstHtml += `<div class="flex justify-between text-[12px] font-black text-red-700 mt-2 pt-2 border-t-2 border-red-200"><span>Total Hard Cost:</span><span>${fmt(res.cost.total)}</span></div>`;
@@ -792,8 +859,6 @@
     async function runCalc() {
         if(!backendData.Retail_Min_Order) return;
         
-        const rawText = document.getElementById('sign-text').value;
-        const lineCount = rawText ? rawText.split('\n').length : 0;
         const r = parseFloat(document.getElementById('radius').value) || 0; 
         const bev = document.getElementById('bevel').value;
 
@@ -802,7 +867,8 @@
             w: parseFloat(document.getElementById('w').value) || 8,
             h: parseFloat(document.getElementById('h').value) || 8,
             layers: layerStack,
-            brailleLines: lineCount
+            mounting: document.getElementById('mounting').value,
+            brailleLines: 1 
         };
 
         try {
@@ -818,29 +884,31 @@
             document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(dataToUse.Retail_Min_Order || 50)}`;
             document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
-            // Populate Layer-by-Layer Job Description Generator
             let layerStrs = layerStack.map(l => {
-                if (l.type === 'Tactile') return `1/32" ${l.colorName} Tactile` + (l.hasBraille ? ' w/ Braille' : '');
-                if (l.type.includes('Core')) return `${l.type.replace(' Core', '')} ${l.colorName} Core`;
-                if (l.type === '3mm PVC Backer') return `3mm ${l.colorName} PVC`;
+                if (l.type === 'Tactile') return `1/32" Rowmark [${l.colorCode || 'TBD'}] ${l.colorName} Tactile` + (l.hasBraille ? ' w/ Braille' : '');
+                if (l.type.includes('Core')) return `${l.type.replace(' Core', '')} Rowmark [${l.colorCode || 'TBD'}] ${l.colorName} Core`;
+                if (l.type === '3mm PVC Backer') return `3mm ${l.colorName} PVC Backer`;
+                if (l.type === '3/16" Clear Acrylic') return `3/16" Clear Acrylic Backer`;
                 return l.type;
             });
             
-            let layerDesc = layerStrs.length > 0 ? layerStrs.join(" on ") : "(No Layers Selected)";
+            let layerDesc = layerStrs.length > 0 ? layerStrs.join(" on\n   - ") : "(No Layers Selected)";
 
             let fin = [];
             if (bev === 'Bevel') fin.push("Beveled Edges");
             if (r > 0) fin.push(`${r}" Radius Corners`);
             let finDesc = fin.length > 0 ? `\nFinishing: ${fin.join(", ")}.` : "";
+            
+            let mountStr = inputs.mounting === 'Foam Tape' ? "Mounting: Foam Tape (VHB)" : "No Mounting Hardware";
 
-            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers: ${layerDesc}.${finDesc}`;
+            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers:\n   - ${layerDesc}.\n${finDesc}\n${mountStr}`;
 
             if (customSimData) {
                 lastSimResult = result;
                 renderLedgerUI(result);
             }
 
-            // Note: We removed the auto-updatePreview here so the app doesn't crash on typing text.
+            if(isViewfinderOn) updatePreview();
 
         } catch(e) { console.error("Math Engine Error:", e); }
     }
@@ -852,16 +920,8 @@
             document.getElementById('btn-sandbox').classList.remove('hidden');
         }
 
-        const previewWrap = document.getElementById('preview-wrapper');
-        // Temporarily expose the container so the canvas engine can measure it
-        previewWrap.classList.remove('hidden');
-        previewWrap.classList.add('flex');
-        
-        // Hide it immediately
-        previewWrap.classList.add('hidden');
-        previewWrap.classList.remove('flex');
-        
         SignOS_UI.Camera3D.init('zoom-stage'); 
+        SignOS_UI.Camera3D.toggle(true); 
 
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
@@ -888,9 +948,11 @@
             }));
 
             const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
-            if (activeIcons.length > 0) selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men') || p.Name.toLowerCase().includes('women')) || activeIcons;
+            if (activeIcons.length > 0) {
+                selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('unisex') || p.Name.toLowerCase().includes('family')) || activeIcons;
+            }
             
-            if (SignOS_UI.buildIconGrid) SignOS_UI.buildIconGrid({ containerId: 'icon-grid', data: activeIcons, activeRingClass: 'ring-blue-500', onSelect: (item) => { selectedIcon = item; } });
+            if (SignOS_UI.buildIconGrid) SignOS_UI.buildIconGrid({ containerId: 'icon-grid', data: activeIcons, activeRingClass: 'ring-blue-500', onSelect: (item) => { selectedIcon = item; runCalc(); } });
 
             if(statusText) { statusText.innerText = "ONLINE"; statusText.className = "font-bold text-green-500"; if(statusDot) { statusDot.className = "w-2 h-2 rounded-full bg-green-500"; statusDot.classList.remove("animate-pulse"); } }
 
