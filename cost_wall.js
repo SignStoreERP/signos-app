@@ -1,11 +1,10 @@
 /**
- * PURE PHYSICS ENGINE: Interior Wall Wraps (v4.0)
- * Dual-Ledger Arrays mapping panel-by-panel material loops.
+ * PURE PHYSICS ENGINE: Interior Wall Wraps
+ * Dual-Ledger Arrays with strict Window Perf logic constraint.
  */
 function calculateWall(inputs, data) {
     let totalSqFt = 0, totalInstallSqFt = 0;
-
-    // --- 1. RETAIL ENGINE ---
+    
     const ret = [];
     const R = (label, total, formula) => { if(total > 0) ret.push({label, total, formula}); return total; };
 
@@ -13,7 +12,7 @@ function calculateWall(inputs, data) {
         const area = (p.w * p.h) / 144 * inputs.qty;
         totalSqFt += area;
         let retailUnit = p.material === 'smooth' ? parseFloat(data.Retail_Price_Wall_Smooth_SqFt || 10) : (p.material === 'textured' ? parseFloat(data.Retail_Price_Wall_Text_SqFt || 15) : parseFloat(data.Retail_Price_Perf_SqFt || 12));
-        R(`Panel: ${p.label} [${p.material}]`, retailUnit * area, `${area.toFixed(1)} SF @ $${retailUnit}`);
+        R(`Panel: ${p.label} [${p.material === 'smooth' ? 'Smooth' : (p.material === 'textured' ? 'Textured' : 'Window Perf')}]`, retailUnit * area, `${area.toFixed(1)} SF @ $${retailUnit}`);
         totalInstallSqFt += area;
     });
 
@@ -26,8 +25,6 @@ function calculateWall(inputs, data) {
     const minOrder = parseFloat(data.Retail_Min_Order || 150);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
 
-
-    // --- 2. COST ENGINE ---
     const cst = [];
     const L = (label, total, formula) => { if(total > 0) cst.push({label, total, formula}); return total; };
 
@@ -82,3 +79,4 @@ window.WALL_CONFIG = {
     retails: [ { key: 'Retail_Price_Wall_Smooth_SqFt', label: 'Smooth Wall Base ($/SF)' } ],
     costs: [ { key: 'Cost_Vin_Wall', label: 'Wall Vinyl ($)' }, { key: 'Rate_Install', label: 'Install Labor ($/Hr)' } ]
 };
+
