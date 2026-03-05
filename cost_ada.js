@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ADA Signs (v5.0)
- * A La Carte Layer-Builder. Dynamic Tape and Assembly physics.
+ * PURE PHYSICS ENGINE: ADA Signs (v5.1)
+ * A La Carte Layer-Builder. Consolidated PVC handling.
  */
 function calculateADA(inputs, data) {
     const sqin = inputs.w * inputs.h;
@@ -31,7 +31,7 @@ function calculateADA(inputs, data) {
         else if (layer.type === '1/8" Core') {
             R(`Base Core (1/8")`, (sqin * parseFloat(data.Retail_Price_Ultra_18 || 0.80)) * inputs.qty, `Qty * SqIn * ${V('Retail_Price_Ultra_18')}`);
         }
-        else if (layer.type === '3mm Black PVC' || layer.type === '3mm White PVC') {
+        else if (layer.type === '3mm PVC Backer') {
             R(`Rigid Backer (3mm PVC)`, (sqin * parseFloat(data.Retail_Adder_PVC_Backer || 0.40)) * inputs.qty, `Qty * SqIn * ${V('Retail_Adder_PVC_Backer')}`);
         }
         else if (layer.type === '1/4" Clear Acrylic') {
@@ -81,10 +81,10 @@ function calculateADA(inputs, data) {
             solidLayerCount++;
             hasEngraver = true;
         }
-        else if (layer.type.includes('PVC')) {
-            const key = layer.type.includes('White') ? 'Cost_Stock_3mm_4x8_WW' : 'Cost_Stock_3mm_4x8_BK';
+        else if (layer.type === '3mm PVC Backer') {
+            const key = layer.colorName === 'White' ? 'Cost_Stock_3mm_4x8_WW' : 'Cost_Stock_3mm_4x8_BK';
             const costPVC = parseFloat(data[key] || 32.53) / 4608;
-            L(`Rigid Backer (${layer.type})`, (totalSqin * costPVC) * wastePct, `(Total SqIn * ${V(key)} / ${C('C_4608', '4608')}) * ${V('Waste_Factor')}`);
+            L(`Rigid Backer (${layer.colorName} PVC)`, (totalSqin * costPVC) * wastePct, `(Total SqIn * ${V(key)} / ${C('C_4608', '4608')}) * ${V('Waste_Factor')}`);
             solidLayerCount++;
             hasCNC = true;
         }
