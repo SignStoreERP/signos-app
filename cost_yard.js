@@ -22,12 +22,9 @@ function calculateYardSign(inputs, data) {
     if (inputs.sides === 2) R(`Double Sided Adder`, adderDS * inputs.qty, `${inputs.qty} Signs @ $${adderDS}`);
     if (inputs.hasStakes) R(`H-Stakes`, inputs.qty * stk1Price, `${inputs.qty} Stakes @ $${stk1Price}`);
 
-    R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 15), `Flat Fee`);
-
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 50);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
-    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
 
     // --- 2. COST ENGINE ---
     const cst = [];
@@ -67,3 +64,5 @@ window.YARD_CONFIG = {
     retails: [ { key: 'Retail_Price_Sign_SS', label: 'Base Rate (SS)' }, { key: 'Retail_Price_Sign_DS', label: 'Side 2 Adder' } ],
     costs: [ { key: 'Cost_Blank_Standard', label: 'Coro Blank ($)' }, { key: 'Cost_Stake', label: 'Stake Cost ($)' } ]
 };
+
+
