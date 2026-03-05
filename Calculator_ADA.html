@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v4.5 - Fluid UI & PVC Selection</title>
+    <title>ADA Signs v4.6 - Educational Hover Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -19,228 +19,248 @@
         #preview-wrapper:active { cursor: grabbing; }
         #svg-preview-container { transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
         .sign-layer { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s ease; transform-style: preserve-3d; }
-        
-        /* Tighter Z-Axis spacing */
         .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
         .exploded-view .layer-backer { transform: translateZ(-20px); }
         .exploded-view .layer-core { transform: translateZ(0px); }
         .exploded-view .layer-tactile { transform: translateZ(20px); }
         .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s; pointer-events: none; }
         .exploded-view .blueprint-callout { opacity: 1; }
+        
+        /* HOVER ENGINE HIGHLIGHTS */
+        .highlight-var {
+            background-color: #fef08a !important;
+            color: #854d0e !important;
+            border-color: #eab308 !important;
+            border-style: solid !important;
+            border-width: 1px !important;
+            border-radius: 4px;
+            padding: 0 4px;
+            box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
+            text-decoration: none !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10 overflow-x-hidden">
 
-<!-- DYNAMIC 3-COLUMN WRAPPER -->
-<div id="app-wrapper" class="w-full max-w-md mx-auto mt-8 transition-all duration-500 flex justify-center items-start gap-4 px-4">
-    
-    <!-- LEFT: FULL MATH LEDGER (Removed Scrollbars) -->
-    <div id="sandbox-ledger" class="hidden w-[380px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
-        <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
-            <div>
-                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Financial Ledger</h2>
-                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Market vs. Physics Breakdown</span>
-            </div>
-            <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
-        </div>
+<div id="dashboard-wrapper" class="flex flex-col items-center w-full transition-all duration-500">
+    <!-- DYNAMIC 3-COLUMN WRAPPER -->
+    <div id="app-wrapper" class="w-full max-w-md mx-auto mt-8 transition-all duration-500 flex justify-center items-start gap-4 px-4">
         
-        <div class="p-5 space-y-6">
-            <div>
-                <h3 class="text-[11px] font-black text-blue-700 uppercase tracking-widest border-b-2 border-blue-100 pb-2 mb-3">Market Logic (Retail)</h3>
-                <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
-            </div>
-            <div>
-                <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest border-b-2 border-red-100 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
-                <div id="sbx-cost-breakdown" class="space-y-3"></div>
-            </div>
-        </div>
-        
-        <div class="border-t border-gray-200 bg-slate-50 p-4 rounded-b-xl flex justify-between items-center shrink-0">
-            <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Simulated Margin:</span>
-            <span id="sbx-margin" class="text-2xl font-black text-green-600 tracking-tight">--</span>
-        </div>
-    </div>
-
-    <!-- CENTER: MAIN CALCULATOR ISLAND -->
-    <div id="main-card" class="w-full max-w-md bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative z-20 shrink-0">
-        
-       <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
-
-        <!-- VIEWFINDER TOGGLE BAR -->
-        <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-end items-center z-20 relative">
-            <button id="btn-toggle-view" onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition flex items-center gap-1">
-                <span>Open Viewfinder</span>
-            </button>
-        </div>
-
-
-        <!-- STATE 2: 3D PREVIEW (HIDDEN BY DEFAULT) -->
-        <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
-            <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-start pointer-events-none">
-                <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-white transition pointer-events-auto">
-                    <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
-                    <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest">Auto-Scale</span>
-                </label>
-                <div class="flex flex-col gap-2 pointer-events-auto">
-                    <button onclick="toggle3D()" class="bg-white/90 hover:bg-white text-blue-600 border border-blue-200 px-3 py-1.5 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Toggle 3D View</button>
-                    <button onclick="SignOS_UI.Camera3D.reset()" class="bg-white/80 hover:bg-white text-gray-500 border border-gray-200 px-3 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none self-end">Reset View</button>
-                </div>
-            </div>
-            <div id="zoom-stage" class="w-full h-full flex items-center justify-center">
-                <div id="svg-preview-container" class="mt-4 relative" style="width: 100px; height: 100px;"></div>
-            </div>
-        </div>
-
-        <!-- DIMENSIONS -->
-        <div class="p-5 bg-white border-b border-gray-200 shadow-sm z-10 relative">
-            <div class="grid grid-cols-3 gap-3 mb-4">
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-blue-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div id="wrap-tactile-color">
-                    <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
-                    <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
-                        <div class="flex items-center gap-2 overflow-hidden">
-                            <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                            <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- LEFT: FULL MATH LEDGER -->
+        <div id="sandbox-ledger" class="hidden w-[380px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
+            <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
                 <div>
-                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
-                    <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
-                        <div class="flex items-center gap-2 overflow-hidden">
-                            <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                            <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
-                        </div>
-                    </div>
+                    <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Financial Ledger</h2>
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Market vs. Physics Breakdown</span>
                 </div>
-            </div>
-
-            <div>
-                <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Sign Type & Backer</label>
-                <select id="sign-type" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="toggleBackerColor(); runCalc()">
-                    <option value="Standard">Standard (1/32" Tactile on 1/8" Core)</option>
-                    <option value="Layered_PVC" selected>Layered (1/16" Core + 3mm PVC Backer)</option>
-                    <option value="Layered_Acrylic">Premium Layered (1/16" Core + 3/16" Clear Acrylic)</option>
-                </select>
+                <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
             </div>
             
-            <div id="backer-color-wrap" class="mt-3">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">PVC Backer Color</label>
-                <select id="backer-color" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="runCalc()">
-                    <option value="Black PVC" selected>Black PVC</option>
-                    <option value="White PVC">White PVC</option>
-                </select>
+            <div class="p-5 space-y-6">
+                <div>
+                    <h3 class="text-[11px] font-black text-blue-700 uppercase tracking-widest border-b-2 border-blue-100 pb-2 mb-3">Market Logic (Retail)</h3>
+                    <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
+                </div>
+                <div>
+                    <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest border-b-2 border-red-100 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
+                    <div id="sbx-cost-breakdown" class="space-y-3"></div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 bg-slate-50 p-4 rounded-b-xl flex justify-between items-center shrink-0">
+                <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Simulated Margin:</span>
+                <span id="sbx-margin" class="text-2xl font-black text-green-600 tracking-tight">--</span>
             </div>
         </div>
 
-        <!-- VIEWFINDER: CONTENT & TYPOGRAPHY (Hidden by default) -->
-        <div id="content-module-wrap" class="hidden bg-gray-50 border-b border-gray-200 p-5 space-y-3">
-            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <div class="flex justify-between items-center">
-                    <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                        <input type="checkbox" id="toggle-picto" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Pictogram
+        <!-- CENTER: MAIN CALCULATOR ISLAND -->
+        <div id="main-card" class="w-full max-w-md bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative z-20 shrink-0">
+            <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
+
+            <!-- VIEWFINDER TOGGLE BAR -->
+            <div class="bg-slate-50 border-b border-gray-200 p-3 flex justify-end items-center z-20 relative">
+                <button id="btn-toggle-view" onclick="toggleViewfinder()" class="bg-white hover:bg-gray-100 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded shadow-sm border border-gray-200 uppercase tracking-widest transition flex items-center gap-1">
+                    👁️ <span>Open Viewfinder</span>
+                </button>
+            </div>
+
+            <!-- 3D PREVIEW (HIDDEN BY DEFAULT) -->
+            <div id="preview-wrapper" class="hidden bg-blue-50 overflow-hidden relative flex flex-col items-center justify-center h-[320px] shadow-inner border-b border-blue-100" onwheel="SignOS_UI.Camera3D.handleZoom(event)" onmousedown="SignOS_UI.Camera3D.startPan(event)" onmousemove="SignOS_UI.Camera3D.handlePan(event)" onmouseup="SignOS_UI.Camera3D.endPan()" onmouseleave="SignOS_UI.Camera3D.endPan()">
+                <div class="absolute top-3 left-3 right-3 z-30 flex justify-between items-start pointer-events-none">
+                    <label class="flex items-center gap-1.5 cursor-pointer bg-white/90 backdrop-blur px-2 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-white transition pointer-events-auto">
+                        <input type="checkbox" id="auto-scale-view" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded cursor-pointer">
+                        <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest">Auto-Scale</span>
                     </label>
-                    <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
-                        <label class="text-[9px] font-bold text-gray-500 uppercase">Height:</label>
-                        <input type="number" id="picto-size" value="4" step="0.25" min="1" oninput="runCalc()" class="w-12 border p-0.5 rounded text-xs font-bold text-center outline-none">
+                    <div class="flex flex-col gap-2 pointer-events-auto">
+                        <button onclick="toggle3D()" class="bg-white/90 hover:bg-white text-blue-600 border border-blue-200 px-3 py-1.5 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none">Toggle 3D View</button>
+                        <button onclick="SignOS_UI.Camera3D.reset()" class="bg-white/80 hover:bg-white text-gray-500 border border-gray-200 px-3 py-1 rounded shadow-sm text-[8px] font-black uppercase tracking-widest transition backdrop-blur-sm focus:outline-none self-end">Reset View</button>
                     </div>
                 </div>
-                <div id="wrap-picto" class="mt-3 pt-3 border-t border-gray-100">
-                    <div id="icon-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
+                <div id="zoom-stage" class="w-full h-full flex items-center justify-center">
+                    <div id="svg-preview-container" class="mt-4 relative" style="width: 100px; height: 100px;"></div>
                 </div>
             </div>
 
-            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                        <input type="checkbox" id="toggle-text" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Tactile Copy
-                    </label>
+            <!-- DIMENSIONS -->
+            <div class="p-5 bg-white border-b border-gray-200 shadow-sm z-10 relative">
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-blue-800 text-lg text-center bg-gray-50 focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Width (in)</label><input type="number" id="w" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
                 </div>
-                <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
-                    <div class="col-span-2">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String (Hit Enter for new line)</label>
-                        <textarea id="sign-text" rows="2" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm resize-none custom-scroll">RESTROOM</textarea>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div id="wrap-tactile-color">
+                        <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
+                        <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
+                                <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
-                        <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm"></select>
+                        <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
+                        <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
+                                <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center justify-between">
-                            Height (in)
-                            <span class="flex items-center gap-1 cursor-pointer">
-                                <input type="checkbox" id="auto-scale-text" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded"> 
-                                <span class="text-[8px] text-blue-600 tracking-wider">AUTO</span>
-                            </span>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Sign Type & Backer</label>
+                    <select id="sign-type" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="toggleBackerColor(); runCalc()">
+                        <option value="Standard">Standard (1/32" Tactile on 1/8" Core)</option>
+                        <option value="Layered_PVC" selected>Layered (1/16" Core + 3mm PVC Backer)</option>
+                        <option value="Layered_Acrylic">Premium Layered (1/16" Core + 3/16" Clear Acrylic)</option>
+                    </select>
+                </div>
+                
+                <div id="backer-color-wrap" class="mt-3">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">PVC Backer Color</label>
+                    <select id="backer-color" class="w-full border p-2 rounded bg-white font-bold text-xs h-[40px] focus:border-blue-500 outline-none shadow-sm cursor-pointer" onchange="runCalc()">
+                        <option value="Black PVC" selected>Black PVC</option>
+                        <option value="White PVC">White PVC</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- VIEWFINDER: CONTENT & TYPOGRAPHY -->
+            <div id="content-module-wrap" class="hidden bg-gray-50 border-b border-gray-200 p-5 space-y-3">
+                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
+                            <input type="checkbox" id="toggle-picto" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Pictogram
                         </label>
-                        <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-center text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                        <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
+                            <label class="text-[9px] font-bold text-gray-500 uppercase">Height:</label>
+                            <input type="number" id="picto-size" value="4" step="0.25" min="1" oninput="runCalc()" class="w-12 border p-0.5 rounded text-xs font-bold text-center outline-none">
+                        </div>
+                    </div>
+                    <div id="wrap-picto" class="mt-3 pt-3 border-t border-gray-100">
+                        <div id="icon-grid" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto color-scroll p-2 border rounded-lg bg-gray-50 shadow-inner"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                    <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Grade 2 Braille
-                </label>
-            </div>
-        </div>
-
-        <!-- PRICING RESULTS (Always Visible) -->
-        <div class="bg-blue-50 p-6 shadow-inner">
-            <div class="flex justify-between items-end mb-2">
-                <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
-                <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
-            </div>
-            <div class="border-t border-blue-200/50 my-3"></div>
-            
-            <div class="flex justify-between items-end pt-2">
-                <div>
-                    <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
-                    <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $50</span>
-                    <div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
+                            <input type="checkbox" id="toggle-text" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Tactile Copy
+                        </label>
+                    </div>
+                    <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
+                        <div class="col-span-2">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Text String (Hit Enter for new line)</label>
+                            <textarea id="sign-text" rows="2" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-sm resize-none custom-scroll">RESTROOM</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
+                            <select id="sign-font" onchange="runCalc()" class="w-full border p-2 rounded bg-white font-bold text-xs h-[38px] focus:border-blue-500 outline-none shadow-sm"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center justify-between">
+                                Height (in)
+                                <span class="flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" id="auto-scale-text" checked onchange="syncAutoScale(this.id)" class="w-3 h-3 text-blue-600 rounded"> 
+                                    <span class="text-[8px] text-blue-600 tracking-wider">AUTO</span>
+                                </span>
+                            </label>
+                            <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-center text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
+                        </div>
+                    </div>
                 </div>
-                <span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
+
+                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                    <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
+                        <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Grade 2 Braille
+                    </label>
+                </div>
+            </div>
+
+            <!-- PRICING RESULTS -->
+            <div class="bg-blue-50 p-6 shadow-inner">
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
+                    <span id="ui-unit" class="text-2xl font-black text-blue-900 tracking-tight">$0.00</span>
+                </div>
+                <div class="border-t border-blue-200/50 my-3"></div>
+                
+                <div class="flex justify-between items-end pt-2">
+                    <div>
+                        <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
+                        <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $50</span>
+                        <div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+                    </div>
+                    <span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
+                </div>
+                
+                <button id="btn-sandbox" onclick="toggleSandbox()" class="hidden w-full mt-5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black py-2.5 rounded shadow-md uppercase tracking-widest transition">
+                    Launch Cost Sandbox
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT: SANDBOX VARIABLES -->
+        <div id="sandbox-vars" class="hidden w-[300px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
+            <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
+                <div>
+                    <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Sandbox Variables</h2>
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Modify System Inputs</span>
+                </div>
             </div>
             
-            <button id="btn-sandbox" onclick="toggleSandbox()" class="hidden w-full mt-5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black py-2.5 rounded shadow-md uppercase tracking-widest transition">
-                Launch Cost Sandbox
-            </button>
+            <div class="p-5 space-y-6">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b border-blue-200 pb-1">Market Overrides</span>
+                    </div>
+                    <div id="sbx-retail-inputs" class="space-y-2"></div>
+                </div>
+                <div>
+                    <span class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-red-200 pb-1 mb-3 block">Physics Overrides</span>
+                    <div id="sbx-cost-inputs" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 border-t border-gray-200 shrink-0 space-y-2 rounded-b-xl">
+                <button onclick="applySandbox()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded shadow text-xs uppercase tracking-widest transition">Run Simulation</button>
+                <div class="flex gap-2">
+                    <button onclick="resetSandbox()" class="flex-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Reset</button>
+                    <button onclick="exportSandbox()" id="btn-export" class="flex-1 hidden bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Export TXT</button>
+                </div>
+            </div>
         </div>
+
     </div>
 
-    <!-- RIGHT: SANDBOX VARIABLES (Removed Scrollbars) -->
-    <div id="sandbox-vars" class="hidden w-[300px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
-        <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
-            <div>
-                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Sandbox Variables</h2>
-                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Modify System Inputs</span>
-            </div>
-        </div>
-        
-        <div class="p-5 space-y-6">
-            <div>
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b border-blue-200 pb-1">Market Overrides</span>
-                </div>
-                <div id="sbx-retail-inputs" class="space-y-2"></div>
-            </div>
-            <div>
-                <span class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-red-200 pb-1 mb-3 block">Physics Overrides</span>
-                <div id="sbx-cost-inputs" class="space-y-2"></div>
-            </div>
-        </div>
-
-        <div class="p-4 bg-slate-50 border-t border-gray-200 shrink-0 space-y-2 rounded-b-xl">
-            <button onclick="applySandbox()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded shadow text-xs uppercase tracking-widest transition">Run Simulation</button>
-            <div class="flex gap-2">
-                <button onclick="resetSandbox()" class="flex-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Reset</button>
-                <button onclick="exportSandbox()" id="btn-export" class="flex-1 hidden bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Export TXT</button>
-            </div>
+    <!-- BOTTOM: GLOSSARY TRAY -->
+    <div id="sandbox-glossary" class="hidden w-full max-w-[1100px] mt-4 bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 z-10 px-6 py-5 mb-10 text-gray-700 h-auto">
+        <h2 class="text-xs font-black text-gray-800 uppercase tracking-widest border-b-2 border-gray-200 pb-2 mb-4 text-center">Interactive Dictionary & Constants</h2>
+        <div id="glossary-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-[10px]">
+            <!-- Definitions injected here -->
         </div>
     </div>
 
@@ -267,6 +287,23 @@
     let lastSimResult = null; 
     const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
 
+    // --- HOVER ENGINE LOGIC ---
+    document.addEventListener('mouseover', e => {
+        const target = e.target.closest('.hover-var');
+        if(target) {
+            const varName = target.getAttribute('data-var');
+            document.querySelectorAll(`.hover-var[data-var="${varName}"]`).forEach(el => el.classList.add('highlight-var'));
+        }
+    });
+    
+    document.addEventListener('mouseout', e => {
+        const target = e.target.closest('.hover-var');
+        if(target) {
+            const varName = target.getAttribute('data-var');
+            document.querySelectorAll(`.hover-var[data-var="${varName}"]`).forEach(el => el.classList.remove('highlight-var'));
+        }
+    });
+
     function toggleViewfinder() {
         isViewfinderOn = !isViewfinderOn;
         const btn = document.getElementById('btn-toggle-view');
@@ -282,7 +319,7 @@
             document.getElementById('preview-wrapper').classList.add('hidden');
             document.getElementById('preview-wrapper').classList.remove('flex');
             document.getElementById('content-module-wrap').classList.add('hidden');
-            btn.innerHTML = '<span>Open Viewfinder</span>';
+            btn.innerHTML = '👁️ <span>Open Viewfinder</span>';
             btn.classList.replace('text-gray-500', 'text-blue-600');
         }
     }
@@ -290,11 +327,8 @@
     function toggleBackerColor() {
         const st = document.getElementById('sign-type').value;
         const wrap = document.getElementById('backer-color-wrap');
-        if (st === 'Layered_PVC') {
-            wrap.classList.remove('hidden');
-        } else {
-            wrap.classList.add('hidden');
-        }
+        if (st === 'Layered_PVC') wrap.classList.remove('hidden');
+        else wrap.classList.add('hidden');
     }
 
     function syncAutoScale(sourceId) {
@@ -324,7 +358,6 @@
     function makeEdge(hex, depthPx) {
         if (!hex || hex === 'Transparent') return 'none';
         let c = hex;
-        // Fix Acrylic Transparency Depth Bug
         if (c.includes('rgba')) { c = 'cbd5e1'; } 
         else {
             c = c.replace('#', '');
@@ -347,7 +380,6 @@
         const container = document.getElementById('svg-preview-container');
         const fontSelect = document.getElementById('sign-font');
         
-        // Strip newlines so Opentype doesn't render an empty square for missing \n glyph
         const rawText = document.getElementById('sign-text').value.toUpperCase();
         const cleanText = rawText.replace(/\n/g, '   ');
         
@@ -375,14 +407,10 @@
 
         const st = document.getElementById('sign-type').value;
         let backerType = 'None';
-        if (st === 'Layered_PVC') {
-            backerType = document.getElementById('backer-color').value;
-        } else if (st === 'Layered_Acrylic') {
-            backerType = 'Clear Acrylic';
-        }
+        if (st === 'Layered_PVC') backerType = document.getElementById('backer-color').value;
+        else if (st === 'Layered_Acrylic') backerType = 'Clear Acrylic';
         
         const coreThickStr = st === 'Standard' ? '1/8' : '1/16';
-        
         const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000'; 
         const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
         let backerHex = backerType === 'White PVC' ? '#ffffff' : (backerType === 'Clear Acrylic' ? 'rgba(255,255,255,0.4)' : '#111827');
@@ -391,10 +419,9 @@
         container.style.width = `${w * scale}px`;
         container.style.height = `${h * scale}px`;
 
-        // Reduced Thickness Physics
         const depthTactile = 1;
-        const depthCore = coreThickStr === '1/8' ? 2 : 1;
-        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 1 : 3);
+        const depthCore = coreThickStr === '1/8' ? 4 : 2;
+        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 2 : 4);
         
         const isExp = SignOS_UI.Camera3D.is3D;
         
@@ -446,24 +473,23 @@
         const wrap = document.getElementById('app-wrapper');
         const left = document.getElementById('sandbox-ledger');
         const right = document.getElementById('sandbox-vars');
+        const glos = document.getElementById('sandbox-glossary');
         
         if (left.classList.contains('hidden')) {
             wrap.classList.remove('max-w-md');
             wrap.classList.add('max-w-[1200px]');
-            left.classList.remove('hidden');
-            left.classList.add('flex');
-            right.classList.remove('hidden');
-            right.classList.add('flex');
+            left.classList.remove('hidden'); left.classList.add('flex');
+            right.classList.remove('hidden'); right.classList.add('flex');
+            glos.classList.remove('hidden'); glos.classList.add('flex');
             
-            if(!customSimData) { customSimData = { ...backendData }; buildSandboxInputs(); }
+            if(!customSimData) { customSimData = { ...backendData }; buildSandboxInputs(); buildGlossary(); }
             applySandbox(); 
         } else {
             wrap.classList.add('max-w-md');
             wrap.classList.remove('max-w-[1200px]');
-            left.classList.add('hidden');
-            left.classList.remove('flex');
-            right.classList.add('hidden');
-            right.classList.remove('flex');
+            left.classList.add('hidden'); left.classList.remove('flex');
+            right.classList.add('hidden'); right.classList.remove('flex');
+            glos.classList.add('hidden'); glos.classList.remove('flex');
         }
     }
 
@@ -472,7 +498,8 @@
             let html = '';
             arr.forEach(i => {
                 const v = customSimData[i.key] !== undefined ? customSimData[i.key] : '';
-                html += `<div class="flex justify-between items-center gap-2"><label class="text-[10px] font-bold text-gray-600 truncate flex-1" title="${i.key}">${i.label}</label><input type="text" id="sbx_${i.key}" value="${v}" class="w-16 bg-gray-50 border border-gray-300 text-gray-800 text-xs font-mono text-center rounded outline-none focus:border-blue-500 py-0.5 shadow-inner"></div>`;
+                // WRAPPED LABEL FOR HOVER ENGINE
+                html += `<div class="flex justify-between items-center gap-2"><label class="text-[10px] font-bold text-gray-600 truncate flex-1 hover-var cursor-help transition-all" data-var="${i.key}">${i.label}</label><input type="text" id="sbx_${i.key}" value="${v}" class="w-16 bg-gray-50 border border-gray-300 text-gray-800 text-xs font-mono text-center rounded outline-none focus:border-blue-500 py-0.5 shadow-inner"></div>`;
             });
             document.getElementById(containerId).innerHTML = html;
         };
@@ -480,14 +507,33 @@
         buildSection(window.ADA_CONFIG.costs, 'sbx-cost-inputs');
     }
 
-   function resetSandbox() {
-        // FIX: Reset data back to the clean backend payload instead of null
-        customSimData = { ...backendData }; 
+    function buildGlossary() {
+        const grid = document.getElementById('glossary-grid');
+        let html = '';
+
+        // Combine Retails, Costs, and Constants into one dictionary
+        const allVars = [...window.ADA_CONFIG.retails, ...window.ADA_CONFIG.costs, ...(window.ADA_CONFIG.constants || [])];
+
+        allVars.forEach(item => {
+            // Check the API Payload for a description note, or fall back to the JS constant description
+            let desc = backendData['META_NOTE_' + item.key] || item.desc || "No definition provided.";
+            
+            // Format the key to match what we put in the span wrapper
+            html += `
+            <div class="border border-gray-100 p-2 rounded bg-gray-50 flex flex-col gap-1 shadow-sm">
+                <span class="hover-var cursor-help font-black text-blue-800 border-b border-dotted border-blue-300 inline-block w-max transition-all" data-var="${item.key}">${item.key}</span>
+                <span class="text-gray-500 leading-tight italic">${desc}</span>
+            </div>`;
+        });
+        
+        grid.innerHTML = html;
+    }
+
+    function resetSandbox() {
+        customSimData = { ...backendData };
         document.getElementById('sim-badge').classList.add('hidden');
         document.getElementById('main-card').classList.remove('border-yellow-400');
         document.getElementById('btn-export').classList.add('hidden');
-        
-        // Rebuild the input boxes with the reset data and run the math
         buildSandboxInputs();
         runCalc();
     }
@@ -512,7 +558,6 @@
         const fmt = (n) => "$" + (n||0).toFixed(2);
         document.getElementById('btn-export').classList.remove('hidden');
 
-        // Light Mode Retail Loop
         let retHtml = res.retail.breakdown.map(i => `
             <div class="mb-2 border-b border-gray-100 pb-1.5">
                 <div class="flex justify-between text-[11px] text-blue-800 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
@@ -522,7 +567,6 @@
         retHtml += `<div class="flex justify-between text-[12px] font-black text-blue-700 mt-2 pt-2 border-t-2 border-blue-200"><span>Gross Retail:</span><span>${fmt(res.retail.grandTotal)}</span></div>`;
         document.getElementById('sbx-retail-breakdown').innerHTML = retHtml;
 
-        // Light Mode Cost Loop
         let cstHtml = res.cost.breakdown.map(i => `
             <div class="mb-2 border-b border-gray-100 pb-1.5">
                 <div class="flex justify-between text-[11px] text-red-800 font-bold tracking-wide"><span>${i.label}</span><span class="font-mono">${fmt(i.total)}</span></div>
@@ -541,6 +585,10 @@
     function exportSandbox() {
         if(!lastSimResult) return;
         const fmt = (n) => "$" + (n||0).toFixed(2);
+        
+        // Strip HTML Tags from the formula strings for pure text export
+        const cleanHTML = (str) => str.replace(/<[^>]*>?/gm, '');
+
         let txt = `SIGNOS DEV - ADA FULL LEDGER EXHAUST\nTimestamp: ${new Date().toISOString()}\n----------------------------------------\n`;
         txt += `SIZE: ${document.getElementById('w').value}" x ${document.getElementById('h').value}"\nQTY: ${document.getElementById('qty').value}\nTYPE: ${document.getElementById('sign-type').options[document.getElementById('sign-type').selectedIndex].text}\n\n`;
         
@@ -549,11 +597,11 @@
         window.ADA_CONFIG.costs.forEach(i => txt += `${i.key}: ${customSimData[i.key]}\n`);
         
         txt += `\n--- MARKET LEDGER (RETAIL) ---\n`;
-        lastSimResult.retail.breakdown.forEach(i => txt += `${i.label.padEnd(35)} ${fmt(i.total)}\n  [Math: ${i.formula}]\n`);
+        lastSimResult.retail.breakdown.forEach(i => txt += `${i.label.padEnd(35)} ${fmt(i.total)}\n  [Math: ${cleanHTML(i.formula)}]\n`);
         txt += `----------------------------------------\nGROSS RETAIL: ${fmt(lastSimResult.retail.grandTotal)}\n`;
 
         txt += `\n--- PHYSICS LEDGER (COST) ---\n`;
-        lastSimResult.cost.breakdown.forEach(i => txt += `${i.label.padEnd(35)} ${fmt(i.total)}\n  [Math: ${i.formula}]\n`);
+        lastSimResult.cost.breakdown.forEach(i => txt += `${i.label.padEnd(35)} ${fmt(i.total)}\n  [Math: ${cleanHTML(i.formula)}]\n`);
         txt += `----------------------------------------\nHARD COST TOTAL: ${fmt(lastSimResult.cost.total)}\n`;
         
         txt += `\nNET MARGIN: ${(lastSimResult.metrics.margin*100).toFixed(1)}%`;
@@ -565,7 +613,7 @@
         a.click();
     }
 
-   async function runCalc() {
+    async function runCalc() {
         if(!backendData.Retail_Min_Order) return;
         
         const rawText = document.getElementById('sign-text').value;
@@ -608,13 +656,12 @@
     window.addEventListener('load', async () => {
         if (typeof injectHeader === 'function') injectHeader("ADA Compliant Signs");
         
-        // Show Sandbox Button only if Admin
         if(sessionStorage.getItem('signos_role') === 'ADMIN' || sessionStorage.getItem('signos_role') === 'SUPER') {
             document.getElementById('btn-sandbox').classList.remove('hidden');
         }
 
         SignOS_UI.showLoader('main-card', 'Connecting to Source Data...');
-        SignOS_UI.Camera3D.init('zoom-stage'); // Initialize 3D Pan/Zoom Engine
+        SignOS_UI.Camera3D.init('zoom-stage'); 
 
         const statusText = document.getElementById("status-text");
         const statusDot = document.getElementById("status-dot");
@@ -669,3 +716,4 @@
 </script>
 </body>
 </html>
+
