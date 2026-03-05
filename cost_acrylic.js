@@ -25,12 +25,11 @@ function calculateAcrylic(inputs, data) {
     R(`Base Acrylic (${thk}")`, baseRate * totalSqFt, `${totalSqFt.toFixed(1)} SF @ $${baseRate}`);
     
     if (inputs.shape !== 'Rectangle') R(`CNC Router Fee`, parseFloat(data.Retail_Fee_Router_Easy || 30), `Shape Routing Fee`);
-    R(`File Setup Fee`, parseFloat(data.Retail_Fee_Setup || 25), `Flat Setup`);
 
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
     const minOrder = parseFloat(data.Retail_Min_Order || 75);
     const grandTotal = Math.max(grandTotalRaw, minOrder);
-    if(grandTotal > grandTotalRaw) R(`Shop Minimum Adjustment`, grandTotal - grandTotalRaw, `Padding to reach $${minOrder}`);
+
 
     // --- 2. COST ENGINE ---
     const cst = [];
