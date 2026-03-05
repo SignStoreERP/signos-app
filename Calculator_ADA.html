@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v4.6 - Educational Hover Engine</title>
+    <title>ADA Signs v4.7 - Compact Interactive Dictionary</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -15,6 +15,9 @@
         .color-scroll::-webkit-scrollbar { width: 6px; }
         .color-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
         .color-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
         #preview-wrapper { perspective: 1200px; cursor: grab; }
         #preview-wrapper:active { cursor: grabbing; }
         #svg-preview-container { transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
@@ -42,39 +45,41 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10 overflow-x-hidden">
 
-<div id="dashboard-wrapper" class="flex flex-col items-center w-full transition-all duration-500">
-    <!-- DYNAMIC 3-COLUMN WRAPPER -->
-    <div id="app-wrapper" class="w-full max-w-md mx-auto mt-8 transition-all duration-500 flex justify-center items-start gap-4 px-4">
+<!-- DYNAMIC 3-COLUMN WRAPPER -->
+<div id="app-wrapper" class="w-full max-w-md mx-auto mt-8 transition-all duration-500 flex justify-center items-start gap-4 px-4">
+    
+    <!-- LEFT: FULL MATH LEDGER -->
+    <div id="sandbox-ledger" class="hidden w-[380px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
+        <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
+            <div>
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Financial Ledger</h2>
+                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Market vs. Physics Breakdown</span>
+            </div>
+            <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
+        </div>
         
-        <!-- LEFT: FULL MATH LEDGER -->
-        <div id="sandbox-ledger" class="hidden w-[380px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
-            <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
-                <div>
-                    <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Financial Ledger</h2>
-                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Market vs. Physics Breakdown</span>
-                </div>
-                <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
+        <div class="p-5 space-y-6">
+            <div>
+                <h3 class="text-[11px] font-black text-blue-700 uppercase tracking-widest border-b-2 border-blue-100 pb-2 mb-3">Market Logic (Retail)</h3>
+                <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
             </div>
-            
-            <div class="p-5 space-y-6">
-                <div>
-                    <h3 class="text-[11px] font-black text-blue-700 uppercase tracking-widest border-b-2 border-blue-100 pb-2 mb-3">Market Logic (Retail)</h3>
-                    <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
-                </div>
-                <div>
-                    <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest border-b-2 border-red-100 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
-                    <div id="sbx-cost-breakdown" class="space-y-3"></div>
-                </div>
-            </div>
-            
-            <div class="border-t border-gray-200 bg-slate-50 p-4 rounded-b-xl flex justify-between items-center shrink-0">
-                <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Simulated Margin:</span>
-                <span id="sbx-margin" class="text-2xl font-black text-green-600 tracking-tight">--</span>
+            <div>
+                <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest border-b-2 border-red-100 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
+                <div id="sbx-cost-breakdown" class="space-y-3"></div>
             </div>
         </div>
+        
+        <div class="border-t border-gray-200 bg-slate-50 p-4 rounded-b-xl flex justify-between items-center shrink-0">
+            <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Simulated Margin:</span>
+            <span id="sbx-margin" class="text-2xl font-black text-green-600 tracking-tight">--</span>
+        </div>
+    </div>
 
-        <!-- CENTER: MAIN CALCULATOR ISLAND -->
-        <div id="main-card" class="w-full max-w-md bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative z-20 shrink-0">
+    <!-- CENTER: MAIN CALCULATOR ISLAND + DICTIONARY -->
+    <div class="flex flex-col gap-4 w-full max-w-md shrink-0 z-20">
+        
+        <!-- MAIN CARD -->
+        <div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
             <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
 
             <!-- VIEWFINDER TOGGLE BAR -->
@@ -223,44 +228,56 @@
             </div>
         </div>
 
-        <!-- RIGHT: SANDBOX VARIABLES -->
-        <div id="sandbox-vars" class="hidden w-[300px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
-            <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
-                <div>
-                    <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Sandbox Variables</h2>
-                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Modify System Inputs</span>
-                </div>
+        <!-- GLOSSARY TRAY (Matches 450px Island Width) -->
+        <div id="sandbox-glossary" class="hidden w-full bg-white shadow-lg rounded-xl border border-gray-200 flex-col shrink-0 text-gray-700 overflow-hidden mb-10">
+            <div class="p-3 bg-slate-50 border-b border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition" onclick="toggleGlossary()">
+                <span class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    Interactive Dictionary
+                </span>
+                <svg id="glos-arrow" class="w-4 h-4 text-gray-400 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
             
-            <div class="p-5 space-y-6">
-                <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b border-blue-200 pb-1">Market Overrides</span>
-                    </div>
-                    <div id="sbx-retail-inputs" class="space-y-2"></div>
+            <div id="glos-body" class="hidden flex-col">
+                <div class="p-2 bg-white border-b border-gray-100">
+                    <input type="text" id="glos-search" placeholder="Search variables..." oninput="filterGlossary()" class="w-full border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-blue-500 shadow-inner">
                 </div>
-                <div>
-                    <span class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-red-200 pb-1 mb-3 block">Physics Overrides</span>
-                    <div id="sbx-cost-inputs" class="space-y-2"></div>
-                </div>
-            </div>
-
-            <div class="p-4 bg-slate-50 border-t border-gray-200 shrink-0 space-y-2 rounded-b-xl">
-                <button onclick="applySandbox()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded shadow text-xs uppercase tracking-widest transition">Run Simulation</button>
-                <div class="flex gap-2">
-                    <button onclick="resetSandbox()" class="flex-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Reset</button>
-                    <button onclick="exportSandbox()" id="btn-export" class="flex-1 hidden bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Export TXT</button>
+                <div id="glossary-grid" class="flex flex-col gap-2 p-3 max-h-80 overflow-y-auto custom-scroll bg-gray-50">
+                    <!-- Definitions injected here -->
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- BOTTOM: GLOSSARY TRAY -->
-    <div id="sandbox-glossary" class="hidden w-full max-w-[1100px] mt-4 bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 z-10 px-6 py-5 mb-10 text-gray-700 h-auto">
-        <h2 class="text-xs font-black text-gray-800 uppercase tracking-widest border-b-2 border-gray-200 pb-2 mb-4 text-center">Interactive Dictionary & Constants</h2>
-        <div id="glossary-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-[10px]">
-            <!-- Definitions injected here -->
+    <!-- RIGHT: SANDBOX VARIABLES -->
+    <div id="sandbox-vars" class="hidden w-[300px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
+        <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
+            <div>
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Sandbox Variables</h2>
+                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Modify System Inputs</span>
+            </div>
+        </div>
+        
+        <div class="p-5 space-y-6">
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b border-blue-200 pb-1">Market Overrides</span>
+                </div>
+                <div id="sbx-retail-inputs" class="space-y-2"></div>
+            </div>
+            <div>
+                <span class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-red-200 pb-1 mb-3 block">Physics Overrides</span>
+                <div id="sbx-cost-inputs" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-gray-200 shrink-0 space-y-2 rounded-b-xl">
+            <button onclick="applySandbox()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded shadow text-xs uppercase tracking-widest transition">Run Simulation</button>
+            <div class="flex gap-2">
+                <button onclick="resetSandbox()" class="flex-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Reset</button>
+                <button onclick="exportSandbox()" id="btn-export" class="flex-1 hidden bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Export TXT</button>
+            </div>
         </div>
     </div>
 
@@ -468,7 +485,42 @@
     }
     function closeModal() { document.getElementById('color-modal').classList.add('hidden'); }
 
-    // --- FULL MATH LEDGER SIMULATOR (3-COLUMN LAYOUT) ---
+    // --- DICTIONARY TRAY & SEARCH LOGIC ---
+    function toggleGlossary() {
+        document.getElementById('glos-body').classList.toggle('hidden');
+        document.getElementById('glos-body').classList.toggle('flex');
+        document.getElementById('glos-arrow').classList.toggle('rotate-180');
+    }
+    
+    function filterGlossary() {
+        const val = document.getElementById('glos-search').value.toLowerCase();
+        const items = document.querySelectorAll('.glos-item');
+        items.forEach(el => {
+            if (el.dataset.search.includes(val)) el.style.display = 'flex';
+            else el.style.display = 'none';
+        });
+    }
+
+    function buildGlossary() {
+        const grid = document.getElementById('glossary-grid');
+        let html = '';
+        const allVars = [...window.ADA_CONFIG.retails, ...window.ADA_CONFIG.costs, ...(window.ADA_CONFIG.constants || [])];
+
+        allVars.forEach(item => {
+            let desc = backendData['META_NOTE_' + item.key] || item.desc || "No definition provided in backend payload.";
+            let searchStr = (item.key + " " + desc + " " + item.label).toLowerCase();
+            
+            html += `
+            <div class="border border-gray-200 p-2.5 rounded bg-white flex flex-col gap-1 shadow-sm glos-item" data-search="${searchStr}">
+                <span class="hover-var cursor-help font-black text-blue-800 border-b border-dotted border-blue-300 inline-block w-max transition-all" data-var="${item.key}" title="${desc}">${item.key}</span>
+                <span class="text-gray-500 leading-tight text-[10px] mt-0.5">${desc}</span>
+            </div>`;
+        });
+        
+        grid.innerHTML = html;
+    }
+
+    // --- FULL MATH LEDGER SIMULATOR ---
     function toggleSandbox() {
         const wrap = document.getElementById('app-wrapper');
         const left = document.getElementById('sandbox-ledger');
@@ -498,35 +550,13 @@
             let html = '';
             arr.forEach(i => {
                 const v = customSimData[i.key] !== undefined ? customSimData[i.key] : '';
-                // WRAPPED LABEL FOR HOVER ENGINE
-                html += `<div class="flex justify-between items-center gap-2"><label class="text-[10px] font-bold text-gray-600 truncate flex-1 hover-var cursor-help transition-all" data-var="${i.key}">${i.label}</label><input type="text" id="sbx_${i.key}" value="${v}" class="w-16 bg-gray-50 border border-gray-300 text-gray-800 text-xs font-mono text-center rounded outline-none focus:border-blue-500 py-0.5 shadow-inner"></div>`;
+                let desc = backendData['META_NOTE_' + i.key] || i.desc || "";
+                html += `<div class="flex justify-between items-center gap-2"><label class="text-[10px] font-bold text-gray-600 truncate flex-1 hover-var cursor-help transition-all" data-var="${i.key}" title="${desc}">${i.label}</label><input type="text" id="sbx_${i.key}" value="${v}" class="w-16 bg-gray-50 border border-gray-300 text-gray-800 text-xs font-mono text-center rounded outline-none focus:border-blue-500 py-0.5 shadow-inner"></div>`;
             });
             document.getElementById(containerId).innerHTML = html;
         };
         buildSection(window.ADA_CONFIG.retails, 'sbx-retail-inputs');
         buildSection(window.ADA_CONFIG.costs, 'sbx-cost-inputs');
-    }
-
-    function buildGlossary() {
-        const grid = document.getElementById('glossary-grid');
-        let html = '';
-
-        // Combine Retails, Costs, and Constants into one dictionary
-        const allVars = [...window.ADA_CONFIG.retails, ...window.ADA_CONFIG.costs, ...(window.ADA_CONFIG.constants || [])];
-
-        allVars.forEach(item => {
-            // Check the API Payload for a description note, or fall back to the JS constant description
-            let desc = backendData['META_NOTE_' + item.key] || item.desc || "No definition provided.";
-            
-            // Format the key to match what we put in the span wrapper
-            html += `
-            <div class="border border-gray-100 p-2 rounded bg-gray-50 flex flex-col gap-1 shadow-sm">
-                <span class="hover-var cursor-help font-black text-blue-800 border-b border-dotted border-blue-300 inline-block w-max transition-all" data-var="${item.key}">${item.key}</span>
-                <span class="text-gray-500 leading-tight italic">${desc}</span>
-            </div>`;
-        });
-        
-        grid.innerHTML = html;
     }
 
     function resetSandbox() {
@@ -586,7 +616,6 @@
         if(!lastSimResult) return;
         const fmt = (n) => "$" + (n||0).toFixed(2);
         
-        // Strip HTML Tags from the formula strings for pure text export
         const cleanHTML = (str) => str.replace(/<[^>]*>?/gm, '');
 
         let txt = `SIGNOS DEV - ADA FULL LEDGER EXHAUST\nTimestamp: ${new Date().toISOString()}\n----------------------------------------\n`;
@@ -696,7 +725,7 @@
             document.getElementById('label-tactile').innerText = selectedTactile.Name;
 
             const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
-            if (activeIcons.length > 0) selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men')) || activeIcons;
+            if (activeIcons.length > 0) selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men') || p.Name.toLowerCase().includes('women')) || activeIcons;
             
             if (SignOS_UI.buildIconGrid) SignOS_UI.buildIconGrid({ containerId: 'icon-grid', data: activeIcons, activeRingClass: 'ring-blue-500', onSelect: (item) => { selectedIcon = item; runCalc(); } });
 
@@ -716,4 +745,3 @@
 </script>
 </body>
 </html>
-
