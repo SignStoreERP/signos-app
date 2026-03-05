@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: ADA Signs (v4.7)
- * Interactive String-Matcher Ledger. Custom Layer-Builder and Assembly Labor physics.
+ * PURE PHYSICS ENGINE: ADA Signs (v5.0)
+ * A La Carte Layer-Builder. Dynamic Tape and Assembly physics.
  */
 function calculateADA(inputs, data) {
     const sqin = inputs.w * inputs.h;
@@ -18,23 +18,30 @@ function calculateADA(inputs, data) {
     const ret = [];
     const R = (label, total, formula) => { if(total > 0) ret.push({label, total, formula}); return total; };
 
-    let baseRateKey = inputs.coreThick === '1/8' ? 'Retail_Price_Ultra_18' : 'Retail_Price_Mattes_116';
-    let baseRateSqIn = inputs.coreThick === '1/8' ? parseFloat(data.Retail_Price_Ultra_18 || 0.80) : parseFloat(data.Retail_Price_Mattes_116 || 0.60);
-    R(`Base Core Layer (${inputs.coreThick}")`, (sqin * baseRateSqIn) * inputs.qty, `Qty * SqIn * ${V(baseRateKey)}`);
+    let totalBrailleLines = 0;
 
-    if (inputs.hasTactile) {
-        R(`Tactile Applique Layer`, (sqin * parseFloat(data.Retail_Adder_Tactile || 0.60)) * inputs.qty, `Qty * SqIn * ${V('Retail_Adder_Tactile')}`);
-    }
+    inputs.layers.forEach(layer => {
+        if (layer.type === 'Tactile') {
+            R(`Tactile Applique Layer`, (sqin * parseFloat(data.Retail_Adder_Tactile || 0.60)) * inputs.qty, `Qty * SqIn * ${V('Retail_Adder_Tactile')}`);
+            if (layer.hasBraille) totalBrailleLines += (inputs.brailleLines || 1);
+        }
+        else if (layer.type === '1/16" Core') {
+            R(`Base Core (1/16")`, (sqin * parseFloat(data.Retail_Price_Mattes_116 || 0.60)) * inputs.qty, `Qty * SqIn * ${V('Retail_Price_Mattes_116')}`);
+        }
+        else if (layer.type === '1/8" Core') {
+            R(`Base Core (1/8")`, (sqin * parseFloat(data.Retail_Price_Ultra_18 || 0.80)) * inputs.qty, `Qty * SqIn * ${V('Retail_Price_Ultra_18')}`);
+        }
+        else if (layer.type === '3mm Black PVC' || layer.type === '3mm White PVC') {
+            R(`Rigid Backer (3mm PVC)`, (sqin * parseFloat(data.Retail_Adder_PVC_Backer || 0.40)) * inputs.qty, `Qty * SqIn * ${V('Retail_Adder_PVC_Backer')}`);
+        }
+        else if (layer.type === '1/4" Clear Acrylic') {
+            R(`Rigid Backer (1/4" Acrylic)`, (sqin * parseFloat(data.Retail_Adder_Acr_Backer || 0.60)) * inputs.qty, `Qty * SqIn * ${V('Retail_Adder_Acr_Backer')}`);
+        }
+        // Foam Tape adds $0.00 to Retail per rules
+    });
 
-    if (inputs.backer !== 'None') {
-        let backerRetKey = inputs.backer === 'Clear Acrylic' ? 'Retail_Adder_Acr_Backer' : 'Retail_Adder_PVC_Backer';
-        R(`Rigid Backer (${inputs.backer})`, (sqin * parseFloat(data[backerRetKey] || 0.40)) * inputs.qty, `Qty * SqIn * ${V(backerRetKey)}`);
-    }
-
-    let brailleFee = 0;
-    if (inputs.hasBraille && inputs.brailleLines > 0) {
-        brailleFee = inputs.brailleLines * parseFloat(data.Retail_Adder_Braille_Line || 10.00);
-        R(`Raster Braille (Grade 2)`, brailleFee * inputs.qty, `Qty * Braille Lines * ${V('Retail_Adder_Braille_Line')}`);
+    if (totalBrailleLines > 0) {
+        R(`Raster Braille (Grade 2)`, totalBrailleLines * inputs.qty * parseFloat(data.Retail_Adder_Braille_Line || 10.00), `Qty * Braille Lines * ${V('Retail_Adder_Braille_Line')}`);
     }
 
     let grandTotalRaw = ret.reduce((sum, i) => sum + i.total, 0);
@@ -49,38 +56,53 @@ function calculateADA(inputs, data) {
     const sheetSqIn = 24 * 48; 
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
 
-    // Substrate Core
-    let coreKey = inputs.coreThick === '1/8' ? 'Cost_Stock_18_ADA' : 'Cost_Stock_116_ADA';
-    const costBackground = inputs.coreThick === '1/8' ? parseFloat(data.Cost_Stock_18_ADA || 70)/sheetSqIn : parseFloat(data.Cost_Stock_116_ADA || 50)/sheetSqIn;
-    L(`ADA Core (${inputs.coreThick}")`, (totalSqin * costBackground) * wastePct, `(Total SqIn * ${V(coreKey)} / ${C('C_1152', '1152')}) * ${V('Waste_Factor')}`);
+    let tapeLayers = 0;
+    let solidLayerCount = 0;
+    let hasEngraver = false;
+    let hasCNC = false;
 
-    // Tactile Layer
-    if (inputs.hasTactile) {
-        const costApplique = parseFloat(data.Cost_Stock_132_Applique || 55)/sheetSqIn;
-        L(`Tactile Applique (1/32")`, (totalSqin * costApplique) * wastePct, `(Total SqIn * ${V('Cost_Stock_132_Applique')} / ${C('C_1152', '1152')}) * ${V('Waste_Factor')}`);
-    }
-
-    // Rigid Backer Layer
-    if (inputs.backer !== 'None') {
-        let backerCost = 0;
-        let backerKey = '';
-        if (inputs.backer === 'Clear Acrylic') {
-            backerCost = parseFloat(data.Cost_Stock_14_4x8_C || 120.55) / 4608;
-            backerKey = 'Cost_Stock_14_4x8_C';
-        } else if (inputs.backer === 'White PVC') {
-            backerCost = parseFloat(data.Cost_Stock_3mm_4x8_WW || 29.09) / 4608;
-            backerKey = 'Cost_Stock_3mm_4x8_WW';
-        } else {
-            backerCost = parseFloat(data.Cost_Stock_3mm_4x8_BK || 32.53) / 4608;
-            backerKey = 'Cost_Stock_3mm_4x8_BK';
+    // Evaluate physical materials
+    inputs.layers.forEach(layer => {
+        if (layer.type === 'Tactile') {
+            const costApplique = parseFloat(data.Cost_Stock_132_Applique || 55)/sheetSqIn;
+            L(`Tactile Applique (1/32")`, (totalSqin * costApplique) * wastePct, `(Total SqIn * ${V('Cost_Stock_132_Applique')} / ${C('C_1152', '1152')}) * ${V('Waste_Factor')}`);
+            solidLayerCount++;
+            hasEngraver = true;
         }
-        L(`Rigid Backer Material`, (totalSqin * backerCost) * wastePct, `(Total SqIn * ${V(backerKey)} / ${C('C_4608', '4608')}) * ${V('Waste_Factor')}`);
-    }
+        else if (layer.type === '1/16" Core') {
+            const costCore = parseFloat(data.Cost_Stock_116_ADA || 50)/sheetSqIn;
+            L(`ADA Core (1/16")`, (totalSqin * costCore) * wastePct, `(Total SqIn * ${V('Cost_Stock_116_ADA')} / ${C('C_1152', '1152')}) * ${V('Waste_Factor')}`);
+            solidLayerCount++;
+            hasEngraver = true;
+        }
+        else if (layer.type === '1/8" Core') {
+            const costCore = parseFloat(data.Cost_Stock_18_ADA || 70)/sheetSqIn;
+            L(`ADA Core (1/8")`, (totalSqin * costCore) * wastePct, `(Total SqIn * ${V('Cost_Stock_18_ADA')} / ${C('C_1152', '1152')}) * ${V('Waste_Factor')}`);
+            solidLayerCount++;
+            hasEngraver = true;
+        }
+        else if (layer.type.includes('PVC')) {
+            const key = layer.type.includes('White') ? 'Cost_Stock_3mm_4x8_WW' : 'Cost_Stock_3mm_4x8_BK';
+            const costPVC = parseFloat(data[key] || 32.53) / 4608;
+            L(`Rigid Backer (${layer.type})`, (totalSqin * costPVC) * wastePct, `(Total SqIn * ${V(key)} / ${C('C_4608', '4608')}) * ${V('Waste_Factor')}`);
+            solidLayerCount++;
+            hasCNC = true;
+        }
+        else if (layer.type === '1/4" Clear Acrylic') {
+            const costAcr = parseFloat(data.Cost_Stock_14_4x8_C || 120.55) / 4608;
+            L(`Rigid Backer (1/4" Acr)`, (totalSqin * costAcr) * wastePct, `(Total SqIn * ${V('Cost_Stock_14_4x8_C')} / ${C('C_4608', '4608')}) * ${V('Waste_Factor')}`);
+            solidLayerCount++;
+            hasCNC = true;
+        }
+        else if (layer.type === 'Foam Tape') {
+            tapeLayers++; 
+        }
+    });
 
     // Raster Braille Beads
-    if (inputs.hasBraille) {
+    if (totalBrailleLines > 0) {
         const costBead = parseFloat(data.Cost_Raster_Bead || 0.01);
-        const totalBeads = inputs.qty * inputs.brailleLines * 10; 
+        const totalBeads = inputs.qty * totalBrailleLines * 10; 
         L(`Raster Braille Beads`, totalBeads * costBead * wastePct, `Total Beads * ${V('Cost_Raster_Bead')} * ${V('Waste_Factor')}`);
     }
 
@@ -88,33 +110,33 @@ function calculateADA(inputs, data) {
     const shopRate = parseFloat(data.Rate_Shop_Labor || 20);
     
     // LAYER ASSEMBLY & TAPE LOGIC
-    let tapeLayers = 0;
-    if (inputs.hasTactile) tapeLayers++;
-    if (inputs.backer !== 'None') tapeLayers++;
-    if (inputs.mounting === 'Foam Tape') tapeLayers++; // Adds tape cost and 2 mins labor for applying the mount
+    if (solidLayerCount > 1) tapeLayers += (solidLayerCount - 1);
 
     if (tapeLayers > 0) {
         const costTape = parseFloat(data.Cost_ADA_Tape || 0.30) / 144;
-        L(`3M Tape (${tapeLayers}x Layers)`, (totalSqin * costTape * tapeLayers) * wastePct, `(Total SqIn * ${V('Cost_ADA_Tape')} / ${C('C_144', '144')} * ${tapeLayers} Lyr) * ${V('Waste_Factor')}`);
+        L(`3M Tape / Foam (${tapeLayers}x Layers)`, (totalSqin * costTape * tapeLayers) * wastePct, `(Total SqIn * ${V('Cost_ADA_Tape')} / ${C('C_144', '144')} * ${tapeLayers} Lyr) * ${V('Waste_Factor')}`);
         
         const asmMins = inputs.qty * tapeLayers * 2; 
         L(`Layer Assembly Labor`, (asmMins / 60) * shopRate, `Qty * ${tapeLayers} Lyr * ${C('C_2', '2 Mins')} * ${V('Rate_Shop_Labor')}`);
     }
 
-    // Engraving & Routing Logic
-    const engraveRate = parseFloat(data.Rate_Machine_Engraver || 10);
-    L(`Engraver Prepress`, (10 / 60) * rateOp, `10 Mins * ${V('Rate_Operator')}`);
-    L(`Engraver Setup`, (parseFloat(data.Time_Engraver_Load_Per_Item || 1) * inputs.qty / 60) * rateOp, `Qty * ${V('Time_Engraver_Load_Per_Item')} * ${V('Rate_Operator')}`);
-    
-    const runMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.25);
-    L(`Engraver Run Time`, (runMins / 60) * engraveRate, `Total SqIn * ${V('Time_Engrave_SqIn')} * ${V('Rate_Machine_Engraver')}`);
-    L(`Operator Attendance`, (runMins / 60) * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `Engraver Run Time * ${V('Labor_Attendance_Ratio')} * ${V('Rate_Operator')}`);
-
-    if (inputs.hasBraille) {
-        L(`Braille Bead Insertion`, ((inputs.qty * inputs.brailleLines * 10) * 0.05 / 60) * shopRate, `Total Beads * ${C('C_005', '0.05 Mins')} * ${V('Rate_Shop_Labor')}`);
+    // Engraving Logic
+    if (hasEngraver) {
+        const engraveRate = parseFloat(data.Rate_Machine_Engraver || 10);
+        L(`Engraver Prepress`, (10 / 60) * rateOp, `10 Mins * ${V('Rate_Operator')}`);
+        L(`Engraver Setup`, (parseFloat(data.Time_Engraver_Load_Per_Item || 1) * inputs.qty / 60) * rateOp, `Qty * ${V('Time_Engraver_Load_Per_Item')} * ${V('Rate_Operator')}`);
+        
+        const runMins = totalSqin * parseFloat(data.Time_Engrave_SqIn || 0.25);
+        L(`Engraver Run Time`, (runMins / 60) * engraveRate, `Total SqIn * ${V('Time_Engrave_SqIn')} * ${V('Rate_Machine_Engraver')}`);
+        L(`Operator Attendance`, (runMins / 60) * rateOp * parseFloat(data.Labor_Attendance_Ratio || 0.10), `Engraver Run Time * ${V('Labor_Attendance_Ratio')} * ${V('Rate_Operator')}`);
     }
 
-    if (inputs.backer !== 'None') {
+    if (totalBrailleLines > 0) {
+        L(`Braille Bead Insertion`, ((inputs.qty * totalBrailleLines * 10) * 0.05 / 60) * shopRate, `Total Beads * ${C('C_005', '0.05 Mins')} * ${V('Rate_Shop_Labor')}`);
+    }
+
+    // CNC Routing Logic
+    if (hasCNC) {
         const cncRate = parseFloat(data.Rate_Machine_CNC || 10);
         L(`CNC Prepress & Setup`, (25 / 60) * rateOp, `25 Mins * ${V('Rate_Operator')}`);
         
@@ -135,10 +157,8 @@ function calculateADA(inputs, data) {
 window.ADA_CONFIG = {
     tab: 'PROD_ADA_Signs', engine: calculateADA,
     controls: [
-        { id: 'coreThick', label: 'Core Thickness', type: 'select', opts: [{v:'1/16', t:'1/16"'}, {v:'1/8', t:'1/8"'}] },
-        { id: 'backer', label: 'Rigid Backer', type: 'select', opts: [{v:'None', t:'None'}, {v:'Black PVC', t:'3mm Blk PVC'}, {v:'White PVC', t:'3mm Wht PVC'}, {v:'Clear Acrylic', t:'1/4" Clear Acr'}] },
-        { id: 'hasTactile', label: 'Tactile Copy', type: 'toggle', def: true },
-        { id: 'hasBraille', label: 'Raster Braille', type: 'toggle', def: true },
+        { id: 'w', label: 'Width', type: 'number', def: 8 },
+        { id: 'h', label: 'Height', type: 'number', def: 8 },
         { id: 'brailleLines', label: 'Braille Lines', type: 'number', def: 1 }
     ],
     retails: [ 
