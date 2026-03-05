@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADA Signs v5.1 - Layered Descriptions</title>
+    <title>ADA Signs v6.0 - Custom Layer Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <script src="signos-core.js"></script>
@@ -23,9 +23,6 @@
         #svg-preview-container { transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
         .sign-layer { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s ease; transform-style: preserve-3d; }
         .exploded-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
-        .exploded-view .layer-backer { transform: translateZ(-20px); }
-        .exploded-view .layer-core { transform: translateZ(0px); }
-        .exploded-view .layer-tactile { transform: translateZ(20px); }
         .blueprint-callout { opacity: 0; transition: opacity 0.5s ease 0.4s; pointer-events: none; }
         .exploded-view .blueprint-callout { opacity: 1; }
         
@@ -113,73 +110,46 @@
                     <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Height (in)</label><input type="number" id="h" value="8" min="1" class="w-full border border-gray-300 p-2 rounded font-black text-gray-800 text-lg text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
                 </div>
 
-                <!-- Global Colors -->
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div id="wrap-tactile-color">
-                        <label class="block text-[10px] font-bold text-purple-800 uppercase tracking-widest mb-1">Tactile Color</label>
-                        <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-purple-400 transition" onclick="openModal('tactile')">
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <div id="swatch-tactile" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                                <span id="label-tactile" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Core Color</label>
-                        <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-400 transition" onclick="openModal('core')">
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <div id="swatch-core" class="w-5 h-5 rounded-full border shadow-inner bg-gray-200 shrink-0"></div>
-                                <span id="label-core" class="text-[10px] font-bold text-gray-700 truncate w-24">Loading...</span>
-                            </div>
-                        </div>
+                <!-- Prebuilt Starters -->
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">Prebuilt Starters</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="applyPreset('Standard')" class="p-2 border border-gray-200 rounded shadow-sm bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition focus:outline-none">
+                            <span class="block text-[10px] font-black text-blue-800 uppercase">Standard</span>
+                        </button>
+                        <button onclick="applyPreset('PVC')" class="p-2 border border-gray-200 rounded shadow-sm bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition focus:outline-none">
+                            <span class="block text-[10px] font-black text-blue-800 uppercase">PVC Backer</span>
+                        </button>
+                        <button onclick="applyPreset('Acrylic')" class="p-2 border border-gray-200 rounded shadow-sm bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition focus:outline-none">
+                            <span class="block text-[10px] font-black text-blue-800 uppercase">Acr Backer</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Structural Layer Visual Buttons -->
+                <!-- DYNAMIC LAYER BUILDER -->
                 <div>
-                    <label class="block text-[10px] font-bold text-blue-800 uppercase tracking-widest mb-1">ADA Sign Structure</label>
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button id="st-Standard" onclick="applyPreset('Standard')" class="preset-btn ring-2 ring-blue-500 bg-blue-50 p-2 border border-gray-200 rounded shadow-sm text-left transition focus:outline-none">
-                            <span class="block text-xs font-black text-blue-800 uppercase">Standard</span>
-                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">1/8" Core Base</span>
-                        </button>
-                        <button id="st-Layered_PVC" onclick="applyPreset('Layered_PVC')" class="preset-btn p-2 border border-gray-200 rounded shadow-sm text-left transition hover:border-blue-300 focus:outline-none">
-                            <span class="block text-xs font-black text-blue-800 uppercase">Layered PVC</span>
-                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">1/16" Core + PVC</span>
-                        </button>
-                        <button id="st-Layered_Acrylic" onclick="applyPreset('Layered_Acrylic')" class="preset-btn p-2 border border-gray-200 rounded shadow-sm text-left transition hover:border-blue-300 focus:outline-none">
-                            <span class="block text-xs font-black text-blue-800 uppercase">Premium Acr</span>
-                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">1/16" Core + Acrylic</span>
-                        </button>
-                        <button id="st-Custom" onclick="applyPreset('Custom')" class="preset-btn p-2 border border-gray-200 rounded shadow-sm text-left transition hover:border-blue-300 focus:outline-none">
-                            <span class="block text-xs font-black text-blue-800 uppercase">Custom Build</span>
-                            <span class="text-[9px] text-gray-500 font-bold block mt-0.5">A La Carte Layers</span>
-                        </button>
+                    <label class="block text-[10px] font-bold text-gray-800 uppercase tracking-widest mb-1 border-b border-gray-200 pb-1">A La Carte Layer Stack</label>
+                    
+                    <div id="layer-list" class="flex flex-col gap-2 mt-2 max-h-64 overflow-y-auto custom-scroll pr-1">
+                        <!-- Layers Injected Here -->
                     </div>
-
-                    <!-- Interactive Layer Selectors -->
-                    <div id="layer-builder" class="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-inner space-y-3">
-                        <div>
-                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Core Substrate Thickness</label>
-                            <select id="bld-core" onchange="checkCustom()" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none">
-                                <option value="1/8">1/8" ADA Core</option>
-                                <option value="1/16">1/16" ADA Core</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Rigid Backer Material</label>
-                            <select id="bld-backer" onchange="checkCustom()" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none">
-                                <option value="None">None</option>
-                                <option value="Black PVC">3mm Black PVC</option>
-                                <option value="White PVC">3mm White PVC</option>
-                                <option value="Clear Acrylic">1/4" Clear Acrylic</option>
-                            </select>
-                        </div>
+                    
+                    <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <select id="new-layer-type" class="flex-1 border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none">
+                            <option value="Tactile">1/32" Tactile Applique</option>
+                            <option value="1/16&quot; Core">1/16" ADA Core</option>
+                            <option value="1/8&quot; Core">1/8" ADA Core</option>
+                            <option value="3mm Black PVC">3mm Black PVC</option>
+                            <option value="3mm White PVC">3mm White PVC</option>
+                            <option value="1/4&quot; Clear Acrylic">1/4" Clear Acrylic</option>
+                            <option value="Foam Tape">Foam Tape (Mounting)</option>
+                        </select>
+                        <button onclick="addLayer()" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-2 rounded text-xs uppercase tracking-widest shadow-sm transition">Add</button>
                     </div>
                 </div>
                 
-                <!-- Finishing & Mounting Options -->
-                <div class="grid grid-cols-3 gap-3 mt-4 border-t border-gray-100 pt-4">
+                <!-- Finishing Options -->
+                <div class="grid grid-cols-2 gap-3 mt-4 border-t border-gray-100 pt-4">
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Corner Radius</label>
                         <input type="number" id="radius" value="0" step="0.125" min="0" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px]" oninput="runCalc()">
@@ -191,13 +161,6 @@
                             <option value="Bevel">Beveled</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Mounting</label>
-                        <select id="mounting" class="w-full border border-gray-300 p-2 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none h-[36px]" onchange="runCalc()">
-                            <option value="None">None</option>
-                            <option value="Foam Tape">Foam Tape</option>
-                        </select>
-                    </div>
                 </div>
 
             </div>
@@ -207,7 +170,7 @@
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center">
                         <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                            <input type="checkbox" id="toggle-picto" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Pictogram
+                            <input type="checkbox" id="toggle-picto" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Pictogram
                         </label>
                         <div id="picto-size-wrap" class="flex items-center gap-2 bg-gray-50 p-1 rounded border border-gray-200 shadow-inner">
                             <label class="text-[9px] font-bold text-gray-500 uppercase">Height:</label>
@@ -222,7 +185,7 @@
                 <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center mb-1">
                         <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                            <input type="checkbox" id="toggle-text" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Tactile Copy
+                            <input type="checkbox" id="toggle-text" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded"> Text Copy
                         </label>
                     </div>
                     <div id="wrap-text" class="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100">
@@ -245,12 +208,6 @@
                             <input type="number" id="text-height" value="0.625" step="0.125" min="0.25" oninput="runCalc()" class="w-full border p-2 rounded text-xs font-bold text-center text-gray-800 focus:border-blue-500 outline-none shadow-sm h-[38px]">
                         </div>
                     </div>
-                </div>
-
-                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                    <label class="flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-widest cursor-pointer">
-                        <input type="checkbox" id="toggle-braille" checked onchange="handleContentToggles()" class="w-4 h-4 text-blue-600 rounded"> Grade 2 Braille
-                    </label>
                 </div>
             </div>
 
@@ -355,50 +312,164 @@
 
 <script>
     let backendData = {}, customSimData = null, coreColors = [], tactileColors = [], pictograms = [], systemFonts = [];
-    let selectedCore = null, selectedTactile = null, selectedIcon = null, activeModal = '';
+    let selectedIcon = null;
     let isViewfinderOn = false;
     let lastSimResult = null; 
+    let activeLayerModalId = null;
     const GITHUB_BASE = "https://raw.githubusercontent.com/SignStoreERP/signos-app/main/fonts/";
 
-    // --- CUSTOM LAYER BUILDER LOGIC ---
-    function applyPreset(type) {
-        document.querySelectorAll('.preset-btn').forEach(b => {
-            b.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
-            b.classList.add('hover:border-blue-300');
-        });
-        document.getElementById('st-' + type).classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
-        document.getElementById('st-' + type).classList.remove('hover:border-blue-300');
+    // --- LAYER STACK STATE ---
+    let layerStack = [];
 
-        const coreSel = document.getElementById('bld-core');
-        const backerSel = document.getElementById('bld-backer');
+    function generateId() { return Math.random().toString(36).substr(2, 9); }
 
-        if (type === 'Standard') { coreSel.value = '1/8'; backerSel.value = 'None'; }
-        if (type === 'Layered_PVC') { coreSel.value = '1/16'; backerSel.value = 'Black PVC'; }
-        if (type === 'Layered_Acrylic') { coreSel.value = '1/16'; backerSel.value = 'Clear Acrylic'; }
-
-        runCalc();
-    }
-
-    function checkCustom() {
-        const core = document.getElementById('bld-core').value;
-        const backer = document.getElementById('bld-backer').value;
-
-        document.querySelectorAll('.preset-btn').forEach(b => {
-            b.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
-            b.classList.add('hover:border-blue-300');
-        });
-
-        if (core === '1/8' && backer === 'None') {
-            document.getElementById('st-Standard').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
-        } else if (core === '1/16' && (backer === 'Black PVC' || backer === 'White PVC')) {
-            document.getElementById('st-Layered_PVC').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
-        } else if (core === '1/16' && backer === 'Clear Acrylic') {
-            document.getElementById('st-Layered_Acrylic').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
-        } else {
-            document.getElementById('st-Custom').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+    function createLayer(typeStr) {
+        let layer = { id: generateId(), type: typeStr };
+        if (typeStr === 'Tactile') {
+            const defCol = tactileColors.find(c => c.Name.includes('White')) || tactileColors;
+            layer.colorHex = defCol ? defCol.Hex_Code : '#FFFFFF';
+            layer.colorName = defCol ? defCol.Name : 'White';
+            layer.hasBraille = true;
+        } else if (typeStr.includes('Core')) {
+            const defCol = coreColors.find(c => c.Name.includes('Black')) || coreColors;
+            layer.colorHex = defCol ? defCol.Hex_Code : '#000000';
+            layer.colorName = defCol ? defCol.Name : 'Black';
         }
+        return layer;
+    }
+
+    function applyPreset(preset) {
+        layerStack = [];
+        if (preset === 'Standard') {
+            layerStack.push(createLayer('Tactile'));
+            layerStack.push(createLayer('1/8" Core'));
+        } else if (preset === 'PVC') {
+            layerStack.push(createLayer('Tactile'));
+            layerStack.push(createLayer('1/16" Core'));
+            layerStack.push(createLayer('3mm Black PVC'));
+        } else if (preset === 'Acrylic') {
+            layerStack.push(createLayer('Tactile'));
+            layerStack.push(createLayer('1/16" Core'));
+            layerStack.push(createLayer('1/4" Clear Acrylic'));
+        }
+        renderLayers();
         runCalc();
     }
+
+    function addLayer() {
+        const type = document.getElementById('new-layer-type').value;
+        const layer = createLayer(type);
+        if (type === 'Foam Tape') {
+            // Enforce Rule: Only one Foam Tape, forced to the bottom
+            layerStack = layerStack.filter(l => l.type !== 'Foam Tape');
+            layerStack.push(layer);
+        } else {
+            // Insert before Foam Tape if it exists
+            const tapeIdx = layerStack.findIndex(l => l.type === 'Foam Tape');
+            if (tapeIdx !== -1) layerStack.splice(tapeIdx, 0, layer);
+            else layerStack.push(layer);
+        }
+        renderLayers();
+        runCalc();
+    }
+
+    function removeLayer(id) {
+        layerStack = layerStack.filter(l => l.id !== id);
+        renderLayers();
+        runCalc();
+    }
+
+    function moveLayer(id, dir) {
+        const idx = layerStack.findIndex(l => l.id === id);
+        if (idx < 0) return;
+        
+        // Enforce physical rule: Foam tape cannot be moved up, and nothing can move below it
+        if (layerStack[idx].type === 'Foam Tape' && dir === -1) return; 
+        
+        const newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= layerStack.length) return;
+        if (layerStack[newIdx].type === 'Foam Tape' && dir === 1) return;
+
+        const temp = layerStack[idx];
+        layerStack[idx] = layerStack[newIdx];
+        layerStack[newIdx] = temp;
+        renderLayers();
+        runCalc();
+    }
+
+    function updateLayerBraille(id, isChecked) {
+        const layer = layerStack.find(l => l.id === id);
+        if (layer) { layer.hasBraille = isChecked; runCalc(); }
+    }
+
+    function renderLayers() {
+        const container = document.getElementById('layer-list');
+        let html = '';
+        
+        layerStack.forEach((l, index) => {
+            const isFirst = index === 0;
+            const isLast = index === layerStack.length - 1;
+            const isTape = l.type === 'Foam Tape';
+            
+            // Disable up arrow if it's the top item, or if moving it up violates rules
+            const disUp = isFirst || isTape;
+            // Disable down arrow if it's the bottom item, or if the item below it is Foam Tape
+            const disDown = isLast || (layerStack[index+1] && layerStack[index+1].type === 'Foam Tape');
+
+            let propertiesHtml = '';
+            if (l.type === 'Tactile' || l.type.includes('Core')) {
+                propertiesHtml += `
+                <div class="flex items-center gap-2 mt-1 cursor-pointer bg-gray-50 border border-gray-200 px-2 py-1 rounded w-max hover:border-blue-400 transition shadow-inner" onclick="openLayerModal('${l.id}', '${l.type}')">
+                    <div class="w-3 h-3 rounded-full border border-gray-300" style="background-color: ${l.colorHex};"></div>
+                    <span class="text-[9px] text-gray-600 font-bold">${l.colorName}</span>
+                </div>`;
+            }
+            if (l.type === 'Tactile') {
+                propertiesHtml += `
+                <label class="flex items-center gap-1.5 mt-2 text-[9px] font-bold text-gray-500 cursor-pointer">
+                    <input type="checkbox" onchange="updateLayerBraille('${l.id}', this.checked)" ${l.hasBraille ? 'checked' : ''} class="w-3 h-3 text-blue-600 rounded">
+                    Add Raster Braille
+                </label>`;
+            }
+
+            html += `
+            <div class="flex items-center bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+                <div class="flex flex-col gap-1 pr-2 border-r border-gray-100">
+                    <button onclick="moveLayer('${l.id}', -1)" class="${disUp ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none" ${disUp ? 'disabled' : ''}>▲</button>
+                    <button onclick="moveLayer('${l.id}', 1)" class="${disDown ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-blue-600'} transition focus:outline-none" ${disDown ? 'disabled' : ''}>▼</button>
+                </div>
+                <div class="flex-1 px-3 flex flex-col justify-center">
+                    <span class="text-[10px] font-black text-gray-800 uppercase tracking-widest">${l.type}</span>
+                    ${propertiesHtml}
+                </div>
+                <button onclick="removeLayer('${l.id}')" class="text-gray-300 hover:text-red-500 transition font-black focus:outline-none px-2">✕</button>
+            </div>`;
+        });
+
+        if(layerStack.length === 0) {
+            html = `<div class="text-center py-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-2 border-dashed border-gray-200 rounded-lg">No layers selected</div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function openLayerModal(layerId, type) {
+        activeLayerModalId = layerId;
+        const isTactile = type === 'Tactile';
+        document.getElementById('modal-title').innerText = isTactile ? 'Select Tactile Color' : 'Select Core Color';
+        document.getElementById('color-search').value = '';
+        document.getElementById('color-modal').classList.remove('hidden');
+        
+        SignOS_UI.buildColorGrid({
+            containerId: 'modal-grid', data: isTactile ? tactileColors : coreColors, type: 'rowmark', btnClass: 'w-10 h-10', activeRingClass: 'ring-blue-600',
+            onSelect: (item) => {
+                const l = layerStack.find(x => x.id === activeLayerModalId);
+                if (l) { l.colorHex = item.Hex_Code; l.colorName = item.Name; }
+                closeModal(); renderLayers(); runCalc();
+            }
+        });
+    }
+    function closeModal() { document.getElementById('color-modal').classList.add('hidden'); }
 
     // --- HOVER ENGINE LOGIC ---
     document.addEventListener('mouseover', e => {
@@ -451,17 +522,6 @@
         if(isViewfinderOn) updatePreview();
     }
 
-    function handleContentToggles() {
-        const hasPicto = document.getElementById('toggle-picto').checked;
-        const hasText = document.getElementById('toggle-text').checked;
-        document.getElementById('wrap-picto').classList.toggle('hidden', !hasPicto);
-        document.getElementById('picto-size-wrap').classList.toggle('opacity-30', !hasPicto);
-        document.getElementById('wrap-text').classList.toggle('hidden', !hasText);
-        document.getElementById('wrap-tactile-color').style.opacity = (hasPicto || hasText) ? '1' : '0.3';
-        document.getElementById('wrap-tactile-color').style.pointerEvents = (hasPicto || hasText) ? 'auto' : 'none';
-        runCalc();
-    }
-
     function makeEdge(hex, depthPx) {
         if (!hex || hex === 'Transparent') return 'none';
         let c = hex;
@@ -490,12 +550,21 @@
         const rawText = document.getElementById('sign-text').value.toUpperCase();
         const cleanText = rawText.replace(/\n/g, '   ');
         
+        const hasPicto = document.getElementById('toggle-picto').checked;
+        const hasText = document.getElementById('toggle-text').checked;
+        
+        // Find topmost layer to color the SVG
+        let topLayer = layerStack;
+        let svgColorHex = topLayer && topLayer.colorHex ? topLayer.colorHex : '#ffffff';
+        // If the top layer is a core material, we render SVG as "engraved" so we grab the core color if we had it, but for simplicity we'll just use white or black
+        if (topLayer && topLayer.type.includes('Core')) svgColorHex = topLayer.colorName === 'White' ? '#000000' : '#ffffff';
+
         const buildInputs = {
             w: w, h: h, align: 'center',
             textVal: cleanText,
-            hasPicto: document.getElementById('toggle-picto').checked,
-            hasText: document.getElementById('toggle-text').checked,
-            hasBraille: document.getElementById('toggle-braille').checked,
+            hasPicto: hasPicto,
+            hasText: hasText,
+            hasBraille: topLayer && topLayer.type === 'Tactile' ? topLayer.hasBraille : false,
             isAutoScale: document.getElementById('auto-scale-view').checked,
             selectedIcon: selectedIcon,
             fontFileName: fontSelect.options[fontSelect.selectedIndex]?.dataset.filename || 'Arimo-Regular.ttf',
@@ -512,26 +581,12 @@
         document.getElementById('picto-size').classList.toggle('opacity-50', buildInputs.isAutoScale);
         document.getElementById('text-height').classList.toggle('opacity-50', buildInputs.isAutoScale);
 
-        let backerType = document.getElementById('bld-backer').value;
-        const coreThickStr = document.getElementById('bld-core').value;
-        const coreHex = selectedCore ? selectedCore.Hex_Code : '#000000'; 
-        const tactileHex = selectedTactile ? selectedTactile.Hex_Code : '#ffffff';
-        let backerHex = backerType === 'White PVC' ? '#ffffff' : (backerType === 'Clear Acrylic' ? 'rgba(255,255,255,0.4)' : '#111827');
-
         const scale = Math.min((SignOS_UI.Camera3D.is3D ? 160 : 220) / w, (SignOS_UI.Camera3D.is3D ? 100 : 160) / h);
         container.style.width = `${w * scale}px`;
         container.style.height = `${h * scale}px`;
 
-        const depthTactile = 1;
-        const depthCore = coreThickStr === '1/8' ? 4 : 2;
-        const depthBacker = backerType === 'None' ? 0 : (backerType.includes('Acrylic') ? 2 : 4);
-        
         const isExp = SignOS_UI.Camera3D.is3D;
         
-        const shadowBacker = isExp ? makeEdge(backerHex, depthBacker) : '0 1px 3px rgba(0,0,0,0.1)';
-        const shadowCore = isExp ? makeEdge(coreHex, depthCore) : '0 1px 3px rgba(0,0,0,0.1)';
-        const shadowTactile = isExp ? `drop-shadow(-1px 1px 1px rgba(0,0,0,0.3))` : 'none';
-
         let callout = (name) => `
             <div class="blueprint-callout absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 flex items-center gap-1.5 z-50 pr-2">
                 <span class="text-[8px] font-black text-blue-700 uppercase tracking-widest bg-white/90 backdrop-blur px-1.5 py-0.5 rounded border border-blue-200 shadow-sm whitespace-nowrap">${name}</span>
@@ -539,37 +594,45 @@
             </div>`;
 
         let html = '';
-        if (backerType !== 'None') {
-            html += `<div class="sign-layer layer-backer border border-black/20" style="background-color: ${backerHex}; border-radius: ${r*scale}px; box-shadow: ${shadowBacker};">${isExp ? callout(backerType + ' Backer') : ''}</div>`;
-        }
-        html += `<div class="sign-layer layer-core border border-black/20" style="background-color: ${coreHex}; border-radius: ${r*scale}px; box-shadow: ${shadowCore};">${isExp ? callout(coreThickStr + '" ADA Core') : ''}</div>`;
-        html += `<div class="sign-layer layer-tactile" style="color: ${tactileHex}; filter: ${shadowTactile};">
-            <svg id="live-production-preview" viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
-            ${isExp ? callout('1/32" Tactile & Braille') : ''}
-        </div>`;
+        
+        // Render Array Top to Bottom
+        let zPos = layerStack.length * 10;
+        
+        layerStack.forEach((l, index) => {
+            if (l.type === 'Tactile') {
+                const shadow = isExp ? `drop-shadow(-1px 1px 1px rgba(0,0,0,0.3))` : 'none';
+                html += `<div class="sign-layer" style="color: ${l.colorHex}; filter: ${shadow}; transform: translateZ(${zPos}px);">
+                    <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
+                    ${isExp ? callout('1/32" Tactile') : ''}
+                </div>`;
+            } else if (l.type === 'Foam Tape') {
+                const shadow = isExp ? makeEdge('#4b5563', 2) : '0 1px 3px rgba(0,0,0,0.1)';
+                // Render slightly smaller so it looks like tape
+                html += `<div class="sign-layer border border-black/20" style="background-color: #4b5563; border-radius: ${r*scale}px; box-shadow: ${shadow}; transform: translateZ(${zPos}px) scale(0.9);">${isExp ? callout('Foam Tape') : ''}</div>`;
+            } else {
+                let hex = l.colorHex || '#ffffff';
+                if (l.type.includes('Black PVC')) hex = '#111827';
+                if (l.type.includes('Clear Acrylic')) hex = 'rgba(255,255,255,0.4)';
+                
+                let depth = 2;
+                if (l.type.includes('1/8') || l.type.includes('PVC') || l.type.includes('Acrylic')) depth = 4;
+                
+                const shadow = isExp ? makeEdge(hex, depth) : '0 1px 3px rgba(0,0,0,0.1)';
+                
+                html += `<div class="sign-layer border border-black/20" style="background-color: ${hex}; border-radius: ${r*scale}px; box-shadow: ${shadow}; transform: translateZ(${zPos}px);">${isExp ? callout(l.type) : ''}</div>`;
+                
+                // If this is the topmost layer AND it's not tactile, engrave the SVG into it
+                if (index === 0 && !layerStack.find(x => x.type === 'Tactile') && (hasPicto || hasText)) {
+                    html += `<div class="sign-layer" style="color: ${svgColorHex}; opacity: 0.8; transform: translateZ(${zPos + 1}px);">
+                        <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" fill="currentColor" style="overflow: visible;">${layout.svgContent}</svg>
+                    </div>`;
+                }
+            }
+            zPos -= 20; // Shift down for next layer
+        });
 
         container.innerHTML = html;
     }
-
-    function openModal(type) {
-        activeModal = type;
-        document.getElementById('modal-title').innerText = type === 'tactile' ? 'Select Tactile Applique' : 'Select Core Background';
-        document.getElementById('color-search').value = '';
-        document.getElementById('color-modal').classList.remove('hidden');
-        const activeClass = type === 'tactile' ? 'ring-purple-600' : 'ring-blue-600';
-        
-        SignOS_UI.buildColorGrid({
-            containerId: 'modal-grid', data: type === 'tactile' ? tactileColors : coreColors, type: 'rowmark', btnClass: 'w-10 h-10', activeRingClass: activeClass,
-            onSelect: (item) => {
-                if (type === 'tactile') { selectedTactile = item; document.getElementById('swatch-tactile').style.backgroundColor = item.Hex_Code; document.getElementById('label-tactile').innerText = item.Name; }
-                else { selectedCore = item; document.getElementById('swatch-core').style.backgroundColor = item.Hex_Code; document.getElementById('label-core').innerText = item.Name; }
-                closeModal(); runCalc();
-            }
-        });
-        const actItem = type === 'tactile' ? selectedTactile : selectedCore;
-        if(actItem) setTimeout(() => { const btn = document.querySelector(`#modal-grid button[data-code="${actItem.Code}"]`); if(btn) btn.classList.add('ring-2', 'ring-offset-1', activeClass); }, 50);
-    }
-    function closeModal() { document.getElementById('color-modal').classList.add('hidden'); }
 
     // --- DICTIONARY TRAY & SEARCH LOGIC ---
     function toggleGlossary() {
@@ -733,19 +796,15 @@
         
         const rawText = document.getElementById('sign-text').value;
         const lineCount = rawText ? rawText.split('\n').length : 0;
+        const r = parseFloat(document.getElementById('radius').value) || 0; 
+        const bev = document.getElementById('bevel').value;
 
         const inputs = {
             qty: parseFloat(document.getElementById('qty').value) || 1,
             w: parseFloat(document.getElementById('w').value) || 8,
             h: parseFloat(document.getElementById('h').value) || 8,
-            coreThick: document.getElementById('bld-core').value,
-            backer: document.getElementById('bld-backer').value,
-            radius: parseFloat(document.getElementById('radius').value) || 0,
-            bevel: document.getElementById('bevel').value,
-            mounting: document.getElementById('mounting').value,
-            hasTactile: document.getElementById('toggle-picto').checked || document.getElementById('toggle-text').checked,
-            hasBraille: document.getElementById('toggle-braille').checked,
-            brailleLines: document.getElementById('toggle-braille').checked ? lineCount : 0
+            layers: layerStack,
+            brailleLines: lineCount
         };
 
         try {
@@ -762,19 +821,20 @@
             document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
 
             // Populate Layer-by-Layer Job Description Generator
-            let tactStr = (inputs.hasTactile && selectedTactile) ? `1/32" ${selectedTactile.Name} Tactile` : `No Tactile`;
-            let brailleStr = inputs.hasBraille ? ` w/ Braille` : ``;
-            let coreStr = selectedCore ? `${inputs.coreThick}" ${selectedCore.Name} Core` : `${inputs.coreThick}" Core`;
-            let backerStr = inputs.backer !== 'None' ? ` on ${inputs.backer}` : ``;
-            let layerDesc = `${tactStr}${brailleStr} on ${coreStr}${backerStr}`.replace(/  +/g, ' ');
+            let layerStrs = layerStack.map(l => {
+                if (l.type === 'Tactile') return `1/32" ${l.colorName} Tactile` + (l.hasBraille ? ' w/ Braille' : '');
+                if (l.type.includes('Core')) return `${l.type.replace(' Core', '')} ${l.colorName} Core`;
+                return l.type;
+            });
+            
+            let layerDesc = layerStrs.length > 0 ? layerStrs.join(" on ") : "(No Layers Selected)";
 
             let fin = [];
-            if (inputs.bevel === 'Bevel') fin.push("Beveled Edges");
-            if (inputs.radius > 0) fin.push(`${inputs.radius}" Radius Corners`);
-            if (inputs.mounting !== 'None') fin.push(`Mounted with ${inputs.mounting}`);
-            let finDesc = fin.length > 0 ? fin.join(", ") : "Square cut edges, no hardware";
+            if (bev === 'Bevel') fin.push("Beveled Edges");
+            if (r > 0) fin.push(`${r}" Radius Corners`);
+            let finDesc = fin.length > 0 ? `\nFinishing: ${fin.join(", ")}.` : "";
 
-            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers: ${layerDesc}.\nFinishing: ${finDesc}.`;
+            document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers: ${layerDesc}.${finDesc}`;
 
             if (customSimData) {
                 lastSimResult = result;
@@ -793,7 +853,6 @@
             document.getElementById('btn-sandbox').classList.remove('hidden');
         }
 
-        // Apply loader correctly to the preview-wrapper container. 
         const previewWrap = document.getElementById('preview-wrapper');
         previewWrap.classList.remove('hidden');
         previewWrap.classList.add('flex');
@@ -824,14 +883,6 @@
                 Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: c.Cap_Hex
             }));
 
-            selectedCore = coreColors.find(c => c.Name.includes('Black')) || coreColors;
-            selectedTactile = tactileColors.find(c => c.Name.includes('White')) || tactileColors;
-
-            document.getElementById('swatch-core').style.backgroundColor = selectedCore.Hex_Code;
-            document.getElementById('label-core').innerText = selectedCore.Name;
-            document.getElementById('swatch-tactile').style.backgroundColor = selectedTactile.Hex_Code;
-            document.getElementById('label-tactile').innerText = selectedTactile.Name;
-
             const activeIcons = pictograms.filter(p => String(p.Is_Active).toUpperCase() === 'TRUE');
             if (activeIcons.length > 0) selectedIcon = activeIcons.find(p => p.Name.toLowerCase().includes('restroom') || p.Name.toLowerCase().includes('men') || p.Name.toLowerCase().includes('women')) || activeIcons;
             
@@ -843,9 +894,8 @@
             setTimeout(() => { if (selectedIcon) { const btn = document.querySelector(`#icon-grid button[data-code="${selectedIcon.Item_Code}"]`); if (btn) btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-500', 'border-transparent'); } }, 100);
             
             // Set Initial State
-            applyPreset('Layered_PVC');
+            applyPreset('Standard');
             
-            // Re-hide viewfinder so it starts collapsed
             previewWrap.classList.add('hidden');
             previewWrap.classList.remove('flex');
 
