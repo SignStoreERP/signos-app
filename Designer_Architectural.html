@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architectural Sign Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+    <script src="signos-core.js"></script>
+    <script src="signos-ui.js"></script>
+    <script src="signos-canvas.js"></script>
+    <script src="cost_architectural.js"></script>
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
+        .step-content { transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out; overflow: hidden; }
+        
+        /* 3D Viewfinder Base */
+        #preview-wrapper { perspective: 1200px; cursor: grab; }
+        #preview-wrapper:active { cursor: grabbing; }
+        #svg-preview-container { transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+        .isometric-view #svg-preview-container { transform: rotateX(60deg) rotateZ(-45deg); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10 overflow-x-hidden">
+
+<div class="w-full max-w-[1400px] mx-auto mt-6 px-4">
+    <!-- WRAPPER FIX: main-card is now strictly flex-col so the injected header sits on top -->
+    <div id="main-card" class="bg-white shadow-xl rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+        
+        <!-- INNER WRAPPER: Handles the two-column horizontal split -->
+        <div class="flex flex-col lg:flex-row min-h-[800px] w-full">
+            
+            <!-- LEFT COLUMN: WIZARD ACCORDION -->
+            <div class="w-full lg:w-5/12 border-r border-gray-200 bg-gray-50 flex flex-col relative z-20">
+                <div class="p-4 bg-gray-900 text-white shrink-0 shadow-md z-10 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-sm font-black tracking-widest uppercase">Configuration Wizard</h2>
+                        <span class="text-[9px] text-gray-400 tracking-widest uppercase block mt-0.5">Step-by-Step Architectural Build</span>
+                    </div>
+                    <button onclick="location.reload()" class="text-xs font-bold bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded transition uppercase tracking-widest">Reset</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-3" id="wizard-container">
+                    
+                    <!-- STEP 1: PURPOSE -->
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden wizard-step" data-step="1">
+                        <div class="p-3 bg-blue-50 border-b border-blue-100 cursor-pointer flex justify-between items-center" onclick="toggleStep(1)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black num-badge">1</div>
+                                <h3 class="text-xs font-black text-blue-900 uppercase tracking-widest title-text">Sign Purpose</h3>
+                            </div>
+                            <svg class="w-4 h-4 text-blue-500 transform transition-transform duration-200 chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div class="step-content max-h-[500px] p-4 bg-white">
+                            <div class="grid grid-cols-2 gap-2" id="purpose-btns">
+                                <button class="p-2 border border-blue-600 bg-blue-50 rounded text-[10px] font-black text-blue-800 uppercase text-left transition active-purpose">Restroom / Room ID</button>
+                                <button class="p-2 border border-gray-200 rounded text-[10px] font-bold text-gray-600 uppercase text-left hover:border-blue-400 transition">Directional / Wayfinding</button>
+                                <button class="p-2 border border-gray-200 rounded text-[10px] font-bold text-gray-600 uppercase text-left hover:border-blue-400 transition">Life Safety / Evac</button>
+                                <button class="p-2 border border-gray-200 rounded text-[10px] font-bold text-gray-600 uppercase text-left hover:border-blue-400 transition">Informational</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: STRUCTURAL CHASSIS -->
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden wizard-step opacity-50" data-step="2">
+                        <div class="p-3 bg-slate-50 border-b border-gray-100 cursor-pointer flex justify-between items-center" onclick="toggleStep(2)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-black num-badge">2</div>
+                                <h3 class="text-xs font-black text-gray-600 uppercase tracking-widest title-text">Structural Chassis</h3>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-200 chevron -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div class="step-content max-h-0 p-0 bg-white">
+                            <div class="space-y-3 p-4">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Mounting Hardware & Frames</label>
+                                <select id="chassis-select" onchange="buildState.chassis = this.value; runCalc();" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 shadow-inner">
+                                    <option value="Flush">Frameless: Flush Mount (VHB / Tape)</option>
+                                    <option value="Projected">Frameless: Projected (MBS Standoffs)</option>
+                                    <option value="Frame_Plastic">Framed: Plastic (Johnson Architect)</option>
+                                    <option value="Frame_Metal">Framed: Metal (Johnson Euro Series)</option>
+                                    <option value="Flag">Projecting: Flag Bracket</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: BASE PANEL & FINISHES -->
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden wizard-step opacity-50" data-step="3">
+                        <div class="p-3 bg-slate-50 border-b border-gray-100 cursor-pointer flex justify-between items-center" onclick="toggleStep(3)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-black num-badge">3</div>
+                                <h3 class="text-xs font-black text-gray-600 uppercase tracking-widest title-text">Base Panel & Finishes</h3>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-200 chevron -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div class="step-content max-h-0 p-0 bg-white">
+                            <div class="p-4">
+                                <div class="flex justify-between items-end mb-2">
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Base Substrate Color</label>
+                                    <span id="selected-color-label" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Select a Color</span>
+                                </div>
+                                <div id="rowmark-grid" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto custom-scroll p-3 border rounded-lg bg-gray-50 shadow-inner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: FUNCTIONAL ADD-ONS -->
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden wizard-step opacity-50" data-step="4">
+                        <div class="p-3 bg-slate-50 border-b border-gray-100 cursor-pointer flex justify-between items-center" onclick="toggleStep(4)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-black num-badge">4</div>
+                                <h3 class="text-xs font-black text-gray-600 uppercase tracking-widest title-text">Functional Add-Ons</h3>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-200 chevron -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div class="step-content max-h-0 p-0 bg-white">
+                            <div class="p-4 grid grid-cols-2 gap-2" id="addon-boxes">
+                                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="addon-window" class="w-3 h-3 text-blue-600 rounded"> Window Slot</label>
+                                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="addon-slider" class="w-3 h-3 text-blue-600 rounded"> Slider Plate</label>
+                                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="addon-magnetic" class="w-3 h-3 text-blue-600 rounded"> Magnetic Zone</label>
+                                <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:bg-gray-100 transition"><input type="checkbox" id="addon-accent" class="w-3 h-3 text-blue-600 rounded"> Accent Strips</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 5: TACTILE & TEXT -->
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden wizard-step opacity-50" data-step="5">
+                        <div class="p-3 bg-slate-50 border-b border-gray-100 cursor-pointer flex justify-between items-center" onclick="toggleStep(5)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-black num-badge">5</div>
+                                <h3 class="text-xs font-black text-gray-600 uppercase tracking-widest title-text">Tactile & Typography</h3>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-200 chevron -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div class="step-content max-h-0 p-0 bg-white">
+                            <div class="p-4 space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Primary Text</label>
+                                    <input type="text" id="sign-text" value="ROOM 101" oninput="updateText()" class="w-full border border-gray-300 p-2 rounded text-xs font-bold uppercase text-gray-800 focus:border-blue-500 outline-none shadow-inner">
+                                </div>
+                                <div class="flex gap-3">
+                                    <div class="flex-1">
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Font Style</label>
+                                        <select id="sign-font" onchange="updateText()" class="w-full border border-gray-300 p-2 rounded bg-white font-bold text-xs focus:border-blue-500 outline-none shadow-sm"></select>
+                                    </div>
+                                    <div class="flex items-end">
+                                        <label class="flex items-center gap-2 cursor-pointer bg-gray-50 border border-gray-200 px-3 py-2 rounded hover:bg-blue-50 transition shadow-sm h-[34px]">
+                                            <input type="checkbox" id="has-braille" checked onchange="updateText()" class="w-4 h-4 text-blue-600 rounded">
+                                            <span class="text-[10px] font-bold text-gray-700 uppercase">Include Braille</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: STICKY WYSIWYG & LEDGER -->
+            <div class="w-full lg:w-7/12 flex flex-col bg-white relative">
+                
+                <!-- STICKY 3D VIEWER -->
+                <div class="flex-1 flex flex-col bg-blue-50/50 relative overflow-hidden">
+                    <div class="absolute top-4 left-4 z-10 flex gap-2">
+                        <button class="bg-white/90 text-gray-700 border border-gray-300 px-3 py-1.5 rounded shadow-sm text-[9px] font-black uppercase tracking-widest transition backdrop-blur-sm">2D Flat</button>
+                        <button class="bg-blue-600 text-white border border-blue-700 px-3 py-1.5 rounded shadow-sm text-[9px] font-black uppercase tracking-widest transition shadow-md">3D Explode</button>
+                    </div>
+                    
+                    <div id="zoom-stage" class="w-full h-full min-h-[400px] flex items-center justify-center relative">
+                        <!-- Isometric Canvas Wrapper -->
+                        <div id="preview-wrapper" class="isometric-view w-full h-full flex items-center justify-center">
+                            <div id="svg-preview-container" class="w-[300px] h-[200px] border border-dashed border-blue-300 bg-blue-100/50 flex flex-col items-center justify-center rounded shadow-inner transition-all">
+                                <span class="text-xs font-black text-blue-400 uppercase tracking-widest">Awaiting Configuration</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STICKY FINANCIAL LEDGER (Bottom) -->
+                <div class="bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-20 shrink-0">
+                    <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-[10px] font-black text-gray-600 uppercase tracking-widest">Financial Ledger</h3>
+                        <div class="flex gap-4">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">Unit Cost: <span class="text-red-600 font-mono font-black">$0.00</span></span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">Margin: <span class="text-green-600 font-mono font-black">--%</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 flex justify-between items-end">
+                        <div class="flex gap-4 items-end">
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Qty</label>
+                                <input type="number" id="qty" value="1" min="1" class="w-20 border border-gray-300 p-2 rounded text-lg font-black text-center outline-none focus:border-blue-500 shadow-inner" oninput="buildState.qty = this.value; runCalc();">
+                            </div>
+                            <div class="pb-1">
+                                <span class="block text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">8" x 8" Architectural Sign</span>
+                                <span class="block text-[9px] font-bold text-gray-400 uppercase" id="ledger-desc">Includes: Base Panel, Tactile</span>
+                            </div>
+                        </div>
+                        
+                        <div class="text-right">
+                            <span class="block text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Total Retail Quote</span>
+                            <span class="text-4xl font-black text-blue-700 tracking-tight" id="ui-total">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div> <!-- End Inner Horizontal Wrapper -->
+    </div> <!-- End Main Card -->
+</div>
+
+<script>
+    let backendData = {}, coreColors = [], systemFonts = [];
+    
+    // THE MASTER STATE OBJECT (Tracks user choices through the wizard)
+    let buildState = {
+        qty: 1, w: 8, h: 8,
+        purpose: 'Restroom / Room ID',
+        chassis: 'Flush',
+        baseColor: null,
+        addons: { window: false, slider: false, magnetic: false, accent: false },
+        typography: { text: 'ROOM 101', font: 'sans-serif', hasBraille: true }
+    };
+
+    // --- ACCORDION WIZARD LOGIC ---
+    function toggleStep(stepNum) {
+        const steps = document.querySelectorAll('.wizard-step');
+        steps.forEach(step => {
+            const num = parseInt(step.getAttribute('data-step'));
+            const content = step.querySelector('.step-content');
+            const chevron = step.querySelector('.chevron');
+            const header = step.querySelector('.p-3');
+            const badge = step.querySelector('.num-badge');
+            const title = step.querySelector('.title-text');
+
+            if (num === stepNum) {
+                content.style.maxHeight = '500px';
+                content.classList.add('p-4'); content.classList.remove('p-0');
+                step.classList.remove('opacity-50');
+                header.classList.remove('bg-slate-50', 'border-gray-100');
+                header.classList.add('bg-blue-50', 'border-blue-100');
+                badge.className = "w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black num-badge";
+                title.className = "text-xs font-black text-blue-900 uppercase tracking-widest title-text";
+                chevron.classList.remove('-rotate-90'); chevron.classList.add('text-blue-500');
+            } else {
+                content.style.maxHeight = '0px';
+                content.classList.remove('p-4'); content.classList.add('p-0');
+                step.classList.add('opacity-50');
+                header.classList.remove('bg-blue-50', 'border-blue-100');
+                header.classList.add('bg-slate-50', 'border-gray-100');
+                badge.className = "w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-black num-badge";
+                title.className = "text-xs font-black text-gray-600 uppercase tracking-widest title-text";
+                chevron.classList.add('-rotate-90'); chevron.classList.remove('text-blue-500');
+            }
+        });
+    }
+
+    // --- STATE UPDATERS & INTERACTIVITY ---
+    function setPurpose(btn, purpose) {
+        document.querySelectorAll('#purpose-btns button').forEach(b => {
+            b.className = "p-2 border border-gray-200 rounded text-[10px] font-bold text-gray-600 uppercase text-left hover:border-blue-400 transition";
+        });
+        btn.className = "p-2 border border-blue-600 bg-blue-50 rounded text-[10px] font-black text-blue-800 uppercase text-left transition active-purpose";
+        buildState.purpose = purpose;
+        runCalc();
+    }
+
+    function setAddon(type, isChecked) {
+        buildState.addons[type] = isChecked;
+        runCalc();
+    }
+
+    function updateText() {
+        buildState.typography.text = document.getElementById('sign-text').value;
+        buildState.typography.font = document.getElementById('sign-font').value;
+        buildState.typography.hasBraille = document.getElementById('has-braille').checked;
+        runCalc();
+    }
+
+    // --- THE UPDATE LOOP ---
+    function runCalc() {
+        if(!backendData.Retail_Min_Order) return;
+
+        // Pass the tracked state to our math engine
+        try {
+            const result = calculateArchitectural(buildState, backendData);
+            
+            // Update Financial Ledger
+            document.querySelector('#ui-total').innerText = `$${(result.retail.grandTotal || 0).toFixed(2)}`;
+            
+            // Generate description
+            let activeAddons = Object.entries(buildState.addons).filter(([k,v]) => v).map(([k,v]) => k).join(', ');
+            document.getElementById('ledger-desc').innerText = `Includes: ${buildState.chassis}, Base Panel` + (activeAddons ? `, ${activeAddons}` : '');
+            
+            // Update SVG Preview Visuals
+            const cont = document.getElementById('svg-preview-container');
+            cont.className = "w-[300px] h-[200px] border border-blue-500 bg-white shadow-xl flex items-center justify-center flex-col p-4 text-center rounded relative";
+            
+            let bgHex = buildState.baseColor ? buildState.baseColor.Hex_Code : '#fff';
+            let fgHex = buildState.baseColor ? buildState.baseColor.Core_Hex : '#000';
+            
+            cont.style.backgroundColor = bgHex;
+            cont.style.color = fgHex;
+
+            cont.innerHTML = `
+                <span class="font-bold text-lg leading-none" style="font-family: '${buildState.typography.font}', sans-serif;">${buildState.typography.text}</span>
+                ${buildState.typography.hasBraille ? '<span class="text-[8px] tracking-[0.2em] font-mono mt-2 opacity-50">. .. . . ..</span>' : ''}
+                ${buildState.addons.window ? '<div class="absolute bottom-2 left-2 right-2 h-6 border border-dashed border-gray-400 bg-gray-100/50"></div>' : ''}
+            `;
+            
+        } catch(e) { console.error("Engine Error:", e); }
+    }
+
+    // --- API FETCH & INITIALIZATION ---
+    window.addEventListener('load', async () => {
+        // Safe check for Header Injection
+        if (typeof injectHeader === 'function') injectHeader("Architectural Sign Builder");
+        
+        // Init 3D Viewfinder
+        if(window.SignOS_UI && SignOS_UI.Camera3D) {
+            SignOS_UI.Camera3D.init('zoom-stage');
+            SignOS_UI.Camera3D.toggle(true);
+        }
+
+        // Attach Click Listeners to Purpose Buttons
+        const purposeBtns = document.querySelectorAll('#purpose-btns button');
+        purposeBtns.forEach(btn => {
+            btn.onclick = () => setPurpose(btn, btn.innerText);
+        });
+
+        // SAFELY Attach Click Listeners to Add-on Checkboxes
+        document.getElementById('addon-window').onchange = (e) => setAddon('window', e.target.checked);
+        document.getElementById('addon-slider').onchange = (e) => setAddon('slider', e.target.checked);
+        document.getElementById('addon-magnetic').onchange = (e) => setAddon('magnetic', e.target.checked);
+        document.getElementById('addon-accent').onchange = (e) => setAddon('accent', e.target.checked);
+
+        SignOS_UI.showLoader('preview-wrapper', 'Connecting to Hardware Matrices...');
+
+        try {
+            // Fetch core data AND dependent tables (Colors & Fonts)
+            const payload = await SignOS.fetchProductData('PROD_ADA_Signs', ['REF_Colors_Rowmark', 'REF_Fonts']);
+            backendData = payload.config;
+            
+            const rawRowmark = payload.tables['REF_Colors_Rowmark'] || [];
+            systemFonts = (payload.tables['REF_Fonts'] || []).filter(f => String(f.Is_Active).toUpperCase() === 'TRUE');
+            
+            // Format colors for the UI Grid
+            coreColors = rawRowmark.filter(r => r.Series && (r.Series.includes('Ultra-Mattes') || r.Series.includes('Mattes'))).map(c => ({
+                Code: c.Item_Code, Name: c.Cap_Color, Hex_Code: c.Cap_Hex, Core_Hex: c.Core_Hex
+            }));
+
+            // Load Custom Fonts to Browser
+            if(window.SignOS_Canvas) SignOS_Canvas.loadFonts(systemFonts);
+
+            // Populate the Color Grid
+            SignOS_UI.buildColorGrid({
+                containerId: 'rowmark-grid', 
+                data: coreColors, 
+                type: 'rowmark', 
+                onSelect: (item) => { 
+                    buildState.baseColor = item;
+                    document.getElementById('selected-color-label').innerText = item.Name || item.Cap_Color;
+                    runCalc(); 
+                } 
+            });
+
+            // Populate Typography Dropdown
+            const fontSelect = document.getElementById('sign-font');
+            systemFonts.forEach(f => {
+                fontSelect.innerHTML += `<option value="${f.CSS_Family}">${f.Font_Name}</option>`;
+            });
+
+            SignOS_UI.hideLoader('preview-wrapper');
+            
+            // Set initial state
+            setTimeout(() => {
+                const firstBtn = document.querySelector('#rowmark-grid button');
+                if(firstBtn) firstBtn.click();
+                toggleStep(1);
+            }, 100);
+
+        } catch(e) {
+            console.error("API Error:", e);
+            SignOS_UI.hideLoader('preview-wrapper', true);
+        }
+    });
+</script>
+</body>
+</html>
