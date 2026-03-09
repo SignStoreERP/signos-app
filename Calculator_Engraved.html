@@ -166,6 +166,13 @@
                     Launch Cost Sandbox
                 </button>
             </div>
+
+            <!-- THE MISSING COMPONENT FIXED: PRODUCTION TICKET DETAILS -->
+            <div class="bg-gray-50 p-4 border-t border-gray-200">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Production Ticket Details</label>
+                <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug shadow-inner custom-scroll" readonly></textarea>
+            </div>
+            
         </div>
     </div>
 
@@ -381,7 +388,6 @@
         if (layer.type === '1/32') {
             data = tactileColors;
         } else if (layer.type === '1/16' || layer.type === '1/8') {
-            // STRICT THICKNESS FILTERING: Falls back safely if the backend lacks thickness data
             let filtered = coreColors.filter(c => c.Thickness && String(c.Thickness).includes(layer.type));
             data = filtered.length > 0 ? filtered : coreColors; 
         } else if (layer.type === '3mm') {
@@ -446,7 +452,7 @@
             container.style.height = `${h * scale}px`;
 
             let visualStack = [];
-            if (lastSimResult && lastSimResult.retail.forcedBacker) {
+            if (lastSimResult && lastSimResult.retail && lastSimResult.retail.forcedBacker) {
                 visualStack.push({ role: 'Forced 3mm Backer', hex: '#000000', depth: 4, type: '3mm' });
             }
 
@@ -663,7 +669,6 @@
     function runCalc() {
         if(!backendData || (!backendData.Retail_Min_Order && !backendData.Retail_Min_Order_Etch)) return;
 
-        // FIXED: Explicitly pass the layers array to the math engine!
         const inputs = {
             qty: parseFloat(document.getElementById('qty').value) || 1,
             w: parseFloat(document.getElementById('w').value) || 8,
@@ -713,6 +718,8 @@
 
             let layerDesc = layerStrs.length > 0 ? layerStrs.join("\n   - ") : "(No Layers Selected)";
             let mountStr = inputs.mounting === 'Foam Tape' ? "Mounting: Foam Tape (VHB)" : "No Mounting Hardware";
+            
+            // THE INVISIBLE KNOT HAS BEEN UNTIED: This element absolutely exists now!
             document.getElementById('job-desc').value = `(x${inputs.qty}) ${inputs.w}" x ${inputs.h}" ADA Sign.\nLayers:\n   - ${layerDesc}.\n\n${mountStr}`;
 
             let sublineHtml = '';
@@ -726,7 +733,6 @@
 
             document.getElementById('backer-warn').classList.toggle('hidden', !ret.forcedBacker);
 
-            // FIXED: Render the ledger unconditionally so it populates even if Sandbox is closed!
             renderLedgerUI(result);
             if (customSimData) {
                 dimInactiveSandboxVars();
@@ -782,7 +788,6 @@
                 };
             });
 
-            // Ensure our default Clear values have the Thickness attribute so they can be filtered!
             if (!coreColors.find(c => c.Name.includes('Clear') && c.Thickness === '1/16"')) {
                 coreColors.push({ Code: '322-101', Name: 'Clear / White (1/16")', Hex_Code: '#e5e7eb', Core_Hex: '#ffffff', Thickness: '1/16"' });
             }
