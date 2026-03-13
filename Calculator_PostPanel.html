@@ -121,7 +121,7 @@
                                 <input type="checkbox" id="customSpacing" onchange="handleDimChange()" class="w-2 h-2"> Custom
                             </label>
                         </label>
-                        <input type="number" id="postSpacing" value="54" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="document.getElementById('customSpacing').checked=true; handleDimChange()">
+                        <input type="number" id="postSpacing" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="document.getElementById('customSpacing').checked=true; handleDimChange()">
                     </div>
                     <div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Clearance (in)</label><input type="number" id="clearance" value="0" min="0" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center bg-slate-100 text-slate-400 outline-none shadow-inner cursor-not-allowed" readonly title="Auto-calculated distance from ground to bottom of lowest panel"></div>
                 </div>
@@ -129,7 +129,7 @@
                 <div class="grid grid-cols-2 gap-3 pt-2">
                     <div>
                         <label class="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase mb-1">Max Height Above Grade</label>
-                        <input type="number" id="aboveGrade" value="72" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="handleDimChange()">
+                        <input type="number" id="aboveGrade" value="60" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="handleDimChange()">
                     </div>
                     <div>
                         <label class="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase mb-1">
@@ -249,10 +249,10 @@ var isXrayView = false;
 var isShowDims = false;
 var isPhysicsValidating = false;
 
-// Default Panel Array
+// Default Panel Array updated to Request (36x24, 1-sided, 063 Alum, Flush)
 var panels = [{ 
-    id: Date.now(), w: 60, h: 36, gap: 0, mountStyle: 'Flush', 
-    faceMat: '063 Alum', sides: 2, graphicMethod: 'PrintOnPaint', graphicColors: 1, isCNC: false 
+    id: Date.now(), w: 36, h: 24, gap: 0, mountStyle: 'Flush', 
+    faceMat: '063 Alum', sides: 1, graphicMethod: 'PrintOnPaint', graphicColors: 1, isCNC: false 
 }];
 
 if(document.getElementById('loader')) document.getElementById('loader').classList.add('hidden');
@@ -275,18 +275,20 @@ function renderPanels() {
     
     panels.forEach((p, i) => {
         const isOnly = panels.length === 1;
-        const isFlush = p.mountStyle === 'Flush';
+        const isMain = (i === 0);
+        // Only disable the width if it's a SECONDARY panel set to "Between" (locks to ID)
+        const lockWidth = (!isMain && p.mountStyle === 'Between');
         const hasColors = p.graphicMethod === 'CutOnPaint' || p.graphicMethod === 'PaintOnPaint';
         
         container.innerHTML += `
         <div class="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col overflow-hidden relative group">
             <div class="bg-slate-100 border-b border-slate-200 p-2 flex justify-between items-center">
-                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Panel ${i+1} ${i===0 ? '(Top)' : ''}</span>
+                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Panel ${i+1} ${isMain ? '(Main Panel)' : ''}</span>
                 ${!isOnly ? `<button onclick="removePanel(${p.id})" class="text-red-400 hover:text-red-600 px-2 py-0.5 rounded text-[10px] font-bold transition">Remove</button>` : '<div></div>'}
             </div>
             <div class="p-3 space-y-3">
                 <div class="grid grid-cols-12 gap-2">
-                    ${i > 0 ? `
+                    ${!isMain ? `
                     <div class="col-span-3">
                         <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">Gap Above (in)</label>
                         <input type="number" value="${p.gap}" step="1" min="0" oninput="updatePanel(${p.id}, 'gap', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner bg-slate-50">
@@ -300,7 +302,7 @@ function renderPanels() {
                     </div>
                     <div class="col-span-2">
                         <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">W (in)</label>
-                        <input type="number" value="${p.w}" step="1" min="12" onchange="updatePanel(${p.id}, 'w', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner ${!isFlush ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}" ${!isFlush ? 'disabled title="Locked to inside post spacing"' : ''}>
+                        <input type="number" value="${p.w}" step="1" min="12" onchange="updatePanel(${p.id}, 'w', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner ${lockWidth ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}" ${lockWidth ? 'disabled title="Locked to structural ID"' : ''}>
                     </div>
                     <div class="col-span-3">
                         <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">H (in)</label>
@@ -369,12 +371,12 @@ function addPanel() {
     let parent = panels[panels.length - 1];
     panels.push({ 
         id: Date.now(), 
-        w: parent ? parent.w : 60, 
-        h: parent ? parent.h : 24, 
+        w: parent ? parent.w : 36, 
+        h: parent ? parent.h : 12, 
         gap: 0, 
         mountStyle: parent ? parent.mountStyle : 'Flush', 
         faceMat: parent ? parent.faceMat : '063 Alum', 
-        sides: parent ? parent.sides : 2, 
+        sides: parent ? parent.sides : 1, 
         graphicMethod: parent ? parent.graphicMethod : 'PrintOnPaint', 
         graphicColors: parent ? parent.graphicColors : 1, 
         isCNC: parent ? parent.isCNC : false 
@@ -395,8 +397,8 @@ function updatePostDropdown() {
     let html = '';
 
     if (type === 'Aluminum') {
-        html += `<option value="2_1/8">2" Sq x 1/8" Wall</option>`;
-        html += `<option value="3_1/8" selected>3" Sq x 1/8" Wall</option>`;
+        html += `<option value="2_1/8" selected>2" Sq x 1/8" Wall</option>`;
+        html += `<option value="3_1/8">3" Sq x 1/8" Wall</option>`;
         html += `<option value="4_1/8">4" Sq x 1/8" Wall</option>`;
         html += `<option value="6_1/4">6" Sq x 1/4" Wall</option>`;
     } else {
@@ -514,7 +516,7 @@ function validatePhysics() {
 
     const frameMat = document.getElementById('frameMat').value;
     let frameSize = 2; 
-    if (frameMat.includes('_')) frameSize = parseFloat(frameMat.split('_')[1]) || 2;
+    if (frameMat.includes('_')) frameSize = parseFloat(frameMat.split('_')) || 2;
 
     panels.forEach(p => {
         if (p.mountStyle === 'Flush') {
@@ -553,9 +555,9 @@ function handleDimChange() {
     // --- AUTO POST SPACING LOGIC ---
     if (!isCustomSpacing && panels.length > 0) {
         const postProf = document.getElementById('postProfile').value;
-        const postSize = parseFloat(postProf.split('_')) || 3;
-        let mainPanel = panels;
-        let newID = 48;
+        const postSize = parseFloat(postProf.split('_')) || 2;
+        let mainPanel = panels; // Track off the primary (Top) panel
+        let newID = 32;
         
         if (mainPanel.mountStyle === 'Between') {
             newID = mainPanel.w;
@@ -570,6 +572,12 @@ function handleDimChange() {
     } else {
         document.getElementById('postSpacing').classList.remove('bg-blue-50', 'text-blue-800');
     }
+
+    // Force secondary "Between" panels to snap to the structural ID
+    const currentID = parseFloat(document.getElementById('postSpacing').value) || 32;
+    panels.forEach((p, idx) => {
+        if (idx > 0 && p.mountStyle === 'Between') p.w = currentID;
+    });
 
     let totalH = 0;
     panels.forEach((p, i) => { totalH += p.h + (i === 0 ? 0 : p.gap); });
@@ -662,6 +670,7 @@ function drawShopDrawings(geom) {
         let vHeight = sPh - (shareTop ? ft : ft*2);
         let vY = currY + (shareTop ? 0 : ft);
 
+        // Skip drawing outer vertical frames if flush mounted tightly to post OD
         if (!isFlushSealed) {
             fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
             fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
@@ -822,8 +831,9 @@ window.addEventListener('load', async () => {
         if(statusText) { statusText.innerText = "OFFLINE (LOCAL)"; statusText.className = "font-bold text-yellow-600"; }
     }
 
-    renderPanels(); 
+    // Set UI directly to the default requirements for startup
     updatePostDropdown();
+    renderPanels(); 
     handleDimChange();
 });
 </script>
