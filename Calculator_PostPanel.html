@@ -42,7 +42,6 @@
                 </div>
                 <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
             </div>
-            
             <div id="ledger-interactive-header" class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm mt-1"></div>
         </div>
 
@@ -103,15 +102,12 @@
 
             <!-- CHASSIS BUILDER -->
             <div class="p-6 pb-4 space-y-4 bg-gray-50">
+                <div id="collision-warn" class="hidden bg-yellow-100 text-yellow-800 border border-yellow-300 p-2 rounded text-[10px] font-bold shadow-sm flex items-center gap-2">
+                    <span class="text-sm">⚠️</span> Panel width auto-adjusted to prevent frame tubing collision with posts.
+                </div>
                 <div class="flex justify-between items-end mb-1">
                     <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest block">Structural Chassis</span>
                 </div>
-                
-                <div id="clip-warn" class="hidden mb-3 bg-red-50 text-red-700 text-[10px] font-bold px-3 py-2 rounded border border-red-200 shadow-sm flex items-center gap-2 animate-pulse">
-                    <span class="text-base">⚠️</span> 
-                    <span><b>Structural Collision Warning:</b> The panel width causes the internal frame tubing to physically clip through the posts. The width has been auto-snapped downwards to safely mount flush against the posts.</span>
-                </div>
-
                 <div class="grid grid-cols-4 gap-3">
                     <div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Fleet Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
                     <div class="col-span-2"><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1" title="Inside-to-Inside Spacing">Post Spacing (Inside - in)</label><input type="number" id="postSpacing" value="48" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner" oninput="handleDimChange()"></div>
@@ -143,7 +139,7 @@
                         </div>
                         <div class="col-span-2">
                             <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Size & Gauge</label>
-                            <select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updateFrameDropdown(); runCalc()">
+                            <select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updateFrameDropdown(); handleDimChange();">
                                 <!-- Dynamically Populated by JS -->
                             </select>
                         </div>
@@ -151,7 +147,7 @@
 
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Internal Frame Skeleton</label>
-                        <select id="frameMat" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="runCalc()">
+                        <select id="frameMat" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="handleDimChange();">
                             <!-- Populated dynamically to restrict impossible sizing -->
                         </select>
                     </div>
@@ -182,7 +178,7 @@
                 <!-- PRINT CONTROLS -->
                 <div class="flex gap-2 w-full mt-5">
                     <button onclick="printSandbox()" class="flex-1 bg-white border border-blue-300 hover:bg-blue-100 text-blue-800 font-bold py-2.5 rounded shadow-sm text-[10px] uppercase tracking-widest transition">
-                        Print Quote
+                        Print Quote & Cut List
                     </button>
                     <button id="btn-sandbox" onclick="toggleSandbox()" class="hidden flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black py-2.5 rounded shadow-md uppercase tracking-widest transition">
                         Launch Cost Sandbox
@@ -240,7 +236,6 @@ var dynamicKeys = [];
 var isXrayView = false;
 var isShowDims = false;
 
-// Default Panel Array
 var panels = [{ 
     id: Date.now(), w: 60, h: 36, gap: 0, mountStyle: 'Flush', 
     faceMat: '063 Alum', sides: 2, graphicMethod: 'PrintOnPaint', graphicColors: 1, isCNC: false 
@@ -291,7 +286,7 @@ function renderPanels() {
                     </div>
                     <div class="col-span-2">
                         <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">W (in)</label>
-                        <input type="number" id="panel-w-${p.id}" value="${p.w}" step="1" min="12" oninput="updatePanel(${p.id}, 'w', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner ${!isFlush ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}" ${!isFlush ? 'disabled title="Locked to inside post spacing"' : ''}>
+                        <input type="number" value="${p.w}" step="1" min="12" oninput="updatePanel(${p.id}, 'w', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner ${!isFlush ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}" ${!isFlush ? 'disabled title="Locked to inside post spacing"' : ''}>
                     </div>
                     <div class="col-span-3">
                         <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">H (in)</label>
@@ -345,7 +340,6 @@ function renderPanels() {
         </div>`;
     });
     updateFrameDropdown();
-    runCalc();
 }
 
 function updatePanel(id, field, val) {
@@ -359,16 +353,10 @@ function updatePanel(id, field, val) {
 function addPanel() {
     let parent = panels[panels.length - 1];
     panels.push({ 
-        id: Date.now(), 
-        w: parent ? parent.w : 60, 
-        h: parent ? parent.h : 24, 
-        gap: 0, 
-        mountStyle: parent ? parent.mountStyle : 'Flush', 
-        faceMat: parent ? parent.faceMat : '063 Alum', 
-        sides: parent ? parent.sides : 2, 
-        graphicMethod: parent ? parent.graphicMethod : 'PrintOnPaint', 
-        graphicColors: parent ? parent.graphicColors : 1, 
-        isCNC: parent ? parent.isCNC : false 
+        id: Date.now(), w: parent ? parent.w : 60, h: parent ? parent.h : 24, gap: 0, 
+        mountStyle: parent ? parent.mountStyle : 'Flush', faceMat: parent ? parent.faceMat : '063 Alum', 
+        sides: parent ? parent.sides : 2, graphicMethod: parent ? parent.graphicMethod : 'PrintOnPaint', 
+        graphicColors: parent ? parent.graphicColors : 1, isCNC: parent ? parent.isCNC : false 
     });
     renderPanels();
     handleDimChange();
@@ -446,7 +434,6 @@ function updateFrameDropdown() {
     ];
 
     angles = angles.filter(a => (a.s * maxSides) <= postSize);
-
     let hasFlush = panels.some(p => p.mountStyle === 'Flush');
     if (hasFlush) {
         alumTubes = alumTubes.filter(t => t.s === postSize);
@@ -493,13 +480,12 @@ function updateFrameDropdown() {
 
 function handleDimChange() {
     let isBelowAuto = document.getElementById('autoBelow').checked;
-
     let totalH = 0;
     panels.forEach((p, i) => { totalH += p.h + (i === 0 ? 0 : p.gap); });
 
     let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
 
-    // Safety Constraint: A sign cannot physically float below ground
+    // Safety Constraint
     if (above < totalH) {
         above = totalH;
         document.getElementById('aboveGrade').value = above.toFixed(1);
@@ -514,6 +500,39 @@ function handleDimChange() {
         document.getElementById('belowGrade').value = calcBelow.toFixed(1);
     }
 
+    // --- COLLISION SNAPPING LOGIC ---
+    let frameMatEl = document.getElementById('frameMat');
+    let fThick = frameMatEl && frameMatEl.value ? (parseFloat(frameMatEl.value.split('_')[1]) || 2) : 2;
+    let postProfileEl = document.getElementById('postProfile');
+    let postSize = postProfileEl && postProfileEl.value ? (parseFloat(postProfileEl.value.split('_')) || 3) : 3;
+    let postID = parseFloat(document.getElementById('postSpacing').value) || 48;
+    let postOD = postID + (postSize * 2);
+    let didSnap = false;
+
+    panels.forEach(p => {
+        if (p.mountStyle === 'Flush') {
+            // Cannot be narrower than OD, but not wide enough to fit frame tubes
+            if (p.w > postOD && p.w < postOD + (fThick * 2)) { 
+                p.w = postOD + (fThick * 2); 
+                didSnap = true; 
+            }
+            if (p.w < postOD) { 
+                p.w = postOD; 
+                didSnap = true; 
+            }
+        }
+    });
+
+    if (didSnap) {
+        renderPanels(); 
+        let warn = document.getElementById('collision-warn');
+        if (warn) {
+            warn.classList.remove('hidden');
+            clearTimeout(warn.timeoutId);
+            warn.timeoutId = setTimeout(() => warn.classList.add('hidden'), 4000);
+        }
+    }
+    
     runCalc();
 }
 
@@ -530,15 +549,13 @@ function drawShopDrawings(geom) {
     const ow = geom.overallW;
     const maxH = 150; 
     const maxW = 200; 
-    
     const scale = Math.min(maxW / ow, maxH / th);
     
     const sTh = th * scale;
     const sOw = ow * scale;
+    const sUnder = geom.under * scale;
     const sClr = geom.clearance * scale;
     const sPostD = geom.post * scale;
-    const sUnder = geom.under * scale;
-    const sHoleD = geom.holeD * scale;
 
     let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
     let p2X = p1X + sPostD + (geom.postSpacing * scale);
@@ -546,104 +563,59 @@ function drawShopDrawings(geom) {
     // Dimension Helpers
     const dimColor = "#e2e8f0";
     const fSize = 6;
-    const drawHDim = (x1, x2, y, label) => {
-        return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x1}" y1="${y-2}" x2="${x1}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x2}" y1="${y-2}" x2="${x2}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${(x1+x2)/2}" y="${y-3}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="middle" font-weight="bold">${label}</text>`;
-    };
-    const drawVDim = (x, y1, y2, label, align="end") => {
-        let textX = align === "end" ? x - 3 : x + 3;
-        return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y1}" x2="${x+2}" y2="${y1}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y2}" x2="${x+2}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${textX}" y="${(y1+y2)/2 + 2}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="${align}" font-weight="bold">${label}</text>`;
-    };
+    const drawHDim = (x1, x2, y, label) => `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x1}" y1="${y-2}" x2="${x1}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x2}" y1="${y-2}" x2="${x2}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${(x1+x2)/2}" y="${y-3}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="middle" font-weight="bold">${label}</text>`;
+    const drawVDim = (x, y1, y2, label, align="end") => `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y1}" x2="${x+2}" y2="${y1}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y2}" x2="${x+2}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${align==="end"?x-3:x+3}" y="${(y1+y2)/2 + 2}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="${align}" font-weight="bold">${label}</text>`;
 
     // DRAW FRONT
     let fSVG = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sOw + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
     fSVG += `<rect x="0" y="${sTh - sUnder}" width="${sOw}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
     fSVG += `<line x1="-5" y1="${sTh - sUnder}" x2="${sOw + 5}" y2="${sTh - sUnder}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,2"/>`;
 
-    // Footers
-    const footerH = sUnder * 0.66;
-    const footerY = sTh - footerH;
-    fSVG += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-    fSVG += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+    if (geom.hasConcrete) {
+        let sHoleD = geom.holeD * scale;
+        geom.partsData.forEach(p => {
+           if(p.name.includes('Post')) {
+               p.rects.forEach(r => {
+                   let footerH = sUnder * 0.66;
+                   let footerY = sTh - footerH;
+                   let footerX = (r.x * scale) - (sHoleD/2 - sPostD/2);
+                   fSVG += `<rect x="${footerX}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+               });
+           }
+        });
+    }
 
-    // Posts
-    const postCutThick = geom.frameThick * scale;
-    const postDrawH = sTh - postCutThick;
-    fSVG += `<rect x="${p1X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
-    fSVG += `<rect x="${p2X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
-    
-    // Panels
-    let currY = sTh - sUnder - sClr - (geom.totalPanelH * scale);
-    
-    geom.panels.forEach((p, i) => {
-        let pW_real = p.mountStyle === 'Between' ? geom.postSpacing : p.w;
-        let sPw = pW_real * scale;
-        let sPh = p.h * scale;
-        let panelX = p.mountStyle === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
+    // Render Exact Internal Parts
+    geom.partsData.forEach(part => {
+        if (part.isFace) return;
+        let fill = part.name.includes('Post') ? "#cbd5e1" : "#94a3b8";
+        let stroke = part.name.includes('Post') ? "#475569" : "none";
 
-        if (i > 0) currY += (p.gap * scale);
-
-        // ALWAYS draw frames (X-ray simply lowers the opacity of the face)
-        const ft = geom.frameThick * scale;
-        let shareTop = (i > 0 && p.gap === 0 && p.mountStyle === geom.panels[i-1].mountStyle);
-        
-        let overhangReal = (pW_real - geom.postSpacing - (2 * geom.post)) / 2;
-        let sOverhang = overhangReal * scale;
-
-        if (p.mountStyle === 'Flush') {
-            if (overhangReal === 0 && geom.frameThick === geom.post) {
-                // Post Acts as Vertical
-                if (!shareTop) fSVG += `<rect x="${p1X + sPostD}" y="${currY}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`;
-                fSVG += `<rect x="${p1X + sPostD}" y="${currY + sPh - ft}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`;
-            } else {
-                // Normal flush frame logic
-                if (!shareTop) fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`;
-                
-                let vHeight = sPh - (shareTop ? ft : ft*2);
-                let vY = currY + (shareTop ? 0 : ft);
-                fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
-                fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
-
-                if (overhangReal === 0) {
-                    fSVG += `<rect x="${p1X + sPostD}" y="${currY + sPh - ft}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`;
-                } else {
-                    fSVG += `<rect x="${panelX}" y="${currY + sPh - ft}" width="${sOverhang}" height="${ft}" fill="#94a3b8"/>`; // Left Wing
-                    fSVG += `<rect x="${p1X + sPostD}" y="${currY + sPh - ft}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`; // Center
-                    fSVG += `<rect x="${p2X}" y="${currY + sPh - ft}" width="${sOverhang}" height="${ft}" fill="#94a3b8"/>`; // Right Wing
-                }
+        part.rects.forEach(r => {
+            fSVG += `<rect x="${r.x * scale}" y="${r.y * scale}" width="${r.w * scale}" height="${r.h * scale}" fill="${fill}" stroke="${stroke}"/>`;
+            // Visual Callout (Only on X-Ray or Dims mode)
+            if (isShowDims || isXrayView) {
+                let cx = (r.x + r.w/2) * scale;
+                let cy = (r.y + r.h/2) * scale;
+                fSVG += `<circle cx="${cx}" cy="${cy}" r="3" fill="#1e293b" stroke="#ffffff" stroke-width="0.5"/>`;
+                fSVG += `<text x="${cx}" y="${cy+1}" fill="#ffffff" font-size="3" text-anchor="middle" font-family="sans-serif" font-weight="bold">${part.id}</text>`;
             }
-        } else {
-            // Between posts
-            if (!shareTop) fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`;
-            fSVG += `<rect x="${panelX}" y="${currY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`;
-            
-            let vHeight = sPh - (shareTop ? ft : ft*2);
-            let vY = currY + (shareTop ? 0 : ft);
-            fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
-            fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
-        }
+        });
+    });
 
-        // Distributed Internal Bracing
-        let vB = p.vBraces || 0;
-        let hB = p.hBraces || 0;
-        let vY = currY + (shareTop ? 0 : ft);
-        let vHeight = sPh - (shareTop ? ft : ft*2);
-        
-        if (vB > 0) {
-            const spc = (sPw - ft*2) / (vB + 1);
-            for (let b = 1; b <= vB; b++) { fSVG += `<rect x="${panelX + ft + (spc * b) - ft/2}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`; }
-        }
-        if (hB > 0) {
-            let braceW = p.mountStyle === 'Flush' ? sPw : (geom.postSpacing * scale);
-            let braceX = p.mountStyle === 'Flush' ? panelX : (p1X + sPostD);
-            const spc = (sPh - ft*2) / (hB + 1);
-            for (let b = 1; b <= hB; b++) { fSVG += `<rect x="${braceX}" y="${currY + ft + (spc * b) - ft/2}" width="${braceW}" height="${ft}" fill="#94a3b8"/>`; }
-        }
-
-        // Draw Substrate Face AFTER the frame so it covers it.
-        let faceOpacity = isXrayView ? 0.25 : (p.mountStyle === 'Between' ? 0.8 : 0.95);
-        fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
-        
-        currY += sPh;
+    // Render Face Panels On Top
+    geom.partsData.forEach(part => {
+        if (!part.isFace) return;
+        let faceOpacity = isXrayView ? 0.25 : 0.95;
+        part.rects.forEach(r => {
+            fSVG += `<rect x="${r.x * scale}" y="${r.y * scale}" width="${r.w * scale}" height="${r.h * scale}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
+            if (isShowDims && !isXrayView) {
+                let cx = (r.x + r.w/2) * scale;
+                let cy = (r.y + r.h/2) * scale;
+                fSVG += `<circle cx="${cx}" cy="${cy}" r="4" fill="#2563eb" stroke="#ffffff" stroke-width="0.5"/>`;
+                fSVG += `<text x="${cx}" y="${cy+1.5}" fill="#ffffff" font-size="4" text-anchor="middle" font-family="sans-serif" font-weight="bold">${part.id}</text>`;
+            }
+        });
     });
 
     if (isShowDims) {
@@ -657,7 +629,7 @@ function drawShopDrawings(geom) {
     fSVG += `</svg>`;
     fContainer.innerHTML = fSVG;
 
-    // DRAW SIDE
+    // DRAW SIDE CROSS-SECTION
     const sideW = Math.max(geom.post + 4, 20); 
     const visFaceThick = 2;
     const sSideW = sideW * scale;
@@ -665,11 +637,21 @@ function drawShopDrawings(geom) {
 
     let sSVG = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sSideW + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
     sSVG += `<rect x="0" y="${sTh - sUnder}" width="${sSideW}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
-    sSVG += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-    sSVG += `<rect x="${px}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    sSVG += `<line x1="-5" y1="${sTh - sUnder}" x2="${sSideW + 5}" y2="${sTh - sUnder}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+    
+    if(geom.hasConcrete) {
+        let footerH = sUnder * 0.66;
+        let footerY = sTh - footerH;
+        let sHoleD = geom.holeD * scale;
+        sSVG += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+    }
+
+    let postCutThick = geom.frameThick * scale;
+    let postDrawH = sTh - (geom.mountStyle === 'Flush' ? postCutThick : 0);
+    sSVG += `<rect x="${px}" y="${sTh - postDrawH}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
     let sy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
-    geom.panels.forEach((p, i) => {
+    inputs.panels.forEach((p, i) => {
         let sPh = p.h * scale;
         if (i > 0) sy += (p.gap * scale);
         
@@ -684,13 +666,6 @@ function drawShopDrawings(geom) {
 
     if (isShowDims) {
         sSVG += drawHDim(px, px + sPostD, -8, geom.post + '"');
-        let dy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
-        geom.panels.forEach((p, i) => {
-            let sPh = p.h * scale;
-            if (i > 0) dy += (p.gap * scale);
-            sSVG += drawVDim(sSideW + 8, dy, dy + sPh, p.h + '"', "start");
-            dy += sPh;
-        });
     }
 
     sSVG += `</svg>`;
@@ -710,6 +685,7 @@ function runCalc() {
         postType: document.getElementById('postType').value,
         postProfile: document.getElementById('postProfile').value,
         frameMat: document.getElementById('frameMat').value,
+        hasConcrete: true,
         panels: panels
     };
 
@@ -742,7 +718,7 @@ function runCalc() {
         const postTxt = document.getElementById('postProfile').options[document.getElementById('postProfile').selectedIndex].text;
         const frameTxt = document.getElementById('frameMat').options[document.getElementById('frameMat').selectedIndex].text;
         
-        let panelDesc = result.geom.panels.map((p, i) => {
+        let panelDesc = panels.map((p, i) => {
             let pW_real = p.mountStyle === 'Between' ? inputs.postSpacing : p.w;
             let mTxt = p.mountStyle === 'Between' ? 'Between Posts' : 'Flush Mount';
             let sTxt = p.sides === 2 ? 'DS' : 'SS';
@@ -751,20 +727,7 @@ function runCalc() {
 
         document.getElementById('job-desc').value = `(x${inputs.qty}) Multi-Panel Architectural Monument.\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\nPanels:\n${panelDesc}`;
 
-        if(result.geom) {
-            drawShopDrawings(result.geom);
-            
-            // Toggle Clipping Warning & Auto-Snap inputs based on engine correction
-            if (result.geom.hasClipping) {
-                document.getElementById('clip-warn').classList.remove('hidden');
-                result.geom.panels.forEach(p => {
-                    let el = document.getElementById(`panel-w-${p.id}`);
-                    if(el) el.value = p.w;
-                });
-            } else {
-                document.getElementById('clip-warn').classList.add('hidden');
-            }
-        }
+        if(result.geom) drawShopDrawings(result.geom);
 
         if (customSimData) {
             buildSandboxInputs();
@@ -808,9 +771,7 @@ window.addEventListener('load', async () => {
 
     renderPanels(); 
     updatePostDropdown();
-    
-    // FORCE INITIAL CLEARANCE MATH
-    handleDimChange();
+    handleDimChange(); // Initial Math Force
 });
 </script>
 </body>
