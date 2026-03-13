@@ -20,10 +20,10 @@ function calculatePostPanel(inputs, data) {
 
     const profileParts = inputs.postProfile.split('_');
     const postSizeInches = parseFloat(profileParts) || 3;
-    const postWall = profileParts[1] || '1/8"';
+    const postWall = profileParts || '1/8"';
 
     const frameParts = inputs.frameMat.split('_');
-    const fThick = parseFloat(frameParts[1]) || 2; 
+    const fThick = parseFloat(frameParts) || 2; 
 
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
     const riskFactor = parseFloat(data.Factor_Risk || 1.05);
@@ -126,7 +126,7 @@ function calculatePostPanel(inputs, data) {
     
     let frameRaw = totalFrameLF * frameCostLF;
     let frameTotal = frameRaw * wastePct;
-    L(`Internal Frame (${inputs.frameMat.split('_')[1]})`, frameTotal, `${totalFrameLF.toFixed(1)} LF * $${frameCostLF.toFixed(2)}/LF [${V(frameKey)}] * ${wastePct} Waste`, 'posts', 'struct_mat', { waste: frameTotal - frameRaw });
+    L(`Internal Frame (${inputs.frameMat.split('_')})`, frameTotal, `${totalFrameLF.toFixed(1)} LF * $${frameCostLF.toFixed(2)}/LF [${V(frameKey)}] * ${wastePct} Waste`, 'posts', 'struct_mat', { waste: frameTotal - frameRaw });
 
     const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
     let gatherMins = parseFloat(data.Time_Gather_Mats || 10) * inputs.qty;
