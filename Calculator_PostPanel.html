@@ -42,6 +42,7 @@
                 </div>
                 <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
             </div>
+            
             <div id="ledger-interactive-header" class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm mt-1"></div>
         </div>
 
@@ -59,6 +60,12 @@
 
     <!-- CENTER: MAIN CALCULATOR ISLAND -->
     <div class="flex flex-col gap-4 w-full max-w-lg shrink-0 z-20">
+        
+        <div id="clipping-warn" class="hidden bg-red-50 text-red-700 text-[10px] font-bold px-3 py-2 rounded-lg border border-red-200 shadow-sm flex items-center gap-2">
+            <span class="text-lg leading-none">⚠️</span>
+            <span><b>Physics Collision Avoided:</b> Your panel width intercepted the post structure. Auto-snapped to the nearest valid dimension.</span>
+        </div>
+
         <div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
             <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
             
@@ -102,9 +109,6 @@
 
             <!-- CHASSIS BUILDER -->
             <div class="p-6 pb-4 space-y-4 bg-gray-50">
-                <div id="collision-warn" class="hidden bg-yellow-100 text-yellow-800 border border-yellow-300 p-2 rounded text-[10px] font-bold shadow-sm flex items-center gap-2">
-                    <span class="text-sm">⚠️</span> Panel width auto-adjusted to prevent frame tubing collision with posts.
-                </div>
                 <div class="flex justify-between items-end mb-1">
                     <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest block">Structural Chassis</span>
                 </div>
@@ -139,7 +143,7 @@
                         </div>
                         <div class="col-span-2">
                             <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Size & Gauge</label>
-                            <select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updateFrameDropdown(); handleDimChange();">
+                            <select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updateFrameDropdown(); runCalc()">
                                 <!-- Dynamically Populated by JS -->
                             </select>
                         </div>
@@ -147,7 +151,7 @@
 
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Internal Frame Skeleton</label>
-                        <select id="frameMat" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="handleDimChange();">
+                        <select id="frameMat" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="runCalc()">
                             <!-- Populated dynamically to restrict impossible sizing -->
                         </select>
                     </div>
@@ -178,7 +182,7 @@
                 <!-- PRINT CONTROLS -->
                 <div class="flex gap-2 w-full mt-5">
                     <button onclick="printSandbox()" class="flex-1 bg-white border border-blue-300 hover:bg-blue-100 text-blue-800 font-bold py-2.5 rounded shadow-sm text-[10px] uppercase tracking-widest transition">
-                        Print Quote & Cut List
+                        Print Quote
                     </button>
                     <button id="btn-sandbox" onclick="toggleSandbox()" class="hidden flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black py-2.5 rounded shadow-md uppercase tracking-widest transition">
                         Launch Cost Sandbox
@@ -189,7 +193,7 @@
 
             <div class="bg-gray-50 p-4 border-t border-gray-200">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-                <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug shadow-inner custom-scroll" readonly></textarea>
+                <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-32 text-gray-700 font-mono outline-none leading-snug shadow-inner custom-scroll" readonly></textarea>
             </div>
         </div>
     </div>
@@ -235,7 +239,9 @@ var lastSimResult = null;
 var dynamicKeys = [];
 var isXrayView = false;
 var isShowDims = false;
+var isPhysicsValidating = false;
 
+// Default Panel Array
 var panels = [{ 
     id: Date.now(), w: 60, h: 36, gap: 0, mountStyle: 'Flush', 
     faceMat: '063 Alum', sides: 2, graphicMethod: 'PrintOnPaint', graphicColors: 1, isCNC: false 
@@ -286,11 +292,11 @@ function renderPanels() {
                     </div>
                     <div class="col-span-2">
                         <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">W (in)</label>
-                        <input type="number" value="${p.w}" step="1" min="12" oninput="updatePanel(${p.id}, 'w', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner ${!isFlush ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}" ${!isFlush ? 'disabled title="Locked to inside post spacing"' : ''}>
+                        <input type="number" value="${p.w}" step="1" min="12" onchange="updatePanel(${p.id}, 'w', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner ${!isFlush ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}" ${!isFlush ? 'disabled title="Locked to inside post spacing"' : ''}>
                     </div>
                     <div class="col-span-3">
                         <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">H (in)</label>
-                        <input type="number" value="${p.h}" step="1" min="6" oninput="updatePanel(${p.id}, 'h', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner bg-white">
+                        <input type="number" value="${p.h}" step="1" min="6" onchange="updatePanel(${p.id}, 'h', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner bg-white">
                     </div>
                 </div>
 
@@ -340,6 +346,7 @@ function renderPanels() {
         </div>`;
     });
     updateFrameDropdown();
+    runCalc();
 }
 
 function updatePanel(id, field, val) {
@@ -353,10 +360,16 @@ function updatePanel(id, field, val) {
 function addPanel() {
     let parent = panels[panels.length - 1];
     panels.push({ 
-        id: Date.now(), w: parent ? parent.w : 60, h: parent ? parent.h : 24, gap: 0, 
-        mountStyle: parent ? parent.mountStyle : 'Flush', faceMat: parent ? parent.faceMat : '063 Alum', 
-        sides: parent ? parent.sides : 2, graphicMethod: parent ? parent.graphicMethod : 'PrintOnPaint', 
-        graphicColors: parent ? parent.graphicColors : 1, isCNC: parent ? parent.isCNC : false 
+        id: Date.now(), 
+        w: parent ? parent.w : 60, 
+        h: parent ? parent.h : 24, 
+        gap: 0, 
+        mountStyle: parent ? parent.mountStyle : 'Flush', 
+        faceMat: parent ? parent.faceMat : '063 Alum', 
+        sides: parent ? parent.sides : 2, 
+        graphicMethod: parent ? parent.graphicMethod : 'PrintOnPaint', 
+        graphicColors: parent ? parent.graphicColors : 1, 
+        isCNC: parent ? parent.isCNC : false 
     });
     renderPanels();
     handleDimChange();
@@ -434,6 +447,7 @@ function updateFrameDropdown() {
     ];
 
     angles = angles.filter(a => (a.s * maxSides) <= postSize);
+
     let hasFlush = panels.some(p => p.mountStyle === 'Flush');
     if (hasFlush) {
         alumTubes = alumTubes.filter(t => t.s === postSize);
@@ -478,14 +492,59 @@ function updateFrameDropdown() {
     }
 }
 
+// PHYSICS COLLISION DETECTOR (SNAPPING)
+function validatePhysics() {
+    if (isPhysicsValidating) return false;
+    isPhysicsValidating = true;
+    let didSnap = false;
+
+    const postProf = document.getElementById('postProfile').value;
+    const postSize = parseFloat(postProf.split('_')) || 3;
+    const postSpacing = parseFloat(document.getElementById('postSpacing').value) || 48;
+    const OD = postSpacing + (postSize * 2);
+
+    const frameMat = document.getElementById('frameMat').value;
+    let frameSize = 2; 
+    if (frameMat.includes('_')) frameSize = parseFloat(frameMat.split('_')[1]) || 2;
+
+    panels.forEach(p => {
+        if (p.mountStyle === 'Flush') {
+            if (p.w < OD) {
+                p.w = OD;
+                didSnap = true;
+            } else {
+                const overhang = (p.w - OD) / 2;
+                if (p.w !== OD && overhang > 0 && overhang < frameSize) {
+                    const snapDown = OD;
+                    const snapUp = OD + (frameSize * 2);
+                    p.w = Math.abs(p.w - snapDown) <= Math.abs(p.w - snapUp) ? snapDown : snapUp;
+                    didSnap = true;
+                }
+            }
+        }
+    });
+
+    if (didSnap) {
+        const warn = document.getElementById('clipping-warn');
+        if (warn) {
+            warn.classList.remove('hidden');
+            clearTimeout(warn.timeoutId);
+            warn.timeoutId = setTimeout(() => warn.classList.add('hidden'), 6000);
+        }
+        renderPanels(); 
+    }
+    isPhysicsValidating = false;
+    return didSnap;
+}
+
 function handleDimChange() {
     let isBelowAuto = document.getElementById('autoBelow').checked;
+
     let totalH = 0;
     panels.forEach((p, i) => { totalH += p.h + (i === 0 ? 0 : p.gap); });
 
     let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
 
-    // Safety Constraint
     if (above < totalH) {
         above = totalH;
         document.getElementById('aboveGrade').value = above.toFixed(1);
@@ -500,39 +559,6 @@ function handleDimChange() {
         document.getElementById('belowGrade').value = calcBelow.toFixed(1);
     }
 
-    // --- COLLISION SNAPPING LOGIC ---
-    let frameMatEl = document.getElementById('frameMat');
-    let fThick = frameMatEl && frameMatEl.value ? (parseFloat(frameMatEl.value.split('_')[1]) || 2) : 2;
-    let postProfileEl = document.getElementById('postProfile');
-    let postSize = postProfileEl && postProfileEl.value ? (parseFloat(postProfileEl.value.split('_')) || 3) : 3;
-    let postID = parseFloat(document.getElementById('postSpacing').value) || 48;
-    let postOD = postID + (postSize * 2);
-    let didSnap = false;
-
-    panels.forEach(p => {
-        if (p.mountStyle === 'Flush') {
-            // Cannot be narrower than OD, but not wide enough to fit frame tubes
-            if (p.w > postOD && p.w < postOD + (fThick * 2)) { 
-                p.w = postOD + (fThick * 2); 
-                didSnap = true; 
-            }
-            if (p.w < postOD) { 
-                p.w = postOD; 
-                didSnap = true; 
-            }
-        }
-    });
-
-    if (didSnap) {
-        renderPanels(); 
-        let warn = document.getElementById('collision-warn');
-        if (warn) {
-            warn.classList.remove('hidden');
-            clearTimeout(warn.timeoutId);
-            warn.timeoutId = setTimeout(() => warn.classList.add('hidden'), 4000);
-        }
-    }
-    
     runCalc();
 }
 
@@ -549,73 +575,72 @@ function drawShopDrawings(geom) {
     const ow = geom.overallW;
     const maxH = 150; 
     const maxW = 200; 
+    
     const scale = Math.min(maxW / ow, maxH / th);
     
     const sTh = th * scale;
     const sOw = ow * scale;
-    const sUnder = geom.under * scale;
     const sClr = geom.clearance * scale;
     const sPostD = geom.post * scale;
+    const sUnder = geom.under * scale;
+    const sHoleD = geom.holeD * scale;
 
     let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
     let p2X = p1X + sPostD + (geom.postSpacing * scale);
 
-    // Dimension Helpers
     const dimColor = "#e2e8f0";
     const fSize = 6;
-    const drawHDim = (x1, x2, y, label) => `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x1}" y1="${y-2}" x2="${x1}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x2}" y1="${y-2}" x2="${x2}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${(x1+x2)/2}" y="${y-3}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="middle" font-weight="bold">${label}</text>`;
-    const drawVDim = (x, y1, y2, label, align="end") => `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y1}" x2="${x+2}" y2="${y1}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y2}" x2="${x+2}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${align==="end"?x-3:x+3}" y="${(y1+y2)/2 + 2}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="${align}" font-weight="bold">${label}</text>`;
+    const drawHDim = (x1, x2, y, label) => { return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x1}" y1="${y-2}" x2="${x1}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x2}" y1="${y-2}" x2="${x2}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${(x1+x2)/2}" y="${y-3}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="middle" font-weight="bold">${label}</text>`; };
+    const drawVDim = (x, y1, y2, label, align="end") => { let textX = align === "end" ? x - 3 : x + 3; return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y1}" x2="${x+2}" y2="${y1}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y2}" x2="${x+2}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${textX}" y="${(y1+y2)/2 + 2}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="${align}" font-weight="bold">${label}</text>`; };
 
-    // DRAW FRONT
     let fSVG = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sOw + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
     fSVG += `<rect x="0" y="${sTh - sUnder}" width="${sOw}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
     fSVG += `<line x1="-5" y1="${sTh - sUnder}" x2="${sOw + 5}" y2="${sTh - sUnder}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,2"/>`;
 
-    if (geom.hasConcrete) {
-        let sHoleD = geom.holeD * scale;
-        geom.partsData.forEach(p => {
-           if(p.name.includes('Post')) {
-               p.rects.forEach(r => {
-                   let footerH = sUnder * 0.66;
-                   let footerY = sTh - footerH;
-                   let footerX = (r.x * scale) - (sHoleD/2 - sPostD/2);
-                   fSVG += `<rect x="${footerX}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-               });
-           }
-        });
-    }
+    const footerH = sUnder * 0.66;
+    const footerY = sTh - footerH;
+    fSVG += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+    fSVG += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
 
-    // Render Exact Internal Parts
-    geom.partsData.forEach(part => {
-        if (part.isFace) return;
-        let fill = part.name.includes('Post') ? "#cbd5e1" : "#94a3b8";
-        let stroke = part.name.includes('Post') ? "#475569" : "none";
+    const postCutThick = geom.frameThick * scale;
+    const postDrawH = sTh - postCutThick;
+    fSVG += `<rect x="${p1X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    fSVG += `<rect x="${p2X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    
+    let currY = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+    
+    geom.panels.forEach((p, i) => {
+        let pW_real = p.mountStyle === 'Between' ? geom.postSpacing : p.w;
+        let sPw = pW_real * scale;
+        let sPh = p.h * scale;
+        let panelX = p.mountStyle === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
 
-        part.rects.forEach(r => {
-            fSVG += `<rect x="${r.x * scale}" y="${r.y * scale}" width="${r.w * scale}" height="${r.h * scale}" fill="${fill}" stroke="${stroke}"/>`;
-            // Visual Callout (Only on X-Ray or Dims mode)
-            if (isShowDims || isXrayView) {
-                let cx = (r.x + r.w/2) * scale;
-                let cy = (r.y + r.h/2) * scale;
-                fSVG += `<circle cx="${cx}" cy="${cy}" r="3" fill="#1e293b" stroke="#ffffff" stroke-width="0.5"/>`;
-                fSVG += `<text x="${cx}" y="${cy+1}" fill="#ffffff" font-size="3" text-anchor="middle" font-family="sans-serif" font-weight="bold">${part.id}</text>`;
-            }
-        });
-    });
+        let frameW_real = Math.max(pW_real, geom.postSpacing);
+        let sFw = frameW_real * scale;
+        let fX = (sOw - sFw) / 2;
 
-    // Render Face Panels On Top
-    geom.partsData.forEach(part => {
-        if (!part.isFace) return;
-        let faceOpacity = isXrayView ? 0.25 : 0.95;
-        part.rects.forEach(r => {
-            fSVG += `<rect x="${r.x * scale}" y="${r.y * scale}" width="${r.w * scale}" height="${r.h * scale}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
-            if (isShowDims && !isXrayView) {
-                let cx = (r.x + r.w/2) * scale;
-                let cy = (r.y + r.h/2) * scale;
-                fSVG += `<circle cx="${cx}" cy="${cy}" r="4" fill="#2563eb" stroke="#ffffff" stroke-width="0.5"/>`;
-                fSVG += `<text x="${cx}" y="${cy+1.5}" fill="#ffffff" font-size="4" text-anchor="middle" font-family="sans-serif" font-weight="bold">${part.id}</text>`;
-            }
-        });
+        if (i > 0) currY += (p.gap * scale);
+
+        const ft = geom.frameThick * scale;
+        let shareTop = (i > 0 && p.gap === 0 && p.mountStyle === geom.panels[i-1].mountStyle);
+        
+        fSVG += `<rect x="${fX}" y="${currY + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+        if (!shareTop) fSVG += `<rect x="${fX}" y="${currY}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+
+        let isFlushSealed = p.mountStyle === 'Flush' && Math.abs(p.w - (geom.postSpacing + geom.post*2)) < 0.01;
+        let vHeight = sPh - (shareTop ? ft : ft*2);
+        let vY = currY + (shareTop ? 0 : ft);
+
+        // Skip drawing outer vertical frames if flush mounted tightly to post OD
+        if (!isFlushSealed) {
+            fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+            fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+        }
+
+        let faceOpacity = isXrayView ? 0.25 : (p.mountStyle === 'Between' ? 0.8 : 0.95);
+        fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
+        
+        currY += sPh;
     });
 
     if (isShowDims) {
@@ -629,7 +654,6 @@ function drawShopDrawings(geom) {
     fSVG += `</svg>`;
     fContainer.innerHTML = fSVG;
 
-    // DRAW SIDE CROSS-SECTION
     const sideW = Math.max(geom.post + 4, 20); 
     const visFaceThick = 2;
     const sSideW = sideW * scale;
@@ -637,21 +661,11 @@ function drawShopDrawings(geom) {
 
     let sSVG = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sSideW + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
     sSVG += `<rect x="0" y="${sTh - sUnder}" width="${sSideW}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
-    sSVG += `<line x1="-5" y1="${sTh - sUnder}" x2="${sSideW + 5}" y2="${sTh - sUnder}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,2"/>`;
-    
-    if(geom.hasConcrete) {
-        let footerH = sUnder * 0.66;
-        let footerY = sTh - footerH;
-        let sHoleD = geom.holeD * scale;
-        sSVG += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-    }
-
-    let postCutThick = geom.frameThick * scale;
-    let postDrawH = sTh - (geom.mountStyle === 'Flush' ? postCutThick : 0);
-    sSVG += `<rect x="${px}" y="${sTh - postDrawH}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    sSVG += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+    sSVG += `<rect x="${px}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
     let sy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
-    inputs.panels.forEach((p, i) => {
+    geom.panels.forEach((p, i) => {
         let sPh = p.h * scale;
         if (i > 0) sy += (p.gap * scale);
         
@@ -666,6 +680,13 @@ function drawShopDrawings(geom) {
 
     if (isShowDims) {
         sSVG += drawHDim(px, px + sPostD, -8, geom.post + '"');
+        let dy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+        geom.panels.forEach((p, i) => {
+            let sPh = p.h * scale;
+            if (i > 0) dy += (p.gap * scale);
+            sSVG += drawVDim(sSideW + 8, dy, dy + sPh, p.h + '"', "start");
+            dy += sPh;
+        });
     }
 
     sSVG += `</svg>`;
@@ -674,6 +695,8 @@ function drawShopDrawings(geom) {
 
 // --- MAIN MATH ENGINE ---
 function runCalc() {
+    if (validatePhysics()) return; 
+
     let clrRaw = parseFloat(document.getElementById('clearance').value);
     
     const inputs = {
@@ -685,7 +708,6 @@ function runCalc() {
         postType: document.getElementById('postType').value,
         postProfile: document.getElementById('postProfile').value,
         frameMat: document.getElementById('frameMat').value,
-        hasConcrete: true,
         panels: panels
     };
 
@@ -725,7 +747,8 @@ function runCalc() {
             return ` - Panel ${i+1}: ${pW_real}" x ${p.h}" (${p.faceMat} | ${sTxt} | ${mTxt})`;
         }).join('\n');
 
-        document.getElementById('job-desc').value = `(x${inputs.qty}) Multi-Panel Architectural Monument.\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\nPanels:\n${panelDesc}`;
+        let cutStr = result.geom.cutList ? '\n\nFRAME CUT SHEET:\n' + result.geom.cutList.join('\n') : '';
+        document.getElementById('job-desc').value = `(x${inputs.qty}) Multi-Panel Architectural Monument.\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\nPanels:\n${panelDesc}${cutStr}`;
 
         if(result.geom) drawShopDrawings(result.geom);
 
@@ -771,7 +794,7 @@ window.addEventListener('load', async () => {
 
     renderPanels(); 
     updatePostDropdown();
-    handleDimChange(); // Initial Math Force
+    handleDimChange();
 });
 </script>
 </body>
