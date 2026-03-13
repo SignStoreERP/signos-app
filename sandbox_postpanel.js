@@ -221,16 +221,17 @@ function renderLedgerUI(res) {
     document.getElementById('sbx-retail-breakdown').innerHTML = retHtml;
 
     const costGroups = {
-        'struct_mat': { title: 'Structure Materials', items: [] },
-        'struct_lab': { title: 'Structure Labor', items: [] },
-        'paint': { title: 'Paint & Finishes', items: [] },
-        'graphics': { title: 'Graphics & Print', items: [] },
-        'concrete': { title: 'Concrete Footers', items: [] }
+        'metal_mat': { title: 'Metal Fabrication (Materials)', items: [] },
+        'metal_lab': { title: 'Metal Fabrication (Labor)', items: [] },
+        'graph_mat': { title: 'Graphics & Print (Materials)', items: [] },
+        'graph_lab': { title: 'Graphics & Print (Labor)', items: [] },
+        'paint_mat': { title: 'Paint & Finishes (Materials)', items: [] },
+        'paint_lab': { title: 'Paint & Finishes (Labor)', items: [] }
     };
     
     res.cost.breakdown.forEach(i => {
         if (costGroups[i.cB]) costGroups[i.cB].items.push(i);
-        else costGroups['struct_mat'].items.push(i); 
+        else costGroups['metal_mat'].items.push(i); 
     });
 
     let cstHtml = '';
@@ -280,23 +281,13 @@ function printSandbox() {
     
     const sTh = th * scale;
     const sOw = ow * scale;
-    const sPw = geom.w * scale;
-    const sPh = geom.h * scale;
     const sClr = geom.clearance * scale;
     const sPostD = geom.post * scale;
     const sUnder = geom.under * scale;
-    const sInset = geom.inset * scale;
     const sHoleD = geom.holeD * scale;
 
-    const pnl_y = sTh - sUnder - sClr - sPh;
-    const panelX = geom.mount === 'Between' ? sPostD : 0;
-    
-    let p1X = 0;
-    let p2X = sOw - sPostD;
-    if (geom.mount === 'Flush') {
-        p1X = sInset;
-        p2X = sOw - sInset - sPostD;
-    }
+    let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
+    let p2X = p1X + sPostD + (geom.postSpacing * scale);
 
     const dimColor = "#e11d48"; // Red ink for paper printout
     const fSize = 6;
@@ -306,12 +297,10 @@ function printSandbox() {
     let bgLayer = `<rect x="0" y="${sTh - sUnder}" width="${sOw}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
     bgLayer += `<line x1="-5" y1="${sTh - sUnder}" x2="${sOw + 5}" y2="${sTh - sUnder}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,2"/>`;
 
-    if (geom.hasConcrete) {
-        const footerH = sUnder * 0.66;
-        const footerY = sTh - footerH;
-        bgLayer += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-        bgLayer += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-    }
+    const footerH = sUnder * 0.66;
+    const footerY = sTh - footerH;
+    bgLayer += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+    bgLayer += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
 
     const postCutThick = geom.frameThick * scale;
     const postDrawH = sTh - postCutThick;
@@ -320,18 +309,40 @@ function printSandbox() {
 
     // FRONT SOLID 
     let svgFrontSolid = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sOw + padX*2} ${sTh + padY*2}" style="overflow: visible;">` + bgLayer;
-    
-    // Draw Frame Horizontals
-    svgFrontSolid += `<rect x="0" y="${pnl_y}" width="${sOw}" height="${postCutThick}" fill="#94a3b8"/>`;
-    svgFrontSolid += `<rect x="0" y="${pnl_y + sPh - postCutThick}" width="${sOw}" height="${postCutThick}" fill="#94a3b8"/>`;
+    let currY = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+    geom.panels.forEach((p, i) => {
+        let pW_real = p.mountStyle === 'Between' ? geom.postSpacing : p.w;
+        let sPw = pW_real * scale;
+        let sPh = p.h * scale;
+        let panelX = p.mountStyle === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
+        if (i > 0) currY += (p.gap * scale);
+        
+        let frameW_real = Math.max(pW_real, geom.postSpacing);
+        let sFw = frameW_real * scale;
+        let fX = (sOw - sFw) / 2;
+        const ft = geom.frameThick * scale;
+        let shareTop = (i > 0 && p.gap === 0 && p.mountStyle === geom.panels[i-1].mountStyle);
+        
+        svgFrontSolid += `<rect x="${fX}" y="${currY + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+        if (!shareTop) svgFrontSolid += `<rect x="${fX}" y="${currY}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+        
+        let isFlushSealed = p.mountStyle === 'Flush' && Math.abs(p.w - (geom.postSpacing + geom.post*2)) < 0.01;
+        let vHeight = sPh - (shareTop ? ft : ft*2);
+        let vY = currY + (shareTop ? 0 : ft);
+        
+        if (!isFlushSealed) {
+            svgFrontSolid += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+            svgFrontSolid += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+        }
+        
+        let faceOpacity = p.mountStyle === 'Between' ? 0.8 : 0.95;
+        svgFrontSolid += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
+        currY += sPh;
+    });
 
-    // Draw Substrate
-    let faceOpacity = geom.mount === 'Between' ? 0.8 : 0.95;
-    svgFrontSolid += `<rect x="${panelX}" y="${pnl_y}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
-
+    // Apply Shop Dimensions
     svgFrontSolid += drawHDim(0, sOw, -8, geom.overallW + '" O.A.W');
-    if (geom.mount === 'Flush') svgFrontSolid += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), (geom.overallW - (geom.inset*2) - (geom.post*2)) + '" I.D.');
-    else svgFrontSolid += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), geom.w + '" I.D.');
+    svgFrontSolid += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), geom.postSpacing + '" I.D.');
     svgFrontSolid += drawVDim(-8, 0, sTh - sUnder, geom.above + '" A.G.', "end");
     svgFrontSolid += drawVDim(-8, sTh - sUnder, sTh, geom.under + '" B.G.', "end");
     if (sClr > 0) svgFrontSolid += drawVDim(sOw + 8, sTh - sUnder - sClr, sTh - sUnder, geom.clearance + '" Clr', "start");
@@ -340,24 +351,39 @@ function printSandbox() {
 
     // FRONT X-RAY 
     let svgFrontXray = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sOw + padX*2} ${sTh + padY*2}" style="overflow: visible;">` + bgLayer;
-    const frameThicknessScale = (geom.frameThick || 2) * scale;
-    const halfThick = frameThicknessScale / 2;
-    
-    svgFrontXray += `<rect x="${panelX}" y="${pnl_y}" width="${sPw}" height="${sPh}" fill="#3b82f6" opacity="0.1"/>`;
-    svgFrontXray += `<rect x="${panelX + halfThick}" y="${pnl_y + halfThick}" width="${sPw - frameThicknessScale}" height="${sPh - frameThicknessScale}" fill="none" stroke="#94a3b8" stroke-width="${frameThicknessScale}"/>`;
-    
-    if (geom.braces > 0) {
-        const spaces = geom.braces + 1;
-        const spacing = sPw / spaces;
-        for (let i = 1; i <= geom.braces; i++) {
-            const braceX = panelX + (spacing * i) - halfThick;
-            svgFrontXray += `<rect x="${braceX}" y="${pnl_y + frameThicknessScale}" width="${frameThicknessScale}" height="${sPh - (frameThicknessScale*2)}" fill="#94a3b8"/>`;
-        }
-    }
+    let currYx = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+    geom.panels.forEach((p, i) => {
+        let pW_real = p.mountStyle === 'Between' ? geom.postSpacing : p.w;
+        let sPw = pW_real * scale;
+        let sPh = p.h * scale;
+        let panelX = p.mountStyle === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
+        if (i > 0) currYx += (p.gap * scale);
+        
+        let frameW_real = Math.max(pW_real, geom.postSpacing);
+        let sFw = frameW_real * scale;
+        let fX = (sOw - sFw) / 2;
+        const ft = geom.frameThick * scale;
+        let shareTop = (i > 0 && p.gap === 0 && p.mountStyle === geom.panels[i-1].mountStyle);
+        
+        svgFrontXray += `<rect x="${fX}" y="${currYx + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+        if (!shareTop) svgFrontXray += `<rect x="${fX}" y="${currYx}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+        
+        let isFlushSealed = p.mountStyle === 'Flush' && Math.abs(p.w - (geom.postSpacing + geom.post*2)) < 0.01;
+        let vHeight = sPh - (shareTop ? ft : ft*2);
+        let vY = currYx + (shareTop ? 0 : ft);
 
+        if (!isFlushSealed) {
+            svgFrontXray += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+            svgFrontXray += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+        }
+        
+        svgFrontXray += `<rect x="${panelX}" y="${currYx}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="0.25"/>`;
+        currYx += sPh;
+    });
+
+    // Apply Shop Dimensions
     svgFrontXray += drawHDim(0, sOw, -8, geom.overallW + '" O.A.W');
-    if (geom.mount === 'Flush') svgFrontXray += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), (geom.overallW - (geom.inset*2) - (geom.post*2)) + '" I.D.');
-    else svgFrontXray += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), geom.w + '" I.D.');
+    svgFrontXray += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), geom.postSpacing + '" I.D.');
     svgFrontXray += drawVDim(-8, 0, sTh - sUnder, geom.above + '" A.G.', "end");
     svgFrontXray += drawVDim(-8, sTh - sUnder, sTh, geom.under + '" B.G.', "end");
     if (sClr > 0) svgFrontXray += drawVDim(sOw + 8, sTh - sUnder - sClr, sTh - sUnder, geom.clearance + '" Clr', "start");
@@ -373,24 +399,31 @@ function printSandbox() {
     let svgSide = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sSideW + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
     svgSide += `<rect x="0" y="${sTh - sUnder}" width="${sSideW}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
     svgSide += `<line x1="-5" y1="${sTh - sUnder}" x2="${sSideW + 5}" y2="${sTh - sUnder}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,2"/>`;
-    
-    if (geom.hasConcrete) {
-        const footerH = sUnder * 0.66;
-        const footerY = sTh - footerH;
-        svgSide += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-    }
-    
+    svgSide += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
     svgSide += `<rect x="${px}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
-    if (geom.mount === 'Between') {
-        svgSide += `<rect x="${px + (sPostD/2) - (visFaceThick/2)}" y="${pnl_y}" width="${visFaceThick}" height="${sPh}" fill="#1e40af"/>`;
-    } else {
-        svgSide += `<rect x="${px - visFaceThick}" y="${pnl_y}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
-        if(geom.sides === 2) svgSide += `<rect x="${px + sPostD}" y="${pnl_y}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
-    }
+    let sy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+    geom.panels.forEach((p, i) => {
+        let sPh = p.h * scale;
+        if (i > 0) sy += (p.gap * scale);
+        if (p.mountStyle === 'Between') {
+            svgSide += `<rect x="${px + (sPostD/2) - (visFaceThick/2)}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#1e40af"/>`;
+        } else {
+            svgSide += `<rect x="${px - visFaceThick}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
+            if(p.sides === 2) svgSide += `<rect x="${px + sPostD}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
+        }
+        sy += sPh;
+    });
 
+    // Apply Shop Dimensions
     svgSide += drawHDim(px, px + sPostD, -8, geom.post + '"');
-    svgSide += drawVDim(sSideW + 8, pnl_y, pnl_y + sPh, geom.h + '"', "start");
+    let dy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+    geom.panels.forEach((p, i) => {
+        let sPh = p.h * scale;
+        if (i > 0) dy += (p.gap * scale);
+        svgSide += drawVDim(sSideW + 8, dy, dy + sPh, p.h + '"', "start");
+        dy += sPh;
+    });
 
     svgSide += `</svg>`;
 
@@ -407,8 +440,72 @@ function printSandbox() {
         if (i.meta?.time) totalTimeTarget += i.meta.time;
     });
 
-    const bomItems = lastSimResult.cost.breakdown.filter(item => item.cB === 'struct_mat' || item.cB === 'paint' || item.cB === 'concrete' || item.rB === 'faces');
-    const labItems = lastSimResult.cost.breakdown.filter(item => item.cB === 'struct_lab' || item.cB === 'graphics' || item.meta?.time > 0);
+    const bomItems = lastSimResult.cost.breakdown.filter(item => item.cB && item.cB.includes('_mat'));
+    let bomHtml = '';
+    if (bomItems.length > 0) {
+        bomItems.forEach(item => { 
+            let pull = item.meta?.pull || 'N/A';
+            let cut = item.meta?.cut || 'N/A';
+            
+            let pullCode = pull !== 'N/A' ? `<strong>PULL:</strong> <span style="color:#0369a1;">${pull}</span>` : '';
+            let cutCode = cut !== 'N/A' ? `<strong>CUT:</strong> <span style="color:#0369a1;">${cut}</span>` : '';
+            
+            let subBar = '';
+            if(pullCode || cutCode) {
+                subBar = `<div style="display:flex; justify-content:space-between; font-size:9px; color:#475569; background:#f8fafc; padding:3px 4px; border-radius:2px; border: 1px solid #e2e8f0;">
+                    <span style="flex:1;">${pullCode}</span>
+                    <span style="flex:1;">${cutCode}</span>
+                </div>`;
+            }
+
+            bomHtml += `
+            <div style="border-bottom: 1px dotted #cbd5e1; padding: 4px 0; margin-bottom: 4px; break-inside: avoid;">
+                <div style="font-weight:900; font-size:11px; color:#0f172a; margin-bottom: 2px;">${item.label}</div>
+                ${subBar}
+            </div>`; 
+        });
+    } else { 
+        bomHtml += `<div class="line-item"><span style="color:#94a3b8; font-style:italic;">No distinct materials logged.</span></div>`; 
+    }
+
+    const labItems = lastSimResult.cost.breakdown.filter(item => (item.cB && item.cB.includes('_lab')) || item.meta?.time > 0);
+    let labHtml = '';
+    if (labItems.length > 0) {
+        const labDepts = { 
+            'metal_lab': { title: 'Metal Fabrication', items: [], totalTime: 0 }, 
+            'graph_lab': { title: 'Graphics & Print', items: [], totalTime: 0 }, 
+            'paint_lab': { title: 'Paint & Finishes', items: [], totalTime: 0 } 
+        };
+        labItems.forEach(item => {
+            let track = item.cB;
+            if (!labDepts[track]) track = 'metal_lab'; 
+            if (labDepts[track]) {
+                labDepts[track].items.push(item);
+                labDepts[track].totalTime += (item.meta?.time || 0);
+            }
+        });
+        for (const [key, group] of Object.entries(labDepts)) {
+            if (group.items.length === 0) continue;
+            labHtml += `
+            <div style="margin-bottom: 10px; break-inside: avoid;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-weight:900; font-size:11px; background:#e0f2fe; color:#0369a1; border: 1px solid #bae6fd; padding: 4px 6px; border-radius: 3px; margin-bottom: 3px;">
+                    <span style="text-transform: uppercase;">${group.title}</span>
+                    <span>${(group.totalTime).toFixed(1)} MINS</span>
+                </div>
+            `;
+            group.items.forEach(item => {
+                let t = item.meta?.time ? (item.meta.time).toFixed(1) + 'm' : 'N/A';
+                labHtml += `
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:#334155; padding: 2px 6px; border-bottom: 1px dotted #cbd5e1;">
+                    <span>↳ ${item.label}</span>
+                    <span style="font-weight:bold;">${t}</span>
+                </div>`;
+            });
+            labHtml += `</div>`;
+        }
+    } else { 
+        labHtml += `<div class="line-item"><span style="color:#94a3b8; font-style:italic;">No scheduled times logged.</span></div>`; 
+    }
 
     let html = `
     <!DOCTYPE html>
@@ -454,48 +551,19 @@ function printSandbox() {
 
             <div class="grid-2 avoid-break" style="margin-top:15px;">
                 <div>
-                    <h2>Bill of Materials (Physical)</h2>`;
-                    
-                    if (bomItems.length > 0) bomItems.forEach(item => { html += `<div class="line-item"><span>${item.label}</span><span>${fmt(item.total)}</span></div>`; });
-                    else html += `<div class="line-item"><span style="color:#94a3b8; font-style:italic;">No distinct materials logged.</span></div>`;
-                    
-                html += `
+                    <h2>Bill of Materials (Pull & Cut)</h2>
+                    ${bomHtml}
                 </div>
                 <div>
-                    <h2>Production Schedule (Tasks)</h2>`;
-                    
-                    if (labItems.length > 0) {
-                        const labDepts = { 'struct_lab': { title: 'Metal Fabrication', items: [], totalTime: 0 }, 'graphics': { title: 'Graphics & Print', items: [], totalTime: 0 }, 'paint': { title: 'Paint & Finishes', items: [], totalTime: 0 } };
-                        labItems.forEach(item => {
-                            let track = item.cB;
-                            if (!labDepts[track]) track = 'struct_lab'; 
-                            if (labDepts[track]) { labDepts[track].items.push(item); labDepts[track].totalTime += (item.meta?.time || 0); }
-                        });
-                        for (const [key, group] of Object.entries(labDepts)) {
-                            if (group.items.length === 0) continue;
-                            html += `
-                            <div style="margin-bottom: 10px; break-inside: avoid;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; font-weight:900; font-size:11px; background:#e0f2fe; color:#0369a1; border: 1px solid #bae6fd; padding: 4px 6px; border-radius: 3px; margin-bottom: 3px;">
-                                    <span style="text-transform: uppercase;">${group.title}</span>
-                                    <span>${(group.totalTime).toFixed(1)} MINS</span>
-                                </div>
-                            `;
-                            group.items.forEach(item => {
-                                let t = item.meta?.time ? (item.meta.time).toFixed(1) + 'm' : 'N/A';
-                                html += `<div style="display:flex; justify-content:space-between; font-size:10px; color:#334155; padding: 2px 6px; border-bottom: 1px dotted #cbd5e1;"><span>↳ ${item.label}</span><span style="font-weight:bold;">${t}</span></div>`;
-                            });
-                            html += `</div>`;
-                        }
-                    } else { html += `<div class="line-item"><span style="color:#94a3b8; font-style:italic;">No scheduled times logged.</span></div>`; }
-                    
-                html += `
+                    <h2>Production Schedule (Tasks)</h2>
+                    ${labHtml}
                 </div>
             </div>
 
             <div class="target-box avoid-break">
                 <h3 style="margin-top:0; border:none; font-size:14px; text-align:center;">PRODUCTION GOALS & TARGETS</h3>
                 <div class="grid-2">
-                    <div class="line-item"><span style="font-size:13px;">Total Paid Labor Target:</span><span style="font-weight:900; font-size:14px; color:#0369a1;">${(totalTimeTarget/60).toFixed(2)} hrs</span></div>
+                    <div class="line-item"><span style="font-size:13px;">Total Paid Labor Target:</span><span style="font-weight:900; font-size:14px; color:#0369a1;">${((totalTimeTarget)/60).toFixed(2)} hrs</span></div>
                     <div class="line-item"><span style="font-size:13px;">Total Allowed Material Waste:</span><span style="font-weight:900; font-size:14px; color:#b91c1c;">${fmt(totalWasteTarget)}</span></div>
                 </div>
             </div>
@@ -504,9 +572,18 @@ function printSandbox() {
         <div class="page-break"></div>
 
         <div class="page-2">
-            <h2 class="avoid-break" style="margin-top: 10px;">Physics Engine (Hard Cost Breakdown)</h2>`;
+            <h2 class="avoid-break" style="margin-top: 10px;">FINANCIAL LEDGER (MANAGEMENT ONLY)</h2>
+            <div class="math-note" style="margin-bottom:10px; color:#b91c1c;"><strong>NOTE: Hard Costs below reflect the total quantity (${qty} Units).</strong></div>`;
             
-            const deptNames = { 'struct_mat': 'Structure Materials', 'struct_lab': 'Structure Labor', 'paint': 'Paint & Finishes', 'graphics': 'Graphics & Print', 'concrete': 'Concrete Footers', 'General': 'Miscellaneous' };
+            const deptNames = { 
+                'metal_mat': 'Metal Fabrication (Materials)', 
+                'metal_lab': 'Metal Fabrication (Labor)', 
+                'paint_mat': 'Paint & Finishes (Materials)', 
+                'paint_lab': 'Paint & Finishes (Labor)', 
+                'graph_mat': 'Graphics & Print (Materials)', 
+                'graph_lab': 'Graphics & Print (Labor)', 
+                'General': 'Miscellaneous' 
+            };
             
             for(const [track, items] of Object.entries(grouped)) {
                 html += `<div class="avoid-break"><h3>${deptNames[track] || track}</h3>`;
@@ -516,8 +593,14 @@ function printSandbox() {
                 items.forEach(i => {
                     html += `<div class="line-item"><strong>${i.label}</strong><span>${fmt(i.total)}</span></div>`;
                     let metaTags = [];
-                    if (i.meta?.waste > 0) { metaTags.push(`<span style="color:#b91c1c; font-weight:bold;">Waste Allowance: ${fmt(i.meta.waste)}</span>`); trackWaste += i.meta.waste; }
-                    if (i.meta?.time > 0) { metaTags.push(`<span style="color:#0369a1; font-weight:bold;">Time Target: ${i.meta.time.toFixed(1)} mins</span>`); trackTime += i.meta.time; }
+                    if (i.meta?.waste > 0) {
+                        metaTags.push(`<span style="color:#b91c1c; font-weight:bold;">Waste Allowance: ${fmt(i.meta.waste)}</span>`);
+                        trackWaste += i.meta.waste;
+                    }
+                    if (i.meta?.time > 0) {
+                        metaTags.push(`<span style="color:#0369a1; font-weight:bold;">Time Target: ${i.meta.time.toFixed(1)} mins</span>`);
+                        trackTime += i.meta.time;
+                    }
                     let metaStr = metaTags.length > 0 ? ` &nbsp;|&nbsp; ${metaTags.join(' &nbsp;|&nbsp; ')}` : '';
                     html += `<div class="math-note">[Math: ${cleanHTML(i.formula)}]${metaStr}</div>`;
                 });
@@ -532,14 +615,14 @@ function printSandbox() {
                 </div></div>`;
             }
             
-            html += `<div class="total-row avoid-break"><span>Total Hard Cost:</span><span>${fmt(lastSimResult.cost.total)}</span></div>`;
+            html += `<div class="total-row avoid-break"><span>Total Hard Cost (${qty} Units):</span><span>${fmt(lastSimResult.cost.total)}</span></div>`;
 
             html += `<div class="avoid-break"><h2>Retail Breakdown</h2>`;
-            lastSimResult.retail.breakdown.forEach(i => {
-                if(i.total > 0) html += `<div class="line-item"><span>${i.label}</span><span>${fmt(i.total)}</span></div>`;
+            lastSimResult.retail.lineItems.forEach(i => {
+                if(i.unit > 0) html += `<div class="line-item"><span>${i.label}</span><span>${fmt(i.unit)}</span></div>`;
             });
-            html += `<div class="line-item math-note">[Math: Hard Cost / (1 - ${(lastSimResult.metrics.margin).toFixed(2)} Margin)]</div>`;
-            html += `<div class="total-row"><span>Gross Retail Total:</span><span>${fmt(lastSimResult.retail.grandTotal)}</span></div>`;
+            html += `<div class="line-item math-note">[Math: Hard Cost x 1.05 Risk / (1 - ${(lastSimResult.metrics.margin).toFixed(2)} Margin)]</div>`;
+            html += `<div class="total-row"><span>Gross Retail Total (${qty} Units):</span><span>${fmt(lastSimResult.retail.grandTotal)}</span></div>`;
 
             const profitDollars = lastSimResult.retail.grandTotal - lastSimResult.cost.total;
             const marginPct = (profitDollars / lastSimResult.retail.grandTotal) * 100;
