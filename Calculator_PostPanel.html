@@ -1,269 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Post & Panel Signs</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="signos-core.js"></script>
-<script src="signos-ui.js"></script>
-<script src="cost_post_panel.js"></script>
-<!-- INJECT THE NEW SANDBOX SCRIPT HERE -->
-<script src="sandbox_postpanel.js"></script>
-<style>
-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.custom-scroll::-webkit-scrollbar { width: 6px; }
-.custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
-.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-.highlight-var {
-background-color: #fef08a !important; color: #854d0e !important; border-color: #eab308 !important;
-border-style: solid !important; border-width: 1px !important; border-radius: 4px; padding: 0 4px;
-box-shadow: 0 0 8px rgba(234, 179, 8, 0.5); text-decoration: none !important;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post & Panel Signs (Architectural)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="signos-core.js"></script>
+    <script src="signos-ui.js"></script>
+    <script src="cost_post_panel.js"></script>
+    <script src="sandbox_postpanel.js"></script>
+    <style>
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px;}
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .blueprint-bg {
+            background-color: #0f172a;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .highlight-var {
+            background-color: #fef08a !important; color: #854d0e !important; border-color: #eab308 !important;
+            border-style: solid !important; border-width: 1px !important; border-radius: 4px; padding: 0 4px;
+            box-shadow: 0 0 8px rgba(234, 179, 8, 0.5); text-decoration: none !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans flex flex-col pb-10 overflow-x-hidden">
+
 <div id="app-wrapper" class="w-full max-w-lg mx-auto mt-8 transition-all duration-500 flex justify-center items-start gap-4 px-4 sm:px-0">
-<!-- LEFT: FULL MATH LEDGER (SANDBOX) -->
-<div id="sandbox-ledger" class="hidden w-[380px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
-<div class="p-4 bg-slate-50 border-b border-gray-200 flex flex-col shrink-0 rounded-t-xl gap-3">
-<div class="flex justify-between items-center">
-<div>
-<h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Financial Ledger</h2>
-<span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Market vs. Physics Breakdown</span>
+
+    <!-- LEFT: FULL MATH LEDGER (SANDBOX) -->
+    <div id="sandbox-ledger" class="hidden w-[380px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
+        <div class="p-4 bg-slate-50 border-b border-gray-200 flex flex-col shrink-0 rounded-t-xl gap-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Financial Ledger</h2>
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Market vs. Physics Breakdown</span>
+                </div>
+                <button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
+            </div>
+            
+            <div id="ledger-interactive-header" class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm mt-1"></div>
+        </div>
+
+        <div class="p-5 space-y-6 max-h-[70vh] overflow-y-auto custom-scroll">
+            <div>
+                <h3 class="text-[11px] font-black text-blue-700 uppercase tracking-widest border-b-2 border-blue-100 pb-2 mb-3">Market Logic (Retail)</h3>
+                <div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
+            </div>
+            <div>
+                <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest border-b-2 border-red-100 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
+                <div id="sbx-cost-breakdown" class="space-y-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CENTER: MAIN CALCULATOR ISLAND -->
+    <div class="flex flex-col gap-4 w-full max-w-lg shrink-0 z-20">
+        <div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
+            <div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
+            
+            <!-- 2D ARCHITECTURAL SHOP DRAWINGS -->
+            <div class="w-full h-64 bg-slate-800 border-b border-gray-200 flex flex-col relative">
+                <span class="absolute top-2 right-3 text-[8px] font-bold text-slate-400 uppercase tracking-widest z-10">Live Shop Drawings</span>
+                <div class="flex flex-1 w-full h-full p-4 gap-4">
+                    
+                    <div class="flex-1 flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-1 px-1">
+                            <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Front Elevation</span>
+                            <div class="flex items-center gap-2">
+                                <label class="flex items-center gap-1.5 cursor-pointer bg-slate-700 px-2 py-0.5 rounded border border-slate-500 hover:bg-slate-600 transition z-20 shadow-sm">
+                                    <input type="checkbox" id="xray-toggle" onchange="toggleXray()" class="w-3 h-3 text-blue-500 rounded cursor-pointer outline-none"> 
+                                    <span class="text-[8px] font-bold text-slate-200 uppercase tracking-widest">X-Ray Frame</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer bg-slate-700 px-2 py-0.5 rounded border border-slate-500 hover:bg-slate-600 transition z-20 shadow-sm">
+                                    <input type="checkbox" id="dim-toggle" onchange="toggleDims()" class="w-3 h-3 text-yellow-400 rounded cursor-pointer outline-none"> 
+                                    <span class="text-[8px] font-bold text-slate-200 uppercase tracking-widest">Show Dims</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex-1 blueprint-bg border border-slate-600 rounded bg-slate-900 overflow-hidden flex items-center justify-center p-2" id="svg-front-container"></div>
+                    </div>
+
+                    <div class="w-32 flex flex-col h-full shrink-0">
+                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 text-center">Side View</span>
+                        <div class="flex-1 blueprint-bg border border-slate-600 rounded bg-slate-900 overflow-hidden flex items-center justify-center p-2" id="svg-side-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DYNAMIC PANEL BUILDER -->
+            <div class="p-6 pt-4 space-y-3 border-b border-gray-200">
+                <div class="flex justify-between items-end mb-1">
+                    <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest block">Panels</span>
+                    <button onclick="addPanel()" class="bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 transition px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest">+ Add Panel</button>
+                </div>
+                <div id="panel-container" class="space-y-4"></div>
+            </div>
+
+            <!-- CHASSIS BUILDER -->
+            <div class="p-6 pb-4 space-y-4 bg-gray-50">
+                <div class="flex justify-between items-end mb-1">
+                    <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest block">Structural Chassis</span>
+                </div>
+                
+                <div id="clip-warn" class="hidden mb-3 bg-red-50 text-red-700 text-[10px] font-bold px-3 py-2 rounded border border-red-200 shadow-sm flex items-center gap-2 animate-pulse">
+                    <span class="text-base">⚠️</span> 
+                    <span><b>Structural Collision Warning:</b> The panel width causes the internal frame tubing to physically clip through the posts. The width has been auto-snapped downwards to safely mount flush against the posts.</span>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Fleet Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
+                    <div class="col-span-2"><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1" title="Inside-to-Inside Spacing">Post Spacing (Inside - in)</label><input type="number" id="postSpacing" value="48" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner" oninput="handleDimChange()"></div>
+                    <div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Clearance (in)</label><input type="number" id="clearance" value="0" min="0" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center bg-slate-100 text-slate-400 outline-none shadow-inner cursor-not-allowed" readonly title="Auto-calculated distance from ground to bottom of lowest panel"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                        <label class="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase mb-1">Max Height Above Grade</label>
+                        <input type="number" id="aboveGrade" value="72" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="handleDimChange()">
+                    </div>
+                    <div>
+                        <label class="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase mb-1">
+                            Below Grade
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-600"><input type="checkbox" id="autoBelow" checked onchange="handleDimChange()" class="w-2 h-2"> AUTO</label>
+                        </label>
+                        <input type="number" id="belowGrade" value="24" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="document.getElementById('autoBelow').checked=false; handleDimChange();">
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-3 space-y-3">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Material</label>
+                            <select id="postType" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updatePostDropdown()">
+                                <option value="Aluminum" selected>Aluminum</option>
+                                <option value="Steel">Steel Tube</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Size & Gauge</label>
+                            <select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updateFrameDropdown(); runCalc()">
+                                <!-- Dynamically Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Internal Frame Skeleton</label>
+                        <select id="frameMat" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="runCalc()">
+                            <!-- Populated dynamically to restrict impossible sizing -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTS -->
+            <div class="bg-blue-50 p-6 border-t border-blue-200 shadow-inner relative z-0">
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
+                    <span id="ui-unit" class="text-3xl font-black text-blue-900 tracking-tight leading-none">$0.00</span>
+                </div>
+                
+                <div class="mb-3 border-b border-blue-200/50 pb-3">
+                    <span class="text-[9px] font-black text-blue-500 uppercase tracking-widest block mb-1">Itemized Unit Build:</span>
+                    <div id="ui-subline" class="space-y-0.5"></div>
+                </div>
+
+                <div class="flex justify-between items-end pt-1">
+                    <div>
+                        <span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
+                        <span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $150</span>
+                        <div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
+                    </div>
+                    <span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
+                </div>
+                
+                <!-- PRINT CONTROLS -->
+                <div class="flex gap-2 w-full mt-5">
+                    <button onclick="printSandbox()" class="flex-1 bg-white border border-blue-300 hover:bg-blue-100 text-blue-800 font-bold py-2.5 rounded shadow-sm text-[10px] uppercase tracking-widest transition">
+                        Print Quote
+                    </button>
+                    <button id="btn-sandbox" onclick="toggleSandbox()" class="hidden flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black py-2.5 rounded shadow-md uppercase tracking-widest transition">
+                        Launch Cost Sandbox
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="bg-gray-50 p-4 border-t border-gray-200">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
+                <textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug shadow-inner custom-scroll" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: SANDBOX VARIABLES -->
+    <div id="sandbox-vars" class="hidden w-[340px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
+        <div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
+            <div>
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Sandbox Variables</h2>
+                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Modify System Inputs</span>
+            </div>
+        </div>
+
+        <div class="p-5 space-y-6 max-h-[70vh] overflow-y-auto custom-scroll">
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b border-blue-200 pb-1">Market Overrides</span>
+                </div>
+                <div id="sbx-retail-inputs" class="space-y-2"></div>
+            </div>
+            <div>
+                <span class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-red-200 pb-1 mb-3 block">Physics Overrides</span>
+                <div id="sbx-cost-inputs" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-gray-200 shrink-0 space-y-2 rounded-b-xl z-20">
+            <button onclick="applySandbox()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded shadow text-xs uppercase tracking-widest transition">Run Simulation</button>
+            <div class="flex gap-2">
+                <button onclick="resetSandbox()" class="flex-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Reset</button>
+                <button onclick="exportSandbox()" id="btn-export" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Export TXT</button>
+                <button onclick="printSandbox()" id="btn-print-sbx" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Print Ledger</button>
+            </div>
+        </div>
+    </div>
 </div>
-<button onclick="toggleSandbox()" class="text-gray-400 hover:text-red-500 transition font-bold text-lg focus:outline-none">✕</button>
-</div>
-<!-- THE NEW INTERACTIVE MARGIN CALCULATOR CONTAINER -->
-<div id="ledger-interactive-header" class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm mt-1">
-<!-- Rendered by JS dynamically -->
-</div>
-</div>
-<div class="p-5 space-y-6 max-h-[70vh] overflow-y-auto custom-scroll">
-<div>
-<h3 class="text-[11px] font-black text-blue-700 uppercase tracking-widest border-b-2 border-blue-100 pb-2 mb-3">Market Logic (Retail)</h3>
-<div id="sbx-retail-breakdown" class="space-y-3 mb-4"></div>
-</div>
-<div>
-<h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest border-b-2 border-red-100 pb-2 mb-3">Physics Engine (Hard Cost)</h3>
-<div id="sbx-cost-breakdown" class="space-y-3"></div>
-</div>
-</div>
-</div>
-<!-- CENTER: MAIN CALCULATOR ISLAND -->
-<div class="flex flex-col gap-4 w-full max-w-lg shrink-0 z-20">
-<div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
-<div id="sim-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-black text-center py-1 uppercase tracking-widest animate-pulse">Simulation Active</div>
-<!-- 2D ARCHITECTURAL SHOP DRAWINGS -->
-<div class="w-full h-64 bg-slate-800 border-b border-gray-200 flex flex-col relative">
-<span class="absolute top-2 right-3 text-[8px] font-bold text-slate-400 uppercase tracking-widest z-10">Live Shop Drawings</span>
-<div class="flex flex-1 w-full h-full p-4 gap-4">
-<div class="flex-1 flex flex-col h-full">
-<div class="flex justify-between items-end mb-1 px-1">
-<span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Front Elevation</span>
-<label class="flex items-center gap-1.5 cursor-pointer bg-slate-700 px-2 py-0.5 rounded border border-slate-500 hover:bg-slate-600 transition z-20 shadow-sm">
-<input type="checkbox" id="xray-toggle" onchange="toggleXray()" class="w-3 h-3 text-blue-500 rounded cursor-pointer outline-none">
-<span class="text-[8px] font-bold text-slate-200 uppercase tracking-widest">X-Ray Frame</span>
-</label>
-</div>
-<div class="flex-1 blueprint-bg border border-slate-600 rounded bg-slate-900 overflow-hidden flex items-center justify-center p-2" id="svg-front-container"></div>
-</div>
-<div class="w-32 flex flex-col h-full shrink-0">
-<span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 text-center">Side View</span>
-<div class="flex-1 blueprint-bg border border-slate-600 rounded bg-slate-900 overflow-hidden flex items-center justify-center p-2" id="svg-side-container"></div>
-</div>
-</div>
-</div>
-<div class="p-6 space-y-5">
-<div class="grid grid-cols-3 gap-3">
-<div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center bg-gray-50 focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-<div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel W (in)</label><input type="number" id="w" value="54" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner" oninput="handleDimChange()"></div>
-<div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel H (in)</label><input type="number" id="h" value="36" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner" oninput="handleDimChange()"></div>
-</div>
-<div class="grid grid-cols-3 gap-3 pt-2">
-<div>
-<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Clearance (in)</label>
-<input type="number" id="clearance" value="36" min="0" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner bg-blue-50 text-blue-800" oninput="handleDimChange()" title="Distance from ground to bottom of panel">
-</div>
-<div>
-<label class="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase mb-1">
-Above Grade
-<label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-600"><input type="checkbox" id="autoAbove" checked onchange="handleDimChange()" class="w-2 h-2"> AUTO</label>
-</label>
-<input type="number" id="aboveGrade" value="72" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="document.getElementById('autoAbove').checked=false; handleDimChange();">
-</div>
-<div>
-<label class="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase mb-1">
-Below Grade
-<label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-600"><input type="checkbox" id="autoBelow" checked onchange="handleDimChange()" class="w-2 h-2"> AUTO</label>
-</label>
-<input type="number" id="belowGrade" value="24" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="document.getElementById('autoBelow').checked=false; handleDimChange();">
-</div>
-</div>
-<div class="bg-gray-50 border border-gray-200 p-2 rounded mt-2">
-<label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
-<input type="checkbox" id="hasConcrete" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-Include Concrete Footers (Installation)
-</label>
-</div>
-<div class="border-t border-gray-100 pt-3">
-<label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Panel Mounting Style</label>
-<div class="flex gap-4">
-<label class="flex-1 flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:border-blue-400 transition">
-<input type="radio" name="mountStyle" value="Between" checked onchange="toggleInsetUI(); runCalc()" class="w-4 h-4 text-blue-600"> Between Posts
-</label>
-<label class="flex-1 flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-gray-50 p-2 rounded border border-gray-200 hover:border-blue-400 transition">
-<input type="radio" name="mountStyle" value="Flush" onchange="toggleInsetUI(); runCalc()" class="w-4 h-4 text-blue-600"> Flush Mount
-</label>
-</div>
-</div>
-<div class="border-t border-gray-100 pt-3 space-y-3">
-<div class="grid grid-cols-4 gap-2">
-<div>
-<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Material</label>
-<select id="postType" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updatePostDropdown()">
-<option value="Aluminum" selected>Aluminum</option>
-<option value="Steel">Steel Tube</option>
-</select>
-</div>
-<div class="col-span-2">
-<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Size & Gauge</label>
-<select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="runCalc()">
-<!-- Dynamically Populated by JS -->
-</select>
-</div>
-<div id="wrap-inset" class="transition-opacity duration-300">
-<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Inset (in)</label>
-<input type="number" id="postInset" value="0" min="0" step="0.5" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-center focus:border-blue-500 outline-none shadow-sm h-[38px]" oninput="runCalc()">
-</div>
-</div>
-<div>
-<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Internal Frame Skeleton</label>
-<select id="frameMat" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="runCalc()">
-<optgroup label="Angle Iron (Frames)">
-<option value="AlumAngle_1.5_1/8">1.5" x 1/8" Alum Angle</option>
-<option value="AlumAngle_2_1/8" selected>2" x 1/8" Alum Angle</option>
-</optgroup>
-<optgroup label="Aluminum Square Tubes">
-<option value="AlumTube_2_1/8">2" Sq x 1/8" Wall</option>
-<option value="AlumTube_3_1/8">3" Sq x 1/8" Wall</option>
-<option value="AlumTube_4_1/8">4" Sq x 1/8" Wall</option>
-<option value="AlumTube_6_1/4">6" Sq x 1/4" Wall</option>
-</optgroup>
-<optgroup label="Steel Square Tubes">
-<option value="SteelTube_3_1/8">3" Sq x 1/8" Wall</option>
-<option value="SteelTube_3_3/16">3" Sq x 3/16" Wall</option>
-<option value="SteelTube_4_3/16">4" Sq x 3/16" Wall</option>
-<option value="SteelTube_6_3/16">6" Sq x 3/16" Wall</option>
-<option value="SteelTube_6_1/4">6" Sq x 1/4" Wall</option>
-<option value="SteelTube_8_3/16">8" Sq x 3/16" Wall</option>
-<option value="SteelTube_8_1/4">8" Sq x 1/4" Wall</option>
-<option value="SteelTube_10_1/4">10" Sq x 1/4" Wall</option>
-<option value="SteelTube_12_1/4">12" Sq x 1/4" Wall</option>
-</optgroup>
-</select>
-</div>
-</div>
-<div class="border-t border-gray-100 pt-3">
-<div class="grid grid-cols-2 gap-3">
-<div>
-<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Face Substrate</label>
-<select id="faceMat" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="handleMatChange()">
-<option value="040 Alum">.040 Aluminum</option>
-<option value="063 Alum" selected>.063 Aluminum</option>
-<option value="080 Alum">.080 Aluminum</option>
-<option value="3mm ACM">3mm ACM</option>
-<option value="6mm ACM">6mm ACM</option>
-</select>
-</div>
-<div>
-<label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Printed Sides</label>
-<select id="sides" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="runCalc()">
-<option value="1">Single Sided</option>
-<option value="2" selected>Double Sided</option>
-</select>
-</div>
-</div>
-<div id="wrap-finishes" class="col-span-2 bg-indigo-50 p-3 rounded border border-indigo-100 mt-3 transition-opacity">
-<label class="flex items-center gap-2 text-[10px] font-bold text-indigo-900 cursor-pointer mb-2">
-<input type="checkbox" id="paintFace" checked onchange="runCalc()" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
-Paint Sign Face & Apply Contour Cut Vinyl Graphics
-</label>
-<label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
-<input type="checkbox" id="isCNC" onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-CNC Route Faces (Custom Exterior Shape)
-</label>
-<div class="mt-2 pt-2 border-t border-indigo-200/50">
-<input type="text" id="paintColor" placeholder="Paint Color Match / PMS..." class="w-full text-xs font-bold p-1.5 border border-indigo-200 rounded outline-none text-indigo-900 shadow-inner" oninput="runCalc()">
-</div>
-</div>
-</div>
-</div>
-<!-- RESULTS -->
-<div class="bg-blue-50 p-6 border-t border-blue-200 shadow-inner relative z-0">
-<div class="flex justify-between items-end mb-2">
-<span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Unit Price</span>
-<span id="ui-unit" class="text-3xl font-black text-blue-900 tracking-tight leading-none">$0.00</span>
-</div>
-<div class="mb-3 border-b border-blue-200/50 pb-3">
-<span class="text-[9px] font-black text-blue-500 uppercase tracking-widest block mb-1">Itemized Unit Build:</span>
-<div id="ui-subline" class="space-y-0.5"></div>
-</div>
-<div class="flex justify-between items-end pt-1">
-<div>
-<span class="text-xs font-bold text-blue-800 uppercase block">Total Quote</span>
-<span class="text-[9px] font-bold text-blue-600 uppercase block mt-1" id="ui-min-text">Shop Minimum: $150</span>
-<div id="min-badge" class="hidden bg-red-100 text-red-600 border border-red-200 text-[9px] font-bold px-1 rounded inline-block mt-1">MINIMUM APPLIED</div>
-</div>
-<span class="text-3xl font-black text-blue-700" id="ui-total">---</span>
-</div>
-<!-- PRINT CONTROLS -->
-<div class="flex gap-2 mt-5">
-<button onclick="window.print()" class="flex-1 bg-white hover:bg-gray-50 border border-blue-200 text-blue-700 text-[10px] font-black py-2.5 rounded shadow-sm uppercase tracking-widest transition flex items-center justify-center gap-2">
-<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-Print Quote
-</button>
-<button id="btn-sandbox" onclick="toggleSandbox()" class="hidden flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black py-2.5 rounded shadow-md uppercase tracking-widest transition">
-Launch Cost Sandbox
-</button>
-</div>
-</div>
-<div class="bg-gray-50 p-4 border-t border-gray-200">
-<label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Job Description</label>
-<textarea id="job-desc" class="w-full text-xs p-3 border border-gray-300 rounded bg-white h-24 text-gray-700 font-mono outline-none leading-snug shadow-inner custom-scroll" readonly></textarea>
-</div>
-</div>
-</div>
-<!-- RIGHT: SANDBOX VARIABLES -->
-<div id="sandbox-vars" class="hidden w-[340px] bg-white shadow-xl rounded-xl border border-gray-200 flex-col shrink-0 relative z-10">
-<div class="p-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center shrink-0 rounded-t-xl">
-<div>
-<h2 class="text-sm font-black text-gray-800 uppercase tracking-widest">Sandbox Variables</h2>
-<span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Modify System Inputs</span>
-</div>
-</div>
-<div class="p-5 space-y-6 max-h-[70vh] overflow-y-auto custom-scroll">
-<div>
-<div class="flex justify-between items-center mb-3">
-<span class="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b border-blue-200 pb-1">Market Overrides</span>
-</div>
-<div id="sbx-retail-inputs" class="space-y-2"></div>
-</div>
-<div>
-<span class="text-[10px] font-black text-red-700 uppercase tracking-widest border-b border-red-200 pb-1 mb-3 block">Physics Overrides</span>
-<div id="sbx-cost-inputs" class="space-y-2"></div>
-</div>
-</div>
-<div class="p-4 bg-slate-50 border-t border-gray-200 shrink-0 space-y-2 rounded-b-xl z-20">
-<button onclick="applySandbox()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded shadow text-xs uppercase tracking-widest transition">Run Simulation</button>
-<div class="flex gap-2">
-<button onclick="resetSandbox()" class="flex-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Reset</button>
-<button onclick="exportSandbox()" id="btn-export" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Export TXT</button>
-<button onclick="printSandbox()" id="btn-print-sbx" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded text-[10px] uppercase tracking-widest transition shadow-sm">Print Ledger</button>
-</div>
-</div>
-</div>
-</div>
+
 <script>
 // --- GLOBAL STATE ---
 var backendData = {};
@@ -271,239 +238,579 @@ var customSimData = null;
 var lastSimResult = null;
 var dynamicKeys = [];
 var isXrayView = false;
+var isShowDims = false;
+
+// Default Panel Array
+var panels = [{ 
+    id: Date.now(), w: 60, h: 36, gap: 0, mountStyle: 'Flush', 
+    faceMat: '063 Alum', sides: 2, graphicMethod: 'PrintOnPaint', graphicColors: 1, isCNC: false 
+}];
+
 if(document.getElementById('loader')) document.getElementById('loader').classList.add('hidden');
 if(document.getElementById('status-text')) document.getElementById('status-text').innerText = "System Active";
 if (typeof SignOS_UI !== 'undefined' && SignOS_UI.hideLoader) SignOS_UI.hideLoader();
+
 function toggleXray() {
-isXrayView = document.getElementById('xray-toggle').checked;
-if(lastSimResult && lastSimResult.geom) {
-drawShopDrawings(lastSimResult.geom);
+    isXrayView = document.getElementById('xray-toggle').checked;
+    if(lastSimResult && lastSimResult.geom) { drawShopDrawings(lastSimResult.geom); }
 }
+
+function toggleDims() {
+    isShowDims = document.getElementById('dim-toggle').checked;
+    if(lastSimResult && lastSimResult.geom) { drawShopDrawings(lastSimResult.geom); }
 }
-function handleMatChange() {
-const faceMat = document.getElementById('faceMat').value;
-const paintFace = document.getElementById('paintFace');
-const wrap = document.getElementById('wrap-finishes');
-if(faceMat.includes('ACM')) {
-paintFace.disabled = false;
-wrap.classList.remove('opacity-50');
-} else {
-paintFace.checked = true;
-paintFace.disabled = true;
-wrap.classList.add('opacity-50');
+
+function renderPanels() {
+    const container = document.getElementById('panel-container');
+    container.innerHTML = '';
+    
+    panels.forEach((p, i) => {
+        const isOnly = panels.length === 1;
+        const isFlush = p.mountStyle === 'Flush';
+        const hasColors = p.graphicMethod === 'CutOnPaint' || p.graphicMethod === 'PaintOnPaint';
+        
+        container.innerHTML += `
+        <div class="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col overflow-hidden relative group">
+            <div class="bg-slate-100 border-b border-slate-200 p-2 flex justify-between items-center">
+                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Panel ${i+1} ${i===0 ? '(Top)' : ''}</span>
+                ${!isOnly ? `<button onclick="removePanel(${p.id})" class="text-red-400 hover:text-red-600 px-2 py-0.5 rounded text-[10px] font-bold transition">Remove</button>` : '<div></div>'}
+            </div>
+            <div class="p-3 space-y-3">
+                <div class="grid grid-cols-12 gap-2">
+                    ${i > 0 ? `
+                    <div class="col-span-3">
+                        <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">Gap Above (in)</label>
+                        <input type="number" value="${p.gap}" step="1" min="0" oninput="updatePanel(${p.id}, 'gap', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner bg-slate-50">
+                    </div>` : '<div class="col-span-3"></div>'}
+                    <div class="col-span-4">
+                        <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">Mount Style</label>
+                        <select onchange="updatePanel(${p.id}, 'mountStyle', this.value); handleDimChange();" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
+                            <option value="Flush" ${p.mountStyle === 'Flush' ? 'selected' : ''}>Flush (Face)</option>
+                            <option value="Between" ${p.mountStyle === 'Between' ? 'selected' : ''}>Between Posts</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">W (in)</label>
+                        <input type="number" id="panel-w-${p.id}" value="${p.w}" step="1" min="12" oninput="updatePanel(${p.id}, 'w', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner ${!isFlush ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'}" ${!isFlush ? 'disabled title="Locked to inside post spacing"' : ''}>
+                    </div>
+                    <div class="col-span-3">
+                        <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">H (in)</label>
+                        <input type="number" value="${p.h}" step="1" min="6" oninput="updatePanel(${p.id}, 'h', this.value); handleDimChange()" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-center outline-none focus:border-blue-500 shadow-inner bg-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 border-t border-slate-100 pt-2">
+                    <div>
+                        <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">Substrate</label>
+                        <select onchange="updatePanel(${p.id}, 'faceMat', this.value); renderPanels();" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
+                            <option value="040 Alum" ${p.faceMat === '040 Alum' ? 'selected' : ''}>.040 Aluminum</option>
+                            <option value="063 Alum" ${p.faceMat === '063 Alum' ? 'selected' : ''}>.063 Aluminum</option>
+                            <option value="080 Alum" ${p.faceMat === '080 Alum' ? 'selected' : ''}>.080 Aluminum</option>
+                            <option value="3mm ACM" ${p.faceMat === '3mm ACM' ? 'selected' : ''}>3mm ACM</option>
+                            <option value="6mm ACM" ${p.faceMat === '6mm ACM' ? 'selected' : ''}>6mm ACM</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2 items-end">
+                        <div class="flex-1">
+                            <label class="block text-[8px] font-bold text-gray-400 uppercase mb-0.5">Sides</label>
+                            <select onchange="updatePanel(${p.id}, 'sides', this.value); updateFrameDropdown(); runCalc();" class="w-full border border-gray-200 p-1.5 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500">
+                                <option value="1" ${p.sides == 1 ? 'selected' : ''}>Single Sided</option>
+                                <option value="2" ${p.sides == 2 ? 'selected' : ''}>Double Sided</option>
+                            </select>
+                        </div>
+                        <label class="flex items-center justify-center border border-gray-200 rounded p-1.5 h-[34px] w-[34px] cursor-pointer bg-slate-50 hover:bg-slate-100" title="CNC Route Panel Shape">
+                            <input type="checkbox" onchange="updatePanel(${p.id}, 'isCNC', this.checked); runCalc();" ${p.isCNC ? 'checked' : ''} class="w-3 h-3 text-blue-600 rounded">
+                            <span class="text-[8px] font-black text-slate-500 ml-1">CNC</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50/50 border border-indigo-100 p-2 rounded flex gap-2 items-center">
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-indigo-400 uppercase mb-0.5">Graphics & Paint</label>
+                        <select onchange="updatePanel(${p.id}, 'graphicMethod', this.value); renderPanels();" class="w-full border border-indigo-200 p-1.5 rounded text-[10px] font-bold text-indigo-800 outline-none focus:border-indigo-500 bg-white">
+                            <option value="Overlay" ${p.graphicMethod === 'Overlay' ? 'selected' : ''}>Digital Print Overlay (No Paint)</option>
+                            <option value="PrintOnPaint" ${p.graphicMethod === 'PrintOnPaint' ? 'selected' : ''}>Painted Face w/ Printed Graphics</option>
+                            <option value="CutOnPaint" ${p.graphicMethod === 'CutOnPaint' ? 'selected' : ''}>Painted Face w/ Cut Vinyl</option>
+                            <option value="PaintOnPaint" ${p.graphicMethod === 'PaintOnPaint' ? 'selected' : ''}>Painted Face w/ Painted Graphics</option>
+                        </select>
+                    </div>
+                    ${hasColors ? `
+                    <div class="w-16">
+                        <label class="block text-[8px] font-bold text-indigo-400 uppercase mb-0.5 text-center">Colors</label>
+                        <input type="number" value="${p.graphicColors}" min="1" step="1" oninput="updatePanel(${p.id}, 'graphicColors', this.value); runCalc()" class="w-full border border-indigo-200 p-1 rounded text-xs font-bold text-center outline-none focus:border-indigo-500 bg-white">
+                    </div>` : ''}
+                </div>
+            </div>
+        </div>`;
+    });
+    updateFrameDropdown();
+    runCalc();
 }
-runCalc();
+
+function updatePanel(id, field, val) {
+    const p = panels.find(x => x.id === id);
+    if(p) {
+        if (field === 'w' || field === 'h' || field === 'gap' || field === 'graphicColors' || field === 'sides') p[field] = parseFloat(val) || 0;
+        else p[field] = val;
+    }
 }
+
+function addPanel() {
+    let parent = panels[panels.length - 1];
+    panels.push({ 
+        id: Date.now(), 
+        w: parent ? parent.w : 60, 
+        h: parent ? parent.h : 24, 
+        gap: 0, 
+        mountStyle: parent ? parent.mountStyle : 'Flush', 
+        faceMat: parent ? parent.faceMat : '063 Alum', 
+        sides: parent ? parent.sides : 2, 
+        graphicMethod: parent ? parent.graphicMethod : 'PrintOnPaint', 
+        graphicColors: parent ? parent.graphicColors : 1, 
+        isCNC: parent ? parent.isCNC : false 
+    });
+    renderPanels();
+    handleDimChange();
+}
+
+function removePanel(id) {
+    panels = panels.filter(x => x.id !== id);
+    renderPanels();
+    handleDimChange();
+}
+
 function updatePostDropdown() {
-const type = document.getElementById('postType').value;
-const profileSelect = document.getElementById('postProfile');
-let html = '';
-if (type === 'Aluminum') {
-html += `<option value="2_1/8">2" Sq x 1/8" Wall</option>`;
-html += `<option value="3_1/8" selected>3" Sq x 1/8" Wall</option>`;
-html += `<option value="4_1/8">4" Sq x 1/8" Wall</option>`;
-html += `<option value="6_1/4">6" Sq x 1/4" Wall</option>`;
-} else {
-html += `<option value="2_1/8">2" Sq x 1/8" Wall</option>`;
-html += `<option value="3_1/8">3" Sq x 1/8" Wall</option>`;
-html += `<option value="4_1/4" selected>4" Sq x 1/4" Wall</option>`;
-html += `<option value="6_1/4">6" Sq x 1/4" Wall</option>`;
-html += `<option value="8_1/4">8" Sq x 1/4" Wall</option>`;
-html += `<option value="10_1/4">10" Sq x 1/4" Wall</option>`;
-html += `<option value="12_1/4">12" Sq x 1/4" Wall</option>`;
+    const type = document.getElementById('postType').value;
+    const profileSelect = document.getElementById('postProfile');
+    let html = '';
+
+    if (type === 'Aluminum') {
+        html += `<option value="2_1/8">2" Sq x 1/8" Wall</option>`;
+        html += `<option value="3_1/8" selected>3" Sq x 1/8" Wall</option>`;
+        html += `<option value="4_1/8">4" Sq x 1/8" Wall</option>`;
+        html += `<option value="6_1/4">6" Sq x 1/4" Wall</option>`;
+    } else {
+        html += `<option value="3_1/8">3" Sq x 1/8" Wall</option>`;
+        html += `<option value="3_3/16">3" Sq x 3/16" Wall</option>`;
+        html += `<option value="4_3/16">4" Sq x 3/16" Wall</option>`;
+        html += `<option value="6_3/16">6" Sq x 3/16" Wall</option>`;
+        html += `<option value="6_1/4">6" Sq x 1/4" Wall</option>`;
+        html += `<option value="8_3/16">8" Sq x 3/16" Wall</option>`;
+        html += `<option value="8_1/4">8" Sq x 1/4" Wall</option>`;
+        html += `<option value="10_1/4">10" Sq x 1/4" Wall</option>`;
+        html += `<option value="12_1/4">12" Sq x 1/4" Wall</option>`;
+    }
+    profileSelect.innerHTML = html;
+    updateFrameDropdown();
+    runCalc();
 }
-profileSelect.innerHTML = html;
-runCalc();
+
+function updateFrameDropdown() {
+    const postType = document.getElementById('postType').value;
+    const postProf = document.getElementById('postProfile').value;
+    const postSize = parseFloat(postProf.split('_')); 
+    
+    let maxSides = 1;
+    panels.forEach(p => { if (p.sides === 2) maxSides = 2; });
+
+    const frameSelect = document.getElementById('frameMat');
+    const currentVal = frameSelect.value;
+    
+    let angles = [
+        {v: 'AlumAngle_1.5_1/8', t: '1.5" x 1/8" Alum Angle', s: 1.5},
+        {v: 'AlumAngle_2_1/8', t: '2" x 1/8" Alum Angle', s: 2},
+        {v: 'SteelAngle_1.5_1/8', t: '1.5" x 1/8" Steel Angle', s: 1.5},
+        {v: 'SteelAngle_2_1/8', t: '2" x 1/8" Steel Angle', s: 2},
+        {v: 'SteelAngle_2_3/16', t: '2" x 3/16" Steel Angle', s: 2},
+        {v: 'SteelAngle_2_1/4', t: '2" x 1/4" Steel Angle', s: 2}
+    ];
+
+    let alumTubes = [
+        {v: 'AlumTube_2_1/8', t: '2" Sq x 1/8" Wall', s: 2},
+        {v: 'AlumTube_3_1/8', t: '3" Sq x 1/8" Wall', s: 3},
+        {v: 'AlumTube_4_1/8', t: '4" Sq x 1/8" Wall', s: 4},
+        {v: 'AlumTube_6_1/4', t: '6" Sq x 1/4" Wall', s: 6}
+    ];
+
+    let steelTubes = [
+        {v: 'SteelTube_3_1/8', t: '3" Sq x 1/8" Wall', s: 3},
+        {v: 'SteelTube_3_3/16', t: '3" Sq x 3/16" Wall', s: 3},
+        {v: 'SteelTube_4_3/16', t: '4" Sq x 3/16" Wall', s: 4},
+        {v: 'SteelTube_6_3/16', t: '6" Sq x 3/16" Wall', s: 6},
+        {v: 'SteelTube_6_1/4', t: '6" Sq x 1/4" Wall', s: 6},
+        {v: 'SteelTube_8_3/16', t: '8" Sq x 3/16" Wall', s: 8},
+        {v: 'SteelTube_8_1/4', t: '8" Sq x 1/4" Wall', s: 8},
+        {v: 'SteelTube_10_1/4', t: '10" Sq x 1/4" Wall', s: 10},
+        {v: 'SteelTube_12_1/4', t: '12" Sq x 1/4" Wall', s: 12}
+    ];
+
+    angles = angles.filter(a => (a.s * maxSides) <= postSize);
+
+    let hasFlush = panels.some(p => p.mountStyle === 'Flush');
+    if (hasFlush) {
+        alumTubes = alumTubes.filter(t => t.s === postSize);
+        steelTubes = steelTubes.filter(t => t.s === postSize);
+    }
+
+    let html = '';
+    if (angles.length > 0) {
+        html += `<optgroup label="Angle Iron (Frames)">`;
+        angles.forEach(a => html += `<option value="${a.v}">${a.t}</option>`);
+        html += `</optgroup>`;
+    }
+    if (alumTubes.length > 0) {
+        html += `<optgroup label="Aluminum Square Tubes">`;
+        alumTubes.forEach(t => html += `<option value="${t.v}">${t.t}</option>`);
+        html += `</optgroup>`;
+    }
+    if (steelTubes.length > 0) {
+        html += `<optgroup label="Steel Square Tubes">`;
+        steelTubes.forEach(t => html += `<option value="${t.v}">${t.t}</option>`);
+        html += `</optgroup>`;
+    }
+
+    frameSelect.innerHTML = html;
+    
+    if (frameSelect.querySelector(`option[value="${currentVal}"]`)) {
+        frameSelect.value = currentVal;
+    } else {
+        let fallbackValue = '';
+        if (postType === 'Aluminum') {
+            const match = alumTubes.find(t => t.s === postSize);
+            fallbackValue = match ? match.v : (alumTubes?.v || '');
+        } else {
+            const match = steelTubes.find(t => t.s === postSize);
+            fallbackValue = match ? match.v : (steelTubes?.v || '');
+        }
+        if (fallbackValue && frameSelect.querySelector(`option[value="${fallbackValue}"]`)) {
+            frameSelect.value = fallbackValue;
+        } else {
+            frameSelect.selectedIndex = 0; 
+        }
+    }
 }
-function toggleInsetUI() {
-const style = document.querySelector('input[name="mountStyle"]:checked').value;
-const wrap = document.getElementById('wrap-inset');
-if(style === 'Between') { wrap.classList.add('opacity-30', 'pointer-events-none'); }
-else { wrap.classList.remove('opacity-30', 'pointer-events-none'); }
-}
+
 function handleDimChange() {
-const h = parseFloat(document.getElementById('h').value) || 0;
-let clrRaw = parseFloat(document.getElementById('clearance').value);
-const clr = isNaN(clrRaw) ? 36 : clrRaw;
-const isAboveAuto = document.getElementById('autoAbove').checked;
-const isBelowAuto = document.getElementById('autoBelow').checked;
-let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
-if (isAboveAuto) {
-above = clr + h;
-document.getElementById('aboveGrade').value = above;
+    let isBelowAuto = document.getElementById('autoBelow').checked;
+
+    let totalH = 0;
+    panels.forEach((p, i) => { totalH += p.h + (i === 0 ? 0 : p.gap); });
+
+    let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
+
+    // Safety Constraint: A sign cannot physically float below ground
+    if (above < totalH) {
+        above = totalH;
+        document.getElementById('aboveGrade').value = above.toFixed(1);
+    }
+
+    let clr = above - totalH;
+    document.getElementById('clearance').value = clr.toFixed(1);
+
+    if (isBelowAuto) {
+        let calcBelow = above * 0.5;
+        if (calcBelow < 12) calcBelow = 12;
+        document.getElementById('belowGrade').value = calcBelow.toFixed(1);
+    }
+
+    runCalc();
 }
-if (isBelowAuto) {
-let calcBelow = above * 0.33;
-if (calcBelow < 12) calcBelow = 12;
-document.getElementById('belowGrade').value = calcBelow.toFixed(1);
-}
-document.getElementById('aboveGrade').classList.toggle('bg-blue-50', !isAboveAuto);
-document.getElementById('aboveGrade').classList.toggle('bg-gray-100', isAboveAuto);
-document.getElementById('belowGrade').classList.toggle('bg-blue-50', !isBelowAuto);
-document.getElementById('belowGrade').classList.toggle('bg-gray-100', isBelowAuto);
-runCalc();
-}
+
 // --- 2D SVG RENDERING ---
 function drawShopDrawings(geom) {
-const frontCont = document.getElementById('svg-front-container');
-const sideCont = document.getElementById('svg-side-container');
-const th = geom.above + geom.under;
-const ow = geom.overallW;
-const maxH = 150;
-const maxW = 200;
-const scale = Math.min(maxW / ow, maxH / th);
-const sTh = th * scale, sOw = ow * scale, sPw = geom.w * scale, sPh = geom.h * scale;
-const sClr = geom.clearance * scale, sPostD = geom.post * scale, sUnder = geom.under * scale;
-const sInset = geom.inset * scale, sHoleD = geom.holeD * scale;
-const pnl_y = sTh - sUnder - sClr - sPh;
-const panelX = geom.mount === 'Between' ? sPostD : 0;
-let p1X = 0, p2X = sOw - sPostD;
-if (geom.mount === 'Flush') { p1X = sInset; p2X = sOw - sInset - sPostD; }
-let frontHTML = `<svg width="${sOw}" height="${sTh}" viewBox="0 0 ${sOw} ${sTh}" style="overflow: visible;">`;
-frontHTML += `<rect x="0" y="${sTh - sUnder}" width="${sOw}" height="${sUnder}" fill="#22c55e" opacity="0.2"/>`;
-if (geom.hasConcrete) {
-const footerH = sUnder * 0.66;
-const footerY = sTh - footerH;
-frontHTML += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.6" rx="2"/>`;
-frontHTML += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.6" rx="2"/>`;
+    const fContainer = document.getElementById('svg-front-container');
+    const sContainer = document.getElementById('svg-side-container');
+    if(!fContainer || !sContainer) return;
+    
+    const padX = isShowDims ? 25 : 5;
+    const padY = isShowDims ? 15 : 5;
+    
+    const th = geom.above + geom.under;
+    const ow = geom.overallW;
+    const maxH = 150; 
+    const maxW = 200; 
+    
+    const scale = Math.min(maxW / ow, maxH / th);
+    
+    const sTh = th * scale;
+    const sOw = ow * scale;
+    const sClr = geom.clearance * scale;
+    const sPostD = geom.post * scale;
+    const sUnder = geom.under * scale;
+    const sHoleD = geom.holeD * scale;
+
+    let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
+    let p2X = p1X + sPostD + (geom.postSpacing * scale);
+
+    // Dimension Helpers
+    const dimColor = "#e2e8f0";
+    const fSize = 6;
+    const drawHDim = (x1, x2, y, label) => {
+        return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x1}" y1="${y-2}" x2="${x1}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x2}" y1="${y-2}" x2="${x2}" y2="${y+2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${(x1+x2)/2}" y="${y-3}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="middle" font-weight="bold">${label}</text>`;
+    };
+    const drawVDim = (x, y1, y2, label, align="end") => {
+        let textX = align === "end" ? x - 3 : x + 3;
+        return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y1}" x2="${x+2}" y2="${y1}" stroke="${dimColor}" stroke-width="0.75"/><line x1="${x-2}" y1="${y2}" x2="${x+2}" y2="${y2}" stroke="${dimColor}" stroke-width="0.75"/><text x="${textX}" y="${(y1+y2)/2 + 2}" fill="${dimColor}" font-size="${fSize}" font-family="monospace" text-anchor="${align}" font-weight="bold">${label}</text>`;
+    };
+
+    // DRAW FRONT
+    let fSVG = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sOw + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
+    fSVG += `<rect x="0" y="${sTh - sUnder}" width="${sOw}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
+    fSVG += `<line x1="-5" y1="${sTh - sUnder}" x2="${sOw + 5}" y2="${sTh - sUnder}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+
+    // Footers
+    const footerH = sUnder * 0.66;
+    const footerY = sTh - footerH;
+    fSVG += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+    fSVG += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+
+    // Posts
+    const postCutThick = geom.frameThick * scale;
+    const postDrawH = sTh - postCutThick;
+    fSVG += `<rect x="${p1X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    fSVG += `<rect x="${p2X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    
+    // Panels
+    let currY = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+    
+    geom.panels.forEach((p, i) => {
+        let pW_real = p.mountStyle === 'Between' ? geom.postSpacing : p.w;
+        let sPw = pW_real * scale;
+        let sPh = p.h * scale;
+        let panelX = p.mountStyle === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
+
+        if (i > 0) currY += (p.gap * scale);
+
+        // ALWAYS draw frames (X-ray simply lowers the opacity of the face)
+        const ft = geom.frameThick * scale;
+        let shareTop = (i > 0 && p.gap === 0 && p.mountStyle === geom.panels[i-1].mountStyle);
+        
+        let overhangReal = (pW_real - geom.postSpacing - (2 * geom.post)) / 2;
+        let sOverhang = overhangReal * scale;
+
+        if (p.mountStyle === 'Flush') {
+            if (overhangReal === 0 && geom.frameThick === geom.post) {
+                // Post Acts as Vertical
+                if (!shareTop) fSVG += `<rect x="${p1X + sPostD}" y="${currY}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`;
+                fSVG += `<rect x="${p1X + sPostD}" y="${currY + sPh - ft}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`;
+            } else {
+                // Normal flush frame logic
+                if (!shareTop) fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`;
+                
+                let vHeight = sPh - (shareTop ? ft : ft*2);
+                let vY = currY + (shareTop ? 0 : ft);
+                fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+                fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+
+                if (overhangReal === 0) {
+                    fSVG += `<rect x="${p1X + sPostD}" y="${currY + sPh - ft}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`;
+                } else {
+                    fSVG += `<rect x="${panelX}" y="${currY + sPh - ft}" width="${sOverhang}" height="${ft}" fill="#94a3b8"/>`; // Left Wing
+                    fSVG += `<rect x="${p1X + sPostD}" y="${currY + sPh - ft}" width="${geom.postSpacing * scale}" height="${ft}" fill="#94a3b8"/>`; // Center
+                    fSVG += `<rect x="${p2X}" y="${currY + sPh - ft}" width="${sOverhang}" height="${ft}" fill="#94a3b8"/>`; // Right Wing
+                }
+            }
+        } else {
+            // Between posts
+            if (!shareTop) fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`;
+            fSVG += `<rect x="${panelX}" y="${currY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`;
+            
+            let vHeight = sPh - (shareTop ? ft : ft*2);
+            let vY = currY + (shareTop ? 0 : ft);
+            fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+            fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+        }
+
+        // Distributed Internal Bracing
+        let vB = p.vBraces || 0;
+        let hB = p.hBraces || 0;
+        let vY = currY + (shareTop ? 0 : ft);
+        let vHeight = sPh - (shareTop ? ft : ft*2);
+        
+        if (vB > 0) {
+            const spc = (sPw - ft*2) / (vB + 1);
+            for (let b = 1; b <= vB; b++) { fSVG += `<rect x="${panelX + ft + (spc * b) - ft/2}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`; }
+        }
+        if (hB > 0) {
+            let braceW = p.mountStyle === 'Flush' ? sPw : (geom.postSpacing * scale);
+            let braceX = p.mountStyle === 'Flush' ? panelX : (p1X + sPostD);
+            const spc = (sPh - ft*2) / (hB + 1);
+            for (let b = 1; b <= hB; b++) { fSVG += `<rect x="${braceX}" y="${currY + ft + (spc * b) - ft/2}" width="${braceW}" height="${ft}" fill="#94a3b8"/>`; }
+        }
+
+        // Draw Substrate Face AFTER the frame so it covers it.
+        let faceOpacity = isXrayView ? 0.25 : (p.mountStyle === 'Between' ? 0.8 : 0.95);
+        fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
+        
+        currY += sPh;
+    });
+
+    if (isShowDims) {
+        fSVG += drawHDim(0, sOw, -8, geom.overallW + '" O.A.W');
+        fSVG += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), geom.postSpacing + '" I.D.');
+        fSVG += drawVDim(-8, 0, sTh - sUnder, geom.above + '" A.G.', "end");
+        fSVG += drawVDim(-8, sTh - sUnder, sTh, geom.under + '" B.G.', "end");
+        if (sClr > 0) fSVG += drawVDim(sOw + 8, sTh - sUnder - sClr, sTh - sUnder, geom.clearance + '" Clr', "start");
+    }
+
+    fSVG += `</svg>`;
+    fContainer.innerHTML = fSVG;
+
+    // DRAW SIDE
+    const sideW = Math.max(geom.post + 4, 20); 
+    const visFaceThick = 2;
+    const sSideW = sideW * scale;
+    const px = (sSideW - sPostD) / 2;
+
+    let sSVG = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sSideW + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
+    sSVG += `<rect x="0" y="${sTh - sUnder}" width="${sSideW}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
+    sSVG += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
+    sSVG += `<rect x="${px}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    
+    let sy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+    geom.panels.forEach((p, i) => {
+        let sPh = p.h * scale;
+        if (i > 0) sy += (p.gap * scale);
+        
+        if (p.mountStyle === 'Between') {
+            sSVG += `<rect x="${px + (sPostD/2) - (visFaceThick/2)}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#1e40af"/>`;
+        } else {
+            sSVG += `<rect x="${px - visFaceThick}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
+            if(p.sides === 2) sSVG += `<rect x="${px + sPostD}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
+        }
+        sy += sPh;
+    });
+
+    if (isShowDims) {
+        sSVG += drawHDim(px, px + sPostD, -8, geom.post + '"');
+        let dy = sTh - sUnder - sClr - (geom.totalPanelH * scale);
+        geom.panels.forEach((p, i) => {
+            let sPh = p.h * scale;
+            if (i > 0) dy += (p.gap * scale);
+            sSVG += drawVDim(sSideW + 8, dy, dy + sPh, p.h + '"', "start");
+            dy += sPh;
+        });
+    }
+
+    sSVG += `</svg>`;
+    sContainer.innerHTML = sSVG;
 }
-frontHTML += `<rect x="${p1X}" y="0" width="${sPostD}" height="${sTh}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
-frontHTML += `<rect x="${p2X}" y="0" width="${sPostD}" height="${sTh}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
-if (isXrayView) {
-const frameThicknessScale = (geom.frameThick || 2) * scale;
-const halfThick = frameThicknessScale / 2;
-frontHTML += `<rect x="${panelX}" y="${pnl_y}" width="${sPw}" height="${sPh}" fill="#3b82f6" opacity="0.1"/>`;
-frontHTML += `<rect x="${panelX + halfThick}" y="${pnl_y + halfThick}" width="${sPw - frameThicknessScale}" height="${sPh - frameThicknessScale}" fill="none" stroke="#94a3b8" stroke-width="${frameThicknessScale}"/>`;
-if (geom.braces > 0) {
-const spaces = geom.braces + 1;
-const spacing = sPw / spaces;
-for (let i = 1; i <= geom.braces; i++) {
-const braceX = panelX + (spacing * i) - halfThick;
-frontHTML += `<rect x="${braceX}" y="${pnl_y + frameThicknessScale}" width="${frameThicknessScale}" height="${sPh - (frameThicknessScale*2)}" fill="#94a3b8"/>`;
-}
-}
-} else {
-if (geom.mount === 'Between') frontHTML += `<rect x="${panelX}" y="${pnl_y}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="0.9"/>`;
-else frontHTML += `<rect x="${panelX}" y="${pnl_y}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="0.95"/>`;
-}
-frontHTML += `</svg>`;
-frontCont.innerHTML = frontHTML;
-const sideW = Math.max(geom.post + 4, 20);
-const visFaceThick = 2;
-const sSideW = sideW * scale;
-const px = (sSideW - sPostD) / 2;
-let sideHTML = `<svg width="${sSideW}" height="${sTh}" viewBox="0 0 ${sSideW} ${sTh}" style="overflow: visible;">`;
-sideHTML += `<rect x="0" y="${sTh - sUnder}" width="${sSideW}" height="${sUnder}" fill="#22c55e" opacity="0.2"/>`;
-if (geom.hasConcrete) {
-const footerH = sUnder * 0.66;
-const footerY = sTh - footerH;
-sideHTML += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.6" rx="2"/>`;
-}
-sideHTML += `<rect x="${px}" y="0" width="${sPostD}" height="${sTh}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
-if (geom.mount === 'Between') {
-sideHTML += `<rect x="${px + (sPostD/2) - (visFaceThick/2)}" y="${pnl_y}" width="${visFaceThick}" height="${sPh}" fill="#1e40af"/>`;
-} else {
-sideHTML += `<rect x="${px - visFaceThick}" y="${pnl_y}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
-if(geom.sides === 2) sideHTML += `<rect x="${px + sPostD}" y="${pnl_y}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
-}
-sideHTML += `</svg>`;
-sideCont.innerHTML = sideHTML;
-}
+
 // --- MAIN MATH ENGINE ---
 function runCalc() {
-let clrRaw = parseFloat(document.getElementById('clearance').value);
-const inputs = {
-qty: parseInt(document.getElementById('qty').value) || 1,
-w: parseFloat(document.getElementById('w').value) || 36,
-h: parseFloat(document.getElementById('h').value) || 24,
-clearance: isNaN(clrRaw) ? 36 : clrRaw,
-aboveGrade: parseFloat(document.getElementById('aboveGrade').value) || 60,
-belowGrade: parseFloat(document.getElementById('belowGrade').value) || 20,
-mountStyle: document.querySelector('input[name="mountStyle"]:checked').value,
-postType: document.getElementById('postType').value,
-postProfile: document.getElementById('postProfile').value,
-postInset: parseFloat(document.getElementById('postInset').value) || 0,
-frameMat: document.getElementById('frameMat').value,
-faceMat: document.getElementById('faceMat').value,
-sides: parseInt(document.getElementById('sides').value) || 2,
-hasConcrete: document.getElementById('hasConcrete').checked,
-paintFace: document.getElementById('paintFace').checked,
-isCNC: document.getElementById('isCNC').checked,
-paintColor: document.getElementById('paintColor').value || 'Standard'
-};
-try {
-const dataToUse = customSimData || backendData;
-applyFallbacks(dataToUse);
-const result = calculatePostPanel(inputs, dataToUse);
-if (!result || !result.retail) return;
-lastSimResult = result;
-dynamicKeys = result.activeKeys || [];
-const ret = result.retail;
-const fmt = (n) => "$" + (n || 0).toFixed(2);
-document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
-document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
-document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(dataToUse.Retail_Min_Order || 150)}`;
-document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
-let sublineHtml = '';
-if(ret.lineItems) {
-ret.lineItems.forEach(item => {
-sublineHtml += `<span class="flex justify-between text-[10px] font-bold text-blue-500 mb-0.5"><span>+ ${item.label}</span><span>${fmt(item.unit)}</span></span>`;
-});
+    let clrRaw = parseFloat(document.getElementById('clearance').value);
+    
+    const inputs = {
+        qty: parseInt(document.getElementById('qty').value) || 1,
+        postSpacing: parseFloat(document.getElementById('postSpacing').value) || 48,
+        clearance: isNaN(clrRaw) ? 36 : clrRaw,
+        aboveGrade: parseFloat(document.getElementById('aboveGrade').value) || 60,
+        belowGrade: parseFloat(document.getElementById('belowGrade').value) || 20,
+        postType: document.getElementById('postType').value,
+        postProfile: document.getElementById('postProfile').value,
+        frameMat: document.getElementById('frameMat').value,
+        panels: panels
+    };
+
+    try {
+        const dataToUse = customSimData || backendData;
+        applyFallbacks(dataToUse);
+
+        const result = calculatePostPanel(inputs, dataToUse);
+        if (!result || !result.retail) return;
+
+        lastSimResult = result;
+        dynamicKeys = result.activeKeys || [];
+
+        const ret = result.retail;
+        const fmt = (n) => "$" + (n || 0).toFixed(2);
+
+        document.getElementById('ui-unit').innerText = fmt(ret.unitPrice);
+        document.getElementById('ui-total').innerText = fmt(ret.grandTotal);
+        document.getElementById('ui-min-text').innerText = `Shop Minimum: $${parseFloat(dataToUse.Retail_Min_Order || 150)}`;
+        document.getElementById('min-badge').classList.toggle('hidden', !ret.isMinApplied);
+        
+        let sublineHtml = '';
+        if(ret.lineItems) {
+            ret.lineItems.forEach(item => {
+                sublineHtml += `<span class="flex justify-between text-[10px] font-bold text-blue-500 mb-0.5"><span>+ ${item.label}</span><span>${fmt(item.unit)}</span></span>`;
+            });
+        }
+        document.getElementById('ui-subline').innerHTML = sublineHtml;
+
+        const postTxt = document.getElementById('postProfile').options[document.getElementById('postProfile').selectedIndex].text;
+        const frameTxt = document.getElementById('frameMat').options[document.getElementById('frameMat').selectedIndex].text;
+        
+        let panelDesc = result.geom.panels.map((p, i) => {
+            let pW_real = p.mountStyle === 'Between' ? inputs.postSpacing : p.w;
+            let mTxt = p.mountStyle === 'Between' ? 'Between Posts' : 'Flush Mount';
+            let sTxt = p.sides === 2 ? 'DS' : 'SS';
+            return ` - Panel ${i+1}: ${pW_real}" x ${p.h}" (${p.faceMat} | ${sTxt} | ${mTxt})`;
+        }).join('\n');
+
+        document.getElementById('job-desc').value = `(x${inputs.qty}) Multi-Panel Architectural Monument.\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\nPanels:\n${panelDesc}`;
+
+        if(result.geom) {
+            drawShopDrawings(result.geom);
+            
+            // Toggle Clipping Warning & Auto-Snap inputs based on engine correction
+            if (result.geom.hasClipping) {
+                document.getElementById('clip-warn').classList.remove('hidden');
+                result.geom.panels.forEach(p => {
+                    let el = document.getElementById(`panel-w-${p.id}`);
+                    if(el) el.value = p.w;
+                });
+            } else {
+                document.getElementById('clip-warn').classList.add('hidden');
+            }
+        }
+
+        if (customSimData) {
+            buildSandboxInputs();
+            renderLedgerUI(result);
+            dimInactiveSandboxVars();
+        }
+
+    } catch(e) { console.error("Physics Error:", e); }
 }
-document.getElementById('ui-subline').innerHTML = sublineHtml;
-const sideTxt = inputs.sides === 2 ? "Double Sided" : "Single Sided";
-const mountTxt = inputs.mountStyle === 'Between' ? 'Between Posts' : `Flush Mount (${inputs.postInset}" Inset)`;
-const postTxt = document.getElementById('postProfile').options[document.getElementById('postProfile').selectedIndex].text;
-const frameTxt = document.getElementById('frameMat').options[document.getElementById('frameMat').selectedIndex].text;
-const concTxt = inputs.hasConcrete ? 'Includes concrete footer tap.' : 'No concrete required.';
-const graphTxt = inputs.paintFace ? `Painted Face [${inputs.paintColor}] w/ Contour Cut Graphics` : "Raw Face w/ Printed Overlay Graphics";
-const cncTxt = inputs.isCNC ? "Faces Custom CNC Routed." : "Faces Square Cut.";
-document.getElementById('job-desc').value = `(x${inputs.qty}) Overall: ${result.geom.overallW}" W x ${inputs.aboveGrade}" H Above Grade Post & Panel Sign.\nPanel Description: ${inputs.w}" W x ${inputs.h}" H ${inputs.faceMat} (${sideTxt}) ${cncTxt}\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.clearance}" Ground Clearance, ${inputs.belowGrade}" Below Grade)\nFrame: ${frameTxt} (${mountTxt})\nFinish: ${graphTxt}\n${concTxt}`;
-if(result.geom) drawShopDrawings(result.geom);
-if (customSimData) {
-buildSandboxInputs();
-renderLedgerUI(result);
-dimInactiveSandboxVars();
-}
-} catch(e) { console.error("Physics Error:", e); }
-}
+
 // --- INIT APP ---
 window.addEventListener('load', async () => {
-if (typeof injectHeader === 'function') injectHeader("Post & Panel Fabrication");
-const statusText = document.getElementById("status-text");
-const statusDot = document.getElementById("status-dot");
-if(sessionStorage.getItem('signos_role') === 'ADMIN' || sessionStorage.getItem('signos_role') === 'SUPER') {
-document.getElementById('btn-sandbox').classList.remove('hidden');
-}
-try {
-if (typeof SignOS !== 'undefined' && SignOS.fetchProductData) {
-const payload = await SignOS.fetchProductData('PROD_Post_Panel', []);
-if (payload && payload.config) backendData = payload.config;
-} else {
-const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Post_Panel`);
-backendData = await req.json();
-}
-// FORCE FALLBACKS IMMEDIATELY IF TAB IS EMPTY
-applyFallbacks(backendData);
-if(statusText) {
-statusText.innerText = "ONLINE";
-statusText.className = "font-bold text-green-500";
-if(statusDot) {
-statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-statusDot.classList.remove("animate-pulse");
-}
-}
-} catch(e) {
-console.warn("API Data Error, utilizing pure fallbacks: ", e);
-applyFallbacks(backendData);
-if(statusText) {
-statusText.innerText = "OFFLINE (LOCAL)";
-statusText.className = "font-bold text-yellow-600";
-}
-}
-updatePostDropdown();
-toggleInsetUI();
-handleMatChange();
+    if (typeof injectHeader === 'function') injectHeader("Post & Panel Fabrication");
+
+    const statusText = document.getElementById("status-text");
+    const statusDot = document.getElementById("status-dot");
+
+    if(sessionStorage.getItem('signos_role') === 'ADMIN' || sessionStorage.getItem('signos_role') === 'SUPER') {
+        document.getElementById('btn-sandbox').classList.remove('hidden');
+    }
+
+    try {
+        if (typeof SignOS !== 'undefined' && SignOS.fetchProductData) {
+            const payload = await SignOS.fetchProductData('PROD_Post_Panel', []);
+            if (payload && payload.config) backendData = payload.config;
+        } else {
+            const req = await fetch(`${SCRIPT_URL}?req=view_module&tab=PROD_Post_Panel`);
+            backendData = await req.json();
+        }
+        applyFallbacks(backendData);
+        if(statusText) {
+            statusText.innerText = "ONLINE";
+            statusText.className = "font-bold text-green-500";
+            if(statusDot) { statusDot.className = "w-2 h-2 rounded-full bg-green-500"; statusDot.classList.remove("animate-pulse"); }
+        }
+    } catch(e) {
+        console.warn("API Data Error: ", e);
+        applyFallbacks(backendData);
+        if(statusText) { statusText.innerText = "OFFLINE (LOCAL)"; statusText.className = "font-bold text-yellow-600"; }
+    }
+
+    renderPanels(); 
+    updatePostDropdown();
+    
+    // FORCE INITIAL CLEARANCE MATH
+    handleDimChange();
 });
 </script>
 </body>
