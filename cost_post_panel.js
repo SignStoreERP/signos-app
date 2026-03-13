@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Post & Panel Signs (v3.0)
- * Features: Dynamic Multi-Panel Support, Exact Frame Cuts, Flush/Sealed Post Overrides.
+ * PURE PHYSICS ENGINE: Post & Panel Signs (v3.1)
+ * Features: Narrow Panel Processing, Cut List Generation, Structural Collision Detection
  */
 
 function calculatePostPanel(inputs, data) {
@@ -64,6 +64,12 @@ function calculatePostPanel(inputs, data) {
                 pLF += inputs.postSpacing / 12;
                 pCuts += 2;
                 pDesc.push(`(x1) ${p.w}" Top`, `(x1) ${inputs.postSpacing}" Bot Center`);
+            } else if (p.w <= inputs.postSpacing) {
+                // If panel is narrower than the posts, the frame horizontally spans the posts entirely!
+                pLF += (inputs.postSpacing * 2) / 12; 
+                pLF += (p.h * 2) / 12; 
+                pCuts += 4;
+                pDesc.push(`(x2) ${inputs.postSpacing}" Horizontals`, `(x2) ${p.h}" Verticals`);
             } else {
                 pLF += p.w / 12;
                 pLF += (p.h * 2) / 12;
@@ -120,7 +126,7 @@ function calculatePostPanel(inputs, data) {
     
     let frameRaw = totalFrameLF * frameCostLF;
     let frameTotal = frameRaw * wastePct;
-    L(`Internal Frame (${inputs.frameMat.split('_')})`, frameTotal, `${totalFrameLF.toFixed(1)} LF * $${frameCostLF.toFixed(2)}/LF [${V(frameKey)}] * ${wastePct} Waste`, 'posts', 'struct_mat', { waste: frameTotal - frameRaw });
+    L(`Internal Frame (${inputs.frameMat.split('_')[1]})`, frameTotal, `${totalFrameLF.toFixed(1)} LF * $${frameCostLF.toFixed(2)}/LF [${V(frameKey)}] * ${wastePct} Waste`, 'posts', 'struct_mat', { waste: frameTotal - frameRaw });
 
     const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
     let gatherMins = parseFloat(data.Time_Gather_Mats || 10) * inputs.qty;
@@ -137,7 +143,6 @@ function calculatePostPanel(inputs, data) {
     const frameSawMins = totalFrameCuts * (isMiterFrame ? timeMiter : timeBand);
     L(`Frame Cuts (${isMiterFrame ? "Miter Saw" : "Band Saw"})`, (frameSawMins / 60) * rateShop, `${totalFrameCuts} Cuts * ${(isMiterFrame ? timeMiter : timeBand)} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: frameSawMins });
 
-    // Welding simplified strictly to the piece count multiplier per panel
     const weldLocs = totalFrameCuts; 
     const timeWeldLoc = parseFloat(data.Time_Weld_Per_Loc || 1.5);
     const timeCleanLoc = parseFloat(data.Time_Clean_Weld_Loc || 0.33);
@@ -149,7 +154,6 @@ function calculatePostPanel(inputs, data) {
     const cartridges = Math.ceil(totalFrameLF / adhYield);
     L(`Lord's Adhesive (Metal Glue)`, cartridges * adhCost, `${cartridges} Cartridges (Chunks of ${adhYield} LF [${V('Yield_Adhesive_Tube_LF')}]) * $${adhCost.toFixed(2)}/ea [${V('Cost_Adhesive_Tube')}]`, 'finish', 'struct_mat');
 
-    // Total Sides across all panels
     let totalSides = 0;
     inputs.panels.forEach(p => { totalSides += p.sides * inputs.qty; });
     let adhMins = totalSides * parseFloat(data.Time_Adhesive_Per_Face || 7);
@@ -182,7 +186,7 @@ function calculatePostPanel(inputs, data) {
             L(`CNC Router Setup`, (cncSetup / 60) * parseFloat(data.Rate_CNC_Labor || 25), `${cncSetup} Mins Setup * $${parseFloat(data.Rate_CNC_Labor || 25)}/hr [${V('Rate_CNC_Labor')}]`, 'faces', 'struct_lab', { time: cncSetup });
             L(`CNC Machine Run`, (cncRun / 60) * parseFloat(data.Rate_Machine_CNC || 10), `${m.sqft.toFixed(1)} SF * ${parseFloat(data.Time_CNC_Easy_SqFt || 1)} Mins/SF * $${parseFloat(data.Rate_Machine_CNC || 10)}/hr [${V('Rate_Machine_CNC')}]`, 'faces', 'struct_lab', { time: cncRun });
         } else {
-            let shearRun = (4 * inputs.qty) * parseFloat(data.Time_Shear_Cut || 0.35); // 4 cuts per panel
+            let shearRun = (4 * inputs.qty) * parseFloat(data.Time_Shear_Cut || 0.35); 
             L(`Shear Per-Cut Run`, (shearRun / 60) * rateShop, `${4 * inputs.qty} Cuts * ${parseFloat(data.Time_Shear_Cut || 0.35)} Mins/Cut [${V('Time_Shear_Cut')}] * $${rateShop}/hr`, 'faces', 'struct_lab', { time: shearRun });
         }
     }
