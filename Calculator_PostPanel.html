@@ -63,7 +63,7 @@
         
         <div id="clipping-warn" class="hidden bg-red-50 text-red-700 text-[10px] font-bold px-3 py-2 rounded-lg border border-red-200 shadow-sm flex items-center gap-2">
             <span class="text-lg leading-none">⚠️</span>
-            <span><b>Physics Collision Avoided:</b> Your panel width intercepted the post structure. Auto-snapped to the nearest valid dimension.</span>
+            <span><b>Physics Collision Avoided:</b> A panel width physically intercepted the post structure. Auto-snapped to the nearest valid clearance.</span>
         </div>
 
         <div id="main-card" class="w-full bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200 transition-all duration-300 relative">
@@ -114,7 +114,15 @@
                 </div>
                 <div class="grid grid-cols-4 gap-3">
                     <div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Fleet Qty</label><input type="number" id="qty" value="1" min="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center bg-white focus:border-blue-500 outline-none shadow-inner" oninput="runCalc()"></div>
-                    <div class="col-span-2"><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1" title="Inside-to-Inside Spacing">Post Spacing (Inside - in)</label><input type="number" id="postSpacing" value="48" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner" oninput="handleDimChange()"></div>
+                    <div class="col-span-2">
+                        <label class="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase mb-1" title="Inside-to-Inside Spacing">
+                            Post Spacing (ID)
+                            <label class="flex items-center gap-1 cursor-pointer text-[8px] text-blue-600 normal-case">
+                                <input type="checkbox" id="customSpacing" onchange="handleDimChange()" class="w-2 h-2"> Custom
+                            </label>
+                        </label>
+                        <input type="number" id="postSpacing" value="54" min="12" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="document.getElementById('customSpacing').checked=true; handleDimChange()">
+                    </div>
                     <div><label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Clearance (in)</label><input type="number" id="clearance" value="0" min="0" step="1" class="w-full border border-gray-300 p-2 rounded text-lg font-black text-center bg-slate-100 text-slate-400 outline-none shadow-inner cursor-not-allowed" readonly title="Auto-calculated distance from ground to bottom of lowest panel"></div>
                 </div>
 
@@ -143,7 +151,7 @@
                         </div>
                         <div class="col-span-2">
                             <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Size & Gauge</label>
-                            <select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updateFrameDropdown(); runCalc()">
+                            <select id="postProfile" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updateFrameDropdown(); handleDimChange();">
                                 <!-- Dynamically Populated by JS -->
                             </select>
                         </div>
@@ -404,7 +412,7 @@ function updatePostDropdown() {
     }
     profileSelect.innerHTML = html;
     updateFrameDropdown();
-    runCalc();
+    handleDimChange();
 }
 
 function updateFrameDropdown() {
@@ -501,6 +509,7 @@ function validatePhysics() {
     const postProf = document.getElementById('postProfile').value;
     const postSize = parseFloat(postProf.split('_')) || 3;
     const postSpacing = parseFloat(document.getElementById('postSpacing').value) || 48;
+    const ID = postSpacing;
     const OD = postSpacing + (postSize * 2);
 
     const frameMat = document.getElementById('frameMat').value;
@@ -509,17 +518,17 @@ function validatePhysics() {
 
     panels.forEach(p => {
         if (p.mountStyle === 'Flush') {
-            if (p.w < OD) {
-                p.w = OD;
+            // Danger Zone 1: Panel edge falls inside the post tube itself
+            if (p.w > ID && p.w < OD) {
+                const snapDown = ID;
+                const snapUp = OD;
+                p.w = Math.abs(p.w - snapDown) < Math.abs(p.w - snapUp) ? snapDown : snapUp;
                 didSnap = true;
-            } else {
-                const overhang = (p.w - OD) / 2;
-                if (p.w !== OD && overhang > 0 && overhang < frameSize) {
-                    const snapDown = OD;
-                    const snapUp = OD + (frameSize * 2);
-                    p.w = Math.abs(p.w - snapDown) <= Math.abs(p.w - snapUp) ? snapDown : snapUp;
-                    didSnap = true;
-                }
+            } 
+            // Danger Zone 2: Panel overhangs post, but overhang is smaller than the frame tube
+            else if (p.w > OD && p.w < OD + (frameSize * 2)) {
+                p.w = OD; // Snap down to perfectly sealed flush
+                didSnap = true;
             }
         }
     });
@@ -538,7 +547,29 @@ function validatePhysics() {
 }
 
 function handleDimChange() {
+    let isCustomSpacing = document.getElementById('customSpacing').checked;
     let isBelowAuto = document.getElementById('autoBelow').checked;
+
+    // --- AUTO POST SPACING LOGIC ---
+    if (!isCustomSpacing && panels.length > 0) {
+        const postProf = document.getElementById('postProfile').value;
+        const postSize = parseFloat(postProf.split('_')) || 3;
+        let mainPanel = panels;
+        let newID = 48;
+        
+        if (mainPanel.mountStyle === 'Between') {
+            newID = mainPanel.w;
+        } else {
+            // Flush -> Posts hide directly behind the edges
+            newID = mainPanel.w - (postSize * 2);
+        }
+        
+        if (newID < 12) newID = 12; // Safety floor
+        document.getElementById('postSpacing').value = newID;
+        document.getElementById('postSpacing').classList.add('bg-blue-50', 'text-blue-800');
+    } else {
+        document.getElementById('postSpacing').classList.remove('bg-blue-50', 'text-blue-800');
+    }
 
     let totalH = 0;
     panels.forEach((p, i) => { totalH += p.h + (i === 0 ? 0 : p.gap); });
@@ -631,7 +662,6 @@ function drawShopDrawings(geom) {
         let vHeight = sPh - (shareTop ? ft : ft*2);
         let vY = currY + (shareTop ? 0 : ft);
 
-        // Skip drawing outer vertical frames if flush mounted tightly to post OD
         if (!isFlushSealed) {
             fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
             fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
