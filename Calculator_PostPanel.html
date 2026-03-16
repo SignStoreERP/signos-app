@@ -90,7 +90,7 @@
                 </div>
             </div>
 
-            <!-- TOTAL FLEET QTY (MOVED UP) -->
+            <!-- TOTAL FLEET QTY -->
             <div class="bg-blue-50 p-4 border-b border-gray-200 flex justify-between items-center shadow-inner">
                 <label class="text-[11px] font-black text-blue-900 uppercase tracking-widest">Total Fleet Quantity</label>
                 <input type="number" id="qty" value="1" min="1" class="w-24 border border-blue-200 p-2 rounded text-xl font-black text-center bg-white focus:border-blue-500 outline-none shadow-sm text-blue-900" oninput="runCalc()">
@@ -402,13 +402,15 @@ function removePanel(id) {
 
 function updateDimensions(source) {
     if (panels.length === 0) return;
+    
+    // FIX: Strictly target the first panel for width and mount style
     let mainW = panels.w || 36; 
+    let primaryMount = panels.mountStyle;
     
     let clr = parseFloat(document.getElementById('clearance').value) || 0;
     let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
     let below = parseFloat(document.getElementById('belowGrade').value) || 0;
 
-    let primaryMount = panels.mountStyle;
     let isBetween = primaryMount === 'Between';
     let allowOffset = document.getElementById('allowOffset').checked;
 
@@ -450,7 +452,7 @@ function updateDimensions(source) {
         postLenEl.innerText = `Total Post Length: ${totalPost}" (${(totalPost/12).toFixed(1)}')`;
     }
 
-    // Auto-Calculate Post Spacing (Driven exclusively by Primary Panel)
+    // Auto-Calculate Post Spacing (Driven exclusively by Primary Panel width)
     const postProf = document.getElementById('postProfile').value || '2_1/8';
     const postSize = parseFloat(postProf.split('_')) || 2;
     
@@ -527,12 +529,10 @@ function getFrameOptionsHTML(p) {
         {v: 'SteelTube_12_1/4', t: '12" Sq x 1/4" Wall', s: 12}
     ];
 
-    angles = angles.filter(a => (a.s * maxSides) <= postSize);
-
-    if (mountStyle === 'Flush') {
-        alumTubes = alumTubes.filter(t => t.s === postSize);
-        steelTubes = steelTubes.filter(t => t.s === postSize);
-    }
+    // FIX: Relaxing constraints so you can use angle iron or smaller tubes inside of larger posts 
+    angles = angles.filter(a => a.s <= postSize);
+    alumTubes = alumTubes.filter(t => t.s <= postSize);
+    steelTubes = steelTubes.filter(t => t.s <= postSize);
 
     let html = '';
     if (angles.length > 0) {
@@ -598,6 +598,8 @@ function drawShopDrawings(geom) {
     const postY = (geom.maxAbove - geom.postAbove) * scale;
     const panelY = (geom.maxAbove - geom.panelAbove) * scale;
 
+    // By accurately mapping postSpacing and sPostD to the total Overall Width (sOw),
+    // p1X naturally anchors at exactly 0 when Flush mounted, guaranteeing outer-edge perfection.
     let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
     let p2X = p1X + sPostD + (geom.postSpacing * scale);
 
@@ -626,12 +628,11 @@ function drawShopDrawings(geom) {
     geom.panels.forEach((p, i) => {
         let sPh = p.h * scale;
         let sPw = p.w * scale;
-        let pX = (sOw - sPw) / 2;
-        let ft = (parseFloat(p.frameMat.split('_')[3]) || 2) * scale;
+        let ft = (parseFloat(p.frameMat.split('_')) || 2) * scale;
         
         if (i > 0) tempF_Y += p.gap * scale;
 
-        let sFw = geom.postSpacing * scale;
+        let sFw = geom.postSpacing * scale; // Cross braces exactly span the ID post spacing
         let fX = p1X + sPostD;
         
         fSVG += `<rect x="${fX}" y="${tempF_Y}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`; // Top
@@ -680,7 +681,7 @@ function drawShopDrawings(geom) {
         if (i > 0) tempXrayY += p.gap * scale;
         let pX = (sOw - (p.w * scale)) / 2;
         let sPh = p.h * scale;
-        let ft = (parseFloat(p.frameMat.split('_')[3]) || 2) * scale;
+        let ft = (parseFloat(p.frameMat.split('_')) || 2) * scale;
         let sFw = geom.postSpacing * scale;
         let fX = p1X + sPostD;
 
@@ -688,8 +689,11 @@ function drawShopDrawings(geom) {
         
         svgFrontXray += `<rect x="${fX}" y="${tempXrayY}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`; // Top
         svgFrontXray += `<rect x="${fX}" y="${tempXrayY + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
-        svgFrontXray += `<rect x="${fX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
-        svgFrontXray += `<rect x="${fX + sFw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
+        
+        if (p.mountStyle === 'Between') {
+            svgFrontXray += `<rect x="${fX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
+            svgFrontXray += `<rect x="${fX + sFw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
+        }
         
         // Draw Vertical Braces 
         const numVerticalBraces = Math.max(0, Math.floor((geom.postSpacing - 12) / 30));

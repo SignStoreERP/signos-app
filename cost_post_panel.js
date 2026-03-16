@@ -84,7 +84,7 @@ function calculatePostPanel(inputs, data) {
     let panelAboveInches = inputs.clearance + totalPanelH;
     let postAboveInches = panelAboveInches; 
 
-    // Offset driven by the primary panel
+    // FIX: Offset driven explicitly by primary panel (panels)
     const primaryMount = inputs.panels.mountStyle;
     if (primaryMount === 'Flush') {
         inputs.postOffset = 0; 
@@ -193,7 +193,6 @@ function calculatePostPanel(inputs, data) {
     const postSawMins = (2 * inputs.qty) * (isMiterPost ? timeMiter : timeBand);
     L(`Post Cuts (${isMiterPost ? "Miter Saw" : "Band Saw"})`, (postSawMins / 60) * rateShop, `${2 * inputs.qty} Cuts * ${(postSawMins/(2*inputs.qty))} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: postSawMins });
 
-    // Assuming average frame is aluminum angle/tube < 4" for mitering speed
     const frameSawMins = totalFrameCuts * timeMiter; 
     L(`Frame Cuts (Sum of Panels)`, (frameSawMins / 60) * rateShop, `${totalFrameCuts} Cuts * ${timeMiter} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: frameSawMins });
 
