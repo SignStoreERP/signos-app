@@ -396,7 +396,7 @@ function addPanel() {
 
 function removePanel(id) {
     panels = panels.filter(x => x.id !== id);
-    if(panels.length > 0) panels.gap = 0;
+    if(panels.length > 0) panels.gap = 0; 
     renderPanels();
 }
 
@@ -627,7 +627,7 @@ function drawShopDrawings(geom) {
         let sPh = p.h * scale;
         let sPw = p.w * scale;
         let pX = (sOw - sPw) / 2;
-        let ft = (parseFloat(p.frameMat.split('_')[1]) || 2) * scale;
+        let ft = (parseFloat(p.frameMat.split('_')[3]) || 2) * scale;
         
         if (i > 0) tempF_Y += p.gap * scale;
 
@@ -680,7 +680,7 @@ function drawShopDrawings(geom) {
         if (i > 0) tempXrayY += p.gap * scale;
         let pX = (sOw - (p.w * scale)) / 2;
         let sPh = p.h * scale;
-        let ft = (parseFloat(p.frameMat.split('_')[1]) || 2) * scale;
+        let ft = (parseFloat(p.frameMat.split('_')[3]) || 2) * scale;
         let sFw = geom.postSpacing * scale;
         let fX = p1X + sPostD;
 
