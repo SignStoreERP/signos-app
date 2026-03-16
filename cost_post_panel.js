@@ -85,8 +85,16 @@ function calculatePostPanel(inputs, data) {
     const primaryPanel = inputs.panels.slice(0, 1).pop();
     const primaryMount = primaryPanel ? primaryPanel.mountStyle : 'Flush';
     
+    let primaryFt = 2;
+    if (primaryPanel && primaryPanel.frameMat && primaryPanel.frameMat.includes('_')) {
+        let fParts = primaryPanel.frameMat.split('_');
+        if (fParts.length > 1) { primaryFt = parseFloat(fParts.slice(1, 2).pop()) || 2; }
+    }
+
     if (primaryMount === 'Flush') {
         inputs.postOffset = 0; 
+        // Posts cut short to meet the exact bottom lip of the upper crossbar 
+        postAboveInches = panelAboveInches - primaryFt;
     } else if (inputs.allowOffset) {
         postAboveInches = panelAboveInches + inputs.postOffset;
     }
@@ -126,6 +134,8 @@ function calculatePostPanel(inputs, data) {
     inputs.panels.forEach((p, idx) => {
         let fLF = 0;
         let fCuts = 0;
+        let isAbsoluteTop = (idx === 0);
+        let isFlush = (p.mountStyle === 'Flush');
         
         let fThick = 2;
         if (p.frameMat && p.frameMat.includes('_')) {
@@ -133,27 +143,46 @@ function calculatePostPanel(inputs, data) {
             if (fParts.length > 1) { fThick = parseFloat(fParts.slice(1, 2).pop()) || 2; }
         }
         
-        let frameHoriz = p.w; 
-        fLF += (frameHoriz * 2) / 12; 
-        fCuts += 4;
+        // HORIZONTAL CUTS (SEGMENTED IF FLUSH MOUNT)
+        let frameHorizTop = p.w; 
+        let topPieces = 1;
+        if (isFlush && !isAbsoluteTop) {
+            frameHorizTop = Math.max(0, p.w - (postSizeInches * 2));
+            let overhang = (p.w - inputs.postSpacing - (postSizeInches * 2)) / 2;
+            if (overhang > 0.1) topPieces = 3;
+        }
+        fLF += frameHorizTop / 12; 
+        fCuts += topPieces * 2;
 
+        let frameHorizBot = p.w; 
+        let botPieces = 1;
+        if (isFlush) {
+            frameHorizBot = Math.max(0, p.w - (postSizeInches * 2));
+            let overhang = (p.w - inputs.postSpacing - (postSizeInches * 2)) / 2;
+            if (overhang > 0.1) botPieces = 3;
+        }
+        fLF += frameHorizBot / 12; 
+        fCuts += botPieces * 2;
+
+        // VERTICAL CUTS
         let frameVert = p.h - (fThick * 2);
         const numVerticalBraces = Math.max(0, Math.floor((inputs.postSpacing - 12) / 30)); 
-        
-        // STRUCTURAL PHYSICS UPDATE: 
-        // If Mount is "Flush", we do not build vertical edges for the frame because the Post face acts as the vertical stringer.
-        const totalVerts = p.mountStyle === 'Flush' ? numVerticalBraces : (2 + numVerticalBraces);
+        const totalVerts = 2 + numVerticalBraces;
         
         fLF += (frameVert * totalVerts) / 12; 
         fCuts += totalVerts * 2;
 
-        if (p.mountStyle === 'Flush') {
-            if (numVerticalBraces > 0) fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x${numVerticalBraces}) ${frameVert}" Vert Braces. [Flush Mounted - Outer posts act as frame edges]`);
-            else fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz. [Flush Mounted - Outer posts act as frame edges]`);
-        } else {
-            if (numVerticalBraces > 0) fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x${totalVerts}) ${frameVert}" Verts (${numVerticalBraces} internal brace)`);
-            else fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x2) ${frameVert}" Verts`);
-        }
+        let descPieces = '';
+        if (topPieces === 3) descPieces += `(3) Top Pcs [Total: ${frameHorizTop}"], `;
+        else descPieces += `(1) ${frameHorizTop}" Top, `;
+
+        if (botPieces === 3) descPieces += `(3) Bot Pcs [Total: ${frameHorizBot}"], `;
+        else descPieces += `(1) ${frameHorizBot}" Bot, `;
+
+        descPieces += `(${totalVerts}) ${frameVert}" Verts`;
+        if (numVerticalBraces > 0) descPieces += ` (${numVerticalBraces} inner brace)`;
+
+        fDesc.push(`Panel ${idx+1}: ${descPieces}`);
 
         let fMult = (p.sides === 2 && p.mountStyle === 'Flush') ? 2 : 1;
         let pFrameLF = (fLF * fMult) * inputs.qty;

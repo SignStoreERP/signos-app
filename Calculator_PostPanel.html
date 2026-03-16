@@ -321,7 +321,7 @@ function renderPanels() {
         let gapHtml = i > 0 ? 
             `<div>
                 <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Gap Above (in)</label>
-                <input type="number" value="${p.gap}" step="0.5" oninput="updatePanel(${p.id}, 'gap', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
+                <input type="number" value="${p.gap}" step="0.5" min="0" oninput="updatePanel(${p.id}, 'gap', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
             </div>` : 
             `<div class="flex items-end pb-1.5">
                 <span class="text-[9px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 uppercase tracking-widest shadow-sm">Primary Panel (Drives Spacing)</span>
@@ -475,9 +475,21 @@ function updateDimensions(source) {
 
     let panelAbove = clr + totalPanelH;
     let postAbove = panelAbove;
-    if (isBetween && allowOffset) postAbove = panelAbove + postOffset;
+    
+    // ADJUST POST HEIGHT FOR FLUSH MOUNTS
+    if (primaryMount === 'Flush') {
+        let primaryFt = 2;
+        if (primaryPanel && primaryPanel.frameMat && primaryPanel.frameMat.includes('_')) {
+            let fParts = primaryPanel.frameMat.split('_');
+            if (fParts.length > 1) { primaryFt = parseFloat(fParts.slice(1, 2).pop()) || 2; }
+        }
+        postAbove = panelAbove - primaryFt;
+    } else if (isBetween && allowOffset) {
+        postAbove = panelAbove + postOffset;
+    }
+    
     let maxAbove = Math.max(panelAbove, postAbove);
-    let totalPost = maxAbove + below;
+    let totalPost = postAbove + below;
 
     let postLenEl = document.getElementById('post-length-display');
     if(postLenEl) {
@@ -622,8 +634,9 @@ function drawShopDrawings(geom) {
     const sPostAbove = geom.postAbove * scale;
     const sPostH = (geom.postAbove + geom.under) * scale;
 
-    const postY = (geom.maxAbove - geom.postAbove) * scale;
+    // Calculate Y origin points
     const panelY = (geom.maxAbove - geom.panelAbove) * scale;
+    const postY = (geom.maxAbove - geom.postAbove) * scale;
 
     let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
     let p2X = p1X + sPostD + (geom.postSpacing * scale);
@@ -642,6 +655,7 @@ function drawShopDrawings(geom) {
     fSVG += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
     fSVG += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
 
+    // Draw Posts 
     fSVG += `<rect x="${p1X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     fSVG += `<rect x="${p2X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
@@ -676,6 +690,23 @@ function drawShopDrawings(geom) {
     svgFrontXray += `<rect x="${p2X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
     let tempXrayY = panelY;
+    
+    let drawSegmentedHoriz = (yPos, startX, totalWidth, frameHeight) => {
+        let html = '';
+        // Left Overhang
+        let leftWidth = p1X - startX;
+        if (leftWidth > 0) html += `<rect x="${startX}" y="${yPos}" width="${leftWidth}" height="${frameHeight}" fill="#94a3b8"/>`;
+        // Center Span
+        let centerStartX = p1X + sPostD;
+        let centerWidth = p2X - centerStartX;
+        if (centerWidth > 0) html += `<rect x="${centerStartX}" y="${yPos}" width="${centerWidth}" height="${frameHeight}" fill="#94a3b8"/>`;
+        // Right Overhang
+        let rightStartX = p2X + sPostD;
+        let rightWidth = (startX + totalWidth) - rightStartX;
+        if (rightWidth > 0) html += `<rect x="${rightStartX}" y="${yPos}" width="${rightWidth}" height="${frameHeight}" fill="#94a3b8"/>`;
+        return html;
+    };
+
     geom.panels.forEach((p, i) => {
         if (i > 0) tempXrayY += p.gap * scale;
         let sPh = p.h * scale;
@@ -691,14 +722,22 @@ function drawShopDrawings(geom) {
 
         svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${sPh}" fill="#3b82f6" opacity="0.15"/>`;
         
-        svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Top
-        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
-        
-        // ONLY DRAW VERTICAL SIDE FRAME EXTRUSIONS IF MOUNT IS "BETWEEN"
+        // HORIZONTAL FRAMING
         if (p.mountStyle === 'Between') {
-            svgFrontXray += `<rect x="${pX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
-            svgFrontXray += `<rect x="${pX + sPw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
+            svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Top
+            svgFrontXray += `<rect x="${pX}" y="${tempXrayY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
+        } else {
+            // Top crossbar is absolute continuous if it is the uppermost panel
+            if (i === 0) svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; 
+            else svgFrontXray += drawSegmentedHoriz(tempXrayY, pX, sPw, ft); 
+            
+            // Bottom crossbar is always segmented around posts for flush mounts
+            svgFrontXray += drawSegmentedHoriz(tempXrayY + sPh - ft, pX, sPw, ft);
         }
+        
+        // VERTICAL FRAMING
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
+        svgFrontXray += `<rect x="${pX + sPw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
         
         // Draw Vertical Braces 
         const numVerticalBraces = Math.max(0, Math.floor((geom.postSpacing - 12) / 30));
