@@ -107,12 +107,13 @@
                     <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest block">1. Sign Face & Panels</span>
                 </div>
 
-                <!-- Panel Manager -->
+                <!-- Accordion Panel Manager -->
                 <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 shadow-inner">
                     <div class="flex justify-between items-center mb-3">
                         <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Panel Configuration</label>
                         <button onclick="addPanel()" class="text-[9px] font-bold bg-white text-blue-600 border border-blue-200 px-2 py-1 rounded shadow-sm hover:bg-blue-600 hover:text-white transition uppercase tracking-widest">+ Add Panel</button>
                     </div>
+                    
                     <div id="panel-container" class="space-y-3 max-h-[450px] overflow-y-auto custom-scroll pr-1"></div>
                     
                     <div class="mt-3 pt-2 border-t border-slate-300 flex justify-between items-center">
@@ -160,7 +161,6 @@
                     </div>
                     <div id="wrap-offset-input" class="hidden flex-1 max-w-[120px]">
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Reveal (in)</label>
-                        <!-- Validates onchange so it waits for user typing -->
                         <input type="number" id="postOffset" value="0" step="1" onchange="updateDimensions('offset')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-center focus:border-blue-500 outline-none shadow-inner h-[38px]" title="Positive = Posts stick up. Negative = Panel sticks up.">
                     </div>
                 </div>
@@ -168,21 +168,20 @@
                 <div class="grid grid-cols-2 gap-4 border-t border-gray-200 pt-4">
                     <div>
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Distance From Ground (Clearance)</label>
-                        <!-- Validates onchange so it waits for user typing -->
-                        <input type="number" id="clearance" value="24" min="0" step="1" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" onchange="updateDimensions('clearance')">
+                        <!-- onblur ensures it waits for you to finish typing before validating -->
+                        <input type="number" id="clearance" value="24" min="0" step="1" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" onblur="updateDimensions('clearance')">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Total Height Above Grade</label>
-                        <!-- Validates onchange so it waits for user typing -->
-                        <input type="number" id="aboveGrade" value="60" min="1" step="1" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors bg-blue-50 text-blue-800" onchange="updateDimensions('above')">
+                        <!-- onblur ensures it waits for you to finish typing before validating -->
+                        <input type="number" id="aboveGrade" value="60" min="1" step="1" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors bg-blue-50 text-blue-800" onblur="updateDimensions('above')">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 pt-1">
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Below Grade (Bury Depth)</label>
-                        <!-- Validates onchange so it waits for user typing -->
-                        <input type="number" id="belowGrade" value="24" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-xs font-black text-center focus:border-blue-500 outline-none shadow-inner h-[38px]" onchange="updateDimensions('below')">
+                        <input type="number" id="belowGrade" value="24" min="1" step="1" class="w-full border border-gray-300 p-2 rounded text-xs font-black text-center focus:border-blue-500 outline-none shadow-inner h-[38px]" onblur="updateDimensions('below')">
                     </div>
                     <div class="flex items-end">
                         <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer pb-2">
@@ -275,7 +274,7 @@ var isXrayView = false;
 var isShowDims = true;
 
 // Default Load State
-var panels = [{ id: Date.now(), w: 36, h: 36, gap: 0, mountStyle: 'Flush', sides: 2, faceMat: '063 Alum', frameMat: 'AlumTube_2_1/8', graphicMethod: 'PrintOnPaint', isCNC: false }];
+var panels = [{ id: Date.now(), w: 36, h: 36, gap: 0, mountStyle: 'Flush', sides: 2, faceMat: '063 Alum', frameMat: 'AlumTube_2_1/8', graphicMethod: 'PrintOnPaint', isCNC: false, isOpen: true }];
 
 if(document.getElementById('loader')) document.getElementById('loader').classList.add('hidden');
 if(document.getElementById('status-text')) document.getElementById('status-text').innerText = "System Active";
@@ -291,92 +290,114 @@ function toggleDims() {
     if(lastSimResult && lastSimResult.geom) { drawShopDrawings(lastSimResult.geom); }
 }
 
-// --- PANEL MANAGER ---
+// --- PANEL ACCORDION MANAGER ---
+function togglePanel(id) {
+    panels.forEach(p => {
+        if (p.id === id) { p.isOpen = p.isOpen === false ? true : false; } 
+        else { p.isOpen = false; } // Auto-close others for cleaner UI
+    });
+    renderPanels();
+}
+
 function renderPanels() {
     const c = document.getElementById('panel-container');
     c.innerHTML = '';
+    
     panels.forEach((p, i) => {
-        // Gap removed min="0" so users can purposely overlap panels with negative numbers!
-        let gapHtml = i > 0 ? 
+        let isPrimary = i === 0;
+        let isExpanded = p.isOpen !== false; // Default to true
+
+        let gapHtml = !isPrimary ? 
             `<div>
                 <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Gap Above (in)</label>
-                <input type="number" value="${p.gap}" step="0.5" oninput="updatePanel(${p.id}, 'gap', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
+                <input type="number" value="${p.gap}" step="0.5" onchange="updatePanel(${p.id}, 'gap', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
             </div>` : 
             `<div class="flex items-end pb-1.5">
-                <span class="text-[9px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 uppercase tracking-widest shadow-sm">Primary Panel (Drives Spacing)</span>
+                <span class="text-[9px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 uppercase tracking-widest shadow-sm">Primary Panel (Drives System)</span>
             </div>`;
 
         let frameOptions = getFrameOptionsHTML(p);
 
         c.innerHTML += `
-        <div class="bg-white p-3 rounded border border-gray-200 relative shadow-sm">
-            ${panels.length > 1 ? `<button onclick="removePanel(${p.id})" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 font-bold focus:outline-none bg-white rounded-full">✕</button>` : ''}
-            
-            <div class="grid grid-cols-2 gap-3 mb-2">
-                <div>
-                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel Width (in)</label>
-                    <input type="number" value="${p.w}" step="0.5" min="1" onchange="updatePanel(${p.id}, 'w', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-3 transition-all">
+            <div class="p-3 ${isExpanded ? 'bg-blue-50 border-b border-blue-100' : 'bg-slate-50 border-b border-gray-200'} flex justify-between items-center cursor-pointer hover:bg-blue-50 transition" onclick="togglePanel(${p.id})">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black ${isExpanded ? 'text-blue-800' : 'text-slate-700'} uppercase tracking-widest">Panel ${i+1}</span>
+                    <span class="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-inner">${p.w}" x ${p.h}" | ${p.mountStyle}</span>
                 </div>
-                <div>
-                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel Height (in)</label>
-                    <input type="number" value="${p.h}" step="0.5" min="1" onchange="updatePanel(${p.id}, 'h', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
+                <div class="flex items-center gap-2">
+                    ${!isPrimary ? `<button onclick="event.stopPropagation(); removePanel(${p.id})" class="text-red-400 hover:text-red-600 font-bold bg-white border border-red-100 px-2 rounded shadow-sm transition focus:outline-none z-10 relative">Remove</button>` : ''}
+                    <svg class="w-4 h-4 ${isExpanded ? 'text-blue-500' : 'text-gray-400'} transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
             
-            <div class="grid grid-cols-2 gap-3 mb-2 border-t border-gray-100 pt-2">
-                <div>
-                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Mounting Style</label>
-                    <select onchange="updatePanel(${p.id}, 'mountStyle', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white outline-none focus:border-blue-500 h-[30px] shadow-sm">
-                        <option value="Flush" ${p.mountStyle==='Flush'?'selected':''}>Flush (Covers Posts)</option>
-                        <option value="Between" ${p.mountStyle==='Between'?'selected':''}>Between Posts</option>
-                    </select>
+            <div class="p-3 space-y-3 bg-white ${isExpanded ? 'block' : 'hidden'}">
+                <div class="grid grid-cols-2 gap-3 border-b border-gray-100 pb-3">
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel Width (in)</label>
+                        <input type="number" value="${p.w}" step="0.5" min="1" ${!isPrimary ? 'disabled title="Secondary panel widths are locked to the primary panel structure."' : ''} onchange="updatePanel(${p.id}, 'w', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold ${!isPrimary ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-800'} focus:border-blue-500 outline-none shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel Height (in)</label>
+                        <input type="number" value="${p.h}" step="0.5" min="1" onchange="updatePanel(${p.id}, 'h', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white text-gray-800 focus:border-blue-500 outline-none shadow-inner">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Printed Sides</label>
-                    <select onchange="updatePanel(${p.id}, 'sides', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white outline-none focus:border-blue-500 h-[30px] shadow-sm">
-                        <option value="1" ${p.sides==1?'selected':''}>Single Sided</option>
-                        <option value="2" ${p.sides==2?'selected':''}>Double Sided</option>
-                    </select>
+                
+                <div class="grid grid-cols-2 gap-3 mb-2 border-b border-gray-100 pb-3">
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Mounting Style</label>
+                        <select onchange="updatePanel(${p.id}, 'mountStyle', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white text-gray-800 outline-none focus:border-blue-500 h-[30px] shadow-sm">
+                            <option value="Flush" ${p.mountStyle==='Flush'?'selected':''}>Flush (Covers Posts)</option>
+                            <option value="Between" ${p.mountStyle==='Between'?'selected':''}>Between Posts</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Printed Sides</label>
+                        <select onchange="updatePanel(${p.id}, 'sides', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white text-gray-800 outline-none focus:border-blue-500 h-[30px] shadow-sm">
+                            <option value="1" ${p.sides==1?'selected':''}>Single Sided</option>
+                            <option value="2" ${p.sides==2?'selected':''}>Double Sided</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-3 border-t border-gray-100 pt-2 mb-2">
-                <div>
-                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Face Substrate</label>
-                    <select onchange="updatePanel(${p.id}, 'faceMat', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white outline-none focus:border-blue-500 h-[30px] shadow-sm">
-                        <option value="040 Alum" ${p.faceMat==='040 Alum'?'selected':''}>.040 Aluminum</option>
-                        <option value="063 Alum" ${p.faceMat==='063 Alum'?'selected':''}>.063 Aluminum</option>
-                        <option value="080 Alum" ${p.faceMat==='080 Alum'?'selected':''}>.080 Aluminum</option>
-                        <option value="3mm ACM" ${p.faceMat==='3mm ACM'?'selected':''}>3mm ACM</option>
-                        <option value="6mm ACM" ${p.faceMat==='6mm ACM'?'selected':''}>6mm ACM</option>
-                    </select>
+                
+                <div class="grid grid-cols-2 gap-3 border-b border-gray-100 pb-3">
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Face Substrate</label>
+                        <select onchange="updatePanel(${p.id}, 'faceMat', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white text-gray-800 outline-none focus:border-blue-500 h-[30px] shadow-sm">
+                            <option value="040 Alum" ${p.faceMat==='040 Alum'?'selected':''}>.040 Aluminum</option>
+                            <option value="063 Alum" ${p.faceMat==='063 Alum'?'selected':''}>.063 Aluminum</option>
+                            <option value="080 Alum" ${p.faceMat==='080 Alum'?'selected':''}>.080 Aluminum</option>
+                            <option value="3mm ACM" ${p.faceMat==='3mm ACM'?'selected':''}>3mm ACM</option>
+                            <option value="6mm ACM" ${p.faceMat==='6mm ACM'?'selected':''}>6mm ACM</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Internal Frame Skeleton</label>
+                        <select onchange="updatePanel(${p.id}, 'frameMat', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white text-gray-800 outline-none focus:border-blue-500 h-[30px] shadow-sm">
+                            ${frameOptions}
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Internal Frame Skeleton</label>
-                    <select onchange="updatePanel(${p.id}, 'frameMat', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white outline-none focus:border-blue-500 h-[30px] shadow-sm">
-                        ${frameOptions}
-                    </select>
+                
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div class="col-span-2">
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Finish / Graphic</label>
+                        <select onchange="updatePanel(${p.id}, 'graphicMethod', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white text-gray-800 outline-none focus:border-blue-500 h-[30px] shadow-sm">
+                            <option value="PrintOnPaint" ${p.graphicMethod==='PrintOnPaint'?'selected':''}>Paint w/ Digital Print</option>
+                            <option value="CutOnPaint" ${p.graphicMethod==='CutOnPaint'?'selected':''}>Paint w/ Cut Vinyl</option>
+                            <option value="PaintOnPaint" ${p.graphicMethod==='PaintOnPaint'?'selected':''}>Paint w/ Stencil Graphic</option>
+                            <option value="Overlay" ${p.graphicMethod==='Overlay'?'selected':''}>No Paint (Full Print Wrap)</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-3 border-t border-gray-100 pt-2 mb-2">
-                <div class="col-span-2">
-                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Finish / Graphic</label>
-                    <select onchange="updatePanel(${p.id}, 'graphicMethod', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white outline-none focus:border-blue-500 h-[30px] shadow-sm">
-                        <option value="PrintOnPaint" ${p.graphicMethod==='PrintOnPaint'?'selected':''}>Paint w/ Digital Print</option>
-                        <option value="CutOnPaint" ${p.graphicMethod==='CutOnPaint'?'selected':''}>Paint w/ Cut Vinyl</option>
-                        <option value="PaintOnPaint" ${p.graphicMethod==='PaintOnPaint'?'selected':''}>Paint w/ Stencil Graphic</option>
-                        <option value="Overlay" ${p.graphicMethod==='Overlay'?'selected':''}>No Paint (Full Print Wrap)</option>
-                    </select>
+                
+                <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between">
+                    <label class="flex items-center gap-1.5 text-[9px] font-bold text-gray-700 cursor-pointer">
+                        <input type="checkbox" onchange="updatePanel(${p.id}, 'isCNC', this.checked)" ${p.isCNC?'checked':''} class="w-3 h-3 text-blue-600 rounded">
+                        CNC Route Face Shape
+                    </label>
+                    ${gapHtml}
                 </div>
-            </div>
-            
-            <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between">
-                <label class="flex items-center gap-1.5 text-[9px] font-bold text-gray-700 cursor-pointer">
-                    <input type="checkbox" onchange="updatePanel(${p.id}, 'isCNC', this.checked)" ${p.isCNC?'checked':''} class="w-3 h-3 text-blue-600 rounded">
-                    CNC Route Face Shape
-                </label>
-                ${gapHtml}
             </div>
         </div>`;
     });
@@ -397,33 +418,59 @@ function updatePanel(id, field, val) {
 }
 
 function addPanel() {
-    const primary = panels.length > 0 ? panels.slice(0, 1).pop() : null;
-    let pw = primary ? primary.w : 36;
-    let pm = primary ? primary.mountStyle : 'Flush';
-    let fm = primary ? primary.frameMat : 'AlumTube_2_1/8';
-    panels.push({ id: Date.now(), w: pw, h: 12, gap: 2, mountStyle: pm, sides: 2, faceMat: '063 Alum', frameMat: fm, graphicMethod: 'PrintOnPaint', isCNC: false });
+    panels.forEach(p => p.isOpen = false); // Close existing panels
+    let primaryPanel = null;
+    panels.forEach((p, i) => { if (i === 0) primaryPanel = p; });
+    
+    let pm = primaryPanel ? primaryPanel.mountStyle : 'Flush';
+    let fm = primaryPanel ? primaryPanel.frameMat : 'AlumTube_2_1/8';
+    
+    // Default Gap is exactly 0 so it butts together perfectly.
+    panels.push({ id: Date.now(), w: 36, h: 12, gap: 0, mountStyle: pm, sides: 2, faceMat: '063 Alum', frameMat: fm, graphicMethod: 'PrintOnPaint', isCNC: false, isOpen: true });
+    updateDimensions('init'); // Will structurally lock the width
     renderPanels();
 }
 
 function removePanel(id) {
     panels = panels.filter(x => x.id !== id);
-    if(panels.length > 0) {
-        let first = panels.slice(0, 1).pop();
-        if(first) first.gap = 0; 
-    }
+    let primaryPanel = null;
+    panels.forEach((p, i) => { if (i === 0) primaryPanel = p; });
+    if(primaryPanel) primaryPanel.gap = 0; 
     renderPanels();
 }
 
 function updateDimensions(source) {
     if (!panels || panels.length === 0) return;
     
-    // SAFE TARGETING: Extracts the first panel completely avoiding bracket syntax
-    const primaryPanel = panels.slice(0, 1).pop(); 
+    let primaryPanel = null;
+    panels.forEach((p, i) => { if (i === 0) primaryPanel = p; });
+    
     let mainW = primaryPanel.w || 36; 
     let primaryMount = primaryPanel.mountStyle || 'Flush';
     
-    let clr = parseFloat(document.getElementById('clearance').value) || 0;
-    let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
+    const postProf = document.getElementById('postProfile').value || '2_1/8';
+    let postSize = 2;
+    let profSplit = postProf.split('_');
+    if (profSplit.length > 0) { postSize = parseFloat(profSplit.slice(0, 1).pop()) || 2; }
+    
+    let spacing = primaryMount === 'Between' ? mainW : mainW - (postSize * 2);
+    if (spacing < 0) spacing = 0; 
+
+    // STRUCTURALLY LOCK SECONDARY PANELS TO PRIMARY POST SPACING
+    let isStructuralChange = false;
+    panels.forEach((p, i) => {
+        if (i === 0) return; 
+        let requiredWidth = p.mountStyle === 'Between' ? spacing : spacing + (postSize * 2);
+        if (p.w !== requiredWidth) {
+            p.w = requiredWidth;
+            isStructuralChange = true;
+        }
+    });
+    
+    let clrRaw = parseFloat(document.getElementById('clearance').value);
+    let clr = isNaN(clrRaw) ? 0 : clrRaw;
+    let aboveRaw = parseFloat(document.getElementById('aboveGrade').value);
+    let above = isNaN(aboveRaw) ? 0 : aboveRaw;
     let below = parseFloat(document.getElementById('belowGrade').value) || 0;
 
     let isBetween = primaryMount === 'Between';
@@ -440,7 +487,7 @@ function updateDimensions(source) {
     let totalPanelH = panels.reduce((sum, p, idx) => sum + p.h + (idx > 0 ? p.gap : 0), 0);
     document.getElementById('total-panel-height-display').innerText = totalPanelH + '"';
 
-    if (source === 'clearance' || source === 'panels') {
+    if (source === 'clearance' || source === 'panels' || source === 'init') {
         above = clr + totalPanelH;
         document.getElementById('aboveGrade').value = above;
         document.getElementById('aboveGrade').classList.add('bg-blue-50', 'text-blue-800');
@@ -464,16 +511,10 @@ function updateDimensions(source) {
         postLenEl.innerText = `Total Post Length: ${totalPost}" (${(totalPost/12).toFixed(1)}')`;
     }
 
-    const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf.split('_').slice(0, 1).pop()) || 2; 
-    
-    let spacing = isBetween ? mainW : mainW - (postSize * 2);
-    if (spacing < 0) spacing = 0; 
-
     document.getElementById('postSpacing').value = spacing;
     document.getElementById('postSpacingDisplay').innerText = spacing + '" I.D.';
 
-    if (source === 'post') {
+    if (source === 'post' || isStructuralChange) {
         renderPanels(); 
     }
     
@@ -508,7 +549,10 @@ function updatePostDropdown() {
 function getFrameOptionsHTML(p) {
     const postType = document.getElementById('postType').value || 'Aluminum';
     const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf.split('_').slice(0, 1).pop()) || 2; 
+    
+    let postSize = 2;
+    let profSplit = postProf.split('_');
+    if (profSplit.length > 0) { postSize = parseFloat(profSplit.slice(0, 1).pop()) || 2; }
     
     let angles = [
         {v: 'AlumAngle_1.5_1/8', t: '1.5" x 1/8" Alum Angle', s: 1.5},
@@ -564,10 +608,14 @@ function getFrameOptionsHTML(p) {
         let fallback = '';
         if (postType === 'Aluminum') {
             const match = alumTubes.find(t => t.s === postSize);
-            fallback = match ? match.v : (alumTubes.length > 0 ? alumTubes.slice(0,1).pop().v : '');
+            let first = null;
+            if(alumTubes.length > 0) alumTubes.forEach((x,i)=>{if(i===0) first = x;});
+            fallback = match ? match.v : (first ? first.v : '');
         } else {
             const match = steelTubes.find(t => t.s === postSize);
-            fallback = match ? match.v : (steelTubes.length > 0 ? steelTubes.slice(0,1).pop().v : '');
+            let first = null;
+            if(steelTubes.length > 0) steelTubes.forEach((x,i)=>{if(i===0) first = x;});
+            fallback = match ? match.v : (first ? first.v : '');
         }
         p.frameMat = fallback;
         html = html.replace(`value="${fallback}"`, `value="${fallback}" selected`);
@@ -628,15 +676,34 @@ function drawShopDrawings(geom) {
     
     let frameTotalH = geom.totalPanelH * scale;
     
-    // Panels Centered Graphically
+    // SOLID FRONT VIEW PANELS
     let faceY = panelY;
     geom.panels.forEach((p, i) => {
         let sPh = p.h * scale;
         let sPw = p.w * scale;
-        let panelX = (sOw - sPw) / 2;
+        let panelX = p.mountStyle === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
+        
         if (i > 0) faceY += p.gap * scale;
-        let faceOpacity = isXrayView ? 0.25 : (p.mountStyle === 'Between' ? 0.8 : 0.95);
-        fSVG += `<rect x="${panelX}" y="${faceY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
+        
+        let frameSize = 2;
+        if (p.frameMat && p.frameMat.includes('_')) {
+            let parts = p.frameMat.split('_');
+            if (parts.length > 1) { 
+                parts.shift(); // Remove the material string (e.g. AlumTube)
+                frameSize = parseFloat(parts.shift()) || 2; 
+            }
+        }
+        let ft = frameSize * scale;
+
+        if (p.mountStyle === 'Between') {
+            // Explicitly draw the top and bottom metal retainers so the bottom cross panel is visible!
+            fSVG += `<rect x="${panelX}" y="${faceY}" width="${sPw}" height="${ft}" fill="#64748b" stroke="#475569" stroke-width="0.5"/>`; // Top Retainer
+            fSVG += `<rect x="${panelX}" y="${faceY + sPh - ft}" width="${sPw}" height="${ft}" fill="#64748b" stroke="#475569" stroke-width="0.5"/>`; // Bottom Retainer
+            fSVG += `<rect x="${panelX}" y="${faceY + ft}" width="${sPw}" height="${sPh - (ft*2)}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="0.9"/>`;
+        } else {
+            fSVG += `<rect x="${panelX}" y="${faceY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="0.95"/>`;
+        }
+        
         faceY += sPh;
     });
 
@@ -651,7 +718,7 @@ function drawShopDrawings(geom) {
     fSVG += `</svg>`;
     fContainer.innerHTML = fSVG;
     
-    // GENERATE XRAY FRAME (Drawn OVER the ghosted face so the bottom member is guaranteed visible)
+    // GENERATE XRAY FRAME
     let svgFrontXray = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sOw + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
     svgFrontXray += `<rect x="0" y="${sTh - sUnder}" width="${sOw}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
     svgFrontXray += `<rect x="${p1X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
@@ -662,22 +729,26 @@ function drawShopDrawings(geom) {
         if (i > 0) tempXrayY += p.gap * scale;
         let sPh = p.h * scale;
         let sPw = p.w * scale;
-        let pX = (sOw - sPw) / 2;
+        let pX = p.mountStyle === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
         
-        // SAFE EXTRACTION OF FRAME THICKNESS AVOIDING BRACKET BUGS
+        // SAFE EXTRACTION OF FRAME THICKNESS
         let frameSize = 2;
         if (p.frameMat && p.frameMat.includes('_')) {
             let parts = p.frameMat.split('_');
-            if (parts.length > 1) { frameSize = parseFloat(parts.slice(1, 2).pop()) || 2; }
+            if (parts.length > 1) { 
+                parts.shift(); // Remove the material string
+                frameSize = parseFloat(parts.shift()) || 2; 
+            }
         }
         let ft = frameSize * scale;
 
         svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${sPh}" fill="#3b82f6" opacity="0.15"/>`;
         
-        svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Top
-        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
-        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
-        svgFrontXray += `<rect x="${pX + sPw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
+        // Added strong stroke to internal frame so crossbars pop clearly
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8" stroke="#475569" stroke-width="0.5"/>`; // Top
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8" stroke="#475569" stroke-width="0.5"/>`; // Bottom
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8" stroke="#475569" stroke-width="0.5"/>`; // Left
+        svgFrontXray += `<rect x="${pX + sPw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8" stroke="#475569" stroke-width="0.5"/>`; // Right
         
         // Draw Vertical Braces 
         const numVerticalBraces = Math.max(0, Math.floor((geom.postSpacing - 12) / 30));
@@ -685,7 +756,7 @@ function drawShopDrawings(geom) {
             const spacing = sPw / (numVerticalBraces + 1);
             for(let j=1; j<=numVerticalBraces; j++) {
                 let braceX = pX + (spacing * j) - (ft/2);
-                svgFrontXray += `<rect x="${braceX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`;
+                svgFrontXray += `<rect x="${braceX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8" stroke="#475569" stroke-width="0.5"/>`;
             }
         }
         tempXrayY += sPh;
@@ -764,6 +835,7 @@ function runCalc() {
             warningsHtml += `<div class="bg-yellow-50 text-yellow-800 text-[9px] font-bold px-3 py-1.5 rounded border border-yellow-200 shadow-sm flex items-center gap-2">⚠️ <span class="leading-tight"><b>Panel ${i+1} Oversized:</b> Design (${p.w}" x ${p.h}") exceeds maximum ${p.faceMat} parent sheet (${sMin}" x ${sMax}"). Seam required.</span></div>`;
         }
     });
+    
     const warnBox = document.getElementById('material-warnings');
     if (warnBox) {
         if (warningsHtml !== '') {
