@@ -146,41 +146,58 @@ function calculatePostPanel(inputs, data) {
         // HORIZONTAL CUTS (SEGMENTED IF FLUSH MOUNT)
         let frameHorizTop = p.w; 
         let topPieces = 1;
+        let topDesc = `(1) ${frameHorizTop}" Top`;
+
         if (isFlush && !isAbsoluteTop) {
             frameHorizTop = Math.max(0, p.w - (postSizeInches * 2));
             let overhang = (p.w - inputs.postSpacing - (postSizeInches * 2)) / 2;
-            if (overhang > 0.1) topPieces = 3;
+            if (overhang > 0.1) {
+                topPieces = 3;
+                topDesc = `(1) ${inputs.postSpacing}" Top Center, (2) ${overhang.toFixed(1)}" Top Overhangs`;
+            } else {
+                topDesc = `(1) ${inputs.postSpacing}" Top Center`;
+            }
         }
         fLF += frameHorizTop / 12; 
         fCuts += topPieces * 2;
 
         let frameHorizBot = p.w; 
         let botPieces = 1;
+        let botDesc = `(1) ${frameHorizBot}" Bot`;
+
         if (isFlush) {
             frameHorizBot = Math.max(0, p.w - (postSizeInches * 2));
             let overhang = (p.w - inputs.postSpacing - (postSizeInches * 2)) / 2;
-            if (overhang > 0.1) botPieces = 3;
+            if (overhang > 0.1) {
+                botPieces = 3;
+                botDesc = `(1) ${inputs.postSpacing}" Bot Center, (2) ${overhang.toFixed(1)}" Bot Overhangs`;
+            } else {
+                botDesc = `(1) ${inputs.postSpacing}" Bot Center`;
+            }
         }
         fLF += frameHorizBot / 12; 
         fCuts += botPieces * 2;
 
-        // VERTICAL CUTS
+        // VERTICAL CUTS (PHYSICS COLLISION GUARD)
         let frameVert = p.h - (fThick * 2);
         const numVerticalBraces = Math.max(0, Math.floor((inputs.postSpacing - 12) / 30)); 
-        const totalVerts = 2 + numVerticalBraces;
         
+        let outerVerts = 2; // Always assumes an outer left/right chassis by default
+        if (isFlush) {
+            // Check if the panel ends exactly at the post bounds
+            let postOutsideW = inputs.postSpacing + (postSizeInches * 2);
+            let diff = Math.abs(p.w - postOutsideW);
+            // If there's no overhang, outer vertical extrusions would collide with the posts, omit them
+            if (diff < 0.5) outerVerts = 0; 
+        }
+        
+        const totalVerts = outerVerts + numVerticalBraces;
         fLF += (frameVert * totalVerts) / 12; 
         fCuts += totalVerts * 2;
 
-        let descPieces = '';
-        if (topPieces === 3) descPieces += `(3) Top Pcs [Total: ${frameHorizTop}"], `;
-        else descPieces += `(1) ${frameHorizTop}" Top, `;
-
-        if (botPieces === 3) descPieces += `(3) Bot Pcs [Total: ${frameHorizBot}"], `;
-        else descPieces += `(1) ${frameHorizBot}" Bot, `;
-
-        descPieces += `(${totalVerts}) ${frameVert}" Verts`;
-        if (numVerticalBraces > 0) descPieces += ` (${numVerticalBraces} inner brace)`;
+        let descPieces = `${topDesc}, ${botDesc}, (${totalVerts}) ${frameVert}" Verts`;
+        if (numVerticalBraces > 0) descPieces += ` (${numVerticalBraces} inner braces)`;
+        if (outerVerts === 0) descPieces += ` [Outer posts act as vertical frame edges]`;
 
         fDesc.push(`Panel ${idx+1}: ${descPieces}`);
 

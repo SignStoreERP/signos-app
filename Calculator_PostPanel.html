@@ -693,18 +693,38 @@ function drawShopDrawings(geom) {
     
     let drawSegmentedHoriz = (yPos, startX, totalWidth, frameHeight) => {
         let html = '';
-        // Left Overhang
-        let leftWidth = p1X - startX;
-        if (leftWidth > 0) html += `<rect x="${startX}" y="${yPos}" width="${leftWidth}" height="${frameHeight}" fill="#94a3b8"/>`;
-        // Center Span
-        let centerStartX = p1X + sPostD;
-        let centerWidth = p2X - centerStartX;
-        if (centerWidth > 0) html += `<rect x="${centerStartX}" y="${yPos}" width="${centerWidth}" height="${frameHeight}" fill="#94a3b8"/>`;
-        // Right Overhang
-        let rightStartX = p2X + sPostD;
-        let rightWidth = (startX + totalWidth) - rightStartX;
-        if (rightWidth > 0) html += `<rect x="${rightStartX}" y="${yPos}" width="${rightWidth}" height="${frameHeight}" fill="#94a3b8"/>`;
+        let A = startX;
+        let B = startX + totalWidth;
+        
+        // Seg 1: Left Overhang
+        let s1_end = Math.min(B, p1X);
+        if (s1_end - A > 0.1) html += `<rect x="${A}" y="${yPos}" width="${s1_end - A}" height="${frameHeight}" fill="#94a3b8"/>`;
+        
+        // Seg 2: Center Span between Posts
+        let s2_start = Math.max(A, p1X + sPostD);
+        let s2_end = Math.min(B, p2X);
+        if (s2_end - s2_start > 0.1) html += `<rect x="${s2_start}" y="${yPos}" width="${s2_end - s2_start}" height="${frameHeight}" fill="#94a3b8"/>`;
+        
+        // Seg 3: Right Overhang
+        let s3_start = Math.max(A, p2X + sPostD);
+        if (B - s3_start > 0.1) html += `<rect x="${s3_start}" y="${yPos}" width="${B - s3_start}" height="${frameHeight}" fill="#94a3b8"/>`;
+        
         return html;
+    };
+
+    let drawVertIfClear = (xPos, yPos, width, height) => {
+        let cx1 = xPos;
+        let cx2 = xPos + width;
+        let p1_end = p1X + sPostD;
+        let p2_end = p2X + sPostD;
+        
+        let tol = 0.1;
+        // Skip drawing if this piece occupies the exact same physical space as Post 1
+        if (cx2 > p1X + tol && cx1 < p1_end - tol) return '';
+        // Skip drawing if this piece occupies the exact same physical space as Post 2
+        if (cx2 > p2X + tol && cx1 < p2_end - tol) return '';
+        
+        return `<rect x="${xPos}" y="${yPos}" width="${width}" height="${height}" fill="#94a3b8"/>`;
     };
 
     geom.panels.forEach((p, i) => {
@@ -727,17 +747,26 @@ function drawShopDrawings(geom) {
             svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Top
             svgFrontXray += `<rect x="${pX}" y="${tempXrayY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
         } else {
-            // Top crossbar is absolute continuous if it is the uppermost panel
+            // Top crossbar is absolute continuous if it is the uppermost panel, otherwise interrupted by posts
             if (i === 0) svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; 
             else svgFrontXray += drawSegmentedHoriz(tempXrayY, pX, sPw, ft); 
             
-            // Bottom crossbar is always segmented around posts for flush mounts
+            // Bottom crossbar is inherently segmented around posts for flush mounts
             svgFrontXray += drawSegmentedHoriz(tempXrayY + sPh - ft, pX, sPw, ft);
         }
         
         // VERTICAL FRAMING
-        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
-        svgFrontXray += `<rect x="${pX + sPw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
+        let vTop = tempXrayY + ft;
+        let vHeight = sPh - (ft*2);
+
+        if (p.mountStyle === 'Between') {
+            svgFrontXray += `<rect x="${pX}" y="${vTop}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`; // Left
+            svgFrontXray += `<rect x="${pX + sPw - ft}" y="${vTop}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`; // Right
+        } else {
+            // Only draw outer vertical frames if they do not physically collide with the posts (i.e. overhang scenarios)
+            svgFrontXray += drawVertIfClear(pX, vTop, ft, vHeight); 
+            svgFrontXray += drawVertIfClear(pX + sPw - ft, vTop, ft, vHeight); 
+        }
         
         // Draw Vertical Braces 
         const numVerticalBraces = Math.max(0, Math.floor((geom.postSpacing - 12) / 30));
@@ -745,7 +774,7 @@ function drawShopDrawings(geom) {
             const spacing = sPw / (numVerticalBraces + 1);
             for(let j=1; j<=numVerticalBraces; j++) {
                 let braceX = pX + (spacing * j) - (ft/2);
-                svgFrontXray += `<rect x="${braceX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`;
+                svgFrontXray += drawVertIfClear(braceX, vTop, ft, vHeight);
             }
         }
         tempXrayY += sPh;
