@@ -47,7 +47,6 @@ function calculatePostPanel(inputs, data) {
         if (!activeKeys.includes(subKey)) activeKeys.push(subKey);
         if (physThick > maxFaceThick) maxFaceThick = physThick;
 
-        // Substrates & Cutting
         faceTotalCost += activeSqFt * subCost * wastePct;
 
         if (p.isCNC) {
@@ -56,7 +55,6 @@ function calculatePostPanel(inputs, data) {
             shearCuts += 4 * p.sides * inputs.qty; 
         }
 
-        // Graphic Logic Routing
         const isPaintedFace = p.graphicMethod !== 'Overlay';
         const isPrinted = p.graphicMethod === 'Overlay' || p.graphicMethod === 'PrintOnPaint';
         const isPaintedGraphics = p.graphicMethod === 'PaintOnPaint';
@@ -84,7 +82,6 @@ function calculatePostPanel(inputs, data) {
     let panelAboveInches = inputs.clearance + totalPanelH;
     let postAboveInches = panelAboveInches; 
 
-    // CHAT PARSER FIX: Target array safely without brackets using slice and pop
     const primaryPanel = inputs.panels.slice(0, 1).pop();
     const primaryMount = primaryPanel ? primaryPanel.mountStyle : 'Flush';
     
@@ -101,7 +98,6 @@ function calculatePostPanel(inputs, data) {
     const totalPostFt = aboveGroundFt + undergroundFt;
     const totalPoleLF = totalPostFt * 2 * inputs.qty;
 
-    // AVOID BRACKETS
     let postSizeInches = 2;
     if (inputs.postProfile && inputs.postProfile.includes('_')) {
         let pParts = inputs.postProfile.split('_');
@@ -137,19 +133,27 @@ function calculatePostPanel(inputs, data) {
             if (fParts.length > 1) { fThick = parseFloat(fParts.slice(1, 2).pop()) || 2; }
         }
         
-        let frameHoriz = p.w; // Always tracking full panel width perimeter
+        let frameHoriz = p.w; 
         fLF += (frameHoriz * 2) / 12; 
         fCuts += 4;
 
         let frameVert = p.h - (fThick * 2);
         const numVerticalBraces = Math.max(0, Math.floor((inputs.postSpacing - 12) / 30)); 
-        const totalVerts = 2 + numVerticalBraces;
+        
+        // STRUCTURAL PHYSICS UPDATE: 
+        // If Mount is "Flush", we do not build vertical edges for the frame because the Post face acts as the vertical stringer.
+        const totalVerts = p.mountStyle === 'Flush' ? numVerticalBraces : (2 + numVerticalBraces);
         
         fLF += (frameVert * totalVerts) / 12; 
         fCuts += totalVerts * 2;
 
-        if (numVerticalBraces > 0) fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x${totalVerts}) ${frameVert}" Verts (${numVerticalBraces} internal brace)`);
-        else fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x2) ${frameVert}" Verts`);
+        if (p.mountStyle === 'Flush') {
+            if (numVerticalBraces > 0) fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x${numVerticalBraces}) ${frameVert}" Vert Braces. [Flush Mounted - Outer posts act as frame edges]`);
+            else fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz. [Flush Mounted - Outer posts act as frame edges]`);
+        } else {
+            if (numVerticalBraces > 0) fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x${totalVerts}) ${frameVert}" Verts (${numVerticalBraces} internal brace)`);
+            else fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x2) ${frameVert}" Verts`);
+        }
 
         let fMult = (p.sides === 2 && p.mountStyle === 'Flush') ? 2 : 1;
         let pFrameLF = (fLF * fMult) * inputs.qty;
@@ -203,19 +207,21 @@ function calculatePostPanel(inputs, data) {
     const postSawMins = (2 * inputs.qty) * (isMiterPost ? timeMiter : timeBand);
     L(`Post Cuts (${isMiterPost ? "Miter Saw" : "Band Saw"})`, (postSawMins / 60) * rateShop, `${2 * inputs.qty} Cuts * ${(postSawMins/(2*inputs.qty))} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: postSawMins });
 
-    const frameSawMins = totalFrameCuts * timeMiter; 
-    L(`Frame Cuts (Sum of Panels)`, (frameSawMins / 60) * rateShop, `${totalFrameCuts} Cuts * ${timeMiter} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: frameSawMins });
+    if (totalFrameCuts > 0) {
+        const frameSawMins = totalFrameCuts * timeMiter; 
+        L(`Frame Cuts (Sum of Panels)`, (frameSawMins / 60) * rateShop, `${totalFrameCuts} Cuts * ${timeMiter} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: frameSawMins });
 
-    const weldLocs = totalFrameCuts; 
-    const timeWeldLoc = parseFloat(data.Time_Weld_Per_Loc || 1.5);
-    const timeCleanLoc = parseFloat(data.Time_Clean_Weld_Loc || 0.33);
-    L(`Tack Welding`, ((weldLocs * timeWeldLoc) / 60) * rateShop, `${weldLocs} Locs * ${timeWeldLoc} Mins [${V('Time_Weld_Per_Loc')}] * $${rateShop}/hr`, 'finish', 'struct_lab', { time: weldLocs * timeWeldLoc });
-    L(`Weld Cleaning & Grinding`, ((weldLocs * timeCleanLoc) / 60) * rateShop, `${weldLocs} Locs * ${timeCleanLoc} Mins [${V('Time_Clean_Weld_Loc')}] * $${rateShop}/hr`, 'finish', 'struct_lab', { time: weldLocs * timeCleanLoc });
+        const weldLocs = totalFrameCuts; 
+        const timeWeldLoc = parseFloat(data.Time_Weld_Per_Loc || 1.5);
+        const timeCleanLoc = parseFloat(data.Time_Clean_Weld_Loc || 0.33);
+        L(`Tack Welding`, ((weldLocs * timeWeldLoc) / 60) * rateShop, `${weldLocs} Locs * ${timeWeldLoc} Mins [${V('Time_Weld_Per_Loc')}] * $${rateShop}/hr`, 'finish', 'struct_lab', { time: weldLocs * timeWeldLoc });
+        L(`Weld Cleaning & Grinding`, ((weldLocs * timeCleanLoc) / 60) * rateShop, `${weldLocs} Locs * ${timeCleanLoc} Mins [${V('Time_Clean_Weld_Loc')}] * $${rateShop}/hr`, 'finish', 'struct_lab', { time: weldLocs * timeCleanLoc });
+    }
 
     const adhYield = parseFloat(data.Yield_Adhesive_Tube_LF || 10);
     const adhCost = parseFloat(data.Cost_Adhesive_Tube || 18.71);
     const cartridges = Math.ceil(totalFrameLF / adhYield);
-    L(`Lord's Adhesive (Metal Glue)`, cartridges * adhCost, `${cartridges} Cartridges (Chunks of ${adhYield} LF [${V('Yield_Adhesive_Tube_LF')}]) * $${adhCost.toFixed(2)}/ea [${V('Cost_Adhesive_Tube')}]`, 'finish', 'struct_mat');
+    if (cartridges > 0) L(`Lord's Adhesive (Metal Glue)`, cartridges * adhCost, `${cartridges} Cartridges (Chunks of ${adhYield} LF [${V('Yield_Adhesive_Tube_LF')}]) * $${adhCost.toFixed(2)}/ea [${V('Cost_Adhesive_Tube')}]`, 'finish', 'struct_mat');
 
     L(`Adhesive Application`, (totalAdhMins / 60) * rateShop, `Calculated Faces * ${parseFloat(data.Time_Adhesive_Per_Face || 7)} Mins/Face [${V('Time_Adhesive_Per_Face')}] * $${rateShop}/hr`, 'finish', 'struct_lab', { time: totalAdhMins });
 
