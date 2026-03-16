@@ -1,6 +1,6 @@
 /**
- * PURE PHYSICS ENGINE: Post & Panel Signs (v2.7)
- * Features: Granular Line Items, Structural Collision Detection, Auto-Bound Dimensions
+ * PURE PHYSICS ENGINE: Post & Panel Signs (v2.8)
+ * Features: Granular Graphical Workflows, Independent Panel/Post Offsets, Flush-Locked Extrusions
  */
 
 function calculatePostPanel(inputs, data) {
@@ -12,65 +12,52 @@ function calculatePostPanel(inputs, data) {
         return total;
     };
 
-    // --- 1. CORE DIMENSIONS & YIELD ---
+    // --- 1. CORE DIMENSIONS & VERTICAL POSITIONS ---
     const panelSqFt = (inputs.w * inputs.h) / 144;
-    const aboveGroundFt = inputs.aboveGrade / 12;
+    
+    let panelAboveInches = inputs.clearance + inputs.h;
+    let postAboveInches = panelAboveInches; // Default lock
+
+    // Vertical Offset Logic (Only applies if Between Posts AND toggle is checked)
+    if (inputs.mountStyle === 'Flush') {
+        inputs.postOffset = 0; // Physics override: flush mount frames sit flush.
+    } else if (inputs.allowOffset) {
+        postAboveInches = panelAboveInches + inputs.postOffset;
+    }
+
+    let maxAboveInches = Math.max(panelAboveInches, postAboveInches);
+    
+    const aboveGroundFt = postAboveInches / 12; // Length of post above grade
     const undergroundFt = inputs.belowGrade / 12;
     const totalPostFt = aboveGroundFt + undergroundFt;
     const totalPoleLF = totalPostFt * 2 * inputs.qty;
 
     const profileParts = inputs.postProfile.split('_');
     const postSizeInches = parseFloat(profileParts) || 2;
-    const postWall = profileParts[1] || '1/8"';
+    const postWall = profileParts || '1/8"';
 
     const frameParts = inputs.frameMat.split('_');
-    const fThick = parseFloat(frameParts[1]) || 2; 
+    const fThick = parseFloat(frameParts) || 2; 
 
     const wastePct = parseFloat(data.Waste_Factor || 1.15);
     const riskFactor = parseFloat(data.Factor_Risk || 1.05);
 
-    // --- 2. STRUCTURAL BOUNDING BOX LOGIC ---
+    // --- 2. STRUCTURAL BOUNDING BOX & INTERNAL FRAME ---
     let overallW = inputs.w;
-    let postInset = 0;
-    
-    if (inputs.mountStyle === 'Between') {
-        overallW = inputs.w + (postSizeInches * 2);
-    } 
-
-    let OD = inputs.postSpacing + (postSizeInches * 2);
-    let pW_Inside = inputs.mountStyle === 'Between' ? inputs.postSpacing : inputs.w;
-    let isFlushSealed = inputs.mountStyle === 'Flush' && Math.abs(inputs.w - OD) < 0.01;
+    if (inputs.mountStyle === 'Between') overallW = inputs.w + (postSizeInches * 2);
 
     let fLF = 0;
     let fCuts = 0;
     let fDesc = [];
 
-    if (inputs.mountStyle === 'Between') {
-        fLF += (pW_Inside * 2) / 12;
-        fLF += (inputs.h * 2) / 12;
-        fCuts += 4;
-        fDesc.push(`(x2) ${pW_Inside}" Horizontals`, `(x2) ${inputs.h}" Verticals`);
-    } else {
-        if (isFlushSealed) {
-            fLF += inputs.w / 12;
-            fLF += inputs.postSpacing / 12;
-            fCuts += 2;
-            fDesc.push(`(x1) ${inputs.w}" Top`, `(x1) ${inputs.postSpacing}" Bot Center`);
-        } else if (inputs.w <= inputs.postSpacing) {
-            fLF += (inputs.postSpacing * 2) / 12; 
-            fLF += (inputs.h * 2) / 12; 
-            fCuts += 4;
-            fDesc.push(`(x2) ${inputs.postSpacing}" Horizontals`, `(x2) ${inputs.h}" Verticals`);
-        } else {
-            fLF += inputs.w / 12;
-            fLF += (inputs.h * 2) / 12;
-            fLF += inputs.postSpacing / 12;
-            let wingW = (inputs.w - OD) / 2;
-            fLF += (wingW * 2) / 12;
-            fCuts += 6;
-            fDesc.push(`(x1) ${inputs.w}" Top`, `(x2) ${inputs.h}" Verts`, `(x1) ${inputs.postSpacing}" Bot Center`, `(x2) ${wingW}" Bot Wings`);
-        }
-    }
+    // The frame now sits strictly BETWEEN the posts to allow posts to reach the absolute top of the sign
+    let frameHoriz = inputs.postSpacing;
+    let frameVert = inputs.h - (fThick * 2);
+
+    fLF += (frameHoriz * 2) / 12; // Top & Bottom
+    fLF += (frameVert * 2) / 12; // Left & Right
+    fCuts += 4;
+    fDesc.push(`(x2) ${frameHoriz}" Horizontals`, `(x2) ${frameVert}" Verticals`);
 
     let fMult = (inputs.sides === 2 && inputs.mountStyle === 'Flush') ? 2 : 1;
     let totalFrameLF = (fLF * fMult) * inputs.qty;
@@ -170,26 +157,41 @@ function calculatePostPanel(inputs, data) {
         L(`Shear Per-Cut Run`, (shearRun / 60) * rateShop, `${inputs.qty * 4 * inputs.sides} Cuts * ${parseFloat(data.Time_Shear_Cut || 0.35)} Mins/Cut [${V('Time_Shear_Cut')}] * $${rateShop}/hr`, 'faces', 'struct_lab', { time: shearRun });
     }
 
-    // --- 6. GRAPHICS & PAINT ---
+    // --- 6. GRAPHICS & PAINT WORKFLOW BRANCHING ---
+    const isPaintedFace = inputs.graphicMethod !== 'Overlay';
+    const isPrinted = inputs.graphicMethod === 'Overlay' || inputs.graphicMethod === 'PrintOnPaint';
+    const isCutVinyl = inputs.graphicMethod === 'CutOnPaint';
+    const isPaintedGraphics = inputs.graphicMethod === 'PaintOnPaint';
+
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const machPrint = parseFloat(data.Rate_Machine_Print || 5);
     
     let setupJob = parseFloat(data.Time_Setup_Job || 15) * inputs.qty;
     L(`Job Setup (File RIP)`, (setupJob / 60) * rateOp, `${setupJob} Mins [${V('Time_Setup_Job')}] * $${rateOp}/hr [${V('Rate_Operator')}]`, 'graphics', 'graphics', { time: setupJob });
 
-    const vinylCost = parseFloat(data.Cost_Vin_Cast || 1.30);
-    const inkCost = parseFloat(data.Cost_Ink_Latex || 0.16);
-
+    // Graphic Media (Print Vinyl or Plotter Vinyl used for Graphics/Stencils)
+    let vinylCost = parseFloat(data.Cost_Vin_Cast || 1.30);
     let vinylRaw = panelSqFt * vinylCost * inputs.sides * inputs.qty;
-    let inkRaw = panelSqFt * inkCost * inputs.sides * inputs.qty;
-    
-    L(`Cast Vinyl Media`, vinylRaw * wastePct, `${panelSqFt.toFixed(1)} SF * $${vinylCost.toFixed(2)}/SF [${V('Cost_Vin_Cast')}] * ${inputs.sides * inputs.qty} Sides * ${wastePct} Waste`, 'graphics', 'graphics', { waste: (vinylRaw * wastePct) - vinylRaw });
-    L(`Latex Ink`, inkRaw * wastePct, `${panelSqFt.toFixed(1)} SF * $${inkCost.toFixed(2)}/SF [${V('Cost_Ink_Latex')}] * ${inputs.sides * inputs.qty} Sides * ${wastePct} Waste`, 'graphics', 'graphics', { waste: (inkRaw * wastePct) - inkRaw });
+    let vLabel = inputs.graphicMethod === 'Overlay' ? 'Cast Print Media' : (isPaintedGraphics ? 'Paint Mask Stencil Vinyl' : 'Cast Cut Vinyl');
+    L(vLabel, vinylRaw * wastePct, `${panelSqFt.toFixed(1)} SF * $${vinylCost.toFixed(2)}/SF [${V('Cost_Vin_Cast')}] * ${inputs.sides * inputs.qty} Sides * ${wastePct} Waste`, 'graphics', 'graphics', { waste: (vinylRaw * wastePct) - vinylRaw });
 
-    let printHrs = (panelSqFt / parseFloat(data.Speed_Print_Roll || 150)) * inputs.sides * inputs.qty;
-    L(`Print Machine Run`, printHrs * machPrint, `${panelSqFt.toFixed(1)} SF / ${parseFloat(data.Speed_Print_Roll || 150)} SF/hr [${V('Speed_Print_Roll')}] * $${machPrint}/hr [${V('Rate_Machine_Print')}]`, 'graphics', 'graphics', { time: printHrs * 60 });
+    if (isPrinted) {
+        const inkCost = parseFloat(data.Cost_Ink_Latex || 0.16);
+        let inkRaw = panelSqFt * inkCost * inputs.sides * inputs.qty;
+        L(`Latex Ink`, inkRaw * wastePct, `${panelSqFt.toFixed(1)} SF * $${inkCost.toFixed(2)}/SF [${V('Cost_Ink_Latex')}] * ${inputs.sides * inputs.qty} Sides * ${wastePct} Waste`, 'graphics', 'graphics', { waste: (inkRaw * wastePct) - inkRaw });
 
-    if (inputs.paintFace) {
+        let printHrs = (panelSqFt / parseFloat(data.Speed_Print_Roll || 150)) * inputs.sides * inputs.qty;
+        L(`Print Machine Run`, printHrs * machPrint, `${panelSqFt.toFixed(1)} SF / ${parseFloat(data.Speed_Print_Roll || 150)} SF/hr [${V('Speed_Print_Roll')}] * $${machPrint}/hr [${V('Rate_Machine_Print')}]`, 'graphics', 'graphics', { time: printHrs * 60 });
+    }
+
+    if (inputs.graphicMethod === 'Overlay') {
+        const lamCost = parseFloat(data.Cost_Lam_Cast || 0.96);
+        let lamRaw = panelSqFt * lamCost * inputs.sides * inputs.qty;
+        L(`Overlaminate Media`, lamRaw * wastePct, `${panelSqFt.toFixed(1)} SF * $${lamCost.toFixed(2)}/SF [${V('Cost_Lam_Cast')}] * ${inputs.sides * inputs.qty} Sides * ${wastePct} Waste`, 'graphics', 'graphics', { waste: (lamRaw * wastePct) - lamRaw });
+
+        let mountMins = panelSqFt * inputs.sides * inputs.qty * parseFloat(data.Time_Mount_Flat_SqFt || 0.25);
+        L(`Vinyl Mount Labor`, (mountMins / 60) * rateShop, `${panelSqFt.toFixed(1)} SF * ${inputs.sides * inputs.qty} Sides * ${parseFloat(data.Time_Mount_Flat_SqFt || 0.25)} Mins/SF [${V('Time_Mount_Flat_SqFt')}] * $${rateShop}/hr`, 'graphics', 'graphics', { time: mountMins });
+    } else {
         const tapeCost = parseFloat(data.Cost_Transfer_Tape || 0.15);
         let tapeRaw = panelSqFt * tapeCost * inputs.sides * inputs.qty;
         L(`Transfer Tape (Masking)`, tapeRaw * wastePct, `${panelSqFt.toFixed(1)} SF * $${tapeCost.toFixed(2)}/SF [${V('Cost_Transfer_Tape')}] * ${inputs.sides * inputs.qty} Sides * ${wastePct} Waste`, 'graphics', 'graphics', { waste: (tapeRaw * wastePct) - tapeRaw });
@@ -199,33 +201,36 @@ function calculatePostPanel(inputs, data) {
 
         let maskMins = panelSqFt * inputs.sides * inputs.qty * parseFloat(data.Time_Mask_SqFt || 0.17);
         L(`Masking Labor`, (maskMins / 60) * rateShop, `${panelSqFt.toFixed(1)} SF * ${inputs.sides * inputs.qty} Sides * ${parseFloat(data.Time_Mask_SqFt || 0.17)} Mins/SF [${V('Time_Mask_SqFt')}] * $${rateShop}/hr`, 'graphics', 'graphics', { time: maskMins });
-    } else {
-        const lamCost = parseFloat(data.Cost_Lam_Cast || 0.96);
-        let lamRaw = panelSqFt * lamCost * inputs.sides * inputs.qty;
-        L(`Overlaminate Media`, lamRaw * wastePct, `${panelSqFt.toFixed(1)} SF * $${lamCost.toFixed(2)}/SF [${V('Cost_Lam_Cast')}] * ${inputs.sides * inputs.qty} Sides * ${wastePct} Waste`, 'graphics', 'graphics', { waste: (lamRaw * wastePct) - lamRaw });
-
-        let mountMins = panelSqFt * inputs.sides * inputs.qty * parseFloat(data.Time_Mount_Flat_SqFt || 0.25);
-        L(`Vinyl Mount Labor`, (mountMins / 60) * rateShop, `${panelSqFt.toFixed(1)} SF * ${inputs.sides * inputs.qty} Sides * ${parseFloat(data.Time_Mount_Flat_SqFt || 0.25)} Mins/SF [${V('Time_Mount_Flat_SqFt')}] * $${rateShop}/hr`, 'graphics', 'graphics', { time: mountMins });
     }
 
-    // --- 7. PAINTING THE STRUCTURE ---
-    const postSurfaceArea = (postSizeInches / 12) * 4 * totalPoleLF;
-    const paintSqFt = inputs.paintFace ? (panelSqFt * inputs.sides * inputs.qty) + postSurfaceArea : postSurfaceArea;
-
+    // --- 7. PAINTING THE STRUCTURE & GRAPHICS ---
     const ratePaint = parseFloat(data.Rate_Paint_Labor || 30);
     const costPaintUnit = parseFloat(data.Cost_Paint_SqFt || 2.50);
-    
-    L(`Automotive Paint (Polyurethane)`, paintSqFt * costPaintUnit * wastePct, `${paintSqFt.toFixed(1)} SF * $${costPaintUnit.toFixed(2)}/SF [${V('Cost_Paint_SqFt')}] * ${wastePct} Waste`, 'finish', 'paint_mat', { waste: (paintSqFt * costPaintUnit * wastePct) - (paintSqFt * costPaintUnit) });
 
-    let paintSetup = parseFloat(data.Time_Paint_Setup || 15) * inputs.qty;
-    let paintPrep = paintSqFt * parseFloat(data.Time_Paint_Prep_SqFt || 0.25);
-    let paintPrime = paintSqFt * parseFloat(data.Time_Paint_Primer_SqFt || 0.25);
-    let paintFin = paintSqFt * parseFloat(data.Time_Paint_Finish_SqFt || 0.75);
+    const postSurfaceArea = (postSizeInches / 12) * 4 * totalPoleLF;
+    const structurePaintSqFt = isPaintedFace ? (panelSqFt * inputs.sides * inputs.qty) + postSurfaceArea : postSurfaceArea;
     
-    L(`Paint Setup & Gun Clean`, (paintSetup / 60) * ratePaint, `${paintSetup} Mins [${V('Time_Paint_Setup')}] * $${ratePaint}/hr [${V('Rate_Paint_Labor')}]`, 'finish', 'paint_lab', { time: paintSetup });
-    L(`Sanding & Prep`, (paintPrep / 60) * ratePaint, `${paintSqFt.toFixed(1)} SF * ${parseFloat(data.Time_Paint_Prep_SqFt || 0.25)} Mins/SF * $${ratePaint}/hr`, 'finish', 'paint_lab', { time: paintPrep });
-    L(`Primer Coat`, (paintPrime / 60) * ratePaint, `${paintSqFt.toFixed(1)} SF * ${parseFloat(data.Time_Paint_Primer_SqFt || 0.25)} Mins/SF * $${ratePaint}/hr`, 'finish', 'paint_lab', { time: paintPrime });
-    L(`Finish Coat (Color & Clear)`, (paintFin / 60) * ratePaint, `${paintSqFt.toFixed(1)} SF * ${parseFloat(data.Time_Paint_Finish_SqFt || 0.75)} Mins/SF * $${ratePaint}/hr`, 'finish', 'paint_lab', { time: paintFin });
+    L(`Automotive Paint (Polyurethane Base)`, structurePaintSqFt * costPaintUnit * wastePct, `${structurePaintSqFt.toFixed(1)} SF * $${costPaintUnit.toFixed(2)}/SF [${V('Cost_Paint_SqFt')}] * ${wastePct} Waste`, 'finish', 'paint_mat', { waste: (structurePaintSqFt * costPaintUnit * wastePct) - (structurePaintSqFt * costPaintUnit) });
+
+    let basePaintSetup = parseFloat(data.Time_Paint_Setup || 15) * inputs.qty;
+    let basePaintPrep = structurePaintSqFt * parseFloat(data.Time_Paint_Prep_SqFt || 0.25);
+    let basePaintPrime = structurePaintSqFt * parseFloat(data.Time_Paint_Primer_SqFt || 0.25);
+    let basePaintFin = structurePaintSqFt * parseFloat(data.Time_Paint_Finish_SqFt || 0.75);
+    
+    L(`Paint Setup & Gun Clean`, (basePaintSetup / 60) * ratePaint, `${basePaintSetup} Mins [${V('Time_Paint_Setup')}] * $${ratePaint}/hr [${V('Rate_Paint_Labor')}]`, 'finish', 'paint_lab', { time: basePaintSetup });
+    L(`Sanding & Prep`, (basePaintPrep / 60) * ratePaint, `${structurePaintSqFt.toFixed(1)} SF * ${parseFloat(data.Time_Paint_Prep_SqFt || 0.25)} Mins/SF * $${ratePaint}/hr`, 'finish', 'paint_lab', { time: basePaintPrep });
+    L(`Primer Coat`, (basePaintPrime / 60) * ratePaint, `${structurePaintSqFt.toFixed(1)} SF * ${parseFloat(data.Time_Paint_Primer_SqFt || 0.25)} Mins/SF * $${ratePaint}/hr`, 'finish', 'paint_lab', { time: basePaintPrime });
+    L(`Finish Coat (Color & Clear)`, (basePaintFin / 60) * ratePaint, `${structurePaintSqFt.toFixed(1)} SF * ${parseFloat(data.Time_Paint_Finish_SqFt || 0.75)} Mins/SF * $${ratePaint}/hr`, 'finish', 'paint_lab', { time: basePaintFin });
+
+    if (isPaintedGraphics) {
+        let graphicPaintSqFt = panelSqFt * 0.5 * inputs.sides * inputs.qty; // Assuming 50% physical fill for graphics text/shapes
+        let graphicPaintSetup = parseFloat(data.Time_Paint_Setup || 15) * inputs.qty; // Second full run to mix contrasting graphic color
+        let graphicPaintFin = graphicPaintSqFt * parseFloat(data.Time_Paint_Finish_SqFt || 0.75);
+
+        L(`Graphic Paint Setup & Gun Clean`, (graphicPaintSetup / 60) * ratePaint, `${graphicPaintSetup} Mins (Secondary Color) * $${ratePaint}/hr`, 'graphics', 'paint_lab', { time: graphicPaintSetup });
+        L(`Graphic Paint Finish Coat`, (graphicPaintFin / 60) * ratePaint, `${graphicPaintSqFt.toFixed(1)} SF * ${parseFloat(data.Time_Paint_Finish_SqFt || 0.75)} Mins/SF * $${ratePaint}/hr`, 'graphics', 'paint_lab', { time: graphicPaintFin });
+        L(`Graphic Paint Material`, graphicPaintSqFt * costPaintUnit * wastePct, `${graphicPaintSqFt.toFixed(1)} SF * $${costPaintUnit.toFixed(2)}/SF * ${wastePct} Waste`, 'graphics', 'paint_mat');
+    }
 
     // --- TOTALS & MARGINS ---
     let hardCostRaw = cst.reduce((sum, i) => sum + i.total, 0);
@@ -253,7 +258,8 @@ function calculatePostPanel(inputs, data) {
 
     const geometry = {
         postSpacing: inputs.postSpacing, cutList: fDesc, holeD: holeDiamInches,
-        above: inputs.aboveGrade, under: inputs.belowGrade, clearance: inputs.clearance, 
+        above: panelAboveInches, under: inputs.belowGrade, clearance: inputs.clearance, 
+        postAbove: postAboveInches, maxAbove: maxAboveInches,
         w: inputs.w, h: inputs.h, mount: inputs.mountStyle, post: postSizeInches, 
         overallW: overallW, sides: inputs.sides, frameThick: fThick, faceThick: physThick, 
         hasConcrete: inputs.hasConcrete

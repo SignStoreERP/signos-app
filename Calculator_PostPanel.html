@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post & Panel Signs (Architectural)</title>
+    <title>Post & Panel Signs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="signos-core.js"></script>
     <script src="signos-ui.js"></script>
@@ -105,21 +105,30 @@
                         <input type="number" id="h" value="24" min="1" step="1" oninput="updateDimensions('h')" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors">
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-3">
-                    <div>
+
+                <div class="grid grid-cols-3 gap-3 border-t border-gray-100 pt-4">
+                    <div class="col-span-3 lg:col-span-1">
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Mounting Style</label>
                         <select id="mountStyle" onchange="updateDimensions('mount')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm">
-                            <option value="Flush" selected>Flush (Face Covers Posts)</option>
+                            <option value="Flush" selected>Flush (Covers Posts)</option>
                             <option value="Between">Between Posts</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Printed Sides</label>
-                        <select id="sides" onchange="updateDimensions('sides')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm">
-                            <option value="1" selected>Single Sided</option>
-                            <option value="2">Double Sided</option>
-                        </select>
+                    <div class="col-span-3 lg:col-span-2 flex items-center justify-start gap-4">
+                        <div id="wrap-offset-toggle" class="hidden pt-3">
+                            <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
+                                <input type="checkbox" id="allowOffset" onchange="updateDimensions('offset-toggle')" class="w-4 h-4 text-blue-600 rounded">
+                                Adjust Vertical Position
+                            </label>
+                        </div>
+                        <div id="wrap-offset-input" class="hidden flex-1 max-w-[120px]">
+                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Reveal (in)</label>
+                            <input type="number" id="postOffset" value="0" step="1" oninput="updateDimensions('offset')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-center focus:border-blue-500 outline-none shadow-inner h-[38px]" title="Positive = Posts stick up. Negative = Panel sticks up.">
+                        </div>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 mt-3">
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Face Substrate</label>
                         <select id="faceMat" onchange="updateDimensions('mat')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm">
@@ -128,6 +137,13 @@
                             <option value="080 Alum">.080 Aluminum</option>
                             <option value="3mm ACM">3mm ACM</option>
                             <option value="6mm ACM">6mm ACM</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Printed Sides</label>
+                        <select id="sides" onchange="updateDimensions('sides')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm">
+                            <option value="1" selected>Single Sided</option>
+                            <option value="2">Double Sided</option>
                         </select>
                     </div>
                 </div>
@@ -199,15 +215,22 @@
                 </div>
 
                 <!-- Graphic Options -->
-                <div class="flex gap-4 pt-3 border-t border-gray-100">
-                    <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
-                        <input type="checkbox" id="paintFace" checked onchange="runCalc()" class="w-4 h-4 text-blue-600 rounded">
-                        Paint Face (Contour Cut Graphics)
-                    </label>
-                    <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
-                        <input type="checkbox" id="isCNC" onchange="updateDimensions('cnc')" class="w-4 h-4 text-blue-600 rounded">
-                        CNC Route Face Shape
-                    </label>
+                <div class="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                    <div>
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Graphic Method</label>
+                        <select id="graphicMethod" onchange="runCalc()" class="w-full border border-gray-300 p-2 rounded text-[10px] font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm">
+                            <option value="PrintOnPaint">Painted Face w/ Contour Cut Digital Print</option>
+                            <option value="CutOnPaint">Painted Face w/ Cut Vinyl Graphics</option>
+                            <option value="PaintOnPaint">Painted Face w/ Painted Graphics (Stencil)</option>
+                            <option value="Overlay">Non-Painted Face w/ Full Print Overlay</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end pb-2">
+                        <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="isCNC" onchange="updateDimensions('cnc')" class="w-4 h-4 text-blue-600 rounded">
+                            CNC Route Face Shape
+                        </label>
+                    </div>
                 </div>
                 
                 <div class="border-t border-gray-100 pt-3 flex justify-between items-center">
@@ -297,12 +320,6 @@ var dynamicKeys = [];
 var isXrayView = false;
 var isShowDims = true;
 
-// Hidden Multi-Panel State preserved for backend physics compatibility
-var panels = [{ 
-    id: 1, w: 36, h: 24, gap: 0, mountStyle: 'Flush', 
-    faceMat: '063 Alum', sides: 1, graphicMethod: 'PrintOnPaint', graphicColors: 1, isCNC: false 
-}];
-
 if(document.getElementById('loader')) document.getElementById('loader').classList.add('hidden');
 if(document.getElementById('status-text')) document.getElementById('status-text').innerText = "System Active";
 if (typeof SignOS_UI !== 'undefined' && SignOS_UI.hideLoader) SignOS_UI.hideLoader();
@@ -327,7 +344,21 @@ function updateDimensions(source) {
     let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
     let below = parseFloat(document.getElementById('belowGrade').value) || 0;
 
+    let mountStyle = document.getElementById('mountStyle').value;
+    let isBetween = mountStyle === 'Between';
+    let allowOffset = document.getElementById('allowOffset').checked;
+
+    // Show/Hide Offset Logic UI
+    document.getElementById('wrap-offset-toggle').classList.toggle('hidden', !isBetween);
+    document.getElementById('wrap-offset-input').classList.toggle('hidden', !(isBetween && allowOffset));
+
+    if (!isBetween || !allowOffset) {
+        document.getElementById('postOffset').value = 0;
+    }
+    let postOffset = parseFloat(document.getElementById('postOffset').value) || 0;
+
     // Enforce relationship: Above Grade = Clearance + Height
+    // Panel Above = purely Clearance + Panel Height. The "Above Grade" field represents the top of the panel.
     if (source === 'clearance' || source === 'h') {
         above = clr + h;
         document.getElementById('aboveGrade').value = above;
@@ -341,29 +372,23 @@ function updateDimensions(source) {
         setTimeout(() => document.getElementById('clearance').classList.remove('bg-blue-50', 'text-blue-800'), 500);
     }
 
-    // Live Indicator for Total Post Length
-    let totalPost = above + below;
+    // Determine physics bounds for structural length indicator
+    let panelAbove = clr + h;
+    let postAbove = panelAbove;
+    if (isBetween && allowOffset) postAbove = panelAbove + postOffset;
+    let maxAbove = Math.max(panelAbove, postAbove);
+    let totalPost = maxAbove + below;
+
     let postLenEl = document.getElementById('post-length-display');
     if(postLenEl) {
         postLenEl.innerText = `Total Post Length: ${totalPost}" (${(totalPost/12).toFixed(1)}')`;
     }
 
-    // Sync panel properties (Correctly mapping to array property now)
-    panels.w = w || 36;
-    panels.h = h || 24;
-    panels.mountStyle = document.getElementById('mountStyle').value;
-    panels.sides = parseInt(document.getElementById('sides').value) || 1;
-    panels.faceMat = document.getElementById('faceMat').value;
-    panels.isCNC = document.getElementById('isCNC').checked;
-    panels.graphicMethod = document.getElementById('paintFace').checked ? 'PrintOnPaint' : 'Overlay';
-
-    // Auto-Calculate Post Spacing (Guaranteeing perfect physics connection to panel)
+    // Auto-Calculate Post Spacing
     const postProf = document.getElementById('postProfile').value || '2_1/8';
     const postSize = parseFloat(postProf.split('_')) || 2;
     
-    let spacing = (panels.mountStyle === 'Between') ? w : w - (postSize * 2);
-    
-    // Allow spacing to drop to 0 visually to prevent overriding the user's typing field
+    let spacing = isBetween ? w : w - (postSize * 2);
     if (spacing < 0) spacing = 0; 
 
     document.getElementById('postSpacing').value = spacing;
@@ -494,7 +519,7 @@ function drawShopDrawings(geom) {
     const padX = isShowDims ? 25 : 5;
     const padY = isShowDims ? 15 : 5;
     
-    const th = geom.above + geom.under;
+    const th = geom.maxAbove + geom.under;
     const ow = geom.overallW;
     const maxH = 150; 
     const maxW = 200; 
@@ -507,6 +532,12 @@ function drawShopDrawings(geom) {
     const sPostD = geom.post * scale;
     const sUnder = geom.under * scale;
     const sHoleD = geom.holeD * scale;
+
+    const sPostAbove = geom.postAbove * scale;
+    const sPostH = (geom.postAbove + geom.under) * scale;
+
+    const postY = (geom.maxAbove - geom.postAbove) * scale;
+    const panelY = (geom.maxAbove - geom.panelAbove) * scale;
 
     let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
     let p2X = p1X + sPostD + (geom.postSpacing * scale);
@@ -525,44 +556,39 @@ function drawShopDrawings(geom) {
     fSVG += `<rect x="${p1X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
     fSVG += `<rect x="${p2X - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
 
-    const postCutThick = geom.frameThick * scale;
-    const postDrawH = sTh - postCutThick;
-    fSVG += `<rect x="${p1X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
-    fSVG += `<rect x="${p2X}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    // Draw Posts extending to their exact physical top
+    fSVG += `<rect x="${p1X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    fSVG += `<rect x="${p2X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
-    // Explicitly reference the W/H properties correctly assigned to the geom output
     let sPw = geom.w * scale;
     let sPh = geom.h * scale;
     let panelX = geom.mount === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
-    let currY = sTh - sUnder - sClr - sPh;
-
-    let frameW_real = Math.max((geom.mount === 'Between' ? geom.postSpacing : geom.w), geom.postSpacing);
-    let sFw = frameW_real * scale;
-    let fX = (sOw - sFw) / 2;
-
+    
+    let fX = p1X + sPostD;
+    let sFw = geom.postSpacing * scale;
     const ft = geom.frameThick * scale;
     
-    fSVG += `<rect x="${fX}" y="${currY + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
-    fSVG += `<rect x="${fX}" y="${currY}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+    // Internal Skeleton sits perfectly between the posts, aligned to panel
+    fSVG += `<rect x="${fX}" y="${panelY + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
+    fSVG += `<rect x="${fX}" y="${panelY}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`;
 
-    let isFlushSealed = geom.mount === 'Flush' && Math.abs(geom.w - (geom.postSpacing + geom.post*2)) < 0.01;
     let vHeight = sPh - (ft*2);
-    let vY = currY + ft;
+    let vY = panelY + ft;
 
-    if (!isFlushSealed) {
+    if (geom.mount === 'Between') {
         fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
         fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
     }
 
     let faceOpacity = isXrayView ? 0.25 : (geom.mount === 'Between' ? 0.8 : 0.95);
-    fSVG += `<rect x="${panelX}" y="${currY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
+    fSVG += `<rect x="${panelX}" y="${panelY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
     
     if (isShowDims) {
-        fSVG += drawHDim(0, sOw, -8, geom.overallW + '" O.A.W');
+        fSVG += drawHDim(0, sOw, postY - 8, geom.overallW + '" O.A.W');
         fSVG += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), geom.postSpacing + '" I.D.');
-        fSVG += drawVDim(-8, 0, sTh - sUnder, geom.above + '" A.G.', "end");
+        fSVG += drawVDim(-8, postY, sTh - sUnder, geom.postAbove + '" Post A.G.', "end");
+        fSVG += drawVDim(sOw + 8, panelY, panelY + sPh, geom.h + '" Pnl', "start");
         fSVG += drawVDim(-8, sTh - sUnder, sTh, geom.under + '" B.G.', "end");
-        if (sClr > 0) fSVG += drawVDim(sOw + 8, sTh - sUnder - sClr, sTh - sUnder, geom.clearance + '" Clr', "start");
     }
 
     fSVG += `</svg>`;
@@ -576,19 +602,18 @@ function drawShopDrawings(geom) {
     let sSVG = `<svg width="100%" height="100%" viewBox="-${padX} -${padY} ${sSideW + padX*2} ${sTh + padY*2}" style="overflow: visible;">`;
     sSVG += `<rect x="0" y="${sTh - sUnder}" width="${sSideW}" height="${sUnder}" fill="#22c55e" opacity="0.1"/>`;
     sSVG += `<rect x="${px - (sHoleD/2 - sPostD/2)}" y="${footerY}" width="${sHoleD}" height="${footerH}" fill="#94a3b8" opacity="0.3" rx="2"/>`;
-    sSVG += `<rect x="${px}" y="${postCutThick}" width="${sPostD}" height="${postDrawH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
+    sSVG += `<rect x="${px}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
-    let sy = sTh - sUnder - sClr - sPh;
     if (geom.mount === 'Between') {
-        sSVG += `<rect x="${px + (sPostD/2) - (visFaceThick/2)}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#1e40af"/>`;
+        sSVG += `<rect x="${px + (sPostD/2) - (visFaceThick/2)}" y="${panelY}" width="${visFaceThick}" height="${sPh}" fill="#1e40af"/>`;
     } else {
-        sSVG += `<rect x="${px - visFaceThick}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
-        if(geom.sides === 2) sSVG += `<rect x="${px + sPostD}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
+        sSVG += `<rect x="${px - visFaceThick}" y="${panelY}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
+        if(geom.sides === 2) sSVG += `<rect x="${px + sPostD}" y="${panelY}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
     }
 
     if (isShowDims) {
-        sSVG += drawHDim(px, px + sPostD, -8, geom.post + '"');
-        sSVG += drawVDim(sSideW + 8, sy, sy + sPh, geom.h + '"', "start");
+        sSVG += drawHDim(px, px + sPostD, postY - 8, geom.post + '"');
+        sSVG += drawVDim(sSideW + 8, panelY, panelY + sPh, geom.h + '"', "start");
     }
 
     sSVG += `</svg>`;
@@ -604,19 +629,19 @@ function runCalc() {
         w: parseFloat(document.getElementById('w').value) || 36,
         h: parseFloat(document.getElementById('h').value) || 24,
         clearance: isNaN(clrRaw) ? 36 : clrRaw,
-        aboveGrade: parseFloat(document.getElementById('aboveGrade').value) || 60,
         belowGrade: parseFloat(document.getElementById('belowGrade').value) || 24,
         mountStyle: document.getElementById('mountStyle').value,
+        allowOffset: document.getElementById('allowOffset').checked,
+        postOffset: parseFloat(document.getElementById('postOffset').value) || 0,
         postType: document.getElementById('postType').value,
         postProfile: document.getElementById('postProfile').value,
         frameMat: document.getElementById('frameMat').value,
         faceMat: document.getElementById('faceMat').value,
         sides: parseInt(document.getElementById('sides').value) || 1,
         hasConcrete: document.getElementById('hasConcrete').checked,
-        paintFace: document.getElementById('paintFace').checked,
+        graphicMethod: document.getElementById('graphicMethod').value,
         isCNC: document.getElementById('isCNC').checked,
-        postSpacing: parseFloat(document.getElementById('postSpacing').value) || 32,
-        panels: panels
+        postSpacing: parseFloat(document.getElementById('postSpacing').value) || 32
     };
 
     try {
@@ -647,13 +672,14 @@ function runCalc() {
 
         const postTxt = document.getElementById('postProfile').options[document.getElementById('postProfile').selectedIndex].text;
         const frameTxt = document.getElementById('frameMat').options[document.getElementById('frameMat').selectedIndex].text;
+        const gTxt = document.getElementById('graphicMethod').options[document.getElementById('graphicMethod').selectedIndex].text;
         
         let mTxt = inputs.mountStyle === 'Between' ? 'Between Posts' : 'Flush Mount';
         let sTxt = inputs.sides === 2 ? 'DS' : 'SS';
         let panelDesc = ` - Panel Face: ${inputs.w}" x ${inputs.h}" (${inputs.faceMat} | ${sTxt} | ${mTxt})`;
 
         let cutStr = result.geom.cutList ? '\n\nFRAME CUT SHEET:\n' + result.geom.cutList.join('\n') : '';
-        document.getElementById('job-desc').value = `(x${inputs.qty}) Architectural Monument.\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\n${panelDesc}${cutStr}`;
+        document.getElementById('job-desc').value = `(x${inputs.qty}) Architectural Monument.\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\nFinish: ${gTxt}\n${panelDesc}${cutStr}`;
 
         if(result.geom) drawShopDrawings(result.geom);
 
