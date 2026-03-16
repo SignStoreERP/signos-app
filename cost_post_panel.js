@@ -1,6 +1,6 @@
 /**
  * PURE PHYSICS ENGINE: Post & Panel Signs (v3.0)
- * Features: True Modular Multi-Panel Logic, Individual Graphic Workflows, Fluid Chassis Math
+ * Features: True Modular Multi-Panel Logic, Independent Frame Extrusions, Sandbox Map Configs
  */
 
 function calculatePostPanel(inputs, data) {
@@ -59,7 +59,6 @@ function calculatePostPanel(inputs, data) {
         // Graphic Logic Routing
         const isPaintedFace = p.graphicMethod !== 'Overlay';
         const isPrinted = p.graphicMethod === 'Overlay' || p.graphicMethod === 'PrintOnPaint';
-        const isCutVinyl = p.graphicMethod === 'CutOnPaint';
         const isPaintedGraphics = p.graphicMethod === 'PaintOnPaint';
 
         if (isPaintedFace) paintSqFt += activeSqFt;
@@ -85,8 +84,8 @@ function calculatePostPanel(inputs, data) {
     let panelAboveInches = inputs.clearance + totalPanelH;
     let postAboveInches = panelAboveInches; 
 
-    // Offset driven by the primary panel (panels)
-    const primaryMount = inputs.panels ? inputs.panels.mountStyle : 'Flush';
+    // Offset driven by the primary panel
+    const primaryMount = inputs.panels.mountStyle;
     if (primaryMount === 'Flush') {
         inputs.postOffset = 0; 
     } else if (inputs.allowOffset) {
@@ -102,43 +101,18 @@ function calculatePostPanel(inputs, data) {
 
     const profileParts = inputs.postProfile.split('_');
     const postSizeInches = parseFloat(profileParts) || 2;
-    const frameParts = inputs.frameMat.split('_');
-    const fThick = parseFloat(frameParts) || 2; 
 
-    // --- 3. STRUCTURAL CHASSIS & CROSS BRACES ---
     let maxPanelW = Math.max(...inputs.panels.map(p => p.w));
     let OD = inputs.postSpacing + (postSizeInches * 2);
     let overallW = Math.max(maxPanelW, OD);
 
-    let fLF = 0;
-    let fCuts = 0;
+    // --- 3. PER-PANEL INTERNAL FRAMEWORK CHASSIS ---
     let fDesc = [];
+    let totalFrameLF = 0;
+    let totalFrameCuts = 0;
+    let totalAdhMins = 0;
+    let frameCostTotal = 0;
 
-    // Horizontal Framework (Top, Bottom, and Gap Cross Braces inside posts)
-    const numHorizontalBraces = inputs.panels.length + 1; 
-    let frameHoriz = inputs.postSpacing;
-    fLF += (frameHoriz * numHorizontalBraces) / 12; 
-    fCuts += numHorizontalBraces * 2;
-    fDesc.push(`(x${numHorizontalBraces}) ${frameHoriz}" Horizontals (Panel Bracing)`);
-
-    // Vertical Framework (Left & Right legs bounding the panels inside the posts)
-    let frameVert = totalPanelH - (fThick * 2);
-    const numVerticalBraces = Math.max(0, Math.floor((inputs.postSpacing - 12) / 30)); // 1 Brace every ~30 inches I.D.
-    const totalVerts = 2 + numVerticalBraces;
-    fLF += (frameVert * totalVerts) / 12; 
-    fCuts += totalVerts * 2;
-    if (numVerticalBraces > 0) fDesc.push(`(x2) ${frameVert}" Vertical Perimeter`, `(x${numVerticalBraces}) ${frameVert}" Internal Vert Bracing`);
-    else fDesc.push(`(x2) ${frameVert}" Verticals`);
-
-    // Frame multiplicity if entire structure requires double chassis
-    let needsDualFrame = inputs.panels.some(p => p.sides === 2 && p.mountStyle === 'Flush');
-    let fMult = needsDualFrame ? 2 : 1;
-    let totalFrameLF = (fLF * fMult) * inputs.qty;
-    let totalFrameCuts = (fCuts * fMult) * inputs.qty;
-
-    if (fMult === 2) fDesc.push(`[Qty x2 for Dual-Frame DS]`);
-
-    // --- 4. POSTS & CONCRETE ---
     const FALLBACK_METALS = {
         'Cost_Post_Aluminum_2_1/8': 4.28, 'Cost_Post_Aluminum_3_1/8': 6.56, 'Cost_Post_Aluminum_4_1/8': 8.84, 'Cost_Post_Aluminum_6_1/4': 26.22,
         'Cost_Post_Steel_3_1/8': 3.88, 'Cost_Post_Steel_3_3/16': 5.85, 'Cost_Post_Steel_4_3/16': 9.25, 'Cost_Post_Steel_6_3/16': 13.85, 'Cost_Post_Steel_6_1/4': 18.75, 'Cost_Post_Steel_8_3/16': 21.60, 'Cost_Post_Steel_8_1/4': 24.25, 'Cost_Post_Steel_10_1/4': 27.75, 'Cost_Post_Steel_12_1/4': 33.55,
@@ -147,6 +121,42 @@ function calculatePostPanel(inputs, data) {
         'Cost_Frame_AlumAngle_1.5_1/8': 1.15, 'Cost_Frame_AlumAngle_2_1/8': 1.45, 'Cost_Frame_SteelAngle_1.5_1/8': 1.15, 'Cost_Frame_SteelAngle_2_1/8': 1.45, 'Cost_Frame_SteelAngle_2_3/16': 1.85, 'Cost_Frame_SteelAngle_2_1/4': 2.15
     };
 
+    inputs.panels.forEach((p, idx) => {
+        let fLF = 0;
+        let fCuts = 0;
+        const frameParts = p.frameMat.split('_');
+        const fThick = parseFloat(frameParts[1]) || 2;
+        
+        let frameHoriz = inputs.postSpacing;
+        fLF += (frameHoriz * 2) / 12; 
+        fCuts += 4;
+
+        let frameVert = p.h - (fThick * 2);
+        const numVerticalBraces = Math.max(0, Math.floor((inputs.postSpacing - 12) / 30)); 
+        const totalVerts = 2 + numVerticalBraces;
+        
+        fLF += (frameVert * totalVerts) / 12; 
+        fCuts += totalVerts * 2;
+
+        if (numVerticalBraces > 0) fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x${totalVerts}) ${frameVert}" Verts (${numVerticalBraces} internal brace)`);
+        else fDesc.push(`Panel ${idx+1}: (x2) ${frameHoriz}" Horiz, (x2) ${frameVert}" Verts`);
+
+        let fMult = (p.sides === 2 && p.mountStyle === 'Flush') ? 2 : 1;
+        let pFrameLF = (fLF * fMult) * inputs.qty;
+        totalFrameLF += pFrameLF;
+        totalFrameCuts += (fCuts * fMult) * inputs.qty;
+        totalAdhMins += p.sides * inputs.qty * parseFloat(data.Time_Adhesive_Per_Face || 7);
+
+        const frameKey = `Cost_Frame_${p.frameMat}`;
+        if(!data[frameKey]) data[frameKey] = FALLBACK_METALS[frameKey] || 1.45;
+        if(!activeKeys.includes(frameKey)) activeKeys.push(frameKey);
+        
+        frameCostTotal += (pFrameLF * parseFloat(data[frameKey])) * wastePct;
+    });
+
+    if (frameCostTotal > 0) L(`Internal Frames (Sum of Panels)`, frameCostTotal, `Sum of individual Panel Framework LF * Unit Costs * Waste`, 'posts', 'struct_mat');
+
+    // --- 4. POSTS & CONCRETE ---
     const postKey = `Cost_Post_${inputs.postType}_${inputs.postProfile}`;
     if(!data[postKey]) data[postKey] = FALLBACK_METALS[postKey] || 6.56;
     activeKeys.push(postKey);
@@ -171,30 +181,21 @@ function calculatePostPanel(inputs, data) {
         L(`Concrete Tap Footers (80lb Bags)`, bagsNeeded * bagCost, `${bagsNeeded} Bags (${concreteYield} CuFt Yield [${V('Yield_Concrete_Bag_CuFt')}]) * $${bagCost.toFixed(2)}/bag [${V('Cost_Concrete_Bag')}]`, 'concrete', 'concrete', { pull: `${bagsNeeded} Bags` });
     }
 
-    const frameKey = `Cost_Frame_${inputs.frameMat}`;
-    if(!data[frameKey]) data[frameKey] = FALLBACK_METALS[frameKey] || 1.45;
-    activeKeys.push(frameKey);
-    const frameCostLF = parseFloat(data[frameKey]);
-    
-    let frameRaw = totalFrameLF * frameCostLF;
-    let frameTotal = frameRaw * wastePct;
-    L(`Internal Frame (${inputs.frameMat.split('_')})`, frameTotal, `${totalFrameLF.toFixed(1)} LF * $${frameCostLF.toFixed(2)}/LF [${V(frameKey)}] * ${wastePct} Waste`, 'posts', 'struct_mat', { waste: frameTotal - frameRaw });
-
     // --- 5. FABRICATION LABOR & ADHESIVE ---
     const rateShop = parseFloat(data.Rate_Shop_Labor || 20);
     let gatherMins = parseFloat(data.Time_Gather_Mats || 10) * inputs.qty;
     L(`Gather Materials`, (gatherMins / 60) * rateShop, `${gatherMins} Mins [${V('Time_Gather_Mats')}] * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: gatherMins });
 
     const isMiterPost = inputs.postType === 'Aluminum' && postSizeInches <= 4;
-    const isMiterFrame = inputs.frameMat.includes('Alum') && fThick <= 4;
     const timeMiter = parseFloat(data.Time_Saw_Miter || 5);
     const timeBand = parseFloat(data.Time_Saw_Band || 10);
     
     const postSawMins = (2 * inputs.qty) * (isMiterPost ? timeMiter : timeBand);
     L(`Post Cuts (${isMiterPost ? "Miter Saw" : "Band Saw"})`, (postSawMins / 60) * rateShop, `${2 * inputs.qty} Cuts * ${(postSawMins/(2*inputs.qty))} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: postSawMins });
 
-    const frameSawMins = totalFrameCuts * (isMiterFrame ? timeMiter : timeBand);
-    L(`Frame Cuts (${isMiterFrame ? "Miter Saw" : "Band Saw"})`, (frameSawMins / 60) * rateShop, `${totalFrameCuts} Cuts * ${(isMiterFrame ? timeMiter : timeBand)} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: frameSawMins });
+    // Assuming average frame is aluminum angle/tube < 4" for mitering speed
+    const frameSawMins = totalFrameCuts * timeMiter; 
+    L(`Frame Cuts (Sum of Panels)`, (frameSawMins / 60) * rateShop, `${totalFrameCuts} Cuts * ${timeMiter} Mins * $${rateShop}/hr [${V('Rate_Shop_Labor')}]`, 'finish', 'struct_lab', { time: frameSawMins });
 
     const weldLocs = totalFrameCuts; 
     const timeWeldLoc = parseFloat(data.Time_Weld_Per_Loc || 1.5);
@@ -207,18 +208,20 @@ function calculatePostPanel(inputs, data) {
     const cartridges = Math.ceil(totalFrameLF / adhYield);
     L(`Lord's Adhesive (Metal Glue)`, cartridges * adhCost, `${cartridges} Cartridges (Chunks of ${adhYield} LF [${V('Yield_Adhesive_Tube_LF')}]) * $${adhCost.toFixed(2)}/ea [${V('Cost_Adhesive_Tube')}]`, 'finish', 'struct_mat');
 
+    L(`Adhesive Application`, (totalAdhMins / 60) * rateShop, `Calculated Faces * ${parseFloat(data.Time_Adhesive_Per_Face || 7)} Mins/Face [${V('Time_Adhesive_Per_Face')}] * $${rateShop}/hr`, 'finish', 'struct_lab', { time: totalAdhMins });
+
     // CNC & Shear Operations
     if (cncRunMins > 0) {
-        let cncSetup = parseFloat(data.Time_Setup_CNC || 10) * inputs.qty * inputs.panels.filter(p=>p.isCNC).length;
+        let cncSetup = parseFloat(data.Time_Setup_CNC || 10) * inputs.qty * inputs.panels.length;
         L(`CNC Router Setup`, (cncSetup / 60) * parseFloat(data.Rate_CNC_Labor || 25), `${cncSetup} Mins Setup * $${parseFloat(data.Rate_CNC_Labor || 25)}/hr [${V('Rate_CNC_Labor')}]`, 'faces', 'struct_lab', { time: cncSetup });
-        L(`CNC Machine Run`, (cncRunMins / 60) * parseFloat(data.Rate_Machine_CNC || 10), `CNC Routine * $${parseFloat(data.Rate_Machine_CNC || 10)}/hr [${V('Rate_Machine_CNC')}]`, 'faces', 'struct_lab', { time: cncRunMins });
-    }
+        L(`CNC Machine Run`, (cncRunMins / 60) * parseFloat(data.Rate_Machine_CNC || 10), `${totalSqFt.toFixed(1)} SF * ${parseFloat(data.Time_CNC_Easy_SqFt || 1)} Mins/SF * $${parseFloat(data.Rate_Machine_CNC || 10)}/hr [${V('Rate_Machine_CNC')}]`, 'faces', 'struct_lab', { time: cncRunMins });
+    } 
     if (shearCuts > 0) {
         let shearRun = shearCuts * parseFloat(data.Time_Shear_Cut || 0.35); 
         L(`Shear Per-Cut Run`, (shearRun / 60) * rateShop, `${shearCuts} Cuts * ${parseFloat(data.Time_Shear_Cut || 0.35)} Mins/Cut [${V('Time_Shear_Cut')}] * $${rateShop}/hr`, 'faces', 'struct_lab', { time: shearRun });
     }
 
-    // --- 6. AGGREGATED GRAPHICS WORKFLOW ---
+    // --- 6. GRAPHICS WORKFLOW BRANCHING ---
     const rateOp = parseFloat(data.Rate_Operator || 25);
     const machPrint = parseFloat(data.Rate_Machine_Print || 5);
     
@@ -274,7 +277,7 @@ function calculatePostPanel(inputs, data) {
 
     if (stencilSqFt > 0) {
         let graphicPaintSqFt = stencilSqFt * 0.5; // Assuming 50% physical fill for graphics text/shapes
-        let graphicPaintSetup = parseFloat(data.Time_Paint_Setup || 15) * inputs.qty; // Second full run to mix contrasting graphic color
+        let graphicPaintSetup = parseFloat(data.Time_Paint_Setup || 15) * inputs.qty; 
         let graphicPaintFin = graphicPaintSqFt * parseFloat(data.Time_Paint_Finish_SqFt || 0.75);
 
         L(`Graphic Paint Setup & Gun Clean`, (graphicPaintSetup / 60) * ratePaint, `${graphicPaintSetup} Mins (Secondary Color) * $${ratePaint}/hr`, 'graphics', 'paint_lab', { time: graphicPaintSetup });
@@ -310,8 +313,7 @@ function calculatePostPanel(inputs, data) {
         postSpacing: inputs.postSpacing, cutList: fDesc, holeD: holeDiamInches,
         above: panelAboveInches, under: inputs.belowGrade, clearance: inputs.clearance, 
         postAbove: postAboveInches, maxAbove: maxAboveInches, totalPanelH: totalPanelH, panels: inputs.panels,
-        overallW: overallW, frameThick: fThick, faceThick: maxFaceThick, 
-        hasConcrete: inputs.hasConcrete, post: postSizeInches, braces: numVerticalBraces
+        overallW: overallW, hasConcrete: inputs.hasConcrete, post: postSizeInches
     };
 
     return {
