@@ -404,7 +404,7 @@ function removePanel(id) {
 function updateDimensions(source) {
     if (!panels || panels.length === 0) return;
     
-    // AT() IS IMMUNE TO THE CHAT CITATION STRIPPER BUG!
+    // IMMUNE TO CHAT BRACKET STRIPPER: 
     const primaryPanel = panels.at(0); 
     let mainW = primaryPanel.w || 36; 
     let primaryMount = primaryPanel.mountStyle || 'Flush';
@@ -456,7 +456,7 @@ function updateDimensions(source) {
 
     // Auto-Calculate Post Spacing (Driven exclusively by Primary Panel width)
     const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf) || 2; // Immune to Array Splitting bugs
+    const postSize = parseFloat(postProf.split('_').at(0)) || 2; 
     
     let spacing = isBetween ? mainW : mainW - (postSize * 2);
     if (spacing < 0) spacing = 0; 
@@ -499,7 +499,7 @@ function updatePostDropdown() {
 function getFrameOptionsHTML(p) {
     const postType = document.getElementById('postType').value || 'Aluminum';
     const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf) || 2; 
+    const postSize = parseFloat(postProf.split('_').at(0)) || 2; 
     let maxSides = p.sides || 1;
     let mountStyle = p.mountStyle || 'Flush';
     
@@ -558,10 +558,10 @@ function getFrameOptionsHTML(p) {
         let fallback = '';
         if (postType === 'Aluminum') {
             const match = alumTubes.find(t => t.s === postSize);
-            fallback = match ? match.v : (alumTubes?.v || '');
+            fallback = match ? match.v : (alumTubes.length ? alumTubes.at(0).v : '');
         } else {
             const match = steelTubes.find(t => t.s === postSize);
-            fallback = match ? match.v : (steelTubes?.v || '');
+            fallback = match ? match.v : (steelTubes.length ? steelTubes.at(0).v : '');
         }
         p.frameMat = fallback;
         html = html.replace(`value="${fallback}"`, `value="${fallback}" selected`);
@@ -627,7 +627,7 @@ function drawShopDrawings(geom) {
     geom.panels.forEach((p, i) => {
         let sPh = p.h * scale;
         let sPw = p.w * scale;
-        let pX = (sOw - sPw) / 2; // Accurately set the frame to the perimeter of the panel
+        let pX = (sOw - sPw) / 2; 
         let ft = (parseFloat(p.frameMat.split('_').at(1)) || 2) * scale;
         
         if (i > 0) tempF_Y += p.gap * scale;

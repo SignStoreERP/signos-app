@@ -84,7 +84,7 @@ function calculatePostPanel(inputs, data) {
     let panelAboveInches = inputs.clearance + totalPanelH;
     let postAboveInches = panelAboveInches; 
 
-    // FIX: Offset driven explicitly by primary panel using resilient indexing
+    // CHAT PARSER FIX: Target array specifically with .at()
     const primaryMount = inputs.panels.at(0).mountStyle;
     if (primaryMount === 'Flush') {
         inputs.postOffset = 0; 
@@ -99,7 +99,7 @@ function calculatePostPanel(inputs, data) {
     const totalPostFt = aboveGroundFt + undergroundFt;
     const totalPoleLF = totalPostFt * 2 * inputs.qty;
 
-    const postSizeInches = parseFloat(inputs.postProfile) || 2; // Immune to Array Splitting bugs
+    const postSizeInches = parseFloat(inputs.postProfile) || 2; 
 
     let maxPanelW = Math.max(...inputs.panels.map(p => p.w));
     let OD = inputs.postSpacing + (postSizeInches * 2);
