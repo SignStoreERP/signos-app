@@ -387,25 +387,27 @@ function updatePanel(id, field, val) {
 }
 
 function addPanel() {
-    let pw = panels.length > 0 ? panels.w : 36;
-    let pm = panels.length > 0 ? panels.mountStyle : 'Flush';
-    let fm = panels.length > 0 ? panels.frameMat : 'AlumTube_2_1/8';
+    const primary = panels.length > 0 ? panels.at(0) : null;
+    let pw = primary ? primary.w : 36;
+    let pm = primary ? primary.mountStyle : 'Flush';
+    let fm = primary ? primary.frameMat : 'AlumTube_2_1/8';
     panels.push({ id: Date.now(), w: pw, h: 12, gap: 2, mountStyle: pm, sides: 2, faceMat: '063 Alum', frameMat: fm, graphicMethod: 'PrintOnPaint', isCNC: false });
     renderPanels();
 }
 
 function removePanel(id) {
     panels = panels.filter(x => x.id !== id);
-    if(panels.length > 0) panels.gap = 0; 
+    if(panels.length > 0) panels.at(0).gap = 0; 
     renderPanels();
 }
 
 function updateDimensions(source) {
-    if (panels.length === 0) return;
+    if (!panels || panels.length === 0) return;
     
-    // FIX: Strictly target the first panel for width and mount style
-    let mainW = panels.w || 36; 
-    let primaryMount = panels.mountStyle;
+    // AT() IS IMMUNE TO THE CHAT CITATION STRIPPER BUG!
+    const primaryPanel = panels.at(0); 
+    let mainW = primaryPanel.w || 36; 
+    let primaryMount = primaryPanel.mountStyle || 'Flush';
     
     let clr = parseFloat(document.getElementById('clearance').value) || 0;
     let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
@@ -454,7 +456,7 @@ function updateDimensions(source) {
 
     // Auto-Calculate Post Spacing (Driven exclusively by Primary Panel width)
     const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf.split('_')) || 2;
+    const postSize = parseFloat(postProf) || 2; // Immune to Array Splitting bugs
     
     let spacing = isBetween ? mainW : mainW - (postSize * 2);
     if (spacing < 0) spacing = 0; 
@@ -497,7 +499,7 @@ function updatePostDropdown() {
 function getFrameOptionsHTML(p) {
     const postType = document.getElementById('postType').value || 'Aluminum';
     const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf.split('_')) || 2; 
+    const postSize = parseFloat(postProf) || 2; 
     let maxSides = p.sides || 1;
     let mountStyle = p.mountStyle || 'Flush';
     
@@ -529,7 +531,6 @@ function getFrameOptionsHTML(p) {
         {v: 'SteelTube_12_1/4', t: '12" Sq x 1/4" Wall', s: 12}
     ];
 
-    // FIX: Relaxing constraints so you can use angle iron or smaller tubes inside of larger posts 
     angles = angles.filter(a => a.s <= postSize);
     alumTubes = alumTubes.filter(t => t.s <= postSize);
     steelTubes = steelTubes.filter(t => t.s <= postSize);
@@ -598,8 +599,6 @@ function drawShopDrawings(geom) {
     const postY = (geom.maxAbove - geom.postAbove) * scale;
     const panelY = (geom.maxAbove - geom.panelAbove) * scale;
 
-    // By accurately mapping postSpacing and sPostD to the total Overall Width (sOw),
-    // p1X naturally anchors at exactly 0 when Flush mounted, guaranteeing outer-edge perfection.
     let p1X = (sOw - (geom.postSpacing * scale + 2*sPostD)) / 2;
     let p2X = p1X + sPostD + (geom.postSpacing * scale);
 
@@ -623,25 +622,21 @@ function drawShopDrawings(geom) {
     
     let frameTotalH = geom.totalPanelH * scale;
     
-    // INTERNAL SKELETON LAYER
+    // INTERNAL SKELETON LAYER (Now traces the actual perimeter of the panel)
     let tempF_Y = panelY;
     geom.panels.forEach((p, i) => {
         let sPh = p.h * scale;
         let sPw = p.w * scale;
-        let ft = (parseFloat(p.frameMat.split('_')) || 2) * scale;
+        let pX = (sOw - sPw) / 2; // Accurately set the frame to the perimeter of the panel
+        let ft = (parseFloat(p.frameMat.split('_').at(1)) || 2) * scale;
         
         if (i > 0) tempF_Y += p.gap * scale;
 
-        let sFw = geom.postSpacing * scale; // Cross braces exactly span the ID post spacing
-        let fX = p1X + sPostD;
-        
-        fSVG += `<rect x="${fX}" y="${tempF_Y}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`; // Top
-        fSVG += `<rect x="${fX}" y="${tempF_Y + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
-        
-        if (p.mountStyle === 'Between') {
-            fSVG += `<rect x="${fX}" y="${tempF_Y + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
-            fSVG += `<rect x="${fX + sFw - ft}" y="${tempF_Y + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
-        }
+        // Tracing full structural bounding box for ALL mounts
+        fSVG += `<rect x="${pX}" y="${tempF_Y}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Top
+        fSVG += `<rect x="${pX}" y="${tempF_Y + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
+        fSVG += `<rect x="${pX}" y="${tempF_Y + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
+        fSVG += `<rect x="${pX + sPw - ft}" y="${tempF_Y + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
 
         tempF_Y += sPh;
     });
@@ -679,28 +674,24 @@ function drawShopDrawings(geom) {
     let tempXrayY = panelY;
     geom.panels.forEach((p, i) => {
         if (i > 0) tempXrayY += p.gap * scale;
-        let pX = (sOw - (p.w * scale)) / 2;
         let sPh = p.h * scale;
-        let ft = (parseFloat(p.frameMat.split('_')) || 2) * scale;
-        let sFw = geom.postSpacing * scale;
-        let fX = p1X + sPostD;
+        let sPw = p.w * scale;
+        let pX = (sOw - sPw) / 2;
+        let ft = (parseFloat(p.frameMat.split('_').at(1)) || 2) * scale;
 
-        svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${p.w * scale}" height="${sPh}" fill="#3b82f6" opacity="0.1"/>`;
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${sPh}" fill="#3b82f6" opacity="0.1"/>`;
         
-        svgFrontXray += `<rect x="${fX}" y="${tempXrayY}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`; // Top
-        svgFrontXray += `<rect x="${fX}" y="${tempXrayY + sPh - ft}" width="${sFw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
-        
-        if (p.mountStyle === 'Between') {
-            svgFrontXray += `<rect x="${fX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
-            svgFrontXray += `<rect x="${fX + sFw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
-        }
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Top
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Left
+        svgFrontXray += `<rect x="${pX + sPw - ft}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`; // Right
         
         // Draw Vertical Braces 
         const numVerticalBraces = Math.max(0, Math.floor((geom.postSpacing - 12) / 30));
         if (numVerticalBraces > 0) {
-            const spacing = sFw / (numVerticalBraces + 1);
+            const spacing = sPw / (numVerticalBraces + 1);
             for(let j=1; j<=numVerticalBraces; j++) {
-                let braceX = fX + (spacing * j) - (ft/2);
+                let braceX = pX + (spacing * j) - (ft/2);
                 svgFrontXray += `<rect x="${braceX}" y="${tempXrayY + ft}" width="${ft}" height="${sPh - (ft*2)}" fill="#94a3b8"/>`;
             }
         }

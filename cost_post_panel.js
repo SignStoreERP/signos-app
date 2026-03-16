@@ -84,8 +84,8 @@ function calculatePostPanel(inputs, data) {
     let panelAboveInches = inputs.clearance + totalPanelH;
     let postAboveInches = panelAboveInches; 
 
-    // FIX: Offset driven explicitly by primary panel (panels)
-    const primaryMount = inputs.panels.mountStyle;
+    // FIX: Offset driven explicitly by primary panel using resilient indexing
+    const primaryMount = inputs.panels.at(0).mountStyle;
     if (primaryMount === 'Flush') {
         inputs.postOffset = 0; 
     } else if (inputs.allowOffset) {
@@ -99,8 +99,7 @@ function calculatePostPanel(inputs, data) {
     const totalPostFt = aboveGroundFt + undergroundFt;
     const totalPoleLF = totalPostFt * 2 * inputs.qty;
 
-    const profileParts = inputs.postProfile.split('_');
-    const postSizeInches = parseFloat(profileParts) || 2;
+    const postSizeInches = parseFloat(inputs.postProfile) || 2; // Immune to Array Splitting bugs
 
     let maxPanelW = Math.max(...inputs.panels.map(p => p.w));
     let OD = inputs.postSpacing + (postSizeInches * 2);
@@ -124,10 +123,9 @@ function calculatePostPanel(inputs, data) {
     inputs.panels.forEach((p, idx) => {
         let fLF = 0;
         let fCuts = 0;
-        const frameParts = p.frameMat.split('_');
-        const fThick = parseFloat(frameParts[1]) || 2;
+        const fThick = parseFloat(p.frameMat.split('_').at(1)) || 2;
         
-        let frameHoriz = inputs.postSpacing;
+        let frameHoriz = p.w; // Always tracking full panel width perimeter
         fLF += (frameHoriz * 2) / 12; 
         fCuts += 4;
 
