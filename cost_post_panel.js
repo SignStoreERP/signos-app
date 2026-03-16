@@ -84,8 +84,10 @@ function calculatePostPanel(inputs, data) {
     let panelAboveInches = inputs.clearance + totalPanelH;
     let postAboveInches = panelAboveInches; 
 
-    // CHAT PARSER FIX: Target array specifically with .at()
-    const primaryMount = inputs.panels.at(0).mountStyle;
+    // CHAT PARSER FIX: Target array safely without brackets using slice and pop
+    const primaryPanel = inputs.panels.slice(0, 1).pop();
+    const primaryMount = primaryPanel ? primaryPanel.mountStyle : 'Flush';
+    
     if (primaryMount === 'Flush') {
         inputs.postOffset = 0; 
     } else if (inputs.allowOffset) {
@@ -99,7 +101,12 @@ function calculatePostPanel(inputs, data) {
     const totalPostFt = aboveGroundFt + undergroundFt;
     const totalPoleLF = totalPostFt * 2 * inputs.qty;
 
-    const postSizeInches = parseFloat(inputs.postProfile) || 2; 
+    // AVOID BRACKETS
+    let postSizeInches = 2;
+    if (inputs.postProfile && inputs.postProfile.includes('_')) {
+        let pParts = inputs.postProfile.split('_');
+        if (pParts.length > 0) { postSizeInches = parseFloat(pParts.slice(0, 1).pop()) || 2; }
+    }
 
     let maxPanelW = Math.max(...inputs.panels.map(p => p.w));
     let OD = inputs.postSpacing + (postSizeInches * 2);
@@ -123,7 +130,12 @@ function calculatePostPanel(inputs, data) {
     inputs.panels.forEach((p, idx) => {
         let fLF = 0;
         let fCuts = 0;
-        const fThick = parseFloat(p.frameMat.split('_').at(1)) || 2;
+        
+        let fThick = 2;
+        if (p.frameMat && p.frameMat.includes('_')) {
+            let fParts = p.frameMat.split('_');
+            if (fParts.length > 1) { fThick = parseFloat(fParts.slice(1, 2).pop()) || 2; }
+        }
         
         let frameHoriz = p.w; // Always tracking full panel width perimeter
         fLF += (frameHoriz * 2) / 12; 
