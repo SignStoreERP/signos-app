@@ -95,40 +95,17 @@
                 <div class="flex justify-between items-end mb-4">
                     <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest block">1. Sign Face & Panels</span>
                 </div>
-                
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Global Panel Width (in)</label>
-                        <input type="number" id="w" value="36" min="1" step="1" oninput="updateDimensions('w')" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Printed Sides</label>
-                        <select id="sides" onchange="updateDimensions('sides')" class="w-full border border-gray-300 p-2.5 rounded text-sm font-black text-gray-700 outline-none focus:border-blue-500 shadow-sm h-[46px]">
-                            <option value="1" selected>Single Sided</option>
-                            <option value="2">Double Sided</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-3 gap-3 border-t border-gray-100 pt-4 mb-4">
-                    <div class="col-span-3 lg:col-span-1">
-                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Mounting Style</label>
-                        <select id="mountStyle" onchange="updateDimensions('mount')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm">
-                            <option value="Flush" selected>Flush (Covers Posts)</option>
-                            <option value="Between">Between Posts</option>
-                        </select>
+                <div class="flex items-center justify-start gap-4 mb-4">
+                    <div id="wrap-offset-toggle" class="hidden">
+                        <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="allowOffset" onchange="updateDimensions('offset-toggle')" class="w-4 h-4 text-blue-600 rounded">
+                            Adjust Vertical Post Position
+                        </label>
                     </div>
-                    <div class="col-span-3 lg:col-span-2 flex items-center justify-start gap-4">
-                        <div id="wrap-offset-toggle" class="hidden pt-3">
-                            <label class="flex items-center gap-2 text-[10px] font-bold text-gray-700 cursor-pointer">
-                                <input type="checkbox" id="allowOffset" onchange="updateDimensions('offset-toggle')" class="w-4 h-4 text-blue-600 rounded">
-                                Adjust Vertical Position
-                            </label>
-                        </div>
-                        <div id="wrap-offset-input" class="hidden flex-1 max-w-[120px]">
-                            <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Reveal (in)</label>
-                            <input type="number" id="postOffset" value="0" step="1" oninput="updateDimensions('offset')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-center focus:border-blue-500 outline-none shadow-inner h-[38px]" title="Positive = Posts stick up. Negative = Panel sticks up.">
-                        </div>
+                    <div id="wrap-offset-input" class="hidden flex-1 max-w-[120px]">
+                        <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Reveal (in)</label>
+                        <input type="number" id="postOffset" value="0" step="1" oninput="updateDimensions('offset')" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-center focus:border-blue-500 outline-none shadow-inner h-[38px]" title="Positive = Posts stick up. Negative = Panel sticks up.">
                     </div>
                 </div>
 
@@ -142,7 +119,7 @@
                     
                     <div class="mt-3 pt-2 border-t border-slate-300 flex justify-between items-center">
                         <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Active Face Height:</span>
-                        <span id="total-panel-height-display" class="text-sm font-black text-slate-700">24"</span>
+                        <span id="total-panel-height-display" class="text-sm font-black text-slate-700">36"</span>
                     </div>
                 </div>
             </div>
@@ -156,7 +133,7 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Distance From Ground (Clearance)</label>
-                        <input type="number" id="clearance" value="36" min="0" step="1" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="updateDimensions('clearance')">
+                        <input type="number" id="clearance" value="24" min="0" step="1" class="w-full border border-gray-300 p-2.5 rounded text-lg font-black text-center focus:border-blue-500 outline-none shadow-inner transition-colors" oninput="updateDimensions('clearance')">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Total Height Above Grade</label>
@@ -299,8 +276,8 @@ var dynamicKeys = [];
 var isXrayView = false;
 var isShowDims = true;
 
-// Dynamic Panel Array State
-var panels = [{ id: Date.now(), h: 24, gap: 0, faceMat: '063 Alum', graphicMethod: 'PrintOnPaint', isCNC: false }];
+// Default Load State matched to exact user request
+var panels = [{ id: Date.now(), w: 36, h: 36, gap: 0, mountStyle: 'Flush', sides: 1, faceMat: '063 Alum', graphicMethod: 'PrintOnPaint', isCNC: false }];
 
 if(document.getElementById('loader')) document.getElementById('loader').classList.add('hidden');
 if(document.getElementById('status-text')) document.getElementById('status-text').innerText = "System Active";
@@ -327,19 +304,39 @@ function renderPanels() {
                 <input type="number" value="${p.gap}" step="0.5" min="0" oninput="updatePanel(${p.id}, 'gap', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
             </div>` : 
             `<div class="flex items-end pb-1.5">
-                <span class="text-[9px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 uppercase tracking-widest">Primary Panel</span>
+                <span class="text-[9px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 uppercase tracking-widest shadow-sm">Primary Panel (Drives Frame & Posts)</span>
             </div>`;
 
         c.innerHTML += `
         <div class="bg-white p-3 rounded border border-gray-200 relative shadow-sm">
-            ${panels.length > 1 ? `<button onclick="removePanel(${p.id})" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 font-bold focus:outline-none">✕</button>` : ''}
+            ${panels.length > 1 ? `<button onclick="removePanel(${p.id})" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 font-bold focus:outline-none bg-white rounded-full">✕</button>` : ''}
             
             <div class="grid grid-cols-2 gap-3 mb-2">
+                <div>
+                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel Width (in)</label>
+                    <input type="number" value="${p.w}" step="0.5" min="1" oninput="updatePanel(${p.id}, 'w', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
+                </div>
                 <div>
                     <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Panel Height (in)</label>
                     <input type="number" value="${p.h}" step="0.5" min="1" oninput="updatePanel(${p.id}, 'h', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-xs font-bold bg-white focus:border-blue-500 outline-none shadow-inner">
                 </div>
-                ${gapHtml}
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-2 border-t border-gray-100 pt-2">
+                <div>
+                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Mounting Style</label>
+                    <select onchange="updatePanel(${p.id}, 'mountStyle', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white outline-none focus:border-blue-500 h-[30px] shadow-sm">
+                        <option value="Flush" ${p.mountStyle==='Flush'?'selected':''}>Flush (Face Mount)</option>
+                        <option value="Between" ${p.mountStyle==='Between'?'selected':''}>Between Posts</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Printed Sides</label>
+                    <select onchange="updatePanel(${p.id}, 'sides', this.value)" class="w-full border border-gray-300 p-1.5 rounded text-[9px] font-bold bg-white outline-none focus:border-blue-500 h-[30px] shadow-sm">
+                        <option value="1" ${p.sides==1?'selected':''}>Single Sided</option>
+                        <option value="2" ${p.sides==2?'selected':''}>Double Sided</option>
+                    </select>
+                </div>
             </div>
             
             <div class="grid grid-cols-2 gap-3 border-t border-gray-100 pt-2">
@@ -369,6 +366,7 @@ function renderPanels() {
                     <input type="checkbox" onchange="updatePanel(${p.id}, 'isCNC', this.checked)" ${p.isCNC?'checked':''} class="w-3 h-3 text-blue-600 rounded">
                     CNC Route Face Shape
                 </label>
+                ${gapHtml}
             </div>
         </div>`;
     });
@@ -378,14 +376,17 @@ function renderPanels() {
 function updatePanel(id, field, val) {
     const p = panels.find(x => x.id === id);
     if(p) {
-        p[field] = (field === 'h' || field === 'gap') ? (parseFloat(val) || 0) : val;
-        if (field === 'h' || field === 'gap') updateDimensions('panels');
+        p[field] = (field === 'h' || field === 'w' || field === 'gap') ? (parseFloat(val) || 0) : val;
+        if (field === 'h' || field === 'w' || field === 'gap') updateDimensions('panels');
+        else if (field === 'mountStyle' && panels.indexOf(p) === 0) updateDimensions('panels'); // Primary panel changes post alignment
         else runCalc();
     }
 }
 
 function addPanel() {
-    panels.push({ id: Date.now(), h: 12, gap: 2, faceMat: '063 Alum', graphicMethod: 'PrintOnPaint', isCNC: false });
+    let pw = panels.length > 0 ? panels.w : 36;
+    let pm = panels.length > 0 ? panels.mountStyle : 'Flush';
+    panels.push({ id: Date.now(), w: pw, h: 12, gap: 2, mountStyle: pm, sides: 1, faceMat: '063 Alum', graphicMethod: 'PrintOnPaint', isCNC: false });
     renderPanels();
 }
 
@@ -396,18 +397,18 @@ function removePanel(id) {
 }
 
 function updateDimensions(source) {
-    let wStr = document.getElementById('w').value;
-    let w = parseFloat(wStr) || 0;
+    if (panels.length === 0) return;
+    let mainW = panels.w || 36;
     
     let clr = parseFloat(document.getElementById('clearance').value) || 0;
     let above = parseFloat(document.getElementById('aboveGrade').value) || 0;
     let below = parseFloat(document.getElementById('belowGrade').value) || 0;
 
-    let mountStyle = document.getElementById('mountStyle').value;
-    let isBetween = mountStyle === 'Between';
+    let primaryMount = panels.mountStyle;
+    let isBetween = primaryMount === 'Between';
     let allowOffset = document.getElementById('allowOffset').checked;
 
-    // Show/Hide Offset Logic UI
+    // Show/Hide Offset Logic UI based on primary structure
     document.getElementById('wrap-offset-toggle').classList.toggle('hidden', !isBetween);
     document.getElementById('wrap-offset-input').classList.toggle('hidden', !(isBetween && allowOffset));
 
@@ -446,17 +447,17 @@ function updateDimensions(source) {
         postLenEl.innerText = `Total Post Length: ${totalPost}" (${(totalPost/12).toFixed(1)}')`;
     }
 
-    // Auto-Calculate Post Spacing
+    // Auto-Calculate Post Spacing (Driven by Primary Panel #1)
     const postProf = document.getElementById('postProfile').value || '2_1/8';
     const postSize = parseFloat(postProf.split('_')) || 2;
     
-    let spacing = isBetween ? w : w - (postSize * 2);
+    let spacing = isBetween ? mainW : mainW - (postSize * 2);
     if (spacing < 0) spacing = 0; 
 
     document.getElementById('postSpacing').value = spacing;
     document.getElementById('postSpacingDisplay').innerText = spacing + '" I.D.';
 
-    if (source === 'post' || source === 'mount') {
+    if (source === 'post' || source === 'panels') {
         updateFrameDropdown();
     }
     
@@ -494,7 +495,10 @@ function updateFrameDropdown() {
     const postProf = document.getElementById('postProfile').value || '2_1/8';
     const postSize = parseFloat(postProf.split('_')) || 2; 
     
-    let maxSides = parseInt(document.getElementById('sides').value) || 1;
+    // To filter frames, we look at the primary panel
+    let primaryMount = panels.length > 0 ? panels.mountStyle : 'Flush';
+    let maxSides = Math.max(...panels.map(p => p.sides));
+    
     const frameSelect = document.getElementById('frameMat');
     const currentVal = frameSelect.value;
     
@@ -528,8 +532,7 @@ function updateFrameDropdown() {
 
     angles = angles.filter(a => (a.s * maxSides) <= postSize);
 
-    let mountStyle = document.getElementById('mountStyle').value;
-    if (mountStyle === 'Flush') {
+    if (primaryMount === 'Flush') {
         alumTubes = alumTubes.filter(t => t.s === postSize);
         steelTubes = steelTubes.filter(t => t.s === postSize);
     }
@@ -622,10 +625,7 @@ function drawShopDrawings(geom) {
     fSVG += `<rect x="${p1X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     fSVG += `<rect x="${p2X}" y="${postY}" width="${sPostD}" height="${sPostH}" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>`;
     
-    let sPw = geom.w * scale;
     let frameTotalH = geom.totalPanelH * scale;
-    let panelX = geom.mount === 'Between' ? p1X + sPostD : (sOw - sPw) / 2;
-    
     let fX = p1X + sPostD;
     let sFw = geom.postSpacing * scale;
     const ft = geom.frameThick * scale;
@@ -649,17 +649,19 @@ function drawShopDrawings(geom) {
     let vHeight = frameTotalH - (ft*2);
     let vY = panelY + ft;
 
-    if (geom.mount === 'Between') {
-        fSVG += `<rect x="${panelX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
-        fSVG += `<rect x="${panelX + sPw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+    if (geom.panels && geom.panels.mountStyle === 'Between') {
+        fSVG += `<rect x="${fX}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
+        fSVG += `<rect x="${fX + sFw - ft}" y="${vY}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`;
     }
 
-    // Panels 
+    // Panels Centered Graphically
     let faceY = panelY;
     geom.panels.forEach((p, i) => {
         let sPh = p.h * scale;
+        let sPw = p.w * scale;
+        let panelX = (sOw - sPw) / 2;
         if (i > 0) faceY += p.gap * scale;
-        let faceOpacity = isXrayView ? 0.25 : (geom.mount === 'Between' ? 0.8 : 0.95);
+        let faceOpacity = isXrayView ? 0.25 : (p.mountStyle === 'Between' ? 0.8 : 0.95);
         fSVG += `<rect x="${panelX}" y="${faceY}" width="${sPw}" height="${sPh}" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5" opacity="${faceOpacity}"/>`;
         faceY += sPh;
     });
@@ -685,7 +687,8 @@ function drawShopDrawings(geom) {
     let tempXrayY = panelY;
     geom.panels.forEach((p, i) => {
         if (i > 0) tempXrayY += p.gap * scale;
-        svgFrontXray += `<rect x="${panelX}" y="${tempXrayY}" width="${sPw}" height="${p.h * scale}" fill="#3b82f6" opacity="0.1"/>`;
+        let pX = (sOw - (p.w * scale)) / 2;
+        svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${p.w * scale}" height="${p.h * scale}" fill="#3b82f6" opacity="0.1"/>`;
         tempXrayY += p.h * scale;
     });
 
@@ -700,9 +703,9 @@ function drawShopDrawings(geom) {
     });
 
     // Draw Vertical Braces 
-    if (geom.numBraces > 0) {
-        const spacing = sFw / (geom.numBraces + 1);
-        for(let i=1; i<=geom.numBraces; i++) {
+    if (geom.braces > 0) {
+        const spacing = sFw / (geom.braces + 1);
+        for(let i=1; i<=geom.braces; i++) {
             let braceX = fX + (spacing * i) - (ft/2);
             svgFrontXray += `<rect x="${braceX}" y="${panelY + ft}" width="${ft}" height="${frameTotalH - (ft*2)}" fill="#94a3b8"/>`;
         }
@@ -724,11 +727,11 @@ function drawShopDrawings(geom) {
     geom.panels.forEach((p, i) => {
         let sPh = p.h * scale;
         if (i > 0) sy += p.gap * scale;
-        if (geom.mount === 'Between') {
+        if (p.mountStyle === 'Between') {
             sSVG += `<rect x="${px + (sPostD/2) - (visFaceThick/2)}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#1e40af"/>`;
         } else {
             sSVG += `<rect x="${px - visFaceThick}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
-            if(geom.sides === 2) sSVG += `<rect x="${px + sPostD}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
+            if(p.sides === 2) sSVG += `<rect x="${px + sPostD}" y="${sy}" width="${visFaceThick}" height="${sPh}" fill="#3b82f6"/>`;
         }
         sy += sPh;
     });
@@ -751,16 +754,13 @@ function runCalc() {
     
     const inputs = {
         qty: parseInt(document.getElementById('qty').value) || 1,
-        w: parseFloat(document.getElementById('w').value) || 36,
-        clearance: isNaN(clrRaw) ? 36 : clrRaw,
+        clearance: isNaN(clrRaw) ? 24 : clrRaw,
         belowGrade: parseFloat(document.getElementById('belowGrade').value) || 24,
-        mountStyle: document.getElementById('mountStyle').value,
         allowOffset: document.getElementById('allowOffset').checked,
         postOffset: parseFloat(document.getElementById('postOffset').value) || 0,
         postType: document.getElementById('postType').value,
         postProfile: document.getElementById('postProfile').value,
         frameMat: document.getElementById('frameMat').value,
-        sides: parseInt(document.getElementById('sides').value) || 1,
         hasConcrete: document.getElementById('hasConcrete').checked,
         postSpacing: parseFloat(document.getElementById('postSpacing').value) || 32,
         panels: panels
@@ -795,17 +795,14 @@ function runCalc() {
         const postTxt = document.getElementById('postProfile').options[document.getElementById('postProfile').selectedIndex].text;
         const frameTxt = document.getElementById('frameMat').options[document.getElementById('frameMat').selectedIndex].text;
         
-        let mTxt = inputs.mountStyle === 'Between' ? 'Between Posts' : 'Flush Mount';
-        let sTxt = inputs.sides === 2 ? 'DS' : 'SS';
-        
         let panelDesc = panels.map((p, i) => {
             let gapTxt = i > 0 ? ` (Gap: ${p.gap}")` : '';
-            let faceTxt = `${p.faceMat} | ${p.graphicMethod} | ${p.isCNC ? 'CNC' : 'Square'}`;
-            return ` - Panel ${i+1}: ${inputs.w}" x ${p.h}"${gapTxt} [${faceTxt}]`;
+            let faceTxt = `${p.faceMat} | ${p.sides===2?'DS':'SS'} | ${p.mountStyle} | ${p.graphicMethod} | ${p.isCNC ? 'CNC' : 'Square'}`;
+            return ` - Panel ${i+1}: ${p.w}" x ${p.h}"${gapTxt} [${faceTxt}]`;
         }).join('\n');
 
         let cutStr = result.geom.cutList ? '\n\nFRAME CUT SHEET:\n' + result.geom.cutList.join('\n') : '';
-        document.getElementById('job-desc').value = `(x${inputs.qty}) Architectural Monument (${mTxt} | ${sTxt}).\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\n${panelDesc}${cutStr}`;
+        document.getElementById('job-desc').value = `(x${inputs.qty}) Architectural Monument.\nStructure: 2x ${inputs.postType} ${postTxt} Posts. (${inputs.postSpacing}" Inside Spacing, ${inputs.clearance}" Ground Clearance)\nFrame: ${frameTxt}\n${panelDesc}${cutStr}`;
 
         if(result.geom) drawShopDrawings(result.geom);
 
