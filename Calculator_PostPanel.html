@@ -130,12 +130,19 @@
                 </div>
 
                 <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 flex justify-between items-center shadow-inner">
-                    <span class="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Calculated Inside Post Spacing:</span>
-                    <span id="postSpacingDisplay" class="text-xl font-black text-indigo-900 tracking-tight">32" I.D.</span>
-                    <input type="hidden" id="postSpacing" value="32">
+                    <div>
+                        <label class="block text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-1">Inside Post Spacing</label>
+                        <label class="flex items-center gap-1.5 text-[9px] font-bold text-indigo-500 cursor-pointer hover:text-indigo-700 transition">
+                            <input type="checkbox" id="autoSpacing" checked onchange="updateDimensions('auto')" class="w-3 h-3 rounded text-indigo-600"> Auto-Fit to Primary Panel
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <input type="number" id="postSpacing" value="32" step="0.5" class="w-24 border border-indigo-200 p-1.5 rounded text-lg font-black text-center bg-white focus:border-indigo-500 outline-none text-indigo-900 shadow-sm" oninput="document.getElementById('autoSpacing').checked = false; updateDimensions('spacing')">
+                        <span class="text-xs font-bold text-indigo-400 uppercase pr-1">in</span>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-4 border-t border-gray-200 pt-4 mt-2">
                     <div>
                         <label class="block text-[9px] font-bold text-gray-500 uppercase mb-1">Post Material</label>
                         <select id="postType" class="w-full border border-gray-300 p-2 rounded text-xs font-bold text-gray-700 outline-none focus:border-blue-500 h-[38px] shadow-sm" onchange="updatePostDropdown()">
@@ -438,7 +445,7 @@ function removePanel(id) {
 function updateDimensions(source) {
     if (!panels || panels.length === 0) return;
     
-    const primaryPanel = panels.slice(0, 1).pop(); 
+    const primaryPanel = panels; 
     let mainW = primaryPanel.w || 36; 
     let primaryMount = primaryPanel.mountStyle || 'Flush';
     
@@ -473,17 +480,38 @@ function updateDimensions(source) {
         setTimeout(() => document.getElementById('clearance').classList.remove('bg-blue-50', 'text-blue-800'), 500);
     }
 
+    const postProf = document.getElementById('postProfile').value || '2_1/8';
+    const postSize = parseFloat(postProf.split('_')) || 2; 
+
+    // AUTO-FIT POST SPACING LOGIC
+    let isAuto = document.getElementById('autoSpacing').checked;
+    if (isAuto) {
+        let autoSpacing = isBetween ? mainW : mainW - (postSize * 2);
+        if (autoSpacing < 0) autoSpacing = 0; 
+        document.getElementById('postSpacing').value = autoSpacing;
+    }
+
+    let currentSpacing = parseFloat(document.getElementById('postSpacing').value) || 0;
+    let OD = currentSpacing + (postSize * 2);
+    
     let panelAbove = clr + totalPanelH;
     let postAbove = panelAbove;
     
     // ADJUST POST HEIGHT FOR FLUSH MOUNTS
-    if (primaryMount === 'Flush') {
-        let primaryFt = 2;
-        if (primaryPanel && primaryPanel.frameMat && primaryPanel.frameMat.includes('_')) {
-            let fParts = primaryPanel.frameMat.split('_');
-            if (fParts.length > 1) { primaryFt = parseFloat(fParts.slice(1, 2).pop()) || 2; }
+    let isAbsoluteTopFlush = (primaryMount === 'Flush');
+    let isTopStandardFlush = isAbsoluteTopFlush && (Math.abs(mainW - OD) < 0.1);
+
+    if (isAbsoluteTopFlush) {
+        if (isTopStandardFlush) {
+            postAbove = panelAbove;
+        } else {
+            let primaryFt = 2;
+            if (primaryPanel.frameMat && primaryPanel.frameMat.includes('_')) {
+                let fParts = primaryPanel.frameMat.split('_');
+                if (fParts.length > 1) { primaryFt = parseFloat(fParts[1]) || 2; }
+            }
+            postAbove = panelAbove - primaryFt;
         }
-        postAbove = panelAbove - primaryFt;
     } else if (isBetween && allowOffset) {
         postAbove = panelAbove + postOffset;
     }
@@ -493,17 +521,8 @@ function updateDimensions(source) {
 
     let postLenEl = document.getElementById('post-length-display');
     if(postLenEl) {
-        postLenEl.innerText = `Total Post Length: ${totalPost}" (${(totalPost/12).toFixed(1)}')`;
+        postLenEl.innerText = `Total Post Length: ${totalPost.toFixed(1)}" (${(totalPost/12).toFixed(1)}')`;
     }
-
-    const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf.split('_').slice(0, 1).pop()) || 2; 
-    
-    let spacing = isBetween ? mainW : mainW - (postSize * 2);
-    if (spacing < 0) spacing = 0; 
-
-    document.getElementById('postSpacing').value = spacing;
-    document.getElementById('postSpacingDisplay').innerText = spacing + '" I.D.';
 
     if (source === 'post') {
         renderPanels(); 
@@ -540,7 +559,7 @@ function updatePostDropdown() {
 function getFrameOptionsHTML(p) {
     const postType = document.getElementById('postType').value || 'Aluminum';
     const postProf = document.getElementById('postProfile').value || '2_1/8';
-    const postSize = parseFloat(postProf.split('_').slice(0, 1).pop()) || 2; 
+    const postSize = parseFloat(postProf.split('_')) || 2; 
     
     let angles = [
         {v: 'AlumAngle_1.5_1/8', t: '1.5" x 1/8" Alum Angle', s: 1.5},
@@ -675,7 +694,7 @@ function drawShopDrawings(geom) {
     if (isShowDims) {
         fSVG += drawHDim(0, sOw, postY - 8, geom.overallW + '" O.A.W');
         fSVG += drawHDim(p1X + sPostD, p2X, sTh - sUnder - (sClr/2), geom.postSpacing + '" I.D.');
-        fSVG += drawVDim(-8, postY, sTh - sUnder, geom.postAbove + '" Post A.G.', "end");
+        fSVG += drawVDim(-8, postY, sTh - sUnder, geom.postAbove.toFixed(1) + '" Post A.G.', "end");
         fSVG += drawVDim(sOw + 8, panelY, panelY + frameTotalH, geom.totalPanelH + '" Pnl', "start");
         fSVG += drawVDim(-8, sTh - sUnder, sTh, geom.under + '" B.G.', "end");
     }
@@ -696,18 +715,20 @@ function drawShopDrawings(geom) {
         let A = startX;
         let B = startX + totalWidth;
         
+        let tol = 0.5; // pixel tolerance
+        
         // Seg 1: Left Overhang
         let s1_end = Math.min(B, p1X);
-        if (s1_end - A > 0.1) html += `<rect x="${A}" y="${yPos}" width="${s1_end - A}" height="${frameHeight}" fill="#94a3b8"/>`;
+        if (s1_end - A > tol) html += `<rect x="${A}" y="${yPos}" width="${s1_end - A}" height="${frameHeight}" fill="#94a3b8"/>`;
         
         // Seg 2: Center Span between Posts
         let s2_start = Math.max(A, p1X + sPostD);
         let s2_end = Math.min(B, p2X);
-        if (s2_end - s2_start > 0.1) html += `<rect x="${s2_start}" y="${yPos}" width="${s2_end - s2_start}" height="${frameHeight}" fill="#94a3b8"/>`;
+        if (s2_end - s2_start > tol) html += `<rect x="${s2_start}" y="${yPos}" width="${s2_end - s2_start}" height="${frameHeight}" fill="#94a3b8"/>`;
         
         // Seg 3: Right Overhang
         let s3_start = Math.max(A, p2X + sPostD);
-        if (B - s3_start > 0.1) html += `<rect x="${s3_start}" y="${yPos}" width="${B - s3_start}" height="${frameHeight}" fill="#94a3b8"/>`;
+        if (B - s3_start > tol) html += `<rect x="${s3_start}" y="${yPos}" width="${B - s3_start}" height="${frameHeight}" fill="#94a3b8"/>`;
         
         return html;
     };
@@ -719,10 +740,8 @@ function drawShopDrawings(geom) {
         let p2_end = p2X + sPostD;
         
         let tol = 0.1;
-        // Skip drawing if this piece occupies the exact same physical space as Post 1
-        if (cx2 > p1X + tol && cx1 < p1_end - tol) return '';
-        // Skip drawing if this piece occupies the exact same physical space as Post 2
-        if (cx2 > p2X + tol && cx1 < p2_end - tol) return '';
+        if (Math.abs(cx1 - p1X) < tol || (cx2 > p1X + tol && cx1 < p1_end - tol)) return '';
+        if (Math.abs(cx1 - p2X) < tol || (cx2 > p2X + tol && cx1 < p2_end - tol)) return '';
         
         return `<rect x="${xPos}" y="${yPos}" width="${width}" height="${height}" fill="#94a3b8"/>`;
     };
@@ -736,18 +755,27 @@ function drawShopDrawings(geom) {
         let frameSize = 2;
         if (p.frameMat && p.frameMat.includes('_')) {
             let parts = p.frameMat.split('_');
-            if (parts.length > 1) { frameSize = parseFloat(parts.slice(1, 2).pop()) || 2; }
+            if (parts.length > 1) { frameSize = parseFloat(parts[1]) || 2; }
         }
         let ft = frameSize * scale;
 
         svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${sPh}" fill="#3b82f6" opacity="0.15"/>`;
         
+        let sOD = geom.postSpacing * scale + 2 * sPostD;
+        let pIsStandardFlush = (p.mountStyle === 'Flush' && Math.abs((p.w * scale) - sOD) < 1);
+
         // HORIZONTAL FRAMING
         if (p.mountStyle === 'Between') {
             svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Top
             svgFrontXray += `<rect x="${pX}" y="${tempXrayY + sPh - ft}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; // Bottom
+        } else if (pIsStandardFlush) {
+            // Scenario A: Top and Bottom fit exactly between posts
+            let spanStartX = p1X + sPostD;
+            let spanW = sOD - (2 * sPostD);
+            svgFrontXray += `<rect x="${spanStartX}" y="${tempXrayY}" width="${spanW}" height="${ft}" fill="#94a3b8"/>`; // Top
+            svgFrontXray += `<rect x="${spanStartX}" y="${tempXrayY + sPh - ft}" width="${spanW}" height="${ft}" fill="#94a3b8"/>`; // Bottom
         } else {
-            // Top crossbar is absolute continuous if it is the uppermost panel, otherwise interrupted by posts
+            // Scenario B: Overhangs
             if (i === 0) svgFrontXray += `<rect x="${pX}" y="${tempXrayY}" width="${sPw}" height="${ft}" fill="#94a3b8"/>`; 
             else svgFrontXray += drawSegmentedHoriz(tempXrayY, pX, sPw, ft); 
             
@@ -762,7 +790,7 @@ function drawShopDrawings(geom) {
         if (p.mountStyle === 'Between') {
             svgFrontXray += `<rect x="${pX}" y="${vTop}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`; // Left
             svgFrontXray += `<rect x="${pX + sPw - ft}" y="${vTop}" width="${ft}" height="${vHeight}" fill="#94a3b8"/>`; // Right
-        } else {
+        } else if (!pIsStandardFlush) {
             // Only draw outer vertical frames if they do not physically collide with the posts (i.e. overhang scenarios)
             svgFrontXray += drawVertIfClear(pX, vTop, ft, vHeight); 
             svgFrontXray += drawVertIfClear(pX + sPw - ft, vTop, ft, vHeight); 
@@ -771,9 +799,11 @@ function drawShopDrawings(geom) {
         // Draw Vertical Braces 
         const numVerticalBraces = Math.max(0, Math.floor((geom.postSpacing - 12) / 30));
         if (numVerticalBraces > 0) {
-            const spacing = sPw / (numVerticalBraces + 1);
+            let innerSpace = pIsStandardFlush ? (sOD - 2*sPostD) : sPw;
+            let braceStartX = pIsStandardFlush ? (p1X + sPostD) : pX;
+            const spacing = innerSpace / (numVerticalBraces + 1);
             for(let j=1; j<=numVerticalBraces; j++) {
-                let braceX = pX + (spacing * j) - (ft/2);
+                let braceX = braceStartX + (spacing * j) - (ft/2);
                 svgFrontXray += drawVertIfClear(braceX, vTop, ft, vHeight);
             }
         }
