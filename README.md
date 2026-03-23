@@ -1,107 +1,35 @@
-# 🛠️ SignOS: The "Serverless" Sign Shop ERP
-
-**Status:** v3.5 (Dev/Staging)  
-**Architecture:** Distributed "Twin-Engine" System  
-**Backend:** Google Sheets + Apps Script (The Brain)  
-**Frontend:** HTML5 + Tailwind CSS (The Face)  
-
----
-
-## 📖 Overview
-SignOS is a production management and quoting engine designed specifically for the physics of the sign industry. Unlike traditional ERPs that lock pricing logic inside compiled code, SignOS prioritizes **User Sovereignty**.
-
-It utilizes a strict **Separation of Concerns**:
-1.  **The Brain (Google Sheets):** Holds all proprietary logic, material costs, labor rates, and markup formulas.
-2.  **The API (Apps Script):** A secure gatekeeper that fetches calculated values and handles version control.
-3.  **The Face (This Repo):** "Agnostic" HTML calculators that simply capture user input and display the backend's math.
+### 🛠️ SignOS: The "Serverless" Sign Shop ERP (Legacy Version)
+**Status:** 🛑 DEPRECATED & MIGRATED
+**New Architecture:** Vercel (UI) + Supabase PostgreSQL & Deno Edge Functions (Backend) [1-3]
+**Historical Architecture:** Google Sheets API + Apps Script + HTML5/JS [4]
+**New Repository:** [SignStoreERP/SignOS-v3-Supabase](https://github.com/SignStoreERP/SignOS-v3-Supabase) [5]
 
 ---
 
-## 🏗️ The "Twin-Engine" Workflow
-We utilize a dual-deployment strategy to ensure stability while allowing rapid innovation.
+#### 📖 Historical Overview
+This repository previously housed the **Development Sandbox (`signos-app`)** for the legacy version of the SignOS ERP [4].
 
-### 1. Development Engine (`signos-app`)
-*   **Role:** Experimental Sandbox & Staging.
-*   **Behavior:** Code pushed here is automatically scanned by our **Version Crawler**. The system reads the `<title>` tag of HTML files and updates the `Dev_Ver` column in the backend instantly.
-*   **Webhook Tag:** `[DEV]` in System History.
+SignOS was originally designed as a production management and quoting engine built strictly around the physics of the sign industry [4]. To maintain rapid development without traditional database overhead, this legacy version utilized a highly unconventional but effective "Serverless" architecture [4]:
 
-### 2. Production Engine (`signos-live`)
-*   **Role:** Stable Client-Facing Portal.
-*   **Behavior:** Only validated, bug-free modules are manually copied here. Pushing to this repo triggers the `[LIVE]` tag in the history logs and updates the `Live_Ver` column in the backend.
+*   **The Brain (Google Sheets):** Held all proprietary logic, material costs, labor rates, and markup formulas to act as the "Single Source of Truth" [6].
+*   **The API (Apps Script):** A secure gatekeeper that fetched calculated values and handled version control [6].
+*   **The Face (HTML/JS):** "Agnostic" HTML calculators that contained no pricing math. They simply captured user input and processed the backend's data locally [6].
 
----
+#### 🏗️ The Legacy "Twin-Engine" Workflow
+Because the backend relied on live Google Sheets, we utilized a strict "Twin-Engine" dual-deployment strategy to ensure the sales floor never experienced downtime [6].
 
-## 🏗 System Architecture: The Waterfall
-SignOS follows a strictly hierarchical data flow:
+1.  **The Sandbox (This Repo):** All experimental development, bug fixes, and feature integrations happened strictly within this repository [7].
+2.  **The Storefront (`signos-live`):** Only after code was proven mathematically stable and bug-free via an administrative simulator was it manually cloned to the live repository [7].
 
-### Level 1: Master Data (The Source of Truth)
-*   *Private Google Sheet*
-*   Defines raw inputs: `Master_Materials` (Cost per sheet), `Master_Labor_Rates` (Hourly wages), `Master_Machines_Fleet` (Print speeds).
-*   *Example:* 4mm Coroplast = $11.99/sheet.
+#### 🧮 Dual-Track Logic (Physics vs. Retail)
+The core innovation of this codebase was the **Separation of Calculation** [7]. The headless JS processed the API payload through two completely distinct mathematical engines simultaneously:
 
-### Level 2: Product Logic (The Context Layer)
-*   *Private Google Sheet (PROD_ Tabs)*
-*   Contextualizes raw data for specific products. Calculates "Cost Basis" and "Retail Price" dynamically using VLOOKUPs.
-*   *Example:* A Yard Sign uses 1/10th of a sheet + 5 minutes of labor + 5% risk buffer.
+*   **Market Value (Retail Track):** Generated the customer-facing price based strictly on predefined market area curves and square footage, bypassing how the sign was physically built [8].
+*   **Physics Engine (Cost Track):** Calculated exact real-world physics, tracking material yield (e.g., 4x8 sheets), machine run limits, and exact ink/labor usage to determine true net profit [8].
 
-### Level 3: The API & Automation
-*   *Google Apps Script (`Code.gs`)*
-*   **The Listener:** A Webhook that logs every GitHub commit to `SYS_Changelog` in real-time.
-*   **The Crawler:** Automatically syncs version numbers from HTML code to the Spreadsheet.
+#### 🚀 Migration to SignOS v4.0 (Supabase)
+As the system grew to support complex 3D rendering, SVG production file generation, and bulk ADA routing matrices, the Google Sheets API reached its operational limits [8].
 
-### Level 4: The Frontend (This Repo)
-*   *Public HTML Files*
-*   **Dumb Interface:** Contains **zero** math or pricing logic.
-*   **Dynamic:** On load, it asks the API: *"What is the current price of a Yard Sign?"*
+The entire Level 1 (Master Materials/Labor), Level 1.5 (The Override Matrix), and Level 2 (Product Logic) data hierarchy has been normalized into a relational **PostgreSQL** schema [9]. The business logic contained in this repository's headless `.js` files has been migrated to modern **Deno/TypeScript Edge Functions** to enforce Row Level Security (RLS) and faster compute times [1, 2, 9].
 
----
-
-## 📦 Modules & Physics Engines
-This repository contains the following production modules:
-
-### 🛡️ Rigid Signs
-*   **Yard Signs:** Features bulk logic triggers (Qty > 1100), stake bundling, and tiered fixed-price discounts.
-*   **Coroplast:** Handles "Direct Print" vs "Vinyl Mount" workflows based on material thickness (4mm vs 10mm).
-*   **ACM / Metal:** Smart logic for CNC Routing setup, separating "Shear Cut" labor from "Contour Cut" machine time.
-*   **Acrylic:** Advanced linear-print physics (handling 2nd surface, white ink modes, and paint booth labor).
-
-### 🖨️ Roll Media
-*   **Vinyl Banners:** Physics constraints for 62" print widths, hemming/grommet labor calculation, and wind slit logic.
-*   **Decals:** Toggles for simple vs. complex weeding and die-cut vs. kiss-cut logic.
-*   **Vehicle Wraps:** Panel optimization logic (54" media overlap) and complex-curve installation estimators.
-*   **Cut Vinyl:** Plotter physics and masking labor rates.
-
----
-
-## ⚙️ Key Features
-
-### 1. The "Make vs. Buy" Dashboard
-Every calculator displays three distinct tabs:
-*   **RETAIL:** The price the customer sees (Market Value).
-*   **IN-HOUSE:** The exact cost to manufacture (Materials + Labor + Overhead + Risk).
-*   **VENDED:** The wholesale cost to outsource (e.g., Signs365), including shipping logic.
-
-### 2. Profit Guard™
-The interface proactively protects margins. If a user quotes a job where the Net Profit is negative on *both* In-House and Vended tabs, a pulsing **"LOSS ALERT"** banner blocks the user from proceeding.
-
-### 3. Physics-Based Costing
-*   **Linear Logic:** Roll printers calculate cost based on linear footage fed through the machine (accounting for 64" bed limits), not just square footage.
-*   **Sheet Logic:** Rigid calculators determine how many full 4x8 boards must be pulled from inventory to fulfill the order.
-
----
-
-## 🛠 Deployment & Updates
-
-### To Update Pricing:
-1.  Open the SignOS Backend Google Sheet.
-2.  Navigate to the `PROD_` tab (e.g., `PROD_Yard_Signs`).
-3.  Change the value (e.g., update `Retail_Price_Sign_SS` from 12 to 15).
-4.  *Done.* The HTML frontend updates instantly for all users on the next refresh.
-
-### To Update the Application:
-1.  Commit changes to the `.html` files in this repository.
-2.  Push to `main`.
-3.  The API will automatically log the change and update the version number in the Backend.
-
----
-*Copyright © 2026 SignStoreERP. All Production Logic Reserved.*
+*(Note: The legacy Apps Script API webhooks for this repository have been decommissioned. Any stray POST requests will now return a `DEPRECATED_SYSTEM` error blocker. If you are looking for the active SignOS ERP, please visit the new secure gateway at [https://signos-v3-supabase.vercel.app/](https://signos-v3-supabase.vercel.app/)).*
